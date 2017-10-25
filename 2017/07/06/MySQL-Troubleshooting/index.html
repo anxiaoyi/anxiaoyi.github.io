@@ -1,0 +1,115 @@
+<html>
+<head>
+	
+	<title>MySQL (一) - 排错指南</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="MySQL-一-排错指南"><a href="#MySQL-一-排错指南" class="headerlink" title="MySQL (一) - 排错指南"></a>MySQL (一) - 排错指南</h2><h3 id="1-基础知识"><a href="#1-基础知识" class="headerlink" title="1 基础知识"></a>1 基础知识</h3><h4 id="语法错误"><a href="#语法错误" class="headerlink" title="语法错误"></a>语法错误</h4><p>(1) 使用<strong>反引号</strong>:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">SELECT</span> <span class="string">`id`</span> <span class="keyword">FROM</span> <span class="string">`t1`</span> <span class="keyword">WHERE</span> <span class="string">`accessible`</span> = <span class="number">1</span>;</div></pre></td></tr></table></figure>
+<p>(2) 通过<strong>通用查询日志</strong>来记录你的每次查询:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># 临时打开通用查询日志</span></div><div class="line">mysql&gt; SET GLOBAL general_log=<span class="string">'on'</span>;</div><div class="line"><span class="comment"># 将日志记录记录在表中</span></div><div class="line">mysql&gt; SET GLOBAL log_output=<span class="string">'table'</span>;</div><div class="line"><span class="comment"># 查询通用日志记录表</span></div><div class="line">mysql&gt; SELECT * FROM mysql.general_log;</div></pre></td></tr></table></figure>
+<h4 id="SELECT-返回错误的结果"><a href="#SELECT-返回错误的结果" class="headerlink" title="SELECT 返回错误的结果"></a>SELECT 返回错误的结果</h4><p>(1) <code>EXPLAIN EXTENDED</code> 命令加 <code>SHOW WARNINGS</code> 命令:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mysql&gt; EXPLAIN EXTENDED SELECT count(*) FROM items WHERE id IN (SELECT id FROM items_links);</div><div class="line">mysql&gt; SHOW WARNINGS;</div></pre></td></tr></table></figure>
+<p>在 <code>EXPLAIN EXTENDED</code> 之后，使用 <code>SHOW WARNINGS</code> 命令能够<strong>查看查询是如何优化与执行的</strong>。</p>
+<h4 id="获取查询信息"><a href="#获取查询信息" class="headerlink" title="获取查询信息"></a>获取查询信息</h4><p>(1) 使用 <code>perror</code> 获取错误码对应的错误字符串，注意是在 <code>shell</code> 中获取的:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$perror 150</div></pre></td></tr></table></figure>
+<h4 id="慢查询"><a href="#慢查询" class="headerlink" title="慢查询"></a>慢查询</h4><p>通过 <code>EXPLAIN</code> 信息调优查询</p>
+<p>我们要重点观察两个数据:</p>
+<ul>
+<li><strong>type</strong>: 连接的执行方式</li>
+<li><strong>rows</strong>: 查询执行过程中检查的行数的估计</li>
+</ul>
+<p><code>type</code> 的类型:</p>
+<ul>
+<li><strong>type: ALL</strong>: 没有索引，读取所有行</li>
+<li><strong>type: index</strong>: 只有索引树被扫描</li>
+<li><strong>type: ref</strong>: 只使用了索引的最左前缀，或者索引不是 <code>UNIQUE</code> 和 <code>PRIMARY KEY</code></li>
+<li><strong>type: eq_ref</strong>: 唯一索引，非唯一的行永远不会产生 <code>eq_ref</code> 或者更好的类型</li>
+<li><strong>type: const</strong>: 确定最多只会有一行匹配</li>
+</ul>
+<p>避免在生产环境中使用 <code>IGNORE INDEX</code> 和 <code>FORCE INDEX</code>。</p>
+<h4 id="存储引擎问题"><a href="#存储引擎问题" class="headerlink" title="存储引擎问题"></a>存储引擎问题</h4><ul>
+<li><strong>MyISAM</strong>: <code>table_name.frm</code>: 包含表的结构，<code>table_name.MYD</code> 包含存储数据，<code>table_name.MYI</code> 保存索引:</li>
+</ul>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mysql&gt; CHECK TABLE t2;</div><div class="line">mysql&gt; REPAIR TABLE t2;</div></pre></td></tr></table></figure>
+<p>也可以使用工具 <code>mysqlcheck</code> 命令来检查。</p>
+<h3 id="2-并发问题"><a href="#2-并发问题" class="headerlink" title="2 并发问题"></a>2 并发问题</h3><blockquote>
+<p>InnoDB 引擎使用简写的 S 代表读锁/共享锁，用 X 代表写锁/排它锁</p>
+</blockquote>
+<h4 id="2-1-表锁"><a href="#2-1-表锁" class="headerlink" title="2.1 表锁"></a>2.1 表锁</h4><p>当访问表并且该表所使用的存储引擎支持表锁的时候，即会产生表锁，比如 MyISAM 引擎。当你怀疑是并发线程影响了查询的时候，使用 <code>SHOW PROCESSLIST</code> 命令查看状态:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mysql&gt; SHOW PROCESSLIST;</div><div class="line">mysql&gt; SELECT * FROM INFORMATION_SCHEMA.PROCESSLIST;</div></pre></td></tr></table></figure>
+<p>然后重点观察 <code>status</code> 和 <code>info</code> 这两行的数据</p>
+<h4 id="2-2-行锁"><a href="#2-2-行锁" class="headerlink" title="2.2 行锁"></a>2.2 行锁</h4><p>InnoDB 是当前使用行锁的主要的存储引擎。为了确定 InnoDB 中一个请求是否阻塞，可以执行 <code>SHOW ENGINE INNODB STATUS</code> 命令，该命令是 InnoDB 监控器机制的一部分:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysql&gt; SHOW ENGINE INNODB STATUS;</div></pre></td></tr></table></figure>
+<h4 id="2-3-事务"><a href="#2-3-事务" class="headerlink" title="2.3 事务"></a>2.3 事务</h4><p><strong>未提交的事务会持有锁</strong>，哪怕该影响到特定行的查询在数小时前已经结束了。当执行多语句事务的时候，应该尽可能及时提交事务，哪怕事务不会修改任何航，也不要在事务最后的更新都已经完成的情况下仍不提交事务。</p>
+<p>InnoDB 引擎有内部的死锁探测器，当其发现有死锁的时候，它会回滚其中的一个事务，并会报告一个立即可见的错误。<code>SHOW ENGINE INNODB STATUS</code> 命令也可以用来<strong>检查死锁的一些信息</strong></p>
+<h4 id="2-4-元数据锁"><a href="#2-4-元数据锁" class="headerlink" title="2.4 元数据锁"></a>2.4 元数据锁</h4><p>为了确保数据一致性，在有其他事务使用表的情况下，<strong>对该表的 DDL 操作应该阻塞</strong>。</p>
+<h4 id="2-5-并发如何影响性能"><a href="#2-5-并发如何影响性能" class="headerlink" title="2.5 并发如何影响性能"></a>2.5 并发如何影响性能</h4><p>如果一个查询突然开始执行缓慢，第一步应该确认它是否是合理优化过的，最简单的确认方式就是<strong>在一个隔离的、单线程的环境里去执行该查询</strong>。如果该查询仍然执行缓慢，<strong>那么它或者需要优化，或者最近大量更新操作导致索引统计数据过期了</strong>。如果一个查询在单线程环境中很快完成但是在多线程环境中执行缓慢，这基本可以确定<strong>你遇到了并发问题</strong>。</p>
+<p>要打开 InnoDB 监控器，需要在任何数据库中创建一个叫做 <code>innodb_monitor</code> 的表:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$mysql test -A</div><div class="line">mysql&gt; CREATE TABLE innodb_monitor(f1 INT) ENGINE=InnoDB;</div></pre></td></tr></table></figure>
+<p>启动 MySQL 命令客户端时候的 <strong>-A</strong> 选项在你尝试调试与并发相关的问题时非常有用。正常情况下，客户端会请求可用表列表，然后，客户端会被其他连接持有的锁阻塞，这回阻塞客户端调试，选项 <strong>-A</strong> 会组织表列表请求。</p>
+<h4 id="2-6-复制和并发"><a href="#2-6-复制和并发" class="headerlink" title="2.6 复制和并发"></a>2.6 复制和并发</h4><p>当排查复制问题的时候，需要记住主服务器总是多线程的，而从服务器在单个线程中执行所有更新。<strong>每个事务都只会在其提交的时候向二进制日志中写入数据</strong></p>
+<h3 id="3-配置选项对服务器的影响"><a href="#3-配置选项对服务器的影响" class="headerlink" title="3 配置选项对服务器的影响"></a>3 配置选项对服务器的影响</h3><p><code>mysqladmin</code> 实用工具有一个 <code>ping</code> 命令，它能够报告 MySQL 服务器当前的状态是运行还是停止:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysqladmin -hlocalhost -p3306 ping</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">SET [SESSION] var_name=value</div><div class="line">SET GLOBAL var_name=value</div><div class="line">SHOW [SESSION|GLOBAL| VARIABLES LIKE &apos;变量名称&apos;</div></pre></td></tr></table></figure>
+<h3 id="4-MySQL-环境"><a href="#4-MySQL-环境" class="headerlink" title="4 MySQL 环境"></a>4 MySQL 环境</h3><p>Linux/UNIX 上可以通过 <code>vmstat</code> 来查看 <code>mysqld</code> 是否有大量磁盘交换。使用 <a href="https://github.com/akopytov/sysbench" target="_blank" rel="external">sysbench</a> 来测试数据库和操作系统性能:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># install sysbench</span></div><div class="line">sudo apt install sysbench</div><div class="line">man sysbench</div><div class="line"></div><div class="line"><span class="comment"># CPU benchmark</span></div><div class="line">sysbench --<span class="built_in">test</span>=cpu --cpu-max-prime=20000 run</div><div class="line"></div><div class="line"><span class="comment"># 1. Create a 150G file</span></div><div class="line">sysbench --<span class="built_in">test</span>=fileio --file-total-size=150G prepare</div><div class="line"><span class="comment"># 2. File benchmark</span></div><div class="line">sysbench --<span class="built_in">test</span>=fileio --file-total-size=150G --file-test-mode=rndrw --init-rng=on --max-time=300 --max-requests=0 run</div><div class="line"><span class="comment"># 3. Clean file</span></div><div class="line">sysbench --<span class="built_in">test</span>=fileio --file-total-size=150G cleanup</div><div class="line"></div><div class="line"><span class="comment"># 1. Create a `test` table</span></div><div class="line">sysbench --<span class="built_in">test</span>=oltp --oltp-table-size=1000000 --mysql-db=<span class="built_in">test</span> --mysql-user=root --mysql-password=yourrootsqlpassword prepare</div><div class="line"><span class="comment"># 2. MySQL benchmark</span></div><div class="line">sysbench --<span class="built_in">test</span>=oltp --oltp-table-size=1000000 --mysql-db=<span class="built_in">test</span> --mysql-user=root --mysql-password=yourrootsqlpassword --max-time=60 --oltp-read-only=on --max-requests=0 --num-threads=8 run</div><div class="line"><span class="comment"># 3. Clean `test` table</span></div><div class="line">sysbench --<span class="built_in">test</span>=oltp --mysql-db=<span class="built_in">test</span> --mysql-user=root --mysql-password=yourrootsqlpassword cleanup</div></pre></td></tr></table></figure>
+<p>一个小例子说明硬件延迟是如何影响一条普通的 <code>UPDATE</code> 查询的，我们将自动提交打开，并同是打开二进制日志文件:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">UPDATE</span> test_rrbs <span class="keyword">SET</span> f1 = <span class="keyword">md5</span>(<span class="keyword">id</span>*<span class="number">2</span>) <span class="keyword">WHERE</span> <span class="keyword">id</span> <span class="keyword">BETWEEn</span> <span class="number">200000</span> <span class="keyword">AND</span> <span class="number">300000</span>;</div></pre></td></tr></table></figure>
+<p>这个简单的查询会在下面的情况下遭遇延迟:</p>
+<ol>
+<li>客户端发送命令到服务端经历半个 <code>RTT</code></li>
+<li>执行 <code>UPDATE</code> 的 <code>WHERE</code> 子句，<code>mysqld</code> 读磁盘</li>
+<li>由于自动提交开启 <code>mysqld</code> 会对此事务做一个 <code>fsync</code> 调用</li>
+<li>为写入二进制日志文件 <code>mysqld</code> 做一次 <code>fsync</code> 调用</li>
+<li>为提交改变 <code>mysqld</code> 做一次 <code>fsync</code> 调用</li>
+<li>客户端接收到来自服务器的结果，这是 <code>RTT</code> 的另一半</li>
+</ol>
+<h3 id="5-复制故障诊断"><a href="#5-复制故障诊断" class="headerlink" title="5 复制故障诊断"></a>5 复制故障诊断</h3><p>查看复制状态信息的有用命令，从库上运行:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysql&gt; SHOW SLAVE STATUS;</div></pre></td></tr></table></figure>
+<p><a href="https://dev.mysql.com/doc/refman/5.7/en/mysqlbinlog.html" target="_blank" rel="external"><code>mysqlbinlog</code></a> 将二进制日志文件转为可视的格式</p>
+<h3 id="6-问题排查技术与工具"><a href="#6-问题排查技术与工具" class="headerlink" title="6 问题排查技术与工具"></a>6 问题排查技术与工具</h3><p>慢查询日志: 记录运行时间超过 <code>long_query_time</code> 秒的查询，该变量的默认值是 10</p>
+<p>推荐书籍:</p>
+<ul>
+<li>《Expert MySQL》</li>
+<li>《Understanding MySQL Internals》</li>
+<li>《MySQL 5.1 Plugin Development》</li>
+<li>《High Performance MySQL》</li>
+<li>《MySQL High Availability》</li>
+</ul>
+<p>收集信息的工具:</p>
+<ul>
+<li><a href="https://dev.mysql.com/doc/refman/5.7/en/information-schema.html" target="_blank" rel="external">Information Schema</a></li>
+</ul>
+<h3 id="7-最佳实践"><a href="#7-最佳实践" class="headerlink" title="7 最佳实践"></a>7 最佳实践</h3><p>无</p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="http://www.cnblogs.com/zhanjindong/p/3439042.html#type" target="_blank" rel="external">MySQL优化—工欲善其事，必先利其器之EXPLAIN</a></li>
+<li><a href="https://item.jd.com/11741440.html" target="_blank" rel="external">《MySQL 排错指南》</a></li>
+</ul>
+
+
+
+
+
+
+</body>
+</html>

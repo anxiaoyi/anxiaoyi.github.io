@@ -1,0 +1,41 @@
+<html>
+<head>
+	
+	<title>MySQL_High_Availability</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="MySQL-High-Availability"><a href="#MySQL-High-Availability" class="headerlink" title="MySQL_High_Availability"></a>MySQL_High_Availability</h2><p><code>my.cnf</code> 位置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/etc/mysql/mysql.conf.d/mysqld.cnf</div></pre></td></tr></table></figure>
+<p>配置 Master:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">[mysqld]</div><div class="line">#</div><div class="line"># * Basic Settings</div><div class="line">#</div><div class="line">user        = mysql</div><div class="line">pid-file    = /var/run/mysqld/mysqld.pid</div><div class="line">socket      = /var/run/mysqld/mysqld.sock</div><div class="line">port        = 3306</div><div class="line">basedir     = /usr</div><div class="line">datadir     = /var/lib/mysql</div><div class="line">tmpdir      = /tmp</div><div class="line"></div><div class="line"># 添加如下三行</div><div class="line"># 二进制日志产生的所有文件的基本名</div><div class="line">log-bin     = master-bin</div><div class="line"># 二进制索引文件的文件名</div><div class="line">log-bin-index = master-bin.index</div><div class="line"># 每个服务器都有一个唯一的服务器 ID</div><div class="line">server-id   = 1</div></pre></td></tr></table></figure>
+<p>重启 Master 使配置生效:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo service mysql restart</div></pre></td></tr></table></figure>
+<p>Slave 启动一个标准的客户端连到 Master，并请求 Master 将所有的改动转储给它。Slave 连接时要求 Master 上有一个特殊复制权限的用户:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mysql&gt; CREATE USER repl_user;</div><div class="line">mysql&gt; GRANT REPLICATION SLAVE ON *.* TO repl_user IDENTIFIED BY 'xyzzy';</div></pre></td></tr></table></figure>
+
+
+
+
+
+
+</body>
+</html>

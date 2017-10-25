@@ -1,0 +1,77 @@
+<html>
+<head>
+	
+	<title>Write Solid Code</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="Write-Solid-Code"><a href="#Write-Solid-Code" class="headerlink" title="Write Solid Code"></a>Write Solid Code</h2><h3 id="变量名的力量"><a href="#变量名的力量" class="headerlink" title="变量名的力量"></a>变量名的力量</h3><hr>
+<p>最重要的考虑事项是: <strong>该名字要完全、准确地描述出该变量所代表的事物</strong></p>
+<hr>
+<p><strong>当变量名的平均长度在 10 到 16 个字符的时候</strong>，调试程序所需花费的力气是最小的。</p>
+<hr>
+<p><strong>常用对仗词</strong>:</p>
+<p><img src="17-08-03-11:54:28_274_384.png" alt=""></p>
+<hr>
+<p><strong>为状态变量取一个比 <code>flag</code> 更好的名字</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">if</span> (dataReady) &#123;&#125;</div><div class="line"><span class="keyword">if</span> (characterType &amp; PRINTABLE_CHAR) &#123;&#125;</div><div class="line"><span class="keyword">if</span> (reportType == REPORTYPE_ANNUAL) &#123;&#125;</div><div class="line"><span class="keyword">if</span> (recalcNeeded == <span class="keyword">false</span>) &#123;&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>Naming Boolean Variables</strong>:</p>
+<ul>
+<li><code>done, error, found, success, ok</code></li>
+</ul>
+<h3 id="防御式编程"><a href="#防御式编程" class="headerlink" title="防御式编程"></a>防御式编程</h3><p>在恰当的抽象层次抛出异常:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Employee</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="comment">// 此处声明的异常位于不一致的抽象层次</span></div><div class="line">    <span class="function"><span class="keyword">public</span> TaxId <span class="title">getTaxId</span><span class="params">()</span> <span class="keyword">throws</span> EOFException </span>&#123;</div><div class="line">        ...</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><code>GetTaxId()</code> 将更底层的异常传递给其调用方，暴露了自身的一些实现细节，这就使得子程序的调用方代码不是与 <code>Employee</code> 类的代码耦合，而是与比 <code>Employee</code> 类层次更低的抛出 <code>EOFException</code> 异常的代码耦合起来了，相反，应该像下面这样:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Employee</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> TaxId <span class="title">GetTaxId</span><span class="params">()</span> <span class="keyword">throws</span> EmployeeDataNotAvailable </span>&#123;</div><div class="line">        ...</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="关键的构建决策"><a href="#关键的构建决策" class="headerlink" title="关键的构建决策"></a>关键的构建决策</h3><p>高级语言的语句与等效的 <code>C</code> 代码语句行数之比:</p>
+<p><img src="17-08-03-14:52:27_829_283.png" alt=""></p>
+<hr>
+<p>软件的首要技术使命: <strong>管理复杂度</strong></p>
+<hr>
+<p>类的接口应该尽可能少地暴露其内部工作机制，类很像冰山: 八分之七位于水面以下，而你只能看到水面上的八分之一:</p>
+<p><img src="17-08-03-15:01:40_412_390.png" alt=""></p>
+<h3 id="API-设计参考"><a href="#API-设计参考" class="headerlink" title="API 设计参考"></a>API 设计参考</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Picasso.with(context).load(<span class="string">"http://i.imgur.com/DvpvklR.png"</span>).into(imageView);</div></pre></td></tr></table></figure>
+<h3 id="异常封装的架构模式应用"><a href="#异常封装的架构模式应用" class="headerlink" title="异常封装的架构模式应用"></a>异常封装的架构模式应用</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CreateCommand</span> <span class="keyword">extends</span> <span class="title">CliCommand</span> </span>&#123;&#125;</div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CloseCommand</span> <span class="keyword">extends</span> <span class="title">CliCommand</span> </span>&#123;&#125;</div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DeleteCommand</span> <span class="keyword">extends</span> <span class="title">CliCommand</span> </span>&#123;&#125;</div></pre></td></tr></table></figure>
+<p>对于基类 <code>CliCommand</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">abstract</span> <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CliCommand</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">abstract</span> <span class="keyword">public</span> CliCommand <span class="title">parse</span><span class="params">(String cmdArgs[])</span> <span class="keyword">throws</span> CliParseException</span>;</div><div class="line">    <span class="function"><span class="keyword">abstract</span> <span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">exec</span><span class="params">()</span> <span class="keyword">throws</span> CliException</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>上述地方有两个地方值得借鉴：</p>
+<ul>
+<li><strong>在基类的方法中抛出异常</strong></li>
+<li><strong>定义统一的异常基类</strong>:</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CliParseException</span> <span class="keyword">extends</span> <span class="title">CliException</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">CliParseException</span><span class="params">(ParseException parseException)</span> </span>&#123;</div><div class="line">        <span class="keyword">super</span>(parseException);</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MalformedPathException</span> <span class="keyword">extends</span> <span class="title">CliException</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MalformedPathException</span><span class="params">(String message)</span> </span>&#123;</div><div class="line">        <span class="keyword">super</span>(message);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p>子类<strong>封装</strong>自身抛出的异常，以一种统一的方式<strong>重新抛出</strong>异常:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@Override</span></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">exec</span><span class="params">()</span> <span class="keyword">throws</span> CliException </span>&#123;</div><div class="line">    <span class="keyword">try</span> &#123;</div><div class="line">        String newPath = zk.create(path, data, acl, flags, <span class="keyword">new</span> Stat(), ttl)</div><div class="line">    &#125; <span class="keyword">catch</span>(IllegalArgumentException ex) &#123;</div><div class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> MalformedPathException(ex.getMessage());</div><div class="line">    &#125; <span class="keyword">catch</span>(KeeperException.EphemeralOnLocalSessionException e) &#123;</div><div class="line">        err.println(<span class="string">"Unable to create ephemeral node on a local session"</span>);</div><div class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> CliWrapperException(e);</div><div class="line">    &#125; <span class="keyword">catch</span> (KeeperException.InvalidACLException ex) &#123;</div><div class="line">        err.println(ex.getMessage());</div><div class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> CliWrapperException(ex);</div><div class="line">    &#125; <span class="keyword">catch</span> (KeeperException|InterruptedException ex) &#123;</div><div class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> CliWrapperException(ex);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="序列化-反序列化架构"><a href="#序列化-反序列化架构" class="headerlink" title="序列化/反序列化架构"></a>序列化/反序列化架构</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Record</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">serialize</span><span class="params">(OutputArchive archive, String tag)</span></span></div><div class="line"><span class="function">        <span class="keyword">throws</span> IOException</span>;</div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">deserialize</span><span class="params">(InputArchive archive, String tag)</span></span></div><div class="line"><span class="function">        <span class="keyword">throws</span> IOException</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>其中 <code>OutputArchive.java</code> 如下:</p>
+<p><img src="2017_09_25_15_44_13.png" alt=""></p>
+<p><code>InputArchive.java</code> 如下所示:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">InputArchive</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">byte</span> <span class="title">readByte</span><span class="params">(String tag)</span> <span class="keyword">throws</span> IOException</span>;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">readBool</span><span class="params">(String tag)</span> <span class="keyword">throws</span> IOException</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+
+
+
+
+
+
+</body>
+</html>

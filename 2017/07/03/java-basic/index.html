@@ -1,0 +1,275 @@
+<html>
+<head>
+	
+	<title>Java Basic</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="Java-Basic"><a href="#Java-Basic" class="headerlink" title="Java Basic"></a>Java Basic</h2><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">sudo add-apt-repository ppa:webupd8team/java</div><div class="line">sudo apt update</div><div class="line">sudo apt install oracle-java8-set-default</div></pre></td></tr></table></figure>
+<hr>
+<p>手动安装:</p>
+<ul>
+<li>下载 a <code>.tar.gz</code> from <a href="http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html" target="_blank" rel="external">Oracle</a> (here I will be using <code>jdk-8u20-linux-x64.tar.gz</code>);</li>
+<li>解压</li>
+<li><code>sudo mv /path/to/jdk1.8.0_20 /usr/lib/jvm/oracle_jdk8</code></li>
+<li>Before addin this jdk as an alternative, you can see that the new alternative is not listed:</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sudo update-alternatives --query java</div><div class="line">sudo update-alternatives --query javac</div></pre></td></tr></table></figure>
+<ul>
+<li>Next, add the new jdk alternatives (2000 is the priority and feel free to pick a different number):</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/oracle_jdk8/jre/bin/java 2000</div><div class="line">sudo update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/oracle_jdk8/bin/javac 2000</div></pre></td></tr></table></figure>
+<ul>
+<li>Now you should see the new jdk listed and you can switch between the alternatives with this command:</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sudo update-alternatives --config java</div><div class="line">sudo update-alternatives --config javac</div></pre></td></tr></table></figure>
+<hr>
+<p>安装完成后记得，导出 <code>Java</code> 常用命令的路径到环境变量 <code>PATH</code> 中:</p>
+<p><img src="2017_09_01_12_19_07.png" alt=""></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">export</span> PATH=<span class="variable">$PATH</span>:<span class="string">"/usr/lib/jvm/oracle_jdk8/jdk1.8.0_144/bin"</span></div></pre></td></tr></table></figure>
+<ul>
+<li>参考: <a href="https://askubuntu.com/questions/521145/how-to-install-oracle-java-on-ubuntu-14-04" target="_blank" rel="external">How to install Oracle Java on Ubuntu 14.04?</a></li>
+</ul>
+<h3 id="如何获取源代码"><a href="#如何获取源代码" class="headerlink" title="如何获取源代码"></a>如何获取源代码</h3><p><img src="2017_09_03_20_52_31.png" alt=""></p>
+<p>然而这部分代码不包含 <code>rt.jar</code> 的源码</p>
+<h3 id="Java-Enum"><a href="#Java-Enum" class="headerlink" title="Java Enum"></a>Java Enum</h3><p>(1) Java 枚举内部可以放置静态方法:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">public enum JavaBeanAccessor &#123;</div><div class="line"></div><div class="line">    /** Field accessor. */</div><div class="line">    FIELD,</div><div class="line">    /** Method accessor.*/</div><div class="line">    METHO,D</div><div class="line">    /** Method prefer to field. */</div><div class="line">    ALL;</div><div class="line"></div><div class="line">    public static boolean isAccessByMethod(JavaBeanAccessor accessor) &#123;</div><div class="line">        <span class="built_in">return</span> METHOD.equals(accessor) || ALL.equals(accessor);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="Java-排序"><a href="#Java-排序" class="headerlink" title="Java 排序"></a>Java 排序</h3><p>关于 <code>Comparable&lt;T&gt;</code> 接口: Returns a <strong>负数, 0, 正数</strong> as this object is <strong>小于, 等于, 大于</strong> the specified object. 默认是按照 Sorts the specified list into <strong>升序</strong>排列:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Collections.sort(appSiteList);</div><div class="line">Collections.reverse(appSiteList);</div></pre></td></tr></table></figure>
+<h3 id="Java-Operate-Time"><a href="#Java-Operate-Time" class="headerlink" title="Java Operate Time"></a>Java Operate Time</h3><ul>
+<li><a href="https://stackoverflow.com/questions/999172/how-to-parse-a-date" target="_blank" rel="external">How to parse date</a></li>
+<li>如何加减时间</li>
+</ul>
+<hr>
+<p><strong>字符串转为 <code>java.util.Date</code> 对象</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">String input = <span class="string">"Thu Jun 18 20:56:02 EDT 2009"</span>;</div><div class="line">SimpleDateFormat parser = <span class="keyword">new</span> SimpleDateFormat(<span class="string">"EEE MMM d HH:mm:ss zzz yyyy"</span>, Locale.ENGLISH);</div><div class="line">Date date = parser.parse(input);</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>Java 8 字符串转为 <code>java.util.Date</code> 对象</strong>:</p>
+<p>If you happen to be on Java 8 already, then use <a href="https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html" target="_blank" rel="external"><code>DateTimeFormatter</code></a> (also here, click the link to see all predefined formatters and available format patterns; <a href="https://docs.oracle.com/javase/tutorial/datetime/iso/format.html" target="_blank" rel="external">the tutorial is available here</a>).</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">String string = <span class="string">"January 2, 2010"</span>;</div><div class="line">DateTimeFormatter formatter = DateTimeFormatter.ofPattern(<span class="string">"MMMM d, yyyy"</span>, Locale.ENGLISH);</div><div class="line">LocalDate date = LocalDate.parse(string, formatter);</div><div class="line">System.out.println(date); <span class="comment">// 2010-01-02</span></div></pre></td></tr></table></figure>
+<p>如何将 <code>LocalDate</code> 转为 <code>Date</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">java.util.Date date = java.sql.Date.valueOf(localDate);</div></pre></td></tr></table></figure>
+<hr>
+<p>如何将 <code>java.sql.Time</code> 转为 <code>millseconds</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">time.getTime()</div></pre></td></tr></table></figure>
+<hr>
+<p>如何 <code>millseconds</code> 创建 <code>java.sql.Time</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="comment">/**</span></div><div class="line"><span class="comment"> * Constructs a &lt;code&gt;Time&lt;/code&gt; object using a milliseconds time value.</span></div><div class="line"><span class="comment"> *</span></div><div class="line"><span class="comment"> * <span class="doctag">@param</span> time milliseconds since January 1, 1970, 00:00:00 GMT;</span></div><div class="line"><span class="comment"> *             a negative number is milliseconds before</span></div><div class="line"><span class="comment"> *               January 1, 1970, 00:00:00 GMT</span></div><div class="line"><span class="comment"> */</span></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="title">Time</span><span class="params">(<span class="keyword">long</span> time)</span> </span>&#123;</div><div class="line">    <span class="keyword">super</span>(time);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><strong><code>java.util.Date</code> 对象格式化为字符串</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">SimpleDateFormat formatter = <span class="keyword">new</span> SimpleDateFormat(<span class="string">"yyyy-MM-dd"</span>, Locale.ENGLISH);</div><div class="line">String formattedDate = formatter.format(date);</div></pre></td></tr></table></figure>
+<p>Note the importance of explicit <code>Locale</code> argument. If you omit it, then it will use the <a href="http://docs.oracle.com/javase/8/docs/api/java/util/Locale.html#getDefault--" target="_blank" rel="external">default locale</a> which is not necessarily English as used in the month name of the input string. If the locale doesn’t match with the input string, then you would confusingly get a <code>java.text.ParseException</code> even though when the format pattern seems valid.</p>
+<hr>
+<p><strong>时间戳转为 <code>java.util.Date</code></strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">new</span> java.util.Date(System.currentTimeMillis())</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>时间加减</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">LocalDateTime currentTime = LocalDateTime.now(ZoneId.of(<span class="string">"UTC"</span>));</div><div class="line">LocalDateTime nextTime = currentTime.plusHours(<span class="number">12</span>);</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>格式化模式</strong>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">Letter  Date or Time Component  Presentation        Examples</div><div class="line">------  ----------------------  ------------------  -------------------------------------</div><div class="line">G       Era designator          Text                AD</div><div class="line">y       Year                    Year                1996; 96</div><div class="line">Y       Week year               Year                2009; 09</div><div class="line">M/L     Month in year           Month               July; Jul; 07</div><div class="line">w       Week in year            Number              27</div><div class="line">W       Week in month           Number              2</div><div class="line">D       Day in year             Number              189</div><div class="line">d       Day in month            Number              10</div><div class="line">F       Day of week in month    Number              2</div><div class="line">E       Day in week             Text                Tuesday; Tue</div><div class="line">u       Day number of week      Number              1</div><div class="line">a       Am/pm marker            Text                PM</div><div class="line">H       Hour in day (0-23)      Number              0</div><div class="line">k       Hour in day (1-24)      Number              24</div><div class="line">K       Hour in am/pm (0-11)    Number              0</div><div class="line">h       Hour in am/pm (1-12)    Number              12</div><div class="line">m       Minute in hour          Number              30</div><div class="line">s       Second in minute        Number              55</div><div class="line">S       Millisecond             Number              978</div><div class="line">z       Time zone               General time zone   Pacific Standard Time; PST; GMT-08:00</div><div class="line">Z       Time zone               RFC 822 time zone   -0800</div><div class="line">X       Time zone               ISO 8601 time zone  -08; -0800; -08:00</div></pre></td></tr></table></figure>
+<hr>
+<p><code>SimpleDateFormat</code> 示例:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">Input string                            Pattern</div><div class="line">------------------------------------    ----------------------------</div><div class="line">2001.07.04 AD at 12:08:56 PDT           yyyy.MM.dd G &apos;at&apos; HH:mm:ss z</div><div class="line">Wed, Jul 4, &apos;01                         EEE, MMM d, &apos;&apos;yy</div><div class="line">12:08 PM                                h:mm a</div><div class="line">12 o&apos;clock PM, Pacific Daylight Time    hh &apos;o&apos;&apos;clock&apos; a, zzzz</div><div class="line">0:08 PM, PDT                            K:mm a, z</div><div class="line">02001.July.04 AD 12:08 PM               yyyyy.MMMM.dd GGG hh:mm aaa</div><div class="line">Wed, 4 Jul 2001 12:08:56 -0700          EEE, d MMM yyyy HH:mm:ss Z</div><div class="line">010704120856-0700                       yyMMddHHmmssZ</div><div class="line">2001-07-04T12:08:56.235-0700            yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSSZ</div><div class="line">2001-07-04T12:08:56.235-07:00           yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSSXXX</div><div class="line">2001-W27-3                              YYYY-&apos;W&apos;ww-u</div></pre></td></tr></table></figure>
+<p>Important note is that <code>SimpleDateFormat</code> is <strong>非线程安全</strong>. In other words, you should <strong>永远不要</strong> declare and assign it as a <strong>静态</strong> or <strong>实例变量</strong> and then reuse from different methods/threads. You should always create it brand new within the method local scope.</p>
+<hr>
+<p>根据 <a href="https://docs.oracle.com/javase/8/docs/api/java/time/package-summary.html" target="_blank" rel="external">The main API for dates, times, instants, and durations</a>，定义在 <code>java.time</code> 包下面的所有类都是 <strong>immutable and thread-safe</strong> 的。</p>
+<h3 id="Java-正则表达式"><a href="#Java-正则表达式" class="headerlink" title="Java 正则表达式"></a>Java 正则表达式</h3><p><strong>查找并替换</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">String oldSequence = <span class="string">"(?&lt;=[A-Z])(%d)"</span>;</div><div class="line">String newSequence = <span class="string">"新的字符串"</span>;</div><div class="line"></div><div class="line">Pattern pattern = Pattern.compile(oldSequence);</div><div class="line">Matcher matcher = pattern.matcher(input);</div><div class="line"></div><div class="line">StringBuffer sb = <span class="keyword">new</span> StringBuffer(input.length());</div><div class="line"><span class="keyword">while</span> (matcher.find()) &#123;</div><div class="line">    <span class="comment">// (%d) 部分将会被替换，(%d) 前面的部分并不会被替换</span></div><div class="line">    matcher.appendReplacement(sb, Matcher.quoteReplacement(<span class="string">"新的字符串"</span>));</div><div class="line">&#125;</div><div class="line">matcher.appendTail(sb);</div><div class="line"></div><div class="line">System.out.println(sb.toString());</div></pre></td></tr></table></figure>
+<hr>
+<p><a href="http://www.rexegg.com/regex-lookarounds.html" target="_blank" rel="external">Mastering Lookahead and Lookbehind</a></p>
+<table>
+<thead>
+<tr>
+<th>Lookaround</th>
+<th>Name</th>
+<th>What it Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>(?=foo)</code></td>
+<td>Lookahead</td>
+<td>Asserts that <strong>what immediately follows</strong> the current position in the string is foo</td>
+</tr>
+<tr>
+<td><code>(?&lt;=foo)</code></td>
+<td>Lookbehind</td>
+<td>Asserts that <strong>what immediately precedes</strong> the current position in the string is foo</td>
+</tr>
+<tr>
+<td><code>(?!foo)</code></td>
+<td>Negative Lookahead</td>
+<td>Asserts that <strong>what immediately follows</strong> the current position in the string <strong>is not</strong> foo</td>
+</tr>
+<tr>
+<td><code>(?&lt;!foo)</code></td>
+<td>Negative Lookbehind</td>
+<td>Asserts that <strong>what immediately precedes</strong> the current position in the string <strong>is not</strong> foo</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><strong>查找匹配的 Group</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">String line = <span class="string">"This order was placed for QT3000! OK?"</span>;</div><div class="line">Pattern pattern = Pattern.compile(<span class="string">"(.*?)(\\d+)(.*)"</span>);</div><div class="line">Matcher matcher = pattern.matcher(line);</div><div class="line"><span class="keyword">while</span> (matcher.find()) &#123;</div><div class="line">    System.out.println(<span class="string">"group 0: "</span> + matcher.group(<span class="number">0</span>));</div><div class="line">    System.out.println(<span class="string">"group 1: "</span> + matcher.group(<span class="number">1</span>));</div><div class="line">    System.out.println(<span class="string">"group 2: "</span> + matcher.group(<span class="number">2</span>));</div><div class="line">    System.out.println(<span class="string">"group 3: "</span> + matcher.group(<span class="number">3</span>));</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>输出:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">group 0: This order was placed for QT3000! OK?</div><div class="line">group 1: This order was placed for QT</div><div class="line">group 2: 3000</div><div class="line">group 3: ! OK?</div></pre></td></tr></table></figure>
+<ul>
+<li><strong><code>group(0)</code></strong>: 总是匹配整个正则表达式能覆盖的所有区域</li>
+</ul>
+<p>Capturing groups are indexed from left to right, <strong>从 1 开始</strong>.  Group zero denotes the entire pattern, so the expression <strong><code>m.group(0)</code></strong> is equivalent to <strong><code>m.group()</code></strong>.</p>
+<p>参考: <a href="https://stackoverflow.com/questions/17969436/java-regex-capturing-groups" target="_blank" rel="external">Java Regex Capturing Groups</a></p>
+<hr>
+<p><strong>Predefined character classes</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>正则表达式</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.</code></td>
+<td>Any character (may or may not match line terminators)</td>
+</tr>
+<tr>
+<td><code>\d</code></td>
+<td>A digit: <code>[0-9]</code></td>
+</tr>
+<tr>
+<td><code>\D</code></td>
+<td>A non-digit: <code>[^0-9]</code></td>
+</tr>
+<tr>
+<td><code>\s</code></td>
+<td>A whitespace character: <code>[ \t\n\x0B\f\r]</code></td>
+</tr>
+<tr>
+<td><code>\S</code></td>
+<td>A non-whitespace character: <code>[^\s]</code></td>
+</tr>
+<tr>
+<td><code>\w</code></td>
+<td>A word character: <code>[a-zA-Z_0-9]</code></td>
+</tr>
+<tr>
+<td><code>\W</code></td>
+<td>A non-word character: <code>[^\w]</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p>正则表达式如下这样写，是可以正确匹配的:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// N: "http://download.pchome.net/ios/list-377-1-1.html"</span></div><div class="line"><span class="comment">// Y: "http://download.pchome.net/ios/list-957-1-1.html"</span></div><div class="line"><span class="comment">// Y: "http://download.pchome.net/ios/list-956-1-1.html"</span></div><div class="line"><span class="keyword">final</span> String PAGINATION_URL_REGEX = <span class="string">"http://download\\.pchome\\.net/ios/list-(955|956|957)-1-\\d+\\.html"</span>;</div></pre></td></tr></table></figure>
+<h3 id="Java-Properties"><a href="#Java-Properties" class="headerlink" title="Java Properties"></a>Java Properties</h3><p><img src="17-08-08-09:57:08_605_310.png" alt=""></p>
+<h3 id="indexOf"><a href="#indexOf" class="headerlink" title="indexOf"></a><code>indexOf</code></h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> index = <span class="string">"abcdefghijklmn"</span>.indexOf( <span class="string">"def"</span> );</div></pre></td></tr></table></figure>
+<p><strong><code>index</code> 的值是指向的 <code>d</code></strong>，而不是 <code>f</code> 的下标:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">   ↓</div><div class="line">abcdefghijklmn</div></pre></td></tr></table></figure>
+<h3 id="Java-异常"><a href="#Java-异常" class="headerlink" title="Java 异常"></a>Java 异常</h3><p><strong>红颜色 are checked exceptions</strong>. Any checked exceptions that may be thrown in a method <strong>must either 被捕获 or declared in the method’s throws clause</strong>. Checked exceptions must be caught <strong>在编译阶段</strong>. Checked exceptions are so called because both the Java compiler and the Java virtual machine check to make sure this rule is obeyed. <strong>绿颜色 are uncheck exceptions</strong>. They are exceptions that are not expected to be recovered, such as null pointer, divide by 0, etc.</p>
+<p><img src="Exception-Hierarchy-Diagram.jpeg" alt=""></p>
+<p><strong>(1) 空指针异常</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Obj</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> Integer status;</div><div class="line">    <span class="function"><span class="keyword">public</span> Integer <span class="title">getStatus</span><span class="params">()</span> </span>&#123;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> STATUS = <span class="number">1</span>;</div><div class="line"><span class="keyword">if</span> (obj.getStatus() == STATUS) &#123;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这句话当 <code>obj.getStatus()</code> 返回 <code>null</code> 的时候，会<strong>直接抛出空指针异常</strong></p>
+<p><strong>(2) Java Doc 注释异常</strong>:</p>
+<p><img src="17-07-28-17:05:46_661_130.png" alt=""></p>
+<p><code>Maven</code> 或者 <code>Gradle</code> 在编译这样的代码的时候，也<strong>有可能报异常</strong>，因此在 <strong>Refactor</strong> 代码的时候，最好采用 <code>Intellij Idea</code> 编译器本身自带的 <code>Refactor</code> 功能来进行代码的重构与优化，避免出现此类错误。</p>
+<p><strong>(3) Java Content-Type 判断错误</strong>:</p>
+<p>仅在 <code>Ubuntu</code> 系统下用 <code>Chrome</code> 浏览器上传 APK 文件，然后服务器这边获取到了 <code>APK</code> 文件的 <code>Content-Type</code>，就仅通过下面这句代码来判断是否是 <code>APK</code> 文件:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">contentType.equals(<span class="string">"application/vnd.android.package-archive"</span>)</div></pre></td></tr></table></figure>
+<p>最终出现的状况就是，在 <code>Windows</code> 和在 <code>Mac</code> 操作系统上，<code>APK</code> 文件都被判断为非 <code>APK</code> 文件了:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">isApk = contentType.equals(<span class="string">"application/octet-stream"</span>) ||</div><div class="line">        contentType.equals(<span class="string">"application/vnd.android.package-archive"</span>);</div></pre></td></tr></table></figure>
+<p>同样的问题也出现在，做的单页面网站<strong>在 <code>Windows</code> 操作系统下</strong>，使用 <code>IE</code> 内核出现各种意想不到的错误与问题。</p>
+<h3 id="Return-from-Finally"><a href="#Return-from-Finally" class="headerlink" title="Return from Finally"></a>Return from Finally</h3><p>下面代码结构的 <code>finally</code> 依然会执行:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">try</span> &#123;</div><div class="line">    <span class="comment">// ...</span></div><div class="line">    <span class="keyword">return</span>;</div><div class="line">&#125; <span class="keyword">finally</span> &#123;</div><div class="line">    <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="Java-较旧的版本安装的问题"><a href="#Java-较旧的版本安装的问题" class="headerlink" title="Java 较旧的版本安装的问题"></a><code>Java</code> 较旧的版本安装的问题</h3><p>下载 <code>Java</code> 较为旧的版本，<a href="http://www.oracle.com/technetwork/java/javasebusiness/downloads/java-archive-downloads-javase5-419410.html" target="_blank" rel="external">官网</a>一般会提供一种叫做 <code>.bin</code> 格式的文件:</p>
+<p><img src="2017_08_31_20_46_17.png" alt=""></p>
+<p>参考 <a href="http://www.oracle.com/technetwork/java/javase/install-linux-64-self-extracting-142068.html" target="_blank" rel="external">JDK Self-Extracting Installation for Linux (64-bit)</a>，其实这种文件的解压很简单，执行下面这些命令就可以进行解压到旁边的文件夹了:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">chmod u+x jdk-1_5_0_22-linux-amd64.bin</div><div class="line">./jdk-1_5_0_22-linux-amd64.bin</div></pre></td></tr></table></figure>
+<h3 id="自定义-Exception-的写法"><a href="#自定义-Exception-的写法" class="headerlink" title="自定义 Exception 的写法"></a>自定义 <code>Exception</code> 的写法</h3><p>一定要记得定义 <strong><code>serialVersionUID</code></strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MQClientException</span> <span class="keyword">extends</span> <span class="title">Exception</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = -<span class="number">5758410930844185841L</span>;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">int</span> responseCode;</div><div class="line">    <span class="keyword">private</span> String errorMessage;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MQClientException</span><span class="params">(String errorMessage, Throwable cause)</span> </span>&#123;</div><div class="line">        <span class="keyword">super</span>(FAQUrl.attachDefaultURL(errorMessage), cause);</div><div class="line">        <span class="keyword">this</span>.responseCode = -<span class="number">1</span>;</div><div class="line">        <span class="keyword">this</span>.errorMessage = errorMessage;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p>为什么一定要定义 <code>serialVersionUID</code>，其实就是因为基类实现了这个接口，<strong>语言就是这么设计的</strong>，作者可能想要能够让这些异常信息在网络上传输:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Throwable</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;&#125;</div></pre></td></tr></table></figure>
+<h3 id="反射"><a href="#反射" class="headerlink" title="反射"></a>反射</h3><p><a href="https://stackoverflow.com/questions/16966629/what-is-the-difference-between-getfields-and-getdeclaredfields-in-java-reflectio" target="_blank" rel="external">https://stackoverflow.com/questions/16966629/what-is-the-difference-between-getfields-and-getdeclaredfields-in-java-reflectio</a></p>
+<h3 id="注解"><a href="#注解" class="headerlink" title="注解"></a>注解</h3><p><img src="2017_09_12_09_19_08.png" alt=""></p>
+<ul>
+<li><code>RetentionPolicy.SOURCE</code>: Discard during the compile. These annotations don’t make any sense after the compile has completed, so they <strong>aren’t written to the bytecode</strong>. Example: <code>@Override</code>, <code>@SuppressWarnings</code></li>
+<li><code>RetentionPolicy.CLASS</code>: Discard during class load. Useful when doing bytecode-level post-processing. Somewhat surprisingly, this is the default. Appear in the decompiled class, but can’t be inspected at run-time with reflection with <code>getAnnotations()</code>.</li>
+<li><font color="red"><strong><code>RetentionPolicy.RUNTIME</code></strong></font>: Do not discard. The annotation should be available for reflection at runtime. Example: <code>@Deprecated</code>. Appear in the decompiled class, and can be inspected at run-time with reflection with <code>getAnnotations()</code>.</li>
+</ul>
+<p><strong>Language level</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> java.lang.annotation.Retention;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.RetentionPolicy;</div><div class="line"></div><div class="line"><span class="meta">@Retention</span>(RetentionPolicy.SOURCE)</div><div class="line"><span class="meta">@interface</span> RetentionSource &#123;&#125;</div><div class="line"></div><div class="line"><span class="meta">@Retention</span>(RetentionPolicy.CLASS)</div><div class="line"><span class="meta">@interface</span> RetentionClass &#123;&#125;</div><div class="line"></div><div class="line"><span class="meta">@Retention</span>(RetentionPolicy.RUNTIME)</div><div class="line"><span class="meta">@interface</span> RetentionRuntime &#123;&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">    <span class="meta">@RetentionSource</span></div><div class="line">    <span class="class"><span class="keyword">class</span> <span class="title">B</span> </span>&#123;&#125;</div><div class="line">    <span class="keyword">assert</span> B.class.getAnnotations().length == <span class="number">0</span>;</div><div class="line"></div><div class="line">    <span class="meta">@RetentionClass</span></div><div class="line">    <span class="class"><span class="keyword">class</span> <span class="title">C</span> </span>&#123;&#125;</div><div class="line">    <span class="keyword">assert</span> C.class.getAnnotations().length == <span class="number">0</span>;</div><div class="line"></div><div class="line">    <span class="meta">@RetentionRuntime</span></div><div class="line">    <span class="class"><span class="keyword">class</span> <span class="title">D</span> </span>&#123;&#125;</div><div class="line">    <span class="keyword">assert</span> D.class.getAnnotations().length == <span class="number">1</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><strong>Bytecode level</strong>: using <code>javap</code> we observe that the <code>Retention.CLASS</code> annotated class gets a <code>RuntimeInvisible</code> class attribute:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">#14 = Utf8               LRetentionClass;</div><div class="line">[...]</div><div class="line">RuntimeInvisibleAnnotations:</div><div class="line">  0: #14()</div></pre></td></tr></table></figure>
+<p>while <code>Retention.RUNTIME</code> annotation gets a <code>RuntimeVisible</code> class attribute:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">#14 = Utf8               LRetentionRuntime;</div><div class="line">[...]</div><div class="line">RuntimeVisibleAnnotations:</div><div class="line">  0: #14()</div></pre></td></tr></table></figure>
+<p>and the <code>Runtime.SOURCE</code> annotated <code>.class</code> does not get any annotation.</p>
+<hr>
+<p><img src="2017_09_12_09_22_08.png" alt=""></p>
+<p>可选 <strong><code>ElementType</code></strong> 类型如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="keyword">enum</span> ElementType &#123;</div><div class="line">    <span class="comment">/** Class, interface (including annotation type), or enum declaration */</span></div><div class="line">    TYPE,</div><div class="line"></div><div class="line">    <span class="comment">/** Field declaration (includes enum constants) */</span></div><div class="line">    FIELD,</div><div class="line"></div><div class="line">    <span class="comment">/** Method declaration */</span></div><div class="line">    METHOD,</div><div class="line"></div><div class="line">    <span class="comment">/** Formal parameter declaration */</span></div><div class="line">    PARAMETER,</div><div class="line"></div><div class="line">    <span class="comment">/** Constructor declaration */</span></div><div class="line">    CONSTRUCTOR,</div><div class="line"></div><div class="line">    <span class="comment">/** Local variable declaration */</span></div><div class="line">    LOCAL_VARIABLE,</div><div class="line"></div><div class="line">    <span class="comment">/** Annotation type declaration */</span></div><div class="line">    ANNOTATION_TYPE,</div><div class="line"></div><div class="line">    <span class="comment">/** Package declaration */</span></div><div class="line">    PACKAGE,</div><div class="line"></div><div class="line">    <span class="comment">/**</span></div><div class="line"><span class="comment">     * Type parameter declaration</span></div><div class="line"><span class="comment">     *</span></div><div class="line"><span class="comment">     * <span class="doctag">@since</span> 1.8</span></div><div class="line"><span class="comment">     */</span></div><div class="line">    TYPE_PARAMETER,</div><div class="line"></div><div class="line">    <span class="comment">/**</span></div><div class="line"><span class="comment">     * Use of a type</span></div><div class="line"><span class="comment">     *</span></div><div class="line"><span class="comment">     * <span class="doctag">@since</span> 1.8</span></div><div class="line"><span class="comment">     */</span></div><div class="line">    TYPE_USE</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="避免无限循环阻塞下面代码的执行"><a href="#避免无限循环阻塞下面代码的执行" class="headerlink" title="避免无限循环阻塞下面代码的执行"></a>避免无限循环阻塞下面代码的执行</h3><p><img src="2017_09_15_11_38_00.png" alt=""></p>
+<p>如图，如果 <code>while(true)</code> 直接写在外面，那么下面的的代码不在执行，必须放在一个新的线程中才能执行。</p>
+<h3 id="定时提交任务"><a href="#定时提交任务" class="headerlink" title="定时提交任务"></a>定时提交任务</h3><p><img src="2017_09_15_22_27_30.png" alt=""></p>
+<h3 id="URI-各部分字段的值"><a href="#URI-各部分字段的值" class="headerlink" title="URI 各部分字段的值"></a>URI 各部分字段的值</h3><p><img src="URI-construct.png" alt=""></p>
+<h3 id="Java-8"><a href="#Java-8" class="headerlink" title="Java 8"></a>Java 8</h3><h3 id="DataOutputStream-vs-ObjectOutputStream"><a href="#DataOutputStream-vs-ObjectOutputStream" class="headerlink" title="DataOutputStream vs ObjectOutputStream"></a><code>DataOutputStream</code> vs <code>ObjectOutputStream</code></h3><p>处理基本类型的时候，这两个没有任何区别。</p>
+<p><code>DataOutputStream</code> and <code>ObjectOutputStream</code>: when handling basic types, there is no difference apart from the header that <code>ObjectOutputStream</code> creates.</p>
+<p>With the <code>ObjectOutputStream</code> class, instances of a class that implements <code>Serializable</code> can be written to the output stream, and can be read back with <code>ObjectInputStream</code>.</p>
+<h3 id="java-sql-Connection"><a href="#java-sql-Connection" class="headerlink" title="java.sql.Connection"></a><code>java.sql.Connection</code></h3><p>在 <code>auto-commit</code> 模式下，执行 <code>rollback()</code> 会抛出 <code>SQLException</code> 异常:</p>
+<p><img src="2017_10_12_20_07_40.png" alt=""></p>
+<h3 id="读取用户输入"><a href="#读取用户输入" class="headerlink" title="读取用户输入"></a>读取用户输入</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> java.util.Scanner;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</div><div class="line">    </div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String...args)</span> </span>&#123;</div><div class="line">        Scanner scanner = Scanner(System.in);</div><div class="line">        <span class="keyword">int</span> n = scanner.nextInt();</div><div class="line">        <span class="comment">// ...</span></div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="ServiceLoader"><a href="#ServiceLoader" class="headerlink" title="ServiceLoader"></a><code>ServiceLoader</code></h3><p>因为其实现了 <code>Iterable</code> 接口:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">ServiceLoader</span>&lt;<span class="title">S</span>&gt;</span></div><div class="line"><span class="class">    <span class="keyword">implements</span> <span class="title">Iterable</span>&lt;<span class="title">S</span>&gt; </span>&#123;</div><div class="line">    <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>所以我们可<strong>遍历</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">_loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class);</div><div class="line"><span class="keyword">for</span> (ServletContainerInitializer sci:_loadedInitializers) &#123;</div><div class="line">    <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="读取配置文件"><a href="#读取配置文件" class="headerlink" title="读取配置文件"></a>读取配置文件</h3><p>从 <code>jar</code> 的<strong>同级目录</strong>读取:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">./ - the root of your program</div><div class="line"> |__ main.jar</div><div class="line"> |__ main.properties</div></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment">//the base folder is ./, the root of the main.properties file  </span></div><div class="line">String path = <span class="string">"./main.properties"</span>;</div><div class="line"><span class="comment">//load the file handle for main.properties</span></div><div class="line">file = <span class="keyword">new</span> FileInputStream(path);</div></pre></td></tr></table></figure>
+<h3 id="Iterable"><a href="#Iterable" class="headerlink" title="Iterable"></a><code>Iterable</code></h3><p><code>ArrayList</code> 实现了 <code>Iterable</code> 接口:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ArrayList</span> <span class="keyword">implements</span> <span class="title">Iterable</span>&lt;<span class="title">E</span>&gt; </span>&#123;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> Iterator&lt;E&gt; <span class="title">iterator</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Itr();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="class"><span class="keyword">class</span> <span class="title">Itr</span> <span class="keyword">implements</span> <span class="title">Iterator</span>&lt;<span class="title">E</span>&gt; </span>&#123;</div><div class="line">        <span class="comment">/**</span></div><div class="line"><span class="comment">         * Index of element to be returned by subsequent call to next.</span></div><div class="line"><span class="comment">         */</span></div><div class="line">        <span class="keyword">int</span> cursor = <span class="number">0</span>;</div><div class="line"></div><div class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">hasNext</span><span class="params">()</span> </span>&#123;</div><div class="line">            <span class="keyword">return</span> cursor != size();</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="function"><span class="keyword">public</span> E <span class="title">next</span><span class="params">()</span> </span>&#123;</div><div class="line">            <span class="keyword">try</span> &#123;</div><div class="line">                <span class="keyword">int</span> i = cursor;</div><div class="line">                E next = get(i);</div><div class="line">                cursor = i + <span class="number">1</span>;</div><div class="line">                <span class="keyword">return</span> next;</div><div class="line">            &#125; <span class="keyword">catch</span> (IndexOutOfBoundsException e) &#123;</div><div class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> NoSuchElementException();</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>所以可以这样 <code>for-each-loop</code> 遍历:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">for</span> (E e:list) &#123;</div><div class="line">    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>A class has to implement the <code>Iterable</code> interface if it wants to have a <code>for-each</code> loop to iterate over its collection. However, the for-each loop can only be used to <strong>cycle through</strong> the collection in the forward direction and <strong>不能修改元素</strong> in this collection. But, if all you want is to <strong>读取</strong> the elements data, then it’s very simple and thanks to Java lambda expression it’s often one liner. For example:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">iterableElements.forEach (x -&gt; System.out.println(x) );</div></pre></td></tr></table></figure>
+<hr>
+<p><strong><code>Iterator</code></strong>:</p>
+<p>This interface enables you to iterate over a collection, <strong>获取和删除</strong> its elements. Each of the collection classes provides a <code>iterator()</code> method that returns an iterator to the start of the collection. The advantage of this interface over iterable is that with this interface you can <strong>add, modify or remove</strong> elements in a collection. But, accessing elements needs a little more code than iterable. For example:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">for</span> (Iterator i = c.iterator(); i.hasNext(); ) &#123;</div><div class="line">    Element e = i.next();    <span class="comment">//Get the element</span></div><div class="line">    System.out.println(e);    <span class="comment">//access or modify the element</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="Java-Code-Segments"><a href="#Java-Code-Segments" class="headerlink" title="Java Code Segments"></a>Java Code Segments</h3><ul>
+<li><a href="http://git.oschina.net/anxiaoyi/code-segments/blob/master/java/ThreadFactoryImpl.java" target="_blank" rel="external"><code>ThreadFactory</code></a></li>
+<li><a href="">使用 <code>HttpClient</code> 发起 <code>POST</code> 请求</a></li>
+<li><a href="http://git.oschina.net/anxiaoyi/code-segments/blob/master/java/ClassLoaderWrapper.java" target="_blank" rel="external"><code>getResourceAsURL</code> 或 <code>getResourceAsStream</code></a></li>
+<li><a href="http://git.oschina.net/anxiaoyi/code-segments/blob/master/java/Reflector.java" target="_blank" rel="external">反射一个类的所有信息</a></li>
+<li><a href="http://git.oschina.net/anxiaoyi/code-segments/blob/master/java/HttpClientExample.java" target="_blank" rel="external"><code>HttpClient</code> 构建 <code>URI</code></a></li>
+<li><a href="http://git.oschina.net/anxiaoyi/code-segments/blob/master/java/AlibabaJSON.java" target="_blank" rel="external">阿里巴巴 <code>JSON</code> 使用</a></li>
+<li><a href="http://git.oschina.net/anxiaoyi/code-segments/blob/master/java/ByteBufferInputStream.java" target="_blank" rel="external"><code>ByteBufferInputStream</code></a></li>
+<li><a href="http://git.oschina.net/anxiaoyi/code-segments/blob/master/java/ByteBufferOutputStream.java" target="_blank" rel="external"><code>ByteBufferOutputStream</code></a></li>
+</ul>
+
+
+
+
+
+
+</body>
+</html>

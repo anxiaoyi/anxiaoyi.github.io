@@ -1,0 +1,47 @@
+<html>
+<head>
+	
+	<title>Linux编程</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h1 id="Linux-编程"><a href="#Linux-编程" class="headerlink" title="Linux 编程"></a>Linux 编程</h1><h2 id="1-File-I-O"><a href="#1-File-I-O" class="headerlink" title="1 File I/O"></a>1 File I/O</h2><p>每个进程都有一个称之为 <strong>file table</strong> 的数据结构:</p>
+<p><img src="screen-shot-2013-02-11-at-11-13-21-am.png" alt=""></p>
+<p>每一个进程都有一个它能打开的文件描述符的最大数量限制，默认是 1024，最高可以设置为 1048576 。按照管理，每一个进程至少有 3 个文件描述符: 0(stdin), 1(stdout), 2(stderr)。默认情况下，子进程将会拥有一份父进程的 file table 拷贝。</p>
+<h3 id="1-1-打开文件"><a href="#1-1-打开文件" class="headerlink" title="1.1 打开文件"></a>1.1 打开文件</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">open</span> <span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">int</span> flags)</span></span>;</div><div class="line"><span class="comment">// 当使用 mode(权限) 参数的时候，必须指定使用了 O_CREAT 标志位</span></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">open</span> <span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">int</span> flags, <span class="keyword">mode_t</span> mode)</span></span>;</div><div class="line"><span class="comment">// 相当于 open(const char *name, O_WRONLY|O_CREAT|O_TRUNC)</span></div><div class="line"><span class="comment">// Yes, this function’s name is missing an e. Ken Thompson, the creator of Unix,</span></div><div class="line"><span class="comment">// once joked that the missing letter was his largest regret in the design of Unix.</span></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">creat</span> <span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">mode_t</span> mode)</span></span>;</div></pre></td></tr></table></figure>
+<p><a href="http://man7.org/linux/man-pages/man2/open.2.html" target="_blank" rel="external">open 函数参考手册</a></p>
+<ul>
+<li><strong>flags</strong>: <code>O_RDONLY</code>, <code>O_WRONLY</code>, <code>O_RDWR</code> …</li>
+<li><strong>谁是文件的拥有者? </strong>: The uid of the file’s owner is the effective uid of the process creating the file. The default behavior is to set the file’s group to the effective gid of the process creating the file.</li>
+</ul>
+<p>The actual permission bits that hit the disk are determined by binary-ANDing the mode argument with the complement of the user’s file creation mask (<code>umask</code>). The permissions of the created file are (<code>mode &amp; ~umask</code>). The <code>umask</code> is a process-specific attribute that is usually set via the login shell but is modifiable by the <code>umask()</code> call, allowing the user to modify the permissions placed on newly created files and directories. 通常是 <code>022</code></p>
+<h3 id="1-2-读取文件"><a href="#1-2-读取文件" class="headerlink" title="1.2 读取文件"></a>1.2 读取文件</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></div><div class="line"><span class="comment">// buf: 数据将会被存储在 buf 区域中</span></div><div class="line"><span class="keyword">ssize_t</span> read (<span class="keyword">int</span> fd, <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> len);</div></pre></td></tr></table></figure>
+<p>A call is made for len bytes, but no bytes are available for reading, the call will block (sleep) until the bytes become available (assuming the file descriptor was not opened in nonblocking mode)</p>
+<p>The call may returns a value less than len, but greater than zero. The read bytes are stored in buf. This can occur because <strong>a signal interrupted the read midway; an error occurred in the middle of the read; more than zero, but less than len bytes’ worth of data was available; or EOF was reached before len bytes were read.</strong> Reissuing the<br>read (with correspondingly updated buf and len values) will read the remaining bytes into the rest of the buffer or indicate the cause of the problem.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">ssize_t</span> ret;</div><div class="line"><span class="keyword">while</span> (len != <span class="number">0</span> &amp;&amp; (ret = read (fd, buf, len)) != <span class="number">0</span>) &#123;</div><div class="line">    <span class="keyword">if</span> (ret == −<span class="number">1</span>) &#123;</div><div class="line">        <span class="keyword">if</span> (errno == EINTR)</div><div class="line">            <span class="keyword">continue</span>;</div><div class="line">        perror (<span class="string">"read"</span>);</div><div class="line">        <span class="keyword">break</span>;</div><div class="line">    &#125;</div><div class="line">    len -= ret;</div><div class="line">    buf += ret;</div><div class="line"> &#125;</div></pre></td></tr></table></figure>
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,47 @@
+<html>
+<head>
+	
+	<title>ZooKeeper源码分析(二) - Ping, Ping, Ping</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="ZooKeeper源码分析-二-Ping-Ping-Ping"><a href="#ZooKeeper源码分析-二-Ping-Ping-Ping" class="headerlink" title="ZooKeeper源码分析(二) - Ping, Ping, Ping"></a>ZooKeeper源码分析(二) - Ping, Ping, Ping</h2><p>在客户端与服务器建立连接之后，那么接下来客户端就开始不停地对服务器发送 <strong>Ping, Ping, Ping</strong> 心跳包检测了。当空闲时间 idle 超过 timeout 时间的时候，将会调用 <code>sendPing</code> 方法，默认情况下大概是 2 秒钟发送一次:</p>
+<p><img src="/2017/05/18/ZooKeeper源码分析二/17-05-18-09:43:03_885_614.png" alt=""></p>
+<p>lastHeard 是上一次读写操作的时间，是在进行完 <code>doIO</code> 操作之后进行的:</p>
+<p><img src="/2017/05/18/ZooKeeper源码分析二/17-05-18-09:57:47_849_420.png" alt=""></p>
+<p>当发送完 Ping 包之后，timeout 时间被重置为 readTimeout 时间，当读取到来自服务器的响应的时候，timeout 又被重置为 readTimeout 时间的一半，这个时候又可以发送心跳包了:</p>
+<p><img src="/2017/05/18/ZooKeeper源码分析二/17-05-18-09:55:35_570_150.png" alt=""></p>
+<p><code>sendPing</code> 方法送入一个 <code>Packet</code> 到 <code>outgoingQueue</code> 队列，发送的数据格式如下:</p>
+<p><img src="/2017/05/18/ZooKeeper源码分析二/17-05-18-10:26:51_308_123.png" alt=""></p>
+<p>与此相对应，服务器端的 <code>FinalRequestProcessor</code> 收到类型为 <code>OpCode.ping</code> 的请求之后，便会发送一个响应过去:</p>
+<p><img src="/2017/05/18/ZooKeeper源码分析二/17-05-18-10:34:29_903_214.png" alt=""></p>
+<p>数据格式如下:</p>
+<p><img src="/2017/05/18/ZooKeeper源码分析二/17-05-18-10:38:18_379_112.png" alt=""></p>
+<p>客户端在收到 <code>ping</code> 的响应之后直接丢弃掉:</p>
+<p><img src="/2017/05/18/ZooKeeper源码分析二/17-05-18-10:40:37_573_213.png" alt=""></p>
+
+
+
+
+
+
+</body>
+</html>

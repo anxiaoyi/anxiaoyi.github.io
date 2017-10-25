@@ -1,0 +1,50 @@
+<html>
+<head>
+	
+	<title>网站架构</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="网站架构"><a href="#网站架构" class="headerlink" title="网站架构"></a>网站架构</h2><h3 id="负载均衡与-Session"><a href="#负载均衡与-Session" class="headerlink" title="负载均衡与 Session"></a>负载均衡与 Session</h3><p><img src="17-05-10-11:09:55_407_412.png" alt=""></p>
+<p>HTTP 协议本身是无状态的，需要基于 HTTP 协议支持会话状态 (Session State) 的机制，而这样的机制应该可以使 Web 服务器从多次单独的 HTTP 请求中看到 “会话”，也就是知道哪些请求来自哪个会话。具体实现: 在会话开始的时候，分配一个唯一的会话标识 (SessionId)，通过 Cookie 把这个标识告诉浏览器，以后每次请求的时候，浏览器都会带上这个会话标识来告诉 Web 服务器请求是属于哪个会话的。如果遇到禁用 Cookie 的情况，一般是把 SessionId 放入 URL 参数中。</p>
+<p>当应用服务器由一台变为两台后，遇到的问题是会话数据是需要保存到单机上的，第一次访问网站请求落到哪台服务器，我的 Session 就创建在哪个服务器上:</p>
+<p><img src="17-05-10-11:15:19_897_477.png" alt=""></p>
+<p>解决方案:</p>
+<ul>
+<li><strong>Session Sticky</strong>: 负载均衡根据 SessionId 分发</li>
+<li><strong>Session Replication</strong>: 在两台 Application Server 之间进行 Session 数据同步</li>
+<li><strong>Session 数据集中存储</strong>: 优势明显</li>
+<li><strong>Cookie Based</strong>: Cookie 包含 Session 数据<ul>
+<li>缺点: Cookie 长度限制、安全性</li>
+</ul>
+</li>
+</ul>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://item.jd.com/11449803.html" target="_blank" rel="external">《大型网站系统与 Java 中间件实践》</a></li>
+</ul>
+
+
+
+
+
+
+</body>
+</html>

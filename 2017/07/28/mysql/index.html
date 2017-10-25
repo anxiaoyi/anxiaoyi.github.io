@@ -1,0 +1,283 @@
+<html>
+<head>
+	
+	<title>MySQL</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="MySQL"><a href="#MySQL" class="headerlink" title="MySQL"></a>MySQL</h2><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo apt install mysql-server</div></pre></td></tr></table></figure>
+<p>安装过程中会提示你输入 <code>root</code> 用户的密码</p>
+<hr>
+<p><strong>安装 <code>MySQL Workbench</code></strong>:</p>
+<ul>
+<li>访问 <a href="https://dev.mysql.com/downloads/workbench/" target="_blank" rel="external">https://dev.mysql.com/downloads/workbench/</a> 安装</li>
+</ul>
+<h3 id="基本使用"><a href="#基本使用" class="headerlink" title="基本使用"></a>基本使用</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># 重启</span></div><div class="line">sudo service mysql restart</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>默认配置文件</strong>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/etc/mysql/mysql.conf.d/mysqld.cnf</div></pre></td></tr></table></figure>
+<p>以下话摘自 <code>mysql --help | more</code>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Default options are read from the following files in the given order:</div><div class="line">/etc/my.cnf /etc/mysql/my.cnf ~/.my.cnf</div></pre></td></tr></table></figure>
+<hr>
+<p>遇到的问题:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mysql&gt; use mysql;</div><div class="line">ERROR 1044 (42000): Access denied for user &apos;root&apos;@&apos;%&apos; to database &apos;mysql&apos;</div></pre></td></tr></table></figure>
+<p>运行如下语句:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">SELECT USER(),CURRENT_USER();</div></pre></td></tr></table></figure>
+<ul>
+<li><code>USER()</code> reports how you <strong>尝试认证</strong> in MySQL</li>
+<li><code>CURRENT_USER()</code> reports how you <strong>被允许认证</strong> in MySQL</li>
+</ul>
+<p>你登录的时候有什么特权:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">SHOW GRANTS;</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>创建用户并授权</strong>:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> slave_user;</div><div class="line"><span class="keyword">GRANT</span> <span class="keyword">REPLICATION</span> <span class="keyword">SLAVE</span> <span class="keyword">ON</span> *.* <span class="keyword">TO</span> slave_user <span class="keyword">IDENTIFIED</span> <span class="keyword">BY</span> <span class="string">'123456'</span>;</div></pre></td></tr></table></figure>
+<ul>
+<li><code>REPLICATION SLAVE</code> 权限并没有什么特别之处，<strong>只是这个用户能够从 <code>Master</code> 上取得二进制日志的转储数据</strong>。</li>
+</ul>
+<p>When mysqld starts, it reads all grant table contents into memory. The in-memory tables become effective for access control at that point.</p>
+<p>If you modify the grant tables <strong>非直接地</strong> using account-management statements such as <code>GRANT</code>, <code>REVOKE</code>, <code>SET PASSWORD</code>, or <code>RENAME USER</code>, the server notices these changes and loads the grant tables into memory again <strong>立即</strong>.</p>
+<p>If you modify the grant tables <strong>直接地</strong> using statements such as <code>INSERT</code>, <code>UPDATE</code>, or <code>DELETE</code>, your changes have no effect on privilege checking until you either <strong>重启服务器</strong> or tell it to reload the tables. If you change the grant tables directly but forget to reload them, your changes have no effect until you restart the server. This may leave you wondering why your changes seem to make no difference!</p>
+<p>To tell the server to reload the grant tables, perform a flush-privileges operation. This can be done by issuing a <strong><code>FLUSH PRIVILEGES</code></strong> statement.</p>
+<ul>
+<li><a href="https://dev.mysql.com/doc/refman/5.7/en/grant.html" target="_blank" rel="external">所有权限</a></li>
+</ul>
+<p><strong>1) Global Privileges</strong>:</p>
+<p><img src="17-08-25-09:36:42_977_137.png" alt=""></p>
+<p><strong>2) Database Privileges</strong>:</p>
+<p><img src="17-08-25-09:37:18_988_140.png" alt=""></p>
+<p><strong>3) Table Privileges</strong>:</p>
+<p><img src="17-08-25-09:37:54_976_139.png" alt=""></p>
+<p><strong>账户和密码</strong>:</p>
+<p>A user value in a <code>GRANT</code> statement indicates a MySQL account to which the statement applies. To accommodate granting rights to users from arbitrary hosts, MySQL supports specifying the user value in the form <strong>‘user_name’@’host_name’</strong>.</p>
+<p>You can specify <strong>通配符</strong> in the host name. For example, <code>&#39;user_name&#39;@&#39;%.example.com&#39;</code> applies to user_name for <strong>任何</strong> host in the example.com domain, and <code>&#39;user_name&#39;@&#39;192.168.1.%&#39;</code> applies to user_name for any host in the 192.168.1 class C subnet.</p>
+<p>The simple form <strong>‘user_name’</strong> is a synonym <strong>同义词</strong> for <strong>‘user_name’@’%’</strong>.</p>
+<hr>
+<p><strong>删除用户</strong>:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">DROP</span> <span class="keyword">USER</span> [<span class="keyword">IF</span> <span class="keyword">EXISTS</span>] <span class="keyword">user</span> [, <span class="keyword">user</span>] ...</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>查看已有用户</strong>:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">USE</span> mysql</div><div class="line"><span class="keyword">SELECT</span> <span class="keyword">User</span>, Host <span class="keyword">FROM</span> <span class="string">`user`</span>;</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>地址绑定</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">--<span class="built_in">bind</span>-address=addr</div></pre></td></tr></table></figure>
+<p>The server treats different types of addresses as follows:</p>
+<ul>
+<li>If the address is <code>0.0.0.0</code>, the server accepts TCP/IP connections on <strong>所有</strong> server host <strong>IPv4</strong> interfaces.</li>
+<li>If the address is <code>::</code>, the server accepts TCP/IP connections on all <strong>所有</strong> host <strong>IPv4 and IPv6</strong> interfaces. Use this address to permit both IPv4 and IPv6 connections on all server interfaces.</li>
+<li>If the address is an IPv4-mapped address, the server accepts TCP/IP connections for that address, in either IPv4 or IPv6 format. For example, if the server is bound to <code>::ffff:127.0.0.1</code>, clients can connect using –host=127.0.0.1 or –host=<code>::ffff:127.0.0.1</code>.</li>
+<li>If the address is a “regular” IPv4 or IPv6 address (such as 127.0.0.1 or ::1), the server accepts TCP/IP connections only for that IPv4 or IPv6 address.</li>
+</ul>
+<p><strong>数据库远程连接不上</strong>，多半是 <code>bind-address</code> 和 <code>root</code> 问题搞得鬼:</p>
+<p><img src="2017_10_20_20_06_26.png" alt=""></p>
+<p>这个时候，需要执行语句给 <code>ROOT</code> 赋上权限即可:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mysql&gt; update mysql.user set host = '%' where user = 'root';</div><div class="line">mysql&gt; flush privileges;</div></pre></td></tr></table></figure>
+<hr>
+<h3 id="主从复制"><a href="#主从复制" class="headerlink" title="主从复制"></a>主从复制</h3><p><strong>1) 从库从主库克隆已有数据</strong>:</p>
+<p>主库 (锁表 -&gt; 查询从库复制开始位置 -&gt; 备份 -&gt; 解锁):</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">FLUSH</span> <span class="keyword">TABLES</span> <span class="keyword">WITH</span> <span class="keyword">READ</span> <span class="keyword">LOCK</span>;</div><div class="line"><span class="keyword">SHOW</span> <span class="keyword">MASTER</span> <span class="keyword">STATUS</span>;</div><div class="line">mysqldump -uroot -p <span class="comment">--all-databases &gt; all.sql</span></div><div class="line"><span class="keyword">UNLOCK</span> <span class="keyword">TABLES</span>;</div></pre></td></tr></table></figure>
+<p>从主库机器上拷贝 <code>all.sql</code> 到从库:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">rsync all.sql zk@10.108.113.85:~/Desktop/</div></pre></td></tr></table></figure>
+<p>从库恢复数据:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysql&gt; source /home/zk/Desktop/all.sql</div></pre></td></tr></table></figure>
+<p><strong>2) 执行同步</strong>:</p>
+<p>主库查看一下从库复制的起始位置:</p>
+<p><img src="17-08-24-16:29:14_1134_186.png" alt=""></p>
+<p>从库执行如下命令 (下面语句必须在 <strong>SLAVE</strong> 机器上的拥有 <strong>SUPER</strong> 权限的用户来执行):</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">STOP</span> <span class="keyword">SLAVE</span> IO_THREAD <span class="keyword">FOR</span> CHANNEL <span class="string">''</span>;</div><div class="line"><span class="keyword">RESET</span> <span class="keyword">SLAVE</span>;</div><div class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span> MASTER_HOST = <span class="string">'10.108.123.112'</span>, MASTER_PORT = <span class="number">3306</span>, MASTER_USER = <span class="string">'slave_user'</span>, MASTER_PASSWORD = <span class="string">'123456'</span>, MASTER_LOG_FILE = <span class="string">'master-bin.000123'</span>, MASTER_LOG_POS = <span class="number">2559</span>;</div><div class="line"><span class="keyword">START</span> <span class="keyword">SLAVE</span>;</div><div class="line"><span class="keyword">SHOW</span> <span class="keyword">SLAVE</span> <span class="keyword">STATUS</span>;</div></pre></td></tr></table></figure>
+<p>遇见的问题:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mysql&gt; change master to master_host = &apos;10.108.123.112&apos;, master_password = &apos;123456&apos;, master_user = &apos;slave_user&apos;, master_log_file = &apos;master-bin.000123&apos;, master_log_pos = 1995;</div><div class="line">ERROR 3021 (HY000): This operation cannot be performed with a running slave io thread; run STOP SLAVE IO_THREAD FOR CHANNEL &apos;&apos; first.</div></pre></td></tr></table></figure>
+<p>可以参考: <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-master-slave-replication-in-mysql" target="_blank" rel="external">How To Set Up Master Slave Replication in MySQL</a></p>
+<hr>
+<p>显示 <code>MASTER</code> 和 <code>SLAVE</code> 的状态可以使用如下命令，但是查询显示的结果可读性不好: </p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">SHOW</span> <span class="keyword">MASTER</span> <span class="keyword">STATUS</span>;</div><div class="line"><span class="keyword">SHOW</span> <span class="keyword">SLAVE</span> <span class="keyword">STATUS</span>;</div></pre></td></tr></table></figure>
+<p>如果想要更好的<strong>可读性</strong>，可以在后面加上 <strong><font color="red"><code>\G</code></font></strong> 这两个字符，其实<strong>查询语句</strong>也可以通过加上这两个字符来获得更好的阅读效果:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mysql&gt; SHOW MASTER STATUS\G</div><div class="line">mysql&gt; SHOW SLAVE STATUS\G</div></pre></td></tr></table></figure>
+<p><img src="17-08-25-09:18:03_821_203.png" alt=""></p>
+<hr>
+<p>查看复制线程有没有问题:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysql&gt; SHOW PROCESS LIST\G</div></pre></td></tr></table></figure>
+<h3 id="二进制日志"><a href="#二进制日志" class="headerlink" title="二进制日志"></a>二进制日志</h3><p>二进制仅包含<strong>可能改变数据库</strong>的语句，它包含若干个文件:</p>
+<p><img src="msha_0401.png" alt=""></p>
+<p>由于二进制日志是公共资源，所有线程都向它写入语句，所以避免两个线程同时更新二进制日志很重要。为此，在事件写二进制日志之前，二进制日志需要获得一个<strong>互斥锁 <code>LOCK_log</code></strong>，然后在事件写完成够释放。</p>
+<p>从 <code>my.cnf</code> 配置文件中可以找到 <code>MySQL</code> 数据存放的位置:</p>
+<p><img src="17-08-25-11:10:00_556_246.png" alt=""></p>
+<p>或者也可以像下面这样执行命令找到:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">mysql&gt; SHOW VARIABLES LIKE &apos;datadir&apos;;</div><div class="line"> +---------------+-----------------------+</div><div class="line"> | Variable_name | Value                 |</div><div class="line"> +---------------+-----------------------+</div><div class="line"> | datadir       | /usr/local/mysql/var/ |</div><div class="line"> +---------------+-----------------------+</div><div class="line"> 1 row in set (0.00 sec)</div></pre></td></tr></table></figure>
+<p>我们是没有权限进入这个数据文件夹的，即使使用 <code>sudo</code> 也不行:</p>
+<p><img src="17-08-25-11:11:15_542_78.png" alt=""></p>
+<p>但是我们可以使用 <code>mysqlbinlog</code> 这个工具来装载 <code>binlog</code> 文件:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysqlbinlog /var/lib/mysql/master-bin.000125</div></pre></td></tr></table></figure>
+<ul>
+<li><code>--short-form</code>: 忽略关于二进制日志中的事件的注释信息</li>
+<li><code>--read-from-remote-server</code>: 远程读取</li>
+<li><code>--host=master.example.com</code>: 远程主机</li>
+<li><code>--user=repl_user</code>: 账户</li>
+<li><code>--password</code>: 密码</li>
+</ul>
+<h3 id="MySQL-Workbeanch"><a href="#MySQL-Workbeanch" class="headerlink" title="MySQL Workbeanch"></a>MySQL Workbeanch</h3><p>双击修改某一个表的某一个字段之后，一定要记住<strong>点击右下角的 <code>Apply</code></strong>:</p>
+<p><img src="17-07-28-14:38:15_565_255.png" alt=""></p>
+<h3 id="MySQL-指定配置文件"><a href="#MySQL-指定配置文件" class="headerlink" title="MySQL 指定配置文件"></a>MySQL 指定配置文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysql --defaults-file=/home/user/.my.cnf database</div></pre></td></tr></table></figure>
+<h3 id="一台机器上运行多个-MySQL-Instances"><a href="#一台机器上运行多个-MySQL-Instances" class="headerlink" title="一台机器上运行多个 MySQL Instances"></a>一台机器上运行多个 MySQL Instances</h3><ul>
+<li><a href="https://dev.mysql.com/doc/refman/5.7/en/multiple-servers.html" target="_blank" rel="external">参考</a></li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">mysqld --port=3307\</div><div class="line">    --socket=3307.socket\</div><div class="line">    --pid-file=3307.pid\</div><div class="line">    --<span class="built_in">log</span>-error=3307-error.log\</div><div class="line">    --general_log_file=3307-log.log\</div><div class="line">    --datadir=./3307-data-dir</div></pre></td></tr></table></figure>
+<h3 id="名词解释"><a href="#名词解释" class="headerlink" title="名词解释"></a>名词解释</h3><ul>
+<li><code>mysqld</code>: <code>MySQL</code> 服务器</li>
+<li><code>mysql</code>: <code>MySQL</code> 客户端命令行程序</li>
+</ul>
+<h3 id="正则匹配"><a href="#正则匹配" class="headerlink" title="正则匹配"></a>正则匹配</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">select</span> <span class="keyword">name</span> <span class="keyword">from</span> table1 <span class="keyword">where</span> <span class="keyword">name</span> regexp <span class="built_in">binary</span> <span class="string">'^CU[0-9]'</span></div></pre></td></tr></table></figure>
+<p>The documentation for <code>regexp</code> is <a href="https://dev.mysql.com/doc/refman/5.5/en/regexp.html" target="_blank" rel="external">here</a>. <code>binary</code> is required to <strong>确保大小写匹配</strong></p>
+<hr>
+<p>百分号 <code>%</code> 字符来表示<strong>任意字符</strong></p>
+<h3 id="创建表和数据库示例"><a href="#创建表和数据库示例" class="headerlink" title="创建表和数据库示例"></a>创建表和数据库示例</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"># 设置为 utf8 解决各种字符错误问题</div><div class="line"><span class="keyword">CREATE</span> <span class="keyword">DATABASE</span> my_db <span class="built_in">CHARACTER</span> <span class="keyword">SET</span> utf8 <span class="keyword">COLLATE</span> utf8_general_ci;</div><div class="line"># 创建表和外键示例</div><div class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="keyword">IF</span> <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="string">`my_db`</span>.<span class="string">`my_table`</span> (</div><div class="line">  <span class="string">`id`</span> <span class="built_in">VARCHAR</span>(<span class="number">255</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span> <span class="keyword">COMMENT</span> <span class="string">'my id'</span>,</div><div class="line">  <span class="string">`user_name`</span> <span class="built_in">VARCHAR</span>(<span class="number">255</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span> <span class="keyword">COMMENT</span> <span class="string">'user_name'</span>,</div><div class="line">  <span class="string">`user_password`</span> <span class="built_in">VARCHAR</span>(<span class="number">255</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span> <span class="keyword">COMMENT</span> <span class="string">'user_password'</span>,</div><div class="line">  <span class="string">`publish_time`</span> <span class="keyword">TIMESTAMP</span> <span class="keyword">NOT</span> <span class="literal">NULL</span> <span class="keyword">DEFAULT</span> <span class="keyword">CURRENT_TIMESTAMP</span> <span class="keyword">ON</span> <span class="keyword">UPDATE</span> <span class="keyword">CURRENT_TIMESTAMP</span> <span class="keyword">COMMENT</span> <span class="string">'article publish time'</span>,</div><div class="line">  PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>),</div><div class="line">  FOREIGN <span class="keyword">KEY</span> (<span class="string">`user_name`</span>) <span class="keyword">REFERENCES</span> <span class="string">`ref_table`</span>(<span class="string">`user_name`</span>) <span class="keyword">ON</span> <span class="keyword">DELETE</span> <span class="keyword">CASCADE</span></div><div class="line">) <span class="keyword">ENGINE</span> = <span class="keyword">InnoDB</span>;</div></pre></td></tr></table></figure>
+<h3 id="数据库设置允许远程访问"><a href="#数据库设置允许远程访问" class="headerlink" title="数据库设置允许远程访问"></a>数据库设置允许远程访问</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"># sudo vi /etc/mysql/mysql.conf.d/mysqld.cnf</div><div class="line"># 将 `mysqld.conf` 文件里面的下面这个 `bind-address` 给注释掉即可</div><div class="line"># MySQL 默认只允许本机访问</div><div class="line"></div><div class="line"># Instead of skip-networking the default is now to listen only on</div><div class="line"># localhost which is more compatible and is not less secure.</div><div class="line">bind-address        = 127.0.0.1</div></pre></td></tr></table></figure>
+<h3 id="启动、停止、查看状态"><a href="#启动、停止、查看状态" class="headerlink" title="启动、停止、查看状态"></a>启动、停止、查看状态</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">sudo /etc/init.d/mysql start</div><div class="line">sudo /etc/init.d/mysql stop</div><div class="line">sudo /etc/init.d/mysql status</div><div class="line">sudo /etc/init.d/mysql <span class="built_in">help</span></div></pre></td></tr></table></figure>
+<h3 id="修改列的定义"><a href="#修改列的定义" class="headerlink" title="修改列的定义"></a>修改列的定义</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> <span class="string">`my_db`</span> <span class="keyword">CHANGE</span> <span class="keyword">COLUMN</span> <span class="string">`column_a`</span> <span class="string">`column_a`</span> <span class="built_in">VARCHAR</span>(<span class="number">225</span>) <span class="literal">NULL</span> <span class="keyword">DEFAULT</span> <span class="literal">NULL</span> <span class="keyword">COMMENT</span> <span class="string">'enlarge column capacity'</span> ;</div></pre></td></tr></table></figure>
+<h3 id="修复时间戳插入错误的问题"><a href="#修复时间戳插入错误的问题" class="headerlink" title="修复时间戳插入错误的问题"></a>修复时间戳插入错误的问题</h3><p>从 <code>MySQL Workbench</code> 客户端中查看的值是 <code>0000-00-00 00:00:00</code>，说明 <code>create_time</code> 为 <code>TIMESTAMP</code> 时间戳类型中已经插入了错误的值，需要采用如下方式来恢复一下:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">update</span> <span class="string">`my_db`</span> <span class="keyword">set</span> <span class="string">`create_time`</span> = <span class="literal">NULL</span> <span class="keyword">where</span> <span class="string">`create_time`</span> = <span class="number">0</span>;</div></pre></td></tr></table></figure>
+<p>不能采用:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">update</span> <span class="string">`my_db`</span> <span class="keyword">set</span> <span class="string">`create_time`</span> = <span class="literal">NULL</span> <span class="keyword">where</span> <span class="string">`create_time`</span> = <span class="string">'0000-00-00 00:00:00'</span>;</div></pre></td></tr></table></figure>
+<p>来更新，不管用。</p>
+<h3 id="You-are-using-safe-update-mode-…"><a href="#You-are-using-safe-update-mode-…" class="headerlink" title="You are using safe update mode …"></a>You are using safe update mode …</h3><p><strong>MySQL Workbench</strong>: You are using safe update mode and you tried to update a table without a WHERE that uses a KEY column To disable safe mode, toggle the option ….</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">SET</span> SQL_SAFE_UPDATES = <span class="number">0</span>;</div></pre></td></tr></table></figure>
+<h3 id="MySQL-导入-SQL-文件"><a href="#MySQL-导入-SQL-文件" class="headerlink" title="MySQL 导入 SQL 文件"></a>MySQL 导入 SQL 文件</h3><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mysql&gt; using databasename;</div><div class="line">mysql&gt; source /path/to/backup.sql</div></pre></td></tr></table></figure>
+<h3 id="MySQL-Dump"><a href="#MySQL-Dump" class="headerlink" title="MySQL Dump"></a>MySQL Dump</h3><ul>
+<li><strong>dump</strong> 整个表:</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysqldump -h [remoteip] --port = 3306 -u [username] -p [password] --databases [db_name] --tables [tablename] &gt; tablename.sql;</div></pre></td></tr></table></figure>
+<p>更多示例:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">mysqldump --all-databases &gt; dump.sql</div><div class="line">mysqldump -uroot --databases db1, db2 &gt; dump.sql</div><div class="line">mysqldump -uroot my_db t1</div></pre></td></tr></table></figure>
+<ul>
+<li><strong>query dump</strong> 部分结果，使用 MySQL Workbench:</li>
+</ul>
+<p><img src="17-08-17-15:33:35_1286_244.png" alt=""></p>
+<p>在保存的格式中选择 <code>SQL INSERT statements</code>:</p>
+<p><img src="17-08-17-15:35:08_861_209.png" alt=""></p>
+<ul>
+<li><strong>SELECT … INTO OUTFILE</strong> 备份:</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">mysql&gt; select * INTO OUTFILE 'aaa.sql';</div><div class="line">ERROR 1096 (HY000): No tables used</div><div class="line">mysql&gt; select * INTO OUTFILE 'aaa.sql' FROM iapp_app_info;</div><div class="line">ERROR 1290 (HY000): The MySQL server is running with the <span class="comment">--secure-file-priv option so it cannot execute this statement</span></div></pre></td></tr></table></figure>
+<p>最后发现需要这样执行才算可以:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysql -uroot -proot iapp_db -e <span class="string">'select * FROM iapp_app_info'</span> &gt; aaa.txt</div></pre></td></tr></table></figure>
+<p>默认导出的数据文件是以 <code>TAB</code> 进行列分割的，如果想要使用其他分隔符，可以像下面这样:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">```</div><div class="line"></div><div class="line">---</div><div class="line"></div><div class="line">关于 `mysqldump` 的一些参数信息:</div><div class="line"></div><div class="line">- **`--add-drop-database`**: 多一行这个:</div><div class="line"></div><div class="line">```sql</div><div class="line">/*!40000 DROP DATABASE IF EXISTS `iapp_db`*/;</div></pre></td></tr></table></figure>
+<h3 id="SQL-优化工具"><a href="#SQL-优化工具" class="headerlink" title="SQL 优化工具"></a>SQL 优化工具</h3><ul>
+<li><a href="https://tech.meituan.com/sqladvisor_pr.html" target="_blank" rel="external">美团点评SQL优化工具SQLAdvisor开源</a></li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sudo apt install cmake</div><div class="line">sudo apt install libaio-dev</div></pre></td></tr></table></figure>
+<h3 id="查看当前连接信息"><a href="#查看当前连接信息" class="headerlink" title="查看当前连接信息"></a>查看当前连接信息</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysql&gt; status</div></pre></td></tr></table></figure>
+<h3 id="服务器性能剖析"><a href="#服务器性能剖析" class="headerlink" title="服务器性能剖析"></a>服务器性能剖析</h3><ul>
+<li>如何确认服务器达到了最佳状态</li>
+<li>找出某条语句为什么执行不够快</li>
+<li>诊断用户描述成 “停顿”、“堆积”、“卡死” 的某些间歇性疑难故障</li>
+</ul>
+<p><strong>性能剖析</strong> 是测量和分析时间花费在哪里的主要方法。一般包含两个步骤: <strong>测量</strong>任务所花费的时间；然后对结果进行<strong>统计和排序</strong>，将重要的任务排到前面。</p>
+<p><img src="17-08-15-21:01:43_501_132.png" alt=""></p>
+<p>第一，一些只占总响应时间比重很小的查询是不值得优化的。根据阿姆达尔定律，<strong>对一个占总响应时间不超过 5% 的查询进行优化，无论如何努力，收益也不会超过 5%。</strong>第二，如果花费了 1000 美元去优化一个任务，但业务的收入没有任何增加，那么可以说反而导致业务被逆优化了 1000 美元。<strong>如果优化的成本大于收益，就应当停止优化</strong>。</p>
+<hr>
+<p>强烈建议大家从现在起就利用慢查询日志捕获服务器上的<strong>所有</strong>查询，并且进行分析。<strong>可以在一些典型的时间窗口如业务高峰期的一个小时内记录查询</strong>。如果业务趋势比较均衡，那么一分钟甚至更短的时间内捕获需要优化的低效查询也是可行的。</p>
+<blockquote>
+<p><strong>不要直接打开整个慢查询日志进行分析，这样做只会浪费时间和金钱。</strong></p>
+</blockquote>
+<hr>
+<p>我们建议诊断问题时先使用前两种方法: <strong><code>SHOW STATUS</code> 和 <code>SHOW PROCESSLIST</code></strong>。这两种方法的开销很低，而且可以通过简单的 <code>Shell</code> 脚本或者反复执行的查询来交互式地收集数据。</p>
+<h3 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h3><h4 id="1-B-Tree-索引"><a href="#1-B-Tree-索引" class="headerlink" title="(1) B-Tree 索引"></a>(1) B-Tree 索引</h4><p>对<strong>索引列是按照顺序组织 (因此你可以使用 <code>ORDER BY</code> 和 <code>GROUP BY</code>) </strong>存储的，所以很适合查找范围数据。<strong>索引中存储了实际的列值</strong>，所以某些查询只使用索引就能够完成全部查询。</p>
+<h4 id="2-Hash-Index-哈希索引"><a href="#2-Hash-Index-哈希索引" class="headerlink" title="(2) Hash Index 哈希索引"></a>(2) Hash Index 哈希索引</h4><p>对每一行的<strong>所有的索引列计算一个哈希码</strong></p>
+<h4 id="3-R-Tree-空间数据索引"><a href="#3-R-Tree-空间数据索引" class="headerlink" title="(3) R-Tree 空间数据索引"></a>(3) R-Tree 空间数据索引</h4><p><strong>多维度索引数据</strong>，一般用作<strong>地理数据存储</strong></p>
+<h4 id="4-全文索引"><a href="#4-全文索引" class="headerlink" title="(4) 全文索引"></a>(4) 全文索引</h4><p>更类似于<strong>搜索引擎</strong>干的事情</p>
+<h3 id="索引选择"><a href="#索引选择" class="headerlink" title="索引选择"></a>索引选择</h3><h4 id="1-前缀索引"><a href="#1-前缀索引" class="headerlink" title="(1) 前缀索引"></a>(1) 前缀索引</h4><p><strong>索引很长的字符列</strong>，这会让索引变得大且慢，通常可以索引开始的部分字符，这样可以大大<strong>节约索引空间</strong>，从而提高索引效率。</p>
+<p><img src="17-07-28-21:17:28_808_435.png" alt=""></p>
+<p><img src="17-07-28-21:17:59_775_428.png" alt=""></p>
+<p><img src="17-07-28-21:18:31_783_425.png" alt=""></p>
+<p>计算合适的前缀长度的另外一个办法就是计算完整列的选择性，并<strong>使前缀的选择性接近于完整列的索引</strong>:</p>
+<p><img src="17-07-28-21:21:34_747_188.png" alt=""></p>
+<p><img src="17-07-28-21:22:55_734_327.png" alt=""></p>
+<p>如何创建前缀索引:</p>
+<p><img src="17-07-28-21:24:05_878_73.png" alt=""></p>
+<p>MySQL 无法使用前缀索引做 <code>ORDER BY</code> 和 <code>GROUP BY</code></p>
+<h4 id="2-多列索引"><a href="#2-多列索引" class="headerlink" title="(2) 多列索引"></a>(2) 多列索引</h4><p><img src="17-07-28-21:31:16_755_196.png" alt=""></p>
+<h4 id="3-选择合适的索引列顺序"><a href="#3-选择合适的索引列顺序" class="headerlink" title="(3) 选择合适的索引列顺序"></a>(3) 选择合适的索引列顺序</h4><p><img src="17-07-28-21:40:06_738_80.png" alt=""></p>
+<p><img src="17-07-28-21:42:25_868_353.png" alt=""></p>
+<h3 id="数据库设计"><a href="#数据库设计" class="headerlink" title="数据库设计"></a>数据库设计</h3><p>通常情况下<strong>最好指定列为 <code>NOT NULL</code></strong>，除非真的需要存储 <code>NULL</code> 值</p>
+<p><code>DATETIME</code> 和 <code>TIMESTAMP</code> 列都可以存储相同类型的数据: 时间和日期，<strong>精确到秒</strong>，然而 <code>TIMESTAMP</code> 只使用 <code>DATETIME</code> 一半的存储空间，并且会根据时区变化，具有特殊的自动更新能力。</p>
+<p>如果存储整数，可以使用这几种整数类型: <code>TINYINT</code>, <code>SMALLINT</code>, <code>MEDIUMINT</code>, <code>INT</code>, <code>BIGINT</code>，分别使用 8, 16, 24, 32, 64 位存储空间。MySQL 可以为整数类型指定宽度，例如 <code>INT(11)</code>，对大多数应用这是没有意义的: 它不会限制值的合法范围，<strong>只是规定了 <code>MySQL</code> 的一些交互工具用来显示字符的个数</strong>。对于存储和计算来说，<code>INT(1)</code> 和 <code>INT(20)</code> 是相同的。</p>
+<hr>
+<p><strong><code>CHAR</code> 适合存储很短的字符串，或者所有值都接近同一个长度</strong>。例如，<code>CHAR</code> 非常适合存储密码的 MD5 值，因为这是一个定长的值。对于经常变更的数据，<code>CHAR</code> 也比 <code>VARCHAR</code> 更好，因为定长的 <code>CHAR</code> 类型不容易产生碎片。对于非常短的列，<code>CHAR</code> 比 <code>VARCHAR</code> 在存储空间上也更有效率。例如用 <code>CHAR(1)</code> 来存储只有 <code>Y</code> 和 <code>N</code> 的值。</p>
+<hr>
+<p>为标识符 (identifier column) 选择合适的数据类型非常重要。<strong>如果可能，应该避免使用字符串类型作为标识符</strong>，因为它们很消耗空间，并且通常比数字类型慢。对于完全“随机”的字符串也需要多加注意，例如 <code>MD5()</code>，<code>SHA1()</code>，<code>UUID()</code> 产生的字符串。这些函数生成的新值会<strong>任意分布在很大的空间内，这回导致 <code>INSERT</code> 以及一些 <code>SELECT</code> 语句变得很慢</strong>:</p>
+<ul>
+<li>因为插入值会随机地写到索引的不同位置，所以使得 <code>INSERT</code> 语句更慢。</li>
+<li><code>SELECT</code> 语句会变得更慢，因为逻辑上相邻的行会分布在磁盘和内存的不同地方。</li>
+<li>随机值导致缓存对所有类型的查询语句效果都很差，因为会使得缓存赖以工作的访问局部性原理失效。如果整个数据集都一样的“热”，那么缓存任何一部分g特定数据到内存都没有好处；如果工作集比内存大，缓存将会有更多刷新和不命中。</li>
+</ul>
+<p>如果存储 <code>UUID</code> 值，则应该移除“-”符号；或者更好的做法是，用 <code>UNHEX()</code> 函数转换 <code>UUID</code> 值为 16 字节的数字，并且存储在一个 <code>BINARY(16)</code> 的列中。检索时可以通过 <code>HEX()</code> 函数来格式化为十六进制格式。</p>
+<p><code>UUID()</code> 生成的值与加密散列函数例如 <code>SHA1()</code> 生成的值有不同的特征: <strong><code>UUID</code> 值虽然分布也不均匀，但还是有一定顺序的</strong>。尽管如此，但还是不如递增的整数好用。</p>
+<hr>
+<ul>
+<li><a href="http://mysqlserverteam.com/storing-uuid-values-in-mysql-tables/" target="_blank" rel="external">MySQL Server Blog - Storing UUID Values in MySQL Table</a></li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">users</span>(id_bin <span class="built_in">binary</span>(<span class="number">16</span>), <span class="keyword">name</span> <span class="built_in">varchar</span>(<span class="number">200</span>));</div><div class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">users</span> <span class="keyword">values</span>(<span class="keyword">unhex</span>(<span class="keyword">replace</span>(<span class="keyword">uuid</span>(),<span class="string">'-'</span>,<span class="string">''</span>)), <span class="string">'Andromeda'</span>);</div></pre></td></tr></table></figure>
+<hr>
+<p>人们经常使用 <code>VARCHAR(15)</code> 列来存储 IP 地址，然而，它们实际上是 32 位无符号整数，不是字符串。用小数点将地址分成四段的表示方法只是为了让人们阅读容易。所以应该用无符号整数存储 IP 地址。<code>MySQL</code> 提供了 <code>INET_ATON()</code> 和 <code>INET_NTOA()</code> 函数在这两种表示方法之间转换。</p>
+<h3 id="性能监控"><a href="#性能监控" class="headerlink" title="性能监控"></a>性能监控</h3><p><font color="#007020"><strong><code>SHOW</code> 和 <code>SET</code></strong></font> 是仅有的两个可以用于监控 <code>MySQL</code> 服务器的工具</p>
+<h3 id="备份"><a href="#备份" class="headerlink" title="备份"></a>备份</h3><p><strong>1) 冷备份</strong>:</p>
+<p>对于 InnoDB 的存储引擎的冷备份非常简单，只需要备份:</p>
+<ul>
+<li><code>frm</code> 文件</li>
+<li>共享表空间文件</li>
+<li>独立表空间文件 (*.ibd)</li>
+<li>重做日志文件</li>
+<li><code>my.cnf</code></li>
+</ul>
+<h3 id="有两个不同的事务同时操作数据库中同一表的同一行，不会引起冲突的是"><a href="#有两个不同的事务同时操作数据库中同一表的同一行，不会引起冲突的是" class="headerlink" title="有两个不同的事务同时操作数据库中同一表的同一行，不会引起冲突的是"></a>有两个不同的事务同时操作数据库中同一表的同一行，不会引起冲突的是</h3><p>两个都是 <code>DELETE</code></p>
+<h3 id="MySQL-Driver-Class-Name"><a href="#MySQL-Driver-Class-Name" class="headerlink" title="MySQL Driver Class Name"></a>MySQL Driver Class Name</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">com.mysql.jdbc.Driver</div></pre></td></tr></table></figure>
+<hr>
+<p><img src="2017_10_13_14_25_30.png" alt=""></p>
+<hr>
+<p><img src="2017_10_13_14_58_34.png" alt=""><br><img src="2017_10_13_14_59_38.png" alt=""></p>
+<hr>
+<p><code>AUTO_INCREMENT</code> 一直自增，即使把数据库表清空，再次插入数据，依然是从上次清空前的 <code>id</code> 开始的。</p>
+<hr>
+<p>插入数据库乱码问题:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">con = DriverManager.getConnection(<span class="string">"jdbc:mysql:///dbname"</span>, <span class="string">"user"</span>, <span class="string">"pass"</span>);</div></pre></td></tr></table></figure>
+<p>改为:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">con = DriverManager.getConnection(<span class="string">"jdbc:mysql:///dbname?useUnicode=true&amp;characterEncoding=utf-8"</span>, <span class="string">"user"</span>, <span class="string">"pass"</span>);</div></pre></td></tr></table></figure>
+<hr>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">SELECT</span> VID, thumb</div><div class="line">    <span class="keyword">FROM</span> video</div><div class="line">    <span class="keyword">WHERE</span> VID <span class="keyword">IN</span> (</div><div class="line">        <span class="keyword">SELECT</span> VID</div><div class="line">        <span class="keyword">FROM</span> video</div><div class="line">        <span class="keyword">WHERE</span> title <span class="keyword">LIKE</span> <span class="string">"%'.$Channel['name'].'%"</span></div><div class="line">        <span class="keyword">ORDER</span> <span class="keyword">BY</span> viewtime <span class="keyword">DESC</span></div><div class="line">        <span class="keyword">LIMIT</span> <span class="number">5</span>)</div><div class="line">    <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">RAND</span>()</div><div class="line">    <span class="keyword">LIMIT</span> <span class="number">1</span></div></pre></td></tr></table></figure>
+<p>会抛出异常:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"> Message:   Error during SQL execution: SELECT VID, thumb FROM video WHERE VID IN ( SELECT VID FROM video WHERE title LIKE &quot;%funny%&quot; ORDER BY viewtime DESC LIMIT 5) ORDER BY RAND() LIMIT 1&lt;br /&gt;</div><div class="line"> MySQL Error:   This version of MySQL doesn&apos;t yet support &apos;LIMIT &amp; IN/ALL/ANY/SOME subquery&apos;&lt;br /&gt;</div><div class="line">MySQL Errno:    1235</div></pre></td></tr></table></figure>
+<p>可以替换为 (Instead of using <strong><code>IN</code></strong>, you can use <strong><code>JOIN</code></strong>):</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">SELECT</span> v.VID, v.thumb</div><div class="line"><span class="keyword">FROM</span> video <span class="keyword">AS</span> v</div><div class="line"><span class="keyword">INNER</span> <span class="keyword">JOIN</span></div><div class="line">     (<span class="keyword">SELECT</span> VID</div><div class="line">     <span class="keyword">FROM</span> video</div><div class="line">     <span class="keyword">WHERE</span> title <span class="keyword">LIKE</span> <span class="string">"%'.$Channel['name'].'%"</span></div><div class="line">     <span class="keyword">ORDER</span> <span class="keyword">BY</span> viewtime <span class="keyword">DESC</span></div><div class="line">     <span class="keyword">LIMIT</span> <span class="number">5</span>) <span class="keyword">as</span> v2</div><div class="line">  <span class="keyword">ON</span> v.VID = v2.VID</div><div class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">RAND</span>()</div><div class="line"><span class="keyword">LIMIT</span> <span class="number">1</span></div></pre></td></tr></table></figure>
+<h3 id="MySQL-unresolved-host"><a href="#MySQL-unresolved-host" class="headerlink" title="MySQL unresolved host"></a>MySQL unresolved host</h3><p>Two things to check (assuming your machine is called <code>my-machine</code>, you can change this as appropriate):</p>
+<p>That the <strong><code>/etc/hostname</code></strong> file contains just the name of the machine.<br>That <strong><code>/etc/hosts</code></strong> has an entry for localhost. It should have something like:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">127.0.0.1    localhost.localdomain localhost</div><div class="line">127.0.1.1    my-machine</div></pre></td></tr></table></figure>
+<ul>
+<li><a href="https://stackoverflow.com/questions/17892762/mysql-this-version-of-mysql-doesnt-yet-support-limit-in-all-any-some-subqu" target="_blank" rel="external">参考</a></li>
+</ul>
+
+
+
+
+
+
+</body>
+</html>

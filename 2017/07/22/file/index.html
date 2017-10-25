@@ -1,0 +1,53 @@
+<html>
+<head>
+	
+	<title>File</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="File"><a href="#File" class="headerlink" title="File"></a>File</h2><h3 id="依赖"><a href="#依赖" class="headerlink" title="依赖"></a>依赖</h3><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>commons-io<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>commons-io<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure>
+<h3 id="InputStream-转为字符串"><a href="#InputStream-转为字符串" class="headerlink" title="InputStream 转为字符串"></a><code>InputStream</code> 转为字符串</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">File file = <span class="keyword">new</span> File(<span class="string">"a.txt"</span>);</div><div class="line">IOUtils.toString(file.getInputStream(), Charset.forName(<span class="string">"UTF-8"</span>));</div></pre></td></tr></table></figure>
+<h3 id="InputStream-转为文件"><a href="#InputStream-转为文件" class="headerlink" title="InputStream 转为文件"></a><code>InputStream</code> 转为文件</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">File file = <span class="keyword">new</span> File(<span class="string">"a.txt"</span>);</div><div class="line">FileUtils.copyInputStreamToFile(response.getInputStream(), file);</div></pre></td></tr></table></figure>
+<h3 id="Bytes-转为文件"><a href="#Bytes-转为文件" class="headerlink" title="Bytes 转为文件"></a><code>Bytes</code> 转为文件</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">File file = <span class="keyword">new</span> File(<span class="string">"targetFile"</span>);</div><div class="line">FileUtils.writeByteArrayToFile(file, <span class="string">"ABC"</span>.getBytes());</div></pre></td></tr></table></figure>
+<h3 id="拷贝文件"><a href="#拷贝文件" class="headerlink" title="拷贝文件"></a>拷贝文件</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">copyFileUsingJava7Files</span><span class="params">( File from, File to )</span> <span class="keyword">throws</span> IOException </span>&#123;</div><div class="line">    Files.copy( from.toPath(), to.toPath() );</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p>使用 <code>Channel</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">copyFileUsingChannel</span><span class="params">(File source, File dest)</span> <span class="keyword">throws</span> IOException </span>&#123;</div><div class="line">    FileChannel sourceChannel = <span class="keyword">null</span>;</div><div class="line">    FileChannel destChannel = <span class="keyword">null</span>;</div><div class="line">    <span class="keyword">try</span> &#123;</div><div class="line">        sourceChannel = <span class="keyword">new</span> FileInputStream(source).getChannel();</div><div class="line">        destChannel = <span class="keyword">new</span> FileOutputStream(dest).getChannel();</div><div class="line">        destChannel.transferFrom(sourceChannel, <span class="number">0</span>, sourceChannel.size());</div><div class="line">    &#125; <span class="keyword">finally</span> &#123;</div><div class="line">        sourceChannel.close();</div><div class="line">        destChannel.close();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p>使用 <code>Stream</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">copyFileUsingStream</span><span class="params">(File source, File dest)</span> <span class="keyword">throws</span> IOException </span>&#123;</div><div class="line">    InputStream is = <span class="keyword">null</span>;</div><div class="line">    OutputStream os = <span class="keyword">null</span>;</div><div class="line">    <span class="keyword">try</span> &#123;</div><div class="line">        is = <span class="keyword">new</span> FileInputStream(source);</div><div class="line">        os = <span class="keyword">new</span> FileOutputStream(dest);</div><div class="line">        <span class="keyword">byte</span>[] buffer = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">1024</span>];</div><div class="line">        <span class="keyword">int</span> length;</div><div class="line">        <span class="keyword">while</span> ((length = is.read(buffer)) &gt; <span class="number">0</span>) &#123;</div><div class="line">            os.write(buffer, <span class="number">0</span>, length);</div><div class="line">        &#125;</div><div class="line">    &#125; <span class="keyword">finally</span> &#123;</div><div class="line">        is.close();</div><div class="line">        os.close();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="Paths"><a href="#Paths" class="headerlink" title="Paths"></a>Paths</h3><p>注意这两个的区别:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">new</span> File(srcPath).toPath()</div></pre></td></tr></table></figure>
+<p>第二种:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Paths.get(srcPath)</div></pre></td></tr></table></figure>
+<p>这完全是两码事，在 <code>Windows</code> 平台上使用第二种会抛出异常:</p>
+<p><img src="TIM截图20170811081320.png" alt=""></p>
+<h3 id="Java-路径"><a href="#Java-路径" class="headerlink" title="Java 路径"></a><code>Java</code> 路径</h3><p>不要天真的认为分隔符总是 <code>/</code>，在 <code>Windows</code> 操作系统上问题变得异常突出，应该使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">File.separator</div></pre></td></tr></table></figure>
+<h3 id="Java-删除目录"><a href="#Java-删除目录" class="headerlink" title="Java 删除目录"></a><code>Java</code> 删除目录</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">deleteDir</span><span class="params">(File file)</span> </span>&#123;</div><div class="line">    File[] contents = file.listFiles();</div><div class="line">    <span class="keyword">if</span> (contents != <span class="keyword">null</span>) &#123;</div><div class="line">        <span class="keyword">for</span> (File f : contents) &#123;</div><div class="line">            deleteDir(f);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    file.delete();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,117 @@
+<html>
+<head>
+	
+	<title>java-se8-virtual-machine-specification</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h1 id="Java-SE-8-Virtual-Machine-Specification"><a href="#Java-SE-8-Virtual-Machine-Specification" class="headerlink" title="Java SE 8 Virtual Machine Specification"></a>Java SE 8 Virtual Machine Specification</h1><h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>The Java Virtual Machine knows nothing of the Java programming language, only of a particular binary format, the <code>class</code> 文件格式. A <code>class</code> file contains Java Virtual Machine instructions (or <strong><code>bytecodes</code></strong>) and <strong>a symbol table</strong>, as well as other ancillary information.</p>
+<h2 id="The-Structure-of-the-Java-Virtual-Machine"><a href="#The-Structure-of-the-Java-Virtual-Machine" class="headerlink" title="The Structure of the Java Virtual Machine"></a>The Structure of the Java Virtual Machine</h2><p>This document specifies an abstract machine. It does not describe any particular implementation of the Java Virtual Machine.</p>
+<p>To implement the Java Virtual Machine correctly, you need only be able to read the class file format and correctly perform the operations specified therein. Implementation details that are not part of the Java Virtual Machine’s specification would unnecessarily constrain the creativity of implementors. For example, the memory layout of run time data areas, the garbage-collection algorithm used, and any internal optimization of the Java Virtual Machine instructions (for example, translating them into machine code) are left to the discretion of the implementor.</p>
+<h3 id="The-class-File-Format"><a href="#The-class-File-Format" class="headerlink" title="The class File Format"></a>The <code>class</code> File Format</h3><h3 id="Data-Types"><a href="#Data-Types" class="headerlink" title="Data Types"></a>Data Types</h3><h3 id="Primitive-Types-and-Values"><a href="#Primitive-Types-and-Values" class="headerlink" title="Primitive Types and Values"></a>Primitive Types and Values</h3><p>The <strong>原语</strong> data types supported by the Java Virtual Machine are the <strong>数值</strong> types, the <strong>布尔</strong> type, and the <strong><code>returnAddress</code></strong> type. The numeric types consist of the <strong>整数</strong> types and the <strong>浮点</strong> types.</p>
+<hr>
+<p>Although the Java Virtual Machine defines a boolean type, it only provides very limited support for it. There are <strong>没有</strong> Java Virtual Machine instructions solely dedicated to operations on boolean values. Instead, expressions in the Java programming language that operate on boolean values are compiled to use values of the Java Virtual Machine <strong><code>int</code></strong> data type.</p>
+<hr>
+<p>The values of the <code>returnAddress</code> type are <strong>指针</strong> to the opcodes of Java Virtual Machine instructions. The <code>returnAddress</code> type is used by the Java Virtual Machine’s <code>jsr</code>, <code>ret</code>, and <code>jsr_w</code> instructions.</p>
+<h3 id="Run-Time-Data-Areas"><a href="#Run-Time-Data-Areas" class="headerlink" title="Run-Time Data Areas"></a>Run-Time Data Areas</h3><p>The Java Virtual Machine defines various run-time data areas that are used during execution of a program. Some of these data areas are created on <strong>Java Virtual Machine</strong> start-up and are destroyed only when the Java Virtual Machine exits. Other data areas are <strong>每线程</strong>. Per-thread data areas are created when a thread is created and destroyed when the thread exits.</p>
+<hr>
+<p><strong><code>pc</code> register</strong>:</p>
+<p>The Java Virtual Machine can support many threads of execution <strong>同时</strong>. <strong>Each Java Virtual Machine thread has its own <code>pc</code> (program counter) register</strong>.If that method is not <code>native</code>, the <code>pc</code> register contains the <strong>地址</strong> of the Java Virtual Machine <strong>指令</strong> currently being executed. If the method currently being executed by the thread is <code>native</code>, the value of the Java Virtual Machine’s <code>pc</code> register is <strong><code>undefined</code></strong>. The Java Virtual Machine’s <code>pc</code> register is wide enough to hold a <code>returnAddress</code> or a <code>native</code> pointer on the specific platform.</p>
+<hr>
+<p><strong>Java Virtual Machine Stacks</strong>:</p>
+<p>Each Java Virtual Machine thread has a private Java Virtual Machine stack, created at the same time as the thread. A Java Virtual Machine stack stores <strong>帧</strong>. A Java Virtual Machine stack is analogous to the stack of a conventional language such as C: it holds <strong>本地变量和部分结果</strong>, and plays a part in method invocation and return. Because the Java Virtual Machine stack is never manipulated directly except to <strong><code>push</code> 和 <code>pop</code> 帧</strong>, frames may be heap allocated.</p>
+<p>This specification permits Java Virtual Machine stacks either to be of a <strong>固定大小或者</strong> to <strong>动态扩展</strong> and contract as required by the computation. </p>
+<ul>
+<li>If the computation in a thread requires a <strong>更大的</strong> Java Virtual Machine stack than is <strong>被允许的</strong>, the Java Virtual Machine throws a <code>StackOverflowError</code>.</li>
+<li>If Java Virtual Machine stacks can be <strong>动态扩展</strong>, and expansion is attempted but insufficient memory can be made available to effect the expansion, or if insufficient memory can be made available to create the initial Java Virtual Machine stack for a new thread, the Java Virtual Machine throws an <code>OutOfMemoryError</code>.</li>
+</ul>
+<hr>
+<p><strong>Heap</strong>:</p>
+<p>The Java Virtual Machine has a heap that is <strong>共享</strong> among all Java Virtual Machine <strong>线程</strong>. The heap is the run-time data area from which memory for all class <strong>类实例</strong> and <strong>数组</strong> is allocated.</p>
+<p>The heap is created on virtual machine start-up.</p>
+<ul>
+<li>If a computation requires more heap than can be made available by the automatic storage management system, the Java Virtual Machine throws an <code>OutOfMemoryError</code>.</li>
+</ul>
+<hr>
+<p><strong>Method Area</strong>:</p>
+<p>The Java Virtual Machine has a method area that is <strong>共享</strong> among all Java Virtual Machine <strong>线程</strong>. The method area is analogous to the storage area for <strong>编译后的代码</strong> of a conventional language or analogous to the “text” segment in an operating system process. It stores <strong>每个类的结构</strong> such as the run-time <strong>常量池，字段，方法数据</strong>, and the code for methods and constructors, including the special methods (§2.9) used in class and instance initialization and interface initialization.</p>
+<ul>
+<li>If memory in the method area cannot be made available to satisfy an allocation request, the Java Virtual Machine throws an <code>OutOfMemoryError</code>.</li>
+</ul>
+<hr>
+<p><strong>Run-Time Constant Pool</strong>:</p>
+<p>A run-time constant pool is a per-class or per-interface run-time representation of the <code>constant_pool</code> table in a <code>class</code> file. It contains <strong>几种类型的常量</strong>, ranging from <strong>数字常量</strong> known at compile-time to method and <strong>字段引用</strong> that must be resolved at run-time.</p>
+<p>Each run-time constant pool is allocated from the Java Virtual Machine’s <strong>方法区</strong>. The run-time constant pool for a class or interface is constructed <strong>当类或者接口被创建的时候</strong> by the Java Virtual Machine.</p>
+<ul>
+<li>When creating a class or interface, if the construction of the run-time constant pool requires more memory than can be made available in the method area of the Java Virtual Machine, the Java Virtual Machine throws an <code>OutOfMemoryError</code>.</li>
+</ul>
+<hr>
+<p><strong>Native Method Stacks</strong>:</p>
+<ul>
+<li>If the computation in a thread requires a larger native method stack than is permitted, the Java Virtual Machine throws a <code>StackOverflowError</code>.</li>
+<li>If native method stacks can be dynamically expanded and native method stack expansion is attempted but insufficient memory can be made available, or if insufficient memory can be made available to create the initial native method stack for a new thread, the Java Virtual Machine throws an <code>OutOfMemoryError</code>.</li>
+</ul>
+<h3 id="Frames"><a href="#Frames" class="headerlink" title="Frames"></a>Frames</h3><p>A <code>frame</code> is used to store data and partial results, as well as to perform <strong>动态链接，方法返回值，分发异常</strong>。</p>
+<p>A new frame is <strong>每次方法调用的时候被创建</strong>. A frame is destroyed when its method invocation completes, whether that completion is normal or abrupt (it throws an uncaught exception). Frames are allocated from the Java Virtual Machine stack (§2.5.2) of the thread creating the frame. Each frame has its <strong>自己的本地变量数组</strong> (§2.6.1), its <strong>自己的操作数栈</strong> (§2.6.2), and a <strong>指向运行常量池的一个引用</strong> (§2.5.5) of the class of the current method.</p>
+<p><strong>只有一个帧</strong>, the frame for the executing method, is active at any point in a given thread of control. This frame is referred to as the <code>current frame</code>, and its method is known as the <code>current method</code>. The class in which the current method is defined is the <code>current class</code>. </p>
+<p>Note that a frame created by a thread is local to that thread and <strong>无法在另外一个线程中被引用</strong>.</p>
+<hr>
+<p><strong>Local Variables</strong>: </p>
+<p>Each frame contains an array of variables known as its local variables. The length of the local variable array of a frame is determined at <strong>编译阶段</strong>.</p>
+<p>Local variables are addressed by indexing. The <strong>索引</strong> of the <strong>第一个</strong> local variable is <strong>0</strong>. A value of type <strong><code>long</code></strong> or type <strong><code>double</code> 占据两个连续的</strong> local variables.</p>
+<p>The Java Virtual Machine uses local variables to pass parameters on method invocation. On <strong>类方法调用</strong>, any parameters are passed in consecutive local variables starting from local variable 0. On <strong>实例方法调用</strong> invocation, local variable 0 is always used to pass a reference to the object on which the instance method is being invoked (this in the Java programming language). Any parameters are subsequently passed in consecutive local variables starting from local variable 1.</p>
+<hr>
+<p><strong>操作数栈</strong>:</p>
+<p>Each frame contains a <strong>last-in-first-out (LIFO)</strong> stack known as its operand stack.</p>
+<p>The operand stack is <strong>首次创建是空的</strong> when the frame that contains it is created. The Java Virtual Machine supplies instructions to load constants or values <strong>从</strong> local variables or fields <strong>到</strong> the operand stack. Other Java Virtual Machine instructions <strong>取</strong> operands from the operand stack, operate on them, and <strong>放回</strong> the result back onto the operand stack. The operand stack is also used to prepare parameters to be passed to methods and to receive method results.</p>
+<hr>
+<p><strong>动态链接</strong>:</p>
+<p>Each frame contains a reference to the run-time constant pool for the type of the current method to support dynamic linking of the method code. The class file code for a method refers to methods to be invoked and variables to be accessed via <strong>symbolic references</strong>. Dynamic linking <strong>翻译</strong> these symbolic method references into concrete method references, <strong>必要的时候加载类</strong> as necessary to resolve as-yet-undefined symbols, and translates variable accesses into appropriate offsets in storage structures associated with the run-time location of these variables.</p>
+<h3 id="Representation-of-Objects"><a href="#Representation-of-Objects" class="headerlink" title="Representation of Objects"></a>Representation of Objects</h3><p>The Java Virtual Machine <strong>没有指定</strong> any particular <strong>内部结构</strong> for objects.</p>
+<h3 id="Special-Methods"><a href="#Special-Methods" class="headerlink" title="Special Methods"></a>Special Methods</h3><p>At the level of the Java Virtual Machine, every <strong>构造器</strong> written in the Java programming language appears as an instance initialization method that has the special name <code>&lt;init&gt;</code>. Instance initialization methods may be invoked only within the Java Virtual Machine by the <strong><code>invokespecial</code></strong> instruction.</p>
+<p>A class or interface has <strong>最多一个</strong> class or interface initialization method and is initialized (§5.5) by invoking that method. The initialization method of a class or interface has the special name <code>&lt;clinit&gt;</code>, takes no arguments, and is void.</p>
+<p>In a class file whose version number is 51.0 or above, the method <strong>必须</strong> additionally have its <code>ACC_STATIC</code> flag (§4.6) set in order to be the class or interface initialization method.</p>
+<h2 id="Compiling-for-the-Java-Virtual-Machine"><a href="#Compiling-for-the-Java-Virtual-Machine" class="headerlink" title="Compiling for the Java Virtual Machine"></a>Compiling for the Java Virtual Machine</h2><p>Each <strong>指令</strong> takes the form:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&lt;index&gt; &lt;opcode&gt; [ &lt;operand1&gt; [ &lt;operand2&gt;... ]] [&lt;comment&gt;]</div></pre></td></tr></table></figure>
+<p>例如:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">8 bipush 100 // Push int constant 100</div></pre></td></tr></table></figure>
+<h3 id="Synchronization"><a href="#Synchronization" class="headerlink" title="Synchronization"></a>Synchronization</h3><p>Synchronization in the Java Virtual Machine is implemented by <strong>monitor entry and exit</strong>, either explicitly (by use of the <code>monitorenter</code> and <code>monitorexit</code> instructions) or implicitly (by the method invocation and return instructions).</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">onlyMe</span><span class="params">(Foo f)</span> </span>&#123;</div><div class="line">    <span class="keyword">synchronized</span>(f) &#123;</div><div class="line">        doSomething();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>被编译为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">Method void onlyMe(Foo)</div><div class="line">0 aload_1 // Push f</div><div class="line">1 dup // Duplicate it on the stack</div><div class="line">2 astore_2 // Store duplicate in local variable 2</div><div class="line">3 monitorenter // Enter the monitor associated with f</div><div class="line">4 aload_0 // Holding the monitor, pass this and...</div><div class="line">5 invokevirtual #5 // ...call Example.doSomething()V</div><div class="line">8 aload_2 // Push local variable 2 (f)</div><div class="line">9 monitorexit // Exit the monitor associated with f</div><div class="line">10 goto 18 // Complete the method normally</div><div class="line">13 astore_3 // In case of any throw, end up here</div><div class="line">14 aload_2 // Push local variable 2 (f)</div><div class="line">15 monitorexit // Be sure to exit the monitor!</div><div class="line">16 aload_3 // Push thrown value...</div><div class="line">17 athrow // ...and rethrow value to the invoker</div><div class="line">18 return // Return in the normal case</div><div class="line">Exception table:</div><div class="line">From To Target Type</div><div class="line">4 10 13 any</div><div class="line">13 16 13 any</div></pre></td></tr></table></figure>
+<h2 id="The-class-File-Format-1"><a href="#The-class-File-Format-1" class="headerlink" title="The class File Format"></a>The <code>class</code> File Format</h2><h3 id="ClassFile-结构体"><a href="#ClassFile-结构体" class="headerlink" title="ClassFile 结构体"></a><code>ClassFile</code> 结构体</h3><p><img src="2017_09_08_10_04_46.png" alt=""></p>
+<h3 id="Descriptors"><a href="#Descriptors" class="headerlink" title="Descriptors"></a>Descriptors</h3><p>A descriptor is a string representing the <strong>类型</strong> of a field or method.</p>
+<hr>
+<p>Interpretation of field descriptors:</p>
+<p><img src="2017_09_08_10_14_16.png" alt=""></p>
+<hr>
+<p>The method descriptor for the method:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function">Object <span class="title">m</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">double</span> d, Thread t)</span> </span>&#123;...&#125;</div></pre></td></tr></table></figure>
+<p>is:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">(IDLjava/lang/Thread;)Ljava/lang/Object;</div></pre></td></tr></table></figure>
+
+
+
+
+
+
+</body>
+</html>

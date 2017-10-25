@@ -1,0 +1,88 @@
+<html>
+<head>
+	
+	<title>Architecture</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h1 id="Architecture"><a href="#Architecture" class="headerlink" title="Architecture"></a>Architecture</h1><h2 id="技术"><a href="#技术" class="headerlink" title="技术"></a>技术</h2><h3 id="1-如何实现高并发、高可用的系统？"><a href="#1-如何实现高并发、高可用的系统？" class="headerlink" title="(1) 如何实现高并发、高可用的系统？"></a>(1) 如何实现高并发、高可用的系统？</h3><ul>
+<li><strong>高并发原则</strong>: 无状态、拆分、服务化、消息队列、数据异构、缓存银弹、并发化</li>
+<li><strong>高可用原则</strong>: 负载均衡与反向代理、隔离术、降级、限流、切流量、超时与重试、可回滚、压测与预案</li>
+</ul>
+<hr>
+<p>以下摘自 《看透 Spring MVC 源代码分析与实践》:</p>
+<p><img src="2017_09_03_20_15_46.png" alt=""></p>
+<h3 id="2-负载均衡与反向代理"><a href="#2-负载均衡与反向代理" class="headerlink" title="(2) 负载均衡与反向代理"></a>(2) 负载均衡与反向代理</h3><p><img src="17-08-12-10:51:07_326_138.png" alt=""></p>
+<h3 id="3-隔离术"><a href="#3-隔离术" class="headerlink" title="(3) 隔离术"></a>(3) 隔离术</h3><p><strong>隔离手段</strong>: 线程池隔离、进程隔离、集群隔离、机房隔离、读写隔离、快慢隔离、动静隔离、爬虫隔离等。</p>
+<p><img src="17-08-12-10:55:34_809_385.png" alt=""></p>
+<hr>
+<p><strong>如何测试响应时间</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">siege -c100 -t60s -b http://***.item.jd.com/92183</div></pre></td></tr></table></figure>
+<h3 id="4-限流"><a href="#4-限流" class="headerlink" title="(4) 限流"></a>(4) 限流</h3><p><strong><a href="https://tomcat.apache.org/tomcat-7.0-doc/config/http.html" target="_blank" rel="external">Tomcat 限流</a></strong>:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">Connector</span> <span class="attr">port</span>=<span class="string">"8080"</span> <span class="attr">protocol</span>=<span class="string">"HTTP/1.1"</span></span></div><div class="line"><span class="tag">           <span class="attr">connectionTimeout</span>=<span class="string">"20000"</span></span></div><div class="line"><span class="tag">           <span class="attr">redirectPort</span>=<span class="string">"8443"</span> <span class="attr">acceptCount</span>=<span class="string">"1000"</span> <span class="attr">maxConnections</span>=<span class="string">"500"</span> /&gt;</span></div></pre></td></tr></table></figure>
+<ul>
+<li><strong>acceptCount</strong>: The maximum queue length for incoming connection requests when all possible request processing threads are in use. Any requests received when the queue is full will be refused. The default value is 100.</li>
+<li><strong>maxConnections</strong>: The maximum number of connections that the server will accept and process at any given time. When this number has been reached, the server will accept, but not process, one further connection. </li>
+<li><strong>maxThreads</strong>: The maximum number of request processing threads to be created by this Connector, which therefore determines the maximum number of simultaneous requests that can be handled.</li>
+</ul>
+<hr>
+<p><strong><a href="https://dev.mysql.com/doc/refman/5.7/en/too-many-connections.html" target="_blank" rel="external">MySQL 限流</a></strong>:</p>
+<p>The number of connections permitted is controlled by the <code>max_connections</code> system variable. The default value is 151 to improve performance when MySQL is used with the Apache Web server. (Previously, the default was 100.) If you need to support more connections, you should set a larger value for this variable.</p>
+<hr>
+<p><strong><a href="http://shokunin.co/blog/2014/11/11/operational_redis.html" target="_blank" rel="external">Redis 限流1</a>, <a href="https://www.techandme.se/performance-tips-for-redis-cache-server/" target="_blank" rel="external">Redis 限流2</a></strong>，Set tcp-backlog in <code>redis.conf</code>:</p>
+<p>Newer versions of redis have their own backlog(积压) set to <code>511</code> and you will need this to be higher if you have many connections:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"># TCP listen() backlog.</div><div class="line"># In high requests-per-second environments you need an high backlog in order</div><div class="line"># make sure to raise both the value of somaxconn and tcp_max_syn_backlog</div><div class="line">tcp-backlog 65536</div></pre></td></tr></table></figure>
+<h3 id="5-降级"><a href="#5-降级" class="headerlink" title="(5) 降级"></a>(5) 降级</h3><p>我们需要通过<strong>配置方式</strong>来开启/关闭降级开关: 使用 <code>properties</code> 文件作为配置文件，借助 JDK 7 <strong><code>WatchService</code> 实现文件变更通知</strong>。</p>
+<h2 id="设计"><a href="#设计" class="headerlink" title="设计"></a>设计</h2><h3 id="1-如何从-Facebook-或-LinkedIn-中找出两个人之间的最短路径？"><a href="#1-如何从-Facebook-或-LinkedIn-中找出两个人之间的最短路径？" class="headerlink" title="(1) 如何从 Facebook 或 LinkedIn 中找出两个人之间的最短路径？"></a>(1) 如何从 <code>Facebook</code> 或 <code>LinkedIn</code> 中找出两个人之间的最短路径？</h3><p><strong>步骤一</strong>: Simplify the Problem - <strong>忘记</strong> the Millions of Users</p>
+<p><strong>1. 广度优先搜索</strong>:</p>
+<p><img src="2.-BFS-Wave.png" alt=""></p>
+<p><strong>2. bidirectional 广度优先搜索</strong>:</p>
+<p><img src="bidirectional-breadth-first-search.jpg" alt=""></p>
+<p><strong>步骤二</strong>: Handle the Millions of Users</p>
+<ul>
+<li><strong>1. For each friend ID: <code>int machine index = getMachineIDForUser(personID);</code></strong></li>
+<li><strong>2. Go to machine <code>#machine_index</code></strong></li>
+<li><strong>3. On that machine, do: <code>Person friend = getPersonWithID(person_id);</code></strong></li>
+</ul>
+<h3 id="2-如何放置爬虫陷入无止境的循环中？"><a href="#2-如何放置爬虫陷入无止境的循环中？" class="headerlink" title="(2) 如何放置爬虫陷入无止境的循环中？"></a>(2) 如何放置爬虫陷入无止境的循环中？</h3><p>we must recognize that URL parameters might indicate a completely different page. For example, the page <code>www.careercup.com/page?pid=microsoft-interviewquestionsis</code> totally different from the page <code>www.careercup.com/page?pid=google-interviewquestions</code>. But, we can also append URL parameters arbitrarily to any URL without truly changing the page, provided it’s not a parameter that the web application recognizes and handles. The page <code>www.careercup.com?foobar=hello</code> is the same as <code>www.careercup.com</code>.</p>
+<h3 id="3-检测有无重复-URL"><a href="#3-检测有无重复-URL" class="headerlink" title="(3) 检测有无重复 URL"></a>(3) 检测有无重复 URL</h3><p>Just how much space do 1O billion URLs take up? If each URL is an average of 100 characters, and each character is 4 bytes, then this list of 1O billion URLs will take up about <strong>4 TB</strong>. We are probably not going to hold that much data in memory.</p>
+<p>Let’s just pretend for a moment that we were <strong>想象我们可以放到内存中</strong>, since it’s useful to first construct a solution for the simple version. Under this version of the problem, we would just create a <strong>哈希表</strong> where each URL maps to true if it’s already been found elsewhere in the list. (As an alternative solution, we could <strong>排序</strong> and look for the duplicate values that way. That will take a bunch of extra time and offers few advantages.)</p>
+<p><strong>方案一: 磁盘存储</strong>:</p>
+<p>将所有这些 URL 拆成 4000 份，<strong>每份 1GB</strong>. An easy way to do that might be to store each URL <code>u</code> in a file named <code>&lt;x&gt;.txt</code> where <code>x = hash(u) % 4000</code>. load each file into memory, create a hash table of the URLs, and look for duplicates.</p>
+<p><strong>方案二: 多台机器</strong>:</p>
+<p>The main pro is that we can <strong>并行操作</strong>, such that all 4000 chunks are <strong>同时处理</strong>. For large amounts of data, this might result in a faster solution.</p>
+<h3 id="4-为-100-台机器设计缓存"><a href="#4-为-100-台机器设计缓存" class="headerlink" title="(4) 为 100 台机器设计缓存"></a>(4) 为 100 台机器设计缓存</h3><p><strong>1. Design a Cache for a Single System</strong>:</p>
+<p>how would you create a data structure that enables you to easily purge old data and also efficiently look up a value based on a key?</p>
+<p><strong>2. Expand to Many Machines</strong>:</p>
+<ul>
+<li>每台机器都拥有自己的缓存</li>
+<li>每台机器都有一份缓存的拷贝</li>
+<li>每台机器都拥有一部分缓存</li>
+</ul>
+<p><strong>3. Updating results when contents change</strong>:</p>
+
+
+
+
+
+
+</body>
+</html>

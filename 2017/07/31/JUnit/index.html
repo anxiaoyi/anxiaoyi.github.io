@@ -1,0 +1,58 @@
+<html>
+<head>
+	
+	<title>JUnit</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="JUnit"><a href="#JUnit" class="headerlink" title="JUnit"></a>JUnit</h2><p>添加依赖:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;!-- https://mvnrepository.com/artifact/junit/junit --&gt;</div><div class="line">&lt;dependency&gt;</div><div class="line">    &lt;groupId&gt;junit&lt;/groupId&gt;</div><div class="line">    &lt;artifactId&gt;junit&lt;/artifactId&gt;</div><div class="line">    &lt;version&gt;4.12&lt;/version&gt;</div><div class="line">    &lt;scope&gt;test&lt;/scope&gt;</div><div class="line">&lt;/dependency&gt;</div></pre></td></tr></table></figure>
+<h3 id="Annotation-to-make-a-private-method-public-only-for-test-classes"><a href="#Annotation-to-make-a-private-method-public-only-for-test-classes" class="headerlink" title="Annotation to make a private method public only for test classes"></a>Annotation to make a private method public only for test classes</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyClass</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">somePublicMethod</span><span class="params">()</span> </span>&#123;</div><div class="line">        ....</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@PublicForTests</span></div><div class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">somePrivateMethod</span><span class="params">()</span> </span>&#123;</div><div class="line">        ....</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p>The <strong>common way</strong> is to make the private method <strong>protected or package-private</strong> and to put the unit test for this method in the <strong>same package</strong> as the class under test. Guava has a <code>@VisibleForTesting</code> annotation, but it’s only for documentation purpose.</p>
+<hr>
+<p>If your test coverage is good on all the public method inside the tested class, the <strong>privates methods called by the public one</strong> will be <strong>自动测试</strong> since you will assert all the possible case.</p>
+<p>The <code>JUnit</code> Doc says:</p>
+<p>Testing private methods may be an indication that those methods should be moved into another class to promote reusability. But if you must… If you are using JDK 1.3 or higher, you can use <strong>反射</strong> to subvert the access control mechanism with the aid of the <code>PrivilegedAccessor</code>. For details on how to use it, read <a href="http://onjava.com/pub/a/onjava/2003/11/12/reflection.html" target="_blank" rel="external">this article</a>.</p>
+<hr>
+<p>Consider using <strong>使用接口暴露 API 方法</strong>, using <strong>factories or DI</strong> to publish the objects so the consumers know them only by the interface. The interface describes the published API. That way you can make whatever you want public on the implementation objects and the consumers of them see only those methods exposed through the interface.</p>
+<h3 id="Rules"><a href="#Rules" class="headerlink" title="Rules"></a>Rules</h3><p><code>Rules</code> are used to <strong>添加额外功能</strong> which applies to <strong>所有测试</strong> within a test class, but <strong>以一种更加通用的方式</strong>.</p>
+<p>For instance, <code>ExternalResource</code> executes code before and after a test method, without having to use <code>@Before</code> and <code>@After</code>. Using an <code>ExternalResource</code> rather than <code>@Before</code> and <code>@After</code> gives opportunities for <strong>更号的代码复用</strong>; the same rule can be used from two different test classes.</p>
+<hr>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JunitRuleTest</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="meta">@Rule</span></div><div class="line">    <span class="keyword">public</span> TemporaryFolder tempFolder = <span class="keyword">new</span> TemporaryFolder();</div><div class="line"></div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testRule</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</div><div class="line">        File newFolder = tempFolder.newFolder(<span class="string">"Temp Folder"</span>);</div><div class="line">        assertTrue(newFolder.exists());</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Every time the above test method is executed, a temporary folder is created and <strong>方法执行完就会自动删除</strong>. This is an example of an out-of-box rule provided by Junit.</p>
+<hr>
+<p>官方示例/提供的 <code>Rules</code> 请参考: <a href="https://github.com/junit-team/junit4/wiki/Rules" target="_blank" rel="external">Rules-Wiki</a></p>
+<h3 id="mockito"><a href="#mockito" class="headerlink" title="mockito"></a>mockito</h3><p>如何 <code>mock</code> 一个 <code>HostProvider</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">HostProvider</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">size</span><span class="params">()</span></span>;</div><div class="line">    <span class="function"><span class="keyword">public</span> InetSocketAddress <span class="title">next</span><span class="params">(<span class="keyword">long</span> spinDelay)</span></span>;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onConnected</span><span class="params">()</span></span>;</div><div class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">updateServerList</span><span class="params">(Collection&lt;InetSocketAddress&gt; serverAddresses,</span></span></div><div class="line"><span class="function"><span class="params">                             InetSocketAddress currentHost)</span></span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>使用 <code>org.mockito.mock</code> 方法来 <code>mock</code> 它:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">HostProvider hostProvider = mock(HostProvider.class);</div><div class="line">when(hostProvider.size()).thenReturn(<span class="number">1</span>);</div><div class="line">InetSocketAddress inaddr = <span class="keyword">new</span> InetSocketAddress(<span class="string">"127.0.0.1"</span>, <span class="number">1111</span>);</div><div class="line">when(hostProvider.next(anyLong())).thenReturn(inaddr);</div></pre></td></tr></table></figure>
+<p>也可以 <code>mock</code> 具体的类 (如 <code>Zookeeper.java</code>) :</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">ZooKeeper zk = mock(ZooKeeper.class);</div><div class="line">when(zk.getClientConfig()).thenReturn(<span class="keyword">new</span> ZKClientConfig());</div></pre></td></tr></table></figure>
+<h3 id="RunWith"><a href="#RunWith" class="headerlink" title="@RunWith"></a>@RunWith</h3><p>默认的 <code>Runner</code> 是 <code>BlockJUnit4ClassRunner</code>，使用 <code>@RunWith</code> 可以显示声明<strong>e当运行测试的时候需要 <code>invoke</code> 的类</strong>。</p>
+
+
+
+
+
+
+</body>
+</html>

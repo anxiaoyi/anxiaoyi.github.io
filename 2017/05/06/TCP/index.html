@@ -1,0 +1,250 @@
+<html>
+<head>
+	
+	<title>TCP</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="TCP"><a href="#TCP" class="headerlink" title="TCP"></a>TCP</h2><h3 id="发送缓存和接受缓存"><a href="#发送缓存和接受缓存" class="headerlink" title="发送缓存和接受缓存"></a>发送缓存和接受缓存</h3><p>发送进程和接受进程可能以不同的速度写入数据和读取数据，因此 TCP 需要使用缓存来存储数据。缓存还被 TCP 用来进行流量控制和差错控制。</p>
+<p><img src="chap-12-tcp-7-638.jpg" alt=""></p>
+<p>IP 层作为 TCP 的服务提供者，<strong>它必须以分组 (in packets) 为单位发送数据</strong>，而不是按照字节流来发送。在运输层，TCP 把若干个字节组成一个分组 (TCP groups a number of bytes together into a packet called a segment)，称为 <strong>报文段 (segment)</strong>。TCP 给每个报文段添加一个首部（用于控制），然后再把这个 <strong>报文段 (segment)</strong> 交付给 IP 层传输。这些 <strong>报文段 (segment)</strong>被封装成 <strong>IP 数据报 (IP datagram)</strong> 后发送出去。这些 <strong>报文段 (segment)</strong> 在接受时，有可能会失序、丢失，或受到损伤和重传，所有这些都是由 TCP 来处理的，而接受进程并不知道 TCP 的这些活动。</p>
+<blockquote>
+<p>这些<strong>报文段 (segment)</strong>并不一定长度相同</p>
+</blockquote>
+<h3 id="面向连接"><a href="#面向连接" class="headerlink" title="面向连接"></a>面向连接</h3><p>面向的是虚连接，而不是物理连接，每一个 <strong>IP 数据报 (IP datagram)</strong> 可以走不同的路径到达终点。</p>
+<h3 id="TCP-特点"><a href="#TCP-特点" class="headerlink" title="TCP 特点"></a>TCP 特点</h3><ul>
+<li>编号系统 Numbering System</li>
+<li>流量控制</li>
+<li>差错控制</li>
+<li>拥塞控制</li>
+</ul>
+<p><strong>报文段 (segment)</strong> 首部中有两个叫做<strong>序号 (sequence number)</strong> 和<strong>确认号 (acknowledgment number)</strong> 的字段。这两个字段都指的是字节 (byte number) 的编号，而不是 <strong>报文段 (segment)</strong> 的编号。</p>
+<p>TCP 把在一个连接中要发送的所有数据字节都编上号，它随机选择一个位于 0 ~ (2^32 -1) 之间的一个数字作为第一个字节的编号。当字节都被编上号以后，TCP 就给每一个要发送的报文段指派一个<strong>序号 (sequence number)</strong>。</p>
+<p>报文段中确认字段的值定义了某一方期望接受的下一个字节的编号，<strong>确认号是累积的</strong>。</p>
+<h3 id="报文段-Segment"><a href="#报文段-Segment" class="headerlink" title="报文段 Segment"></a>报文段 Segment</h3><p><img src="tcphead1.gif" alt=""><br><img src="tcp-segment-1.gif" alt=""><br><img src="tcp-analysis-section-6-2.gif" alt=""></p>
+<h3 id="TCP-连接"><a href="#TCP-连接" class="headerlink" title="TCP 连接"></a>TCP 连接</h3><p>TCP 协议在运输层和终点之间建立了一条虚路径。同属于一个报文的所有报文段都沿着这条虚路径发送 (All of the segments belonging to a message are then sent over this virtual path)。</p>
+<h4 id="三次握手"><a href="#三次握手" class="headerlink" title="三次握手"></a>三次握手</h4><ul>
+<li>客户端发送第一个报文段 (SYN 报文段)，其不携带任何数据，但是它要消耗一个序号。</li>
+</ul>
+<p><img src="tcphead1_three_way_shake_1.gif" alt=""></p>
+<ul>
+<li>服务器发送第二个报文段 (SYN + ACK 报文段)，其同样不携带任何数据，但是也要消耗一个序号。</li>
+</ul>
+<p><img src="tcphead1_three_way_shake_2.gif" alt=""></p>
+<ul>
+<li>客户端发送第三个报文段 (ACK 报文段)，请注意，这个报文段的序号和 SYN 报文段使用的序号一样，也就是说，它不消耗任何序号。在某些实现中，连接阶段的第三个报文段可以携带客户端的第一个数据块，在这种情况下，第三个报文段必须有一个新的序号来表示数据中的第一个字节的编号。</li>
+</ul>
+<p><img src="tcphead1_three_way_shake_3.gif" alt=""></p>
+<p>TCP 中使用的连接建立过程很容易碰到一个严重的安全问题，称为 <strong>SYN 洪泛攻击 (SYN flooding attack)</strong>。当一个或多个恶意的攻击者向某台服务器发送大量的 SYN 报文段，并通过伪造报文段中的源 IP 地址来假装每一个报文段来自不同的客户时，这个问题就发生了。服务器认为这些客户发来了主动打开请求，于是就分配必要的资源，如创建传送控制块 (TCP) 表，并设置一些计时器。然后 TCP 的服务器向这些假冒的客户发送 <strong>SYN + ACK 报文段</strong>，而这些报文段都丢失了。但是，在服务器等待握手的第三步的这段时间里，大量的资源被占用而没有利用。如果在很短的时间内，SYN 报文段的数量很大，服务器最终会因资源耗尽而不能接受来自合法客户的连接请求。这种 SYN 洪泛攻击属于一组称为 <strong>拒绝服务攻击 (denial of service attack)</strong> 的安全攻击，即攻击者用大量的服务请求垄断了一个系统，使这个系统因超载而拒绝为合法的请求提供服务。</p>
+<p>TCP 的一些实现采取了一些策略减轻 SYN 攻击的影响:</p>
+<ul>
+<li>强制限制在指定时间内的连接请求次数</li>
+<li>把来自不希望的源地址的数据包过滤掉</li>
+<li>SCTP: 使用 Cookie，做到推迟资源的分配，直至服务器能够证实连接请求来自合法的 IP 地址</li>
+</ul>
+<h4 id="数据传送"><a href="#数据传送" class="headerlink" title="数据传送"></a>数据传送</h4><p>数据可以双向传送，并且在同一个报文段中也可以携带确认，确认是随数据捎带过来的。举例，客户使用两个报文段发送了2000字节的数据，然后服务器使用一个报文段发送了2000字节的数据。前三个报文段既带有数据又带有确认，但最后一个报文段只有确认而没有数据。</p>
+<ul>
+<li>客户发送第一个报文段</li>
+</ul>
+<p><img src="tcphead1_send_data_1.gif" alt=""></p>
+<ul>
+<li>客户发送第二个报文段</li>
+</ul>
+<p><img src="tcphead1_send_data_2.gif" alt=""></p>
+<ul>
+<li>服务器发送第一个报文段</li>
+</ul>
+<p><img src="tcphead1_send_data_3.gif" alt=""></p>
+<ul>
+<li>客户返回最后一个报文段</li>
+</ul>
+<p><img src="tcphead1_send_data_4.gif" alt=""></p>
+<p>客户发送的数据报文段具有<strong>置 1 的 PSH (推送)</strong> 标志，因此服务器 TCP 知道要在收到这些数据后<strong>尽可能快地 (不必等待更多数据的到来)</strong>把它们交付给服务器进程。而从服务器发送来的报文段则没有把推送标志置 1.</p>
+<p>通过发送一个 URG (紧急) 位置 1 的报文段，可以发送<strong>紧急字节</strong>。TCP 紧急模式只是发送方的应用程序对某一部分字节流<strong>做了标记</strong>，要求接收方的应用程序特殊对待，并不是优先处理，也不是加速数据服务。</p>
+<h4 id="连接终止"><a href="#连接终止" class="headerlink" title="连接终止"></a>连接终止</h4><p>目前，大多数 TCP 实现允许在连接终止时有两种选择：<strong>三次挥手</strong>和<strong>具有半关闭选项的四次挥手</strong>。</p>
+<h5 id="三次挥手"><a href="#三次挥手" class="headerlink" title="三次挥手"></a>三次挥手</h5><ul>
+<li>客户发送一个把 FIN 位置置为 1 的报文段，这个报文段也可以包含客户发送的最后一块数据，如果不包含，那么它只消耗一个序号。</li>
+</ul>
+<p><img src="tcphead1_close_conn_1.gif" alt=""></p>
+<ul>
+<li>服务器返回一个 FIN + ACK 报文段，这个报文段同样也可以包含来自服务器的最后一块数据。如果它不携带数据，那么它只消耗一个序号。</li>
+</ul>
+<p><img src="tcphead1_close_conn_2.gif" alt=""></p>
+<ul>
+<li>客户发送最后一个 ACK 报文段，不携带数据，也不消耗序号。</li>
+</ul>
+<p><img src="tcphead1_close_conn_3.gif" alt=""></p>
+<h5 id="半关闭"><a href="#半关闭" class="headerlink" title="半关闭"></a>半关闭</h5><p>连接的一方停止接收数据，但是仍然发送数据，这称之为<strong>半关闭 (half-close)</strong></p>
+<p><img src="chap-12-tcp-30-638.jpg" alt=""></p>
+<h5 id="连接复位"><a href="#连接复位" class="headerlink" title="连接复位"></a>连接复位</h5><p>某一端的 TCP 可能会拒绝一个连接请求，也可能异常终止一条在用的连接，或者可能要终止一条空闲的连接，所有这些都是通过 RST (复位) 标志来完成的。</p>
+<h4 id="连接建立和半关闭终止"><a href="#连接建立和半关闭终止" class="headerlink" title="连接建立和半关闭终止"></a>连接建立和半关闭终止</h4><p><img src="17-05-06-18_05_05_647_764.png" alt=""></p>
+<p>MSL 是一个报文段被丢弃之前在因特网中能够生存的最大时间。TCP 报文段是封装在生存时间 (TTL) 受限的 IP 数据报中。当 IP 数据报被丢弃时，封装在其中的 TCP 报文段也就丢失了。MSL 的常用数值是 30 ～ 60 秒。有两个理由使得我们需要 TIME-WAIT 状态和 2MSL 计时器:</p>
+<ul>
+<li>如果最后一个 ACK 报文段丢失了，那么服务器 TCP 以为是它的 FIN 丢失了，因而重传它。如果客户已进入 CLOSED 状态，并在 2MSL 计时器超时之前就关闭了这条连接，那么客户就永远收不到这个重传的 FIN 报文段，因而服务器也就永远收不到最后的 ACK。服务器无法关闭这条连接。2MSL 计时器可以使客户等待足够长的时间，使得在 ACK 丢失 (一个 MSL) 的情况下，可以等到下一个 FIN 的到来 (另一个 MSL)。如果在 TIME-WAIT 状态中有一个新的 FIN 到达了，客户就发送一个新的 ACK，并重新启动这个 2MSL 计时器。</li>
+<li>某个连接中的重复报文段可能会出现在下一个连接中。客户和服务器关闭连接，经过短暂时间后，它们又打开了一个新的使用相同 Socket 地址，那么<strong>前一个连接的重复报文段有可能会到达新连接中</strong>。为了避免这个问题，TCP 规定这种情况必须经过 2MSL 时间之后才能出现。</li>
+</ul>
+<p><strong>关于 <code>TIME-WAIT</code> 还有弄清楚三点</strong>:</p>
+<p>(1) 通常，只有一端 — <strong>主动关闭 (发送第一条 <code>FIN</code> ) 的那一端会进入 <code>TIME-WAIT</code> 状态</strong><br>(2) <code>TIME-WAIT</code> 一般是 0.5 ~ 2 分钟<br>(3) 如果连接处于 <code>TIME-WAIT</code> 时有分组到达，就重启 2MSL 的定时器</p>
+<p><strong><code>SO_LINGER</code> 选项</strong>不建议使用，这会暗杀 <code>TIME-WAIT</code> 状态，强壮的应用程序永远都不应该干扰 <code>TIME-WAIT</code> 状态 —- 这是 TCP 可靠机制的重要组成部分。</p>
+<h4 id="三次挥手-1"><a href="#三次挥手-1" class="headerlink" title="三次挥手"></a>三次挥手</h4><p>连接建立和终止阶段更为常见的是使用三次挥手:</p>
+<p><img src="17-05-06-18_19_29_702_523.png" alt=""></p>
+<h4 id="拒绝连接"><a href="#拒绝连接" class="headerlink" title="拒绝连接"></a>拒绝连接</h4><p>服务器发送 RST + ACK 报文段后，客户端进入 CLOSED 状态:</p>
+<p><img src="17-05-06-18_23_34_696_414.png" alt=""></p>
+<h4 id="TCP-调参"><a href="#TCP-调参" class="headerlink" title="TCP 调参"></a>TCP 调参</h4><p>高并发服务器建议调小 <code>TCP</code> 协议的 <code>time_wait</code> 超时时间。操作系统默认 240 秒后,才会关闭处于 <code>time_wait</code> 状态的连接,在高并发访问下,服务器端会因为处于 <code>time_wait</code> 的连接数太多,可能无法建立新的连接,所以需要在服务器上调小此等待值。在 linux 服务器上请通过变更 <code>/etc/sysctl.conf</code> 文件去修改该缺省值 ( 秒 ): </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">net.ipv4.tcp_fin_timeout = 30</div></pre></td></tr></table></figure>
+<p>调大服务器所支持的最大文件句柄数 (File Descriptor ,简写为 fd) 。主流操作系统的设计是将 TCP / UDP 连接采用与文件一样的方式去管理，即一个连接对应于一个 fd 。主流的 linux 服务器默认所支持最大 fd 数量为 1024，当并发连接数很大时很容易因为 fd 不足而出现 “ open too many files ” 错误,导致新的连接无法建立。 建议将 linux 服务器所支持的最大句柄数调高数倍 ( 与服务器的内存数量相关 ) 。</p>
+<h3 id="TCP-中的窗口"><a href="#TCP-中的窗口" class="headerlink" title="TCP 中的窗口"></a>TCP 中的窗口</h3><p><strong>TCP 为每个方向的数据传送各使用两个窗口 (发送窗口和接受窗口)</strong>，也就是说总共有四个窗口。</p>
+<p>发送窗口:</p>
+<p><img src="17-05-06-19_35_55_933_493.png" alt=""></p>
+<p>接受窗口:</p>
+<p><img src="17-05-06-19_42_48_925_574.png" alt=""></p>
+<p>通常接受窗口的大小可以这样计算:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">rwnd = 缓存大小 - 正在等待被拉取的字节数</div></pre></td></tr></table></figure>
+<h3 id="流量控制-Flow-Control"><a href="#流量控制-Flow-Control" class="headerlink" title="流量控制 Flow Control"></a>流量控制 Flow Control</h3><p>流量控制平衡了生产者生产数据的速度和消费者消耗数据的速度。为了实现流量控制，TCP 强制发送方和接收方<strong>不断调整它们的窗口大小</strong>，即使双方的缓存大小在连接建立时被固定了下来。流量控制的一个例子:</p>
+<p><img src="17-05-06-19_51_13_901_757.png" alt=""></p>
+<p><strong>糊涂窗口综合症 Silly Window Syndrome</strong>: 在滑动窗口的操作中可能出现一个严重的问题，这就是发送应用程序产生数据的速度很慢，或者接受应用程序消耗数据的速度很慢，或者两者都有。不管是哪一种情况，都会使得发送数据的报文段很小，这就会降低运行的效率。例如 TCP 发送的报文段只包含 1 个字节的数据，那么意味着我们为此多发送了 40 字节 (20 字节的 IP 首部和 20 字节的 TCP 首部) 的数据，再算上数据链路层和物理层的额外开销后，这种低效率的程度就更加严重了。解决这种问题的方法是防止一个字节一个字节的发送数据。</p>
+<ul>
+<li><strong>Nagle 算法</strong>: 在发送了第一个报文段后 (哪怕只有 1 字节)，发送 TCP 在输出缓存中累积数据并等待，直至收到接受 TCP 发来的确认，或者已累积了足够的数据可以装成最大长度的报文段，此时就可以发送这个报文段了。</li>
+</ul>
+<p>如果是接收方接受数据的速度太慢，它在收到数据后将其存储在缓存中。现在缓存满了，接收方通知的窗口值为 0，这表示发送方必须立即停止发送数据。对于这种情况，有两种解决办法:</p>
+<ul>
+<li><strong>Clark 算法</strong>: 只要有数据到达就发送确认，但在缓存中有足够大的空间放入最大长度的报文段之前，或者至少有一半的缓存空间为空之前，一直都宣布窗口大小为零。</li>
+<li><strong>推迟确认</strong>: 接收方在对收到的报文段进行确认之前一直等待，直至输入缓存 (incoming buffer) 有足够的空间为止，减少通信量，但有可能迫使发送方重传未被确认的报文段。目前 TCP 的定义是推迟确认不能超过 500 ms。</li>
+</ul>
+<h3 id="差错控制-Error-Control"><a href="#差错控制-Error-Control" class="headerlink" title="差错控制 Error Control"></a>差错控制 Error Control</h3><ul>
+<li>检测和重传受到损伤的报文段</li>
+<li>重传丢失的报文段 - 差错控制机制的<strong>核心</strong></li>
+<li>保存失序到达的报文段直至缺失的报文段到齐</li>
+<li>检测和丢弃重复的报文段</li>
+</ul>
+<p>TCP 通过使用三个简单的工具来完成其差错控制: <strong>校验和、确认以及超时</strong>。</p>
+<blockquote>
+<p>ACK 报文段不消耗序号，也不需要被确认。</p>
+</blockquote>
+<p>正常情况:</p>
+<p><img src="17-05-06-20_19_05_842_417.png" alt=""></p>
+<p>报文段丢失:</p>
+<p><img src="17-05-06-20_27_19_908_420.png" alt=""></p>
+<p>快重传 - 具有更大数值的 RTO:</p>
+<p><img src="17-05-06-20_35_54_833_570.png" alt=""></p>
+<p>下一个确认自动纠正丢失确认带来的影响:</p>
+<p><img src="17-05-06-20_36_59_641_341.png" alt=""></p>
+<p>丢失的确认被重传的报文段纠正:</p>
+<p><img src="17-05-06-20_38_32_708_330.png" alt=""></p>
+<h3 id="拥塞控制-Congestion-Control"><a href="#拥塞控制-Congestion-Control" class="headerlink" title="拥塞控制 Congestion Control"></a>拥塞控制 Congestion Control</h3><p>除了接收方的 rwnd 之外，<strong>网络的发送速度</strong>是决定发送方窗口大小的第二个实体。</p>
+<blockquote>
+<p>真正的窗口大小: minimum(rwnd, cwnd)</p>
+</blockquote>
+<p>TCP 处理拥塞的一般策略是基于三个阶段: 慢开始、拥塞避免和拥塞检测。</p>
+<ul>
+<li><strong>慢开始: 指数增长</strong>: 拥塞窗口大小从 1 个最大报文段的长度 (MSS) 开始。每当一个报文段被确认，拥塞窗口就增大一个 MSS。慢开始算法开始很慢，但按指数规律增大。发送方密切关注一个称为 ssthresh (慢开始门限) 的变量。</li>
+</ul>
+<p><img src="17-05-06-20_49_21_823_470.png" alt=""></p>
+<ul>
+<li><strong>拥塞避免: 加法增大</strong>: 当拥塞窗口大小达到慢开始的门限时，慢开始阶段就停止，而加法增大阶段就开始了。每当一整个 “窗口” 中的报文段都被确认后，拥塞窗口大小才增加 1.一个 “窗口” 就是指在一个 RTT 期间传输的报文段的数量。换言之，这个增长是基于 RTT 的，而不是基于到达的 ACK 的数量。</li>
+</ul>
+<p><img src="17-05-06-20_52_28_749_542.png" alt=""></p>
+<ul>
+<li><strong>拥塞检测: 乘法减小</strong>: 让发送方能够猜测到拥塞已发生的唯一现象就是它需要重传一个报文段。之所以需要重传是为了恢复一个遗失的分组，而这个分组假设是因为某个路由器有太多的输入分组而不得不丢弃，所以才被丢弃掉的，也就是说路由器或者网络已变得超载或者拥塞了。重传可以发生在以下两种情况之一：当 RTO 计时器超时，或者是当收到了三个重复的 ACK 时。不管哪一种情况，<strong>门限值都要下降到一半</strong> (乘法减小)。大多数 TCP 实现有以下两种反应:</li>
+</ul>
+<ol>
+<li>如果是计时器超时，那么出现拥塞的可能性就很大。TCP 会:<ul>
+<li>设置门限值为<strong>当前窗口大小的一半</strong></li>
+<li>cwnd 重置为 1</li>
+<li>再次从慢开始阶段开始</li>
+</ul>
+</li>
+<li>如果是收到三个 ACK，出现拥塞的可能性就很小。TCP 会启动快重传和快恢复:<ul>
+<li>设置门限值为<strong>当前窗口大小的一半</strong></li>
+<li>cwnd 设置为门限值</li>
+<li>启动拥塞避免阶段</li>
+</ul>
+</li>
+</ol>
+<p>拥塞举例:</p>
+<p><img src="17-05-06-21_10_16_803_370.png" alt=""></p>
+<h3 id="TCP-的计时器"><a href="#TCP-的计时器" class="headerlink" title="TCP 的计时器"></a>TCP 的计时器</h3><p>为了能够顺利地进行 TCP 的操作，大多数的 TCP 实现至少使用 4 个计时器:</p>
+<p><img src="17-05-06-21_28_51_717_125.png" alt=""></p>
+<ul>
+<li><strong>重传计时器</strong>: 重传丢失的报文段</li>
+<li><strong>持续计时器</strong>: 发送 TCP 收到窗口值为 0 的确认时，就启动一个持续计时器，解决死锁问题</li>
+<li><strong>保活计时器</strong>: 放置两个 TCP 之间长时间空闲。超时通常设置为两个小时。如果服务器过了两个小时还没有收到客户端的任何消息，它就发送一个<strong>探测报文段</strong>。若连续发送了 10 个探测报文段 (每隔 75 秒一个) 还没有收到响应，他就假定客户端出现了故障，并终止这个连接</li>
+<li><strong>TIME-WAIT 计时器</strong>: 连接终止期间使用</li>
+</ul>
+<h3 id="TCP-Package"><a href="#TCP-Package" class="headerlink" title="TCP Package"></a>TCP Package</h3><p>典型 TCP 实现:</p>
+<p><img src="17-05-06-21_35_43_888_486.png" alt=""></p>
+<h3 id="TCP-粘包-拆包问题"><a href="#TCP-粘包-拆包问题" class="headerlink" title="TCP 粘包/拆包问题"></a>TCP 粘包/拆包问题</h3><p>TCP 是个 “流” 协议，所谓流，就是没有界限的一串数据，就像河里的流水，它们是连成一片的，其间并没有分界线。发生粘包/拆包的原因:</p>
+<ul>
+<li>应用程序 <code>write</code> 写入的字节大小大于套接口发送缓冲区的大小</li>
+<li>进行 <code>MSS</code> 大小的 TCP 分段</li>
+<li>以太网帧的 <code>payload</code> 大于 <code>MTU</code> 进行 IP 分片</li>
+</ul>
+<p>业界主流解决方案:</p>
+<ul>
+<li><strong>消息定长</strong>，每个报文固定长度 200 字节，不够补空格</li>
+<li>在<strong>包尾增加回车换行符</strong>进行分割，例如 FTP 协议</li>
+<li>将消息分为消息头和消息体，消息头中包含表示消息总长度 (或者消息体长度) 的字段，通常设计思路为消息头的第一个字段用 <code>int32</code> 来表示消息的总长度</li>
+<li>更复杂的应用层协议</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelRead</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">byte</span>[] req = <span class="keyword">new</span> <span class="keyword">byte</span>[buf.readableBytes()];</div><div class="line">    buf.readBytes(req);</div><div class="line">    String body = <span class="keyword">new</span> String(req, <span class="string">"UTF-8"</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Netty 默认提供多种解码器用于处理半包问题:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">socketChannel.pipeline().addLast(<span class="keyword">new</span> LineBasedFrameDecoder(<span class="number">1024</span>));</div><div class="line">socketChannel.pipeline().addLast(<span class="keyword">new</span> StringDecoder());</div></pre></td></tr></table></figure>
+<h3 id="常用-TCP-选项"><a href="#常用-TCP-选项" class="headerlink" title="常用 TCP 选项"></a>常用 TCP 选项</h3><p>摘自 <code>memcached.c</code> 源码:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, (<span class="keyword">void</span> *)&amp;flags, <span class="keyword">sizeof</span>(flags));</div><div class="line"><span class="keyword">if</span> (IS_UDP(transport)) &#123;</div><div class="line">    maximize_sndbuf(sfd);</div><div class="line">&#125; <span class="keyword">else</span> &#123;</div><div class="line">    error = setsockopt(sfd, SOL_SOCKET, SO_KEEPALIVE, (<span class="keyword">void</span> *)&amp;flags, <span class="keyword">sizeof</span>(flags));</div><div class="line">    <span class="keyword">if</span> (error != <span class="number">0</span>)</div><div class="line">        perror(<span class="string">"setsockopt"</span>);</div><div class="line"></div><div class="line">    error = setsockopt(sfd, SOL_SOCKET, SO_LINGER, (<span class="keyword">void</span> *)&amp;ling, <span class="keyword">sizeof</span>(ling));</div><div class="line">    <span class="keyword">if</span> (error != <span class="number">0</span>)</div><div class="line">        perror(<span class="string">"setsockopt"</span>);</div><div class="line"></div><div class="line">    error = setsockopt(sfd, IPPROTO_TCP, TCP_NODELAY, (<span class="keyword">void</span> *)&amp;flags, <span class="keyword">sizeof</span>(flags));</div><div class="line">    <span class="keyword">if</span> (error != <span class="number">0</span>)</div><div class="line">        perror(<span class="string">"setsockopt"</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li><code>SO_REUSEADDR</code>: </li>
+<li><code>SO_KEEPALIVE</code>:</li>
+<li><code>SO_LINGER</code>: </li>
+<li><code>TCP_NODELAY</code>:</li>
+</ul>
+<h4 id="MTU"><a href="#MTU" class="headerlink" title="MTU"></a>MTU</h4><p>以太网是 1500 字节，光纤是 4000 字节</p>
+<h3 id="我们为什么一定需要三次握手，而不是两次"><a href="#我们为什么一定需要三次握手，而不是两次" class="headerlink" title="我们为什么一定需要三次握手，而不是两次?"></a>我们为什么一定需要三次握手，而不是两次?</h3><p>双方使用 Sequence number 来跟踪它们已经发送的信息。然而序列号并不是由 0 开始的，而是由 ISN (Initial Sequence Number), 即一个随机生成的数字。The three-way handshake is necessary because <strong>both parties need to synchronize their segment sequence numbers used during their transmission</strong>.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">Alice ---&gt; Bob    SYNchronize with my Initial Sequence Number of X</div><div class="line">Alice &lt;--- Bob    I received your syn, I ACKnowledge that I am ready for [X+1]</div><div class="line">Alice &lt;--- Bob    SYNchronize with my Initial Sequence Number of Y</div><div class="line">Alice ---&gt; Bob    I received your syn, I ACKnowledge that I am ready for [Y+1]</div></pre></td></tr></table></figure>
+<p>在这个过程中，产生了四个事件:</p>
+<ol>
+<li>Alice picks an ISN and <strong>SYNchronizes</strong> it with Bob.</li>
+<li>Bob <strong>ACKnowledges</strong> the ISN.</li>
+<li>Bob picks an ISN and <strong>SYNchronizes</strong> it with Alice.</li>
+<li>Alice <strong>ACKnowledges</strong> the ISN.</li>
+</ol>
+<p>在实际中，第 2 个事件和第 3 个事件可以在放到一个包中，所以三次握手就够了:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Bob &lt;--- Alice         SYN</div><div class="line">Bob ---&gt; Alice     SYN ACK </div><div class="line">Bob &lt;--- Alice     ACK</div></pre></td></tr></table></figure>
+<p>两次的话，只能保证一方建立一个 ISN，另一方 Acknowledge 它。但是另一方却无法发送任何数据。</p>
+<p>ISN 不能从 0 开始因为: <a href="https://en.wikipedia.org/wiki/TCP_sequence_prediction_attack" target="_blank" rel="external">TCP sequence prediction attack</a> The attacker hopes to correctly guess the sequence number to be used by the sending host. If they can do this, they will be able to send counterfeit(伪造) packets to the receiving host which will seem to originate from the sending host, even though the counterfeit(伪造) packets may in fact originate from some third host controlled by the attacker.</p>
+<h3 id="TCP-中间人攻击"><a href="#TCP-中间人攻击" class="headerlink" title="TCP 中间人攻击"></a>TCP 中间人攻击</h3><h3 id="服务器端在-accept-一个文件描述符之后怎么提高安全性？"><a href="#服务器端在-accept-一个文件描述符之后怎么提高安全性？" class="headerlink" title="服务器端在 accept 一个文件描述符之后怎么提高安全性？"></a>服务器端在 <code>accept</code> 一个文件描述符之后怎么提高安全性？</h3><h3 id="Internet-Protocol-Suite"><a href="#Internet-Protocol-Suite" class="headerlink" title="Internet Protocol Suite"></a>Internet Protocol Suite</h3><p><img src="13fig01.gif" alt=""></p>
+<p><code>VPN</code> 工作在数据链路层。</p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://www.amazon.com/Protocol-Suite-McGraw-Hill-Forouzan-Networking/dp/0073376043" target="_blank" rel="external">《TCP/IP Protocol Suite》</a></li>
+<li><a href="https://item.jd.com/11681556.html" target="_blank" rel="external">《Netty 权威指南》</a></li>
+<li><a href="https://blog.netherlabs.nl/articles/2009/01/18/the-ultimate-so_linger-page-or-why-is-my-tcp-not-reliable" target="_blank" rel="external"> TODO - The ultimate SO_LINGER page, or: why is my tcp not reliable</a></li>
+<li><a href="http://www.infoq.com/cn/minibooks/Alibaba-Java-minibook?utm_source=tuicool&amp;utm_medium=referral" target="_blank" rel="external">《阿里巴巴Java开发手册》</a></li>
+<li><a href="https://item.jd.com/11908449.html" target="_blank" rel="external">《大话 Java 性能优化》</a></li>
+<li><a href="https://networkengineering.stackexchange.com/questions/24068/why-do-we-need-a-3-way-handshake-why-not-just-2-way" target="_blank" rel="external">Why do we need a 3-way handshake? Why not just 2-way?</a></li>
+<li><a href="https://item.jd.com/10948631481.html" target="_blank" rel="external">《TCP/IP高效编程改善网络程序的44个技巧》</a></li>
+</ul>
+
+
+
+
+
+
+</body>
+</html>

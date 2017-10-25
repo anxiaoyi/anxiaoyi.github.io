@@ -1,0 +1,230 @@
+<html>
+<head>
+	
+	<title>Java Command</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="Java-Command"><a href="#Java-Command" class="headerlink" title="Java Command"></a>Java Command</h2><h3 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">javac Main.java -cp jar1.jar:jar2.jar</div></pre></td></tr></table></figure>
+<p><strong><code>Main.java</code> 放在前面还是放在后面都可以编译成功</strong></p>
+<ul>
+<li><strong>-d</strong>: 指定编译之后类保存的目录，<strong>目录必须提前创建好</strong></li>
+</ul>
+<p>在引用 <code>maven repository</code> 库的时候，必须明确指定 <code>jar</code> 文件的名称，因为 Maven 在下载的时候可能会同时下载 <code>source.jar</code> 和 <code>lib.jar</code> ，会造成引入错误，所以必须明确指定:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">javac PrimitiveServlet.java  -cp ~/.m2/repository/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar:./</div></pre></td></tr></table></figure>
+<h3 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h3><p>运行的时候<strong>必须站在包的顶级目录执行</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">java -cp .:jar1.jar:jar2.jar Main</div><div class="line">java org.apache.log4j.helpers.Loader</div></pre></td></tr></table></figure>
+<h3 id="运行-jar"><a href="#运行-jar" class="headerlink" title="运行 jar"></a>运行 <code>jar</code></h3><p>官方示例:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">java -jar mybatis-generator-core-1.3.6-SNAPSHOT.jar -configfile generatorConfig.xml -overwrite</div></pre></td></tr></table></figure>
+<p>可是 <code>mybatis-generator-core-1.3.6-SNAPSHOT.jar</code> 要依赖 <code>mysql-connector</code> ，所以应该添加 <code>classpath</code>，而 <strong><code>-cp</code> 和 <code>-jar</code> 这两个命令是不能同时使用的</strong>，所以唯有指定 <code>main class</code> 这种办法了:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">java -cp mybatis-generator-core-1.3.6-SNAPSHOT.jar:mysql-connector-java-6.0.6.jar org.mybatis.generator.api.ShellRunner -configfile generatorConfig.xml -overwrite</div></pre></td></tr></table></figure>
+<p>其中 <code>main</code> 方法所在的类，是通过搜过 <code>mybatis-generator</code> 的源代码找到的:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">zk@zk-pc:~/Documents/github/generator$ grep <span class="string">"main(String"</span> -Rn .</div><div class="line">./core/mybatis-generator-core/src/main/java/org/mybatis/generator/api/ShellRunner.java:53:    public static void main(String[] args) &#123;</div></pre></td></tr></table></figure>
+<h3 id="反编译"><a href="#反编译" class="headerlink" title="反编译"></a>反编译</h3><p><strong><code>javap</code></strong>: Disassembles one or more class files</p>
+<ul>
+<li><strong><code>-c</code></strong>: Prints disassembled code, for example, the instructions that comprise the Java bytecodes, for each of the methods in the class.</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">javap -c DocFooter.class</div></pre></td></tr></table></figure>
+<h3 id="jar-包"><a href="#jar-包" class="headerlink" title="jar 包"></a>jar 包</h3><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>jar cf jar-file input-file(s)</code></td>
+<td>创建一个 JAR 文件</td>
+</tr>
+<tr>
+<td><code>jar tf jar-file</code></td>
+<td>查看 JAR 内容</td>
+</tr>
+<tr>
+<td><code>jar xf jar-file</code></td>
+<td>提取内容</td>
+</tr>
+<tr>
+<td><code>java -jar app.jar</code></td>
+<td>运行 JAR 文件</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>-c</strong>: 创建</li>
+<li><strong>-f</strong>: 你想要输出到文件，而不是命令行</li>
+<li><strong>-m</strong>: 你想要从一个已经存在的文件合并消息到 manifest 文件中</li>
+<li><strong>-t</strong>: 列举包的 table</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">jar cfm app.jar manifest.txt com/zk/HelloWorld.class</div></pre></td></tr></table></figure>
+<p>manifest.txt 文件内容如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Main-Class: com.zk.HelloWorld</div></pre></td></tr></table></figure>
+<p>创建出来的 MANIFEST.MF 文件如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Manifest-Version: 1.0</div><div class="line">Created-By: 1.7.0_06 (Oracle Corporation)</div><div class="line">Main-Class: com.zk.HelloWorld</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>添加 <code>Main-Class</code></strong>:</p>
+<ul>
+<li><strong>-e</strong>: entrypoint</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">jar cfe app.jar com.zk.HelloWorld com/zk/HelloWorld.class</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>打包 resources</strong>:</p>
+<p>打包的过程是严格按照路径结构来的:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">jar cf log4jtest.jar Log4jTest.java resources/*</div></pre></td></tr></table></figure>
+<p>生成的 <code>log4jtest.jar</code> 的目录结构如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">META-INF/</div><div class="line">META-INF/MANIFEST.MF</div><div class="line">Log4jTest.java</div><div class="line">resources/log4j.properties</div></pre></td></tr></table></figure>
+<h3 id="jps-列举运行的-JVM-信息"><a href="#jps-列举运行的-JVM-信息" class="headerlink" title="jps - 列举运行的 JVM 信息"></a>jps - 列举运行的 JVM 信息</h3><ul>
+<li><strong>-m</strong>: 列举传递给 <code>main</code> 方法的参数</li>
+<li><strong>-l</strong>: 列举完整的包名或完整的 JAR 文件的路径</li>
+<li><strong>-v</strong>: 列举传递给 <code>JVM</code> 的参数</li>
+</ul>
+<h3 id="Java-资源加载"><a href="#Java-资源加载" class="headerlink" title="Java 资源加载"></a>Java 资源加载</h3><p>目录:</p>
+<p><img src="17-06-14-15:48:00_421_95.png" alt=""></p>
+<p><code>a.properties</code> 和 <code>ResourcePositionA.class</code> 位于同一级目录(同一个包)下，<code>a.properties</code> 挪到其它地方就找不到了:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">java.net.URL url = <span class="keyword">this</span>.getClass().getResource(<span class="string">"a.properties"</span>)</div></pre></td></tr></table></figure>
+<hr>
+<p>目录:</p>
+<p><img src="17-06-14-15:57:08_418_126.png" alt=""></p>
+<p><code>system.properties</code> 位于顶级目录，<code>system.properties</code> 挪到其它地方就找不到了，在 <code>ResourcePositionA.java</code> 中有如下代码:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">java.net.URL systemResource = ClassLoader.getSystemResource(<span class="string">"system.properties"</span>);</div></pre></td></tr></table></figure>
+<p>从顶级目录获取资源也可以使用 <code>this.getClass().getResource()</code> 方法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">this</span>.getClass().getResource(<span class="string">"/system.properties"</span>)</div></pre></td></tr></table></figure>
+<hr>
+<p>还有一种 <code>getResource</code> 的方法:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Thread.currentThread().getContextClassLoader().getResource(resourceName)</div></pre></td></tr></table></figure>
+<p><code>ClassLoader</code> can be passed <strong>(shared)</strong> when creating a new thread using Thread.setContextClassLoader, so that different thread contexts can load each other classes/resources. If not set, the default is the <code>ClassLoader</code> context of the parent Thread. This method is not appropriate if we want to load resources inside the packages unless we use complete paths starting from root.</p>
+<hr>
+<p><strong><code>Log4j</code> 查找 <code>log4j.properties</code> 的逻辑</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> URL <span class="title">getResource</span><span class="params">(String resource)</span> </span>&#123;</div><div class="line">    ClassLoader classLoader = <span class="keyword">null</span>;</div><div class="line">    URL url = <span class="keyword">null</span>;</div><div class="line"></div><div class="line">    <span class="comment">// 1. find by thread context class loader</span></div><div class="line">    classLoader = Thread.currentThread().getContextClassLoader();</div><div class="line">    url = classLoader.getResource(resource);</div><div class="line">    <span class="keyword">if</span> (url != <span class="keyword">null</span>)</div><div class="line">        <span class="keyword">return</span> url;</div><div class="line"></div><div class="line">    <span class="comment">// 2. find by classloader</span></div><div class="line">    classLoader = Loader.class.getClassLoader();</div><div class="line">    url = classLoader.getResource(resource);</div><div class="line">    <span class="keyword">if</span> (url != <span class="keyword">null</span>)</div><div class="line">        <span class="keyword">return</span> url;</div><div class="line"></div><div class="line">    <span class="comment">// 3. get the resource from the class path</span></div><div class="line">    <span class="keyword">return</span> ClassLoader.getSystemResource(resource);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>编译:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mkdir output</div><div class="line">javac Loader.java -d output/</div></pre></td></tr></table></figure>
+<p>无论将 <code>log4j.properties</code> 放到编译后的类文件旁边，还是直接打包进 <code>jar</code> 包中，都可以实现加载与查找。站在 <code>output</code> 文件夹执行命令:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">jar cfe log4j.jar org.apache.log4j.helpers.Loader log4j.properties org/apache/log4j/helpers/Loader*</div></pre></td></tr></table></figure>
+<p>执行命令如下所示:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">java -jar log4j.jar</div></pre></td></tr></table></figure>
+<p>执行结果:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Trying to find [log4j.properties] using context classloader sun.misc.Launcher$AppClassLoader@42a57993.</div><div class="line">jar:file:/home/zk/Documents/github/java-interview/log4jtest/org/apache/log4j/helpers/output/log4j.jar!/log4j.properties</div></pre></td></tr></table></figure>
+<p>具体源代码可以参考 <code>log4j</code> 的 <code>github</code> 的两个源文件:</p>
+<ul>
+<li><code>org.apache.log4j.helpers.Loader.java</code></li>
+<li><code>org.apache.log4j.LogManager.java</code></li>
+</ul>
+<hr>
+<p>使用 <code>Maven</code> 或者 <code>Gradle</code> 帮助我们编译项目的时候，资源文件需要放到 <code>resources</code> 目录下面:</p>
+<p><img src="17-07-26-16:58:15_330_43.png" alt=""></p>
+<p>编译之后，<code>aa.txt</code> 会拷贝到 <code>target/classes/</code> 目录下面:</p>
+<p><img src="17-07-26-16:56:45_331_89.png" alt=""></p>
+<hr>
+<p>当尝试从 <code>Jar</code> 文件中读取资源的时候，遇到如下问题:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">Exception in thread &quot;main&quot; java.lang.IllegalArgumentException: URI is not hierarchical</div><div class="line">	at java.io.File.&lt;init&gt;(File.java:418)</div><div class="line">	at com.zk.ExcelFactory.createExcelFromResource(ExcelFactory.java:19)</div><div class="line">	at com.zk.Application.main(Application.java:22)</div></pre></td></tr></table></figure>
+<p>以下是 <a href="https://stackoverflow.com/questions/10144210/java-jar-file-use-resource-errors-uri-is-not-hierarchical" target="_blank" rel="external">stackoverflow</a> 给出的解释:</p>
+<p>You cannot do this</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">File src = <span class="keyword">new</span> File(resourceUrLol.toURI()); <span class="comment">//ERROR HERE</span></div></pre></td></tr></table></figure>
+<p>与此相对应，我就是使用了这样的错误获取资源的方法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">return</span> WorkbookFactory.create(<span class="keyword">new</span> File(getURL(excelName).toURI()));</div></pre></td></tr></table></figure>
+<p>it is not a file! When you run from the ide you don’t have any error, because you don’t run a <code>jar</code> file. In the IDE classes and resources are extracted on the file system.</p>
+<p>But you can open an <code>InputStream</code> in this way:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">InputStream in = Model.class.getClassLoader().getResourceAsStream(<span class="string">"/data.sav"</span>);</div></pre></td></tr></table></figure>
+<p>Remove “/resource”. Generally the IDEs separates on file system classes and resources. But when the jar is created they are put all together. So the folder level “/resource” is used only for classes and resources separation.</p>
+<p>When you get a resource from classloader you have to specify the path that the resource has inside the jar, that is the real package hierarchy.</p>
+<p>或者通过 <code>URL</code> 自身携带的方法 <a href="http://docs.oracle.com/javase/6/docs/api/java/net/URL.html#openStream(" target="_blank" rel="external"><code>java.net.URL#openStream()</code></a>) 转为 <code>InputStream</code> 来操作</p>
+<hr>
+<p>文件转为 <code>URL</code> 的方法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">new</span> File(path).toURI().toURL();</div></pre></td></tr></table></figure>
+<hr>
+<p>注意文件转为 <code>URL</code> 意味着什么，路径 <code>/home/abc - def.jar</code> 将会被转化为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/home/abc/abc%20-%20def.jar</div></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// /home/abc - def.jar</span></div><div class="line"><span class="keyword">new</span> File(<span class="string">"/home/abc - def.jar"</span>).toPath().toString();</div><div class="line"><span class="comment">// /home/abc/abc%20-%20def.jar</span></div><div class="line"><span class="keyword">new</span> File(<span class="string">"/home/abc - def.jar"</span>).toURI().toURL().getPath();</div></pre></td></tr></table></figure>
+<p>想要<strong>转为正常路径</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">URLDecoder.decode(<span class="string">"/home/abc/abc%20-%20def.jar"</span>, <span class="string">"UTF-8"</span>);</div></pre></td></tr></table></figure>
+<p>另外千万不要傻傻的自己来拼接 URL:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">new</span> URL(<span class="string">"file://"</span> + filePath);</div></pre></td></tr></table></figure>
+<p>在 <code>UNIX</code> 系统上可能还发现没问题，但是到 <code>Windows</code> 系统上直接 GG:</p>
+<p><img src="TIM图片20170811080148.png" alt=""></p>
+<h3 id="Extensions"><a href="#Extensions" class="headerlink" title="Extensions"></a>Extensions</h3><p><strong>installed extensions</strong>: 放在 <code>lib/ext</code> 目录下面的 <code>jar</code> 包</p>
+<p><img src="extb1.gif" alt=""></p>
+<p>生成 <code>jar</code> 包:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">mkdir build</div><div class="line">javac -d ./build RectangleArea.java</div><div class="line"><span class="built_in">cd</span> build</div><div class="line">jar cvf area.jar RectangleArea.class</div></pre></td></tr></table></figure>
+<p>编译:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">javac -classpath ./build/area.jar AreaApp.java</div></pre></td></tr></table></figure>
+<p>运行:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">java -classpath .:./build/area.jar AreaApp</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>Download Extensions</strong>: 每次都需要下载，略过</p>
+<hr>
+<h4 id="Understanding-Extension-Class-Loading"><a href="#Understanding-Extension-Class-Loading" class="headerlink" title="Understanding Extension Class Loading"></a>Understanding Extension Class Loading</h4><p><code>class</code> 寻找路径:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">Bootstrap classes ( rt.jar、i18n.jar )</div><div class="line">              |</div><div class="line">              V</div><div class="line">Installed extensions( jre/lib/ext/ )</div><div class="line">              |</div><div class="line">              V</div><div class="line">The class path (java.class.path, -classpath, -cp, CLASSPATH)</div></pre></td></tr></table></figure>
+<p><img src="image03.png" alt=""></p>
+<p>JVM 的各提供商使用本地代码来实现 <code>Bootstrap</code> 类加载器。</p>
+<p><strong>类加载特性</strong>:</p>
+<ul>
+<li>延迟加载</li>
+<li>当一个类被加载时,它的所有父类都必须被加载</li>
+<li><strong>类缓存</strong>: 当一个类已经被请求,被类加载器加载之后,就会在 JVM 运行期间一直驻留在内存。当再次被请求时,就不需要再次加载,直接调用就可以了。</li>
+<li><strong>独立的命名空间</strong>:<strong>不同的类加载器有自己独立的命名空间</strong>。例如 <code>Bootstrap</code> 类加载器加载了 <code>com.test.ClassA</code>, <code>System</code> 类加载器加载了 <code>com.test.ClassB</code>, 那么这两个类将被当作不同包中的类,它们之间的私有成员不能互相访问。</li>
+</ul>
+<p><img src="092514_0637_javaclasslo1.png" alt=""></p>
+<p><strong>自定义类加载器</strong>:</p>
+<p>在 J2SE 中提供了两个默认的实现类, <code>SecureClassLoader</code> 和 <code>URLClassLoader</code> 。<code>SecureClassLoader</code> 是对 <code>ClassLoader</code> 类的包装, 它使用了 Java 安全模型机制。 <code>URLClassLoader</code> 是 <code>SecureClassLoader</code> 的子类, 用于定位磁盘和网络上的 Jar 和类文件。<code>Extension</code> 类加载器和 <code>System</code> 类加载器均继承自 <code>URL</code> 类加载器。</p>
+<hr>
+<p>得到当前程序的所有 <code>classpath</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">System.getProperty(<span class="string">"java.class.path"</span>)</div></pre></td></tr></table></figure>
+<h4 id="创建一个-Extensible-应用"><a href="#创建一个-Extensible-应用" class="headerlink" title="创建一个 Extensible 应用"></a>创建一个 Extensible 应用</h4><ul>
+<li><strong>Extensible application</strong>: 你可以不用修改它原来的 <strong>code base</strong>，就能 <strong>extend</strong> 的应用，可理解为插件或者模块话</li>
+<li><strong>Service</strong>: 一系列提供某些功能的接口</li>
+<li><strong>Service provider interface (SPI)</strong>: 一个 <strong>Service</strong> 所定义的开放接口或抽象类</li>
+<li><strong>Service Provider</strong>: 实现了 <strong>SPI</strong></li>
+</ul>
+<p>SPI 的全名为 Service Provider Interface.大多数开发人员可能不熟悉，因为这个是针对厂商或者插件的。在 <code>java.util.ServiceLoader</code> 的文档里有比较详细的介绍。简单的总结下 java spi 机制的思想。我们系统里抽象的各个模块，往往有很多不同的实现方案，比如日志模块的方案，xml 解析模块、jdbc 模块的方案等。面向的对象的设计里，我们一般推荐模块之间基于接口编程，模块之间不对实现类进行硬编码。一旦代码里涉及具体的实现类，就违反了可拔插的原则，如果需要替换一种实现，就需要修改代码。为了实现在模块装配的时候能不在程序里动态指明，这就需要一种<strong>服务发现机制</strong>。 java spi 就是提供这样的一个机制：<strong>为某个接口寻找服务实现的机制</strong>。有点类似 IOC 的思想，就是将装配的控制权移到程序之外，在模块化设计中这个机制尤其重要。</p>
+<p>java spi 的具体约定为:当服务的提供者，提供了服务接口的一种实现之后，在 jar 包的 <code>META-INF/services/</code> 目录里同时创建一个<strong>以服务接口命名</strong>的文件。<strong>该文件里就是实现该服务接口的具体实现类</strong>。而当外部程序装配这个模块的时候，就能通过该 jar 包 <code>META-INF/services/</code> 里的配置文件找到具体的实现类名，并装载实例化，完成模块的注入。 基于这样一个约定就能很好的找到服务接口的实现类，而不需要再代码里制定。jdk 提供服务实现查找的一个工具类：<code>java.util.ServiceLoader</code></p>
+<p>用法示例:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">private</span> <span class="keyword">static</span> ServiceLoader&lt;CodecSet&gt; codecSetLoader</div><div class="line">    = ServiceLoader.load(CodecSet.class);</div><div class="line">     </div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Encoder <span class="title">getEncoder</span><span class="params">(String encodingName)</span> </span>&#123;</div><div class="line">    <span class="keyword">for</span> (CodecSet cp : codecSetLoader) &#123;</div><div class="line">        Encoder enc = cp.getEncoder(encodingName);</div><div class="line">        <span class="keyword">if</span> (enc != <span class="keyword">null</span>)</div><div class="line">            <span class="keyword">return</span> enc;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>注册</strong>:</p>
+<p>把一个文件放在 <code>META-INF/services</code> 目录下，文件名: 类的全名，文件必须 UTF-8 编码，在开头可以使用 # 来注释</p>
+<p><strong>配置文件为什么要放在 <code>META-INF/services</code> 下面</strong>:</p>
+<p><code>ServiceLoader</code> 源码已经写死了</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String PREFIX = <span class="string">"META-INF/services/"</span>;</div></pre></td></tr></table></figure>
+<p><strong><code>ServiceLoader</code> 读取实现类是什么时候实例化的</strong>:</p>
+<p><code>ServiceLoader.LazyIterator.nextService</code> 中实例化，即 <code>load</code> 的结果迭代时才会被实例化。</p>
+<hr>
+<p><strong><code>ServiceLoader</code></strong> 类: 帮助你查找、加载、使用 <strong>service providers</strong>，他会搜索你的 <strong>class path</strong> 来查找 <code>service provider</code>，<code>ServiceLoader</code> 被 <code>final</code> 声明，意味着你无法覆盖它的算法</p>
+<hr>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">java -Djava.ext.dirs=../DictionaryServiceProvider/dist:../ExtendedDictionary/dist -cp dist/DictionaryDemo.jar dictionary.DictionaryDemo</div></pre></td></tr></table></figure>
+<ul>
+<li><strong>java.ext.dirs</strong>: 指定从哪里加载 <strong>extension mechanism</strong> 所需要的类，通常用来给 JRE 或其他库添加功能</li>
+</ul>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://docs.oracle.com/javase/tutorial/ext/basics/index.html" target="_blank" rel="external">Creating and Using Extensions</a></li>
+<li><a href="https://docs.oracle.com/javase/tutorial/deployment/jar/index.html" target="_blank" rel="external">Lesson: Packaging Programs in JAR Files</a></li>
+<li><a href="http://blog.csdn.net/unei66/article/details/47051017" target="_blank" rel="external">Java ServiceLoader(SPI)学习</a></li>
+<li><a href="http://www.logicbig.com/how-to/java/different-ways-to-load-resources/" target="_blank" rel="external">Different ways to load classpath resources in Java</a></li>
+<li><a href="">《精通 Tomcat》</a></li>
+</ul>
+
+
+
+
+
+
+</body>
+</html>

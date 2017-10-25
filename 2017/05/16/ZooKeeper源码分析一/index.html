@@ -1,0 +1,100 @@
+<html>
+<head>
+	
+	<title>ZooKeeper源码分析(一) - 建立连接</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="ZooKeeper源码分析-一-建立连接"><a href="#ZooKeeper源码分析-一-建立连接" class="headerlink" title="ZooKeeper源码分析(一) - 建立连接"></a>ZooKeeper源码分析(一) - 建立连接</h2><h3 id="版本选择"><a href="#版本选择" class="headerlink" title="版本选择"></a>版本选择</h3><p>从 Github 下载源码，执行命令:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">cd</span> zookeeper</div><div class="line">git checkout e048893ec04a250fcb50853d6b47594fa81b0ea2</div><div class="line">ant</div></pre></td></tr></table></figure>
+<p>编译成功后，将文件夹 <code>build/java/generated</code> 中的源文件拷贝到 <code>src</code> 目录下面，以便我们从源码运行程序。如果导入到 <strong>idea</strong> 的话，需要将 <code>src</code> 文件夹标记为源码根路径。</p>
+<p>我们之所以要切换到这一个不同的分支上，是因为这个阶段的代码处于 ZooKeeper 的早期阶段，且功能较为成型，有助于简化我们对 ZooKeeper 的分析。</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-11:17:08_374_434.png" alt=""></p>
+<h3 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h3><p>在 <strong>idea</strong> 中，打开文件 <code>ZooKeeperServer.java</code>，点击右上角的 <code>Edit Configurations</code>，配置参数</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-16-20:49:42_748_138.png" alt=""></p>
+<p>之后，右击 <code>Apply</code> ，然后运行 <code>ZooKeeperServer.main()</code> 启动 ZooKeeper 服务器。</p>
+<p>同理，我们需要配置 <code>ZooKeeper.java</code> 参数为:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-16-20:52:59_738_169.png" alt="">，之后运行 <code>ZooKeeper.main()</code> 方法启动 ZooKeeper 客户端。</p>
+<h3 id="代码说明"><a href="#代码说明" class="headerlink" title="代码说明"></a>代码说明</h3><p>为了简化节省篇幅，着重描述核心处理流程，我在不影响运行逻辑的情况下，对代码片段进行了简化与修改，将一些异常处理机制，上下文等信息都去掉了，方便我们分析整个执行流程。</p>
+<h3 id="建立连接"><a href="#建立连接" class="headerlink" title="建立连接"></a>建立连接</h3><h4 id="服务器地址的选择"><a href="#服务器地址的选择" class="headerlink" title="服务器地址的选择"></a>服务器地址的选择</h4><p>在创建 <code>ClientCnxn</code> 对象的时候，其 <code>hosts</code> 参数允许你传入一系列服务器地址，就像下面这样:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">public ClientCnxn(&quot;192.168.1.2:2181,192.168.1.3:2181&quot;, ...)</div></pre></td></tr></table></figure>
+<p>之后客户端会把这些地址全部放入 <code>serverAddrs</code> 数组列表中，然后随机打乱:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-18-11:12:02_959_509.png" alt=""></p>
+<p>当客户端每次尝试连接的时候，便会从这些列表中按照顺序选择下一个地址进行连接尝试:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-18-11:18:14_787_278.png" alt=""></p>
+<p>当指针 <code>nextAddrToTry</code> 到达服务器列表地址的时候，将会重新归置为 0 ，然后从头开始选择地址。值得说明的是，<code>SendThread</code> 线程的主体代码整个都被包含在一个大大的 <code>try ... catch ...</code> 语句块中，任何异常 <code>Exception</code> 的捕获，都将导致客户端回到初始状态，关闭 <code>socketChannel</code> 的连接等，设置 <code>sockKey</code> 为 <code>null</code>，然后进行新一轮的 <code>startConnect</code> 连接:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-18-11:29:12_818_593.png" alt=""></p>
+<h4 id="客户端发送-ConnectRequest-对象"><a href="#客户端发送-ConnectRequest-对象" class="headerlink" title="客户端发送 ConnectRequest 对象"></a>客户端发送 ConnectRequest 对象</h4><p>在 <code>SendThread</code> 启动以后，它会尝试与服务器建立连接:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-09:02:51_698_568.png" alt=""></p>
+<p>注意，由于 <code>SocketChannel</code> 被配置成了非阻塞模式，所以 <code>sock.connect</code> 在成功连接上之前会立即返回 false。在非阻塞模式下，应该通过检测 <code>finishConnect</code> 方法来查看是否已经连接上服务器:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-18-09:04:07_843_445.png" alt=""></p>
+<p>如果已经连接上，那么它将会调用 <code>primeConnection</code> 方法；否则抛出异常，进行下一轮重连:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-09:08:21_1106_572.png" alt=""></p>
+<p>我们可以看到在 <code>primeConnection</code> 方法中，构建了一个 <code>ConnectRequest</code> 对象，最终将其写到 <code>ByteBuffer</code> 对象中，然后用 <code>Packet</code> 对象封装 <code>ByteBuffer</code> 对象，并放入 <code>outgoingQueue</code> 中。<code>outgoingQueue</code> 的定义如下:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-09:14:30_815_64.png" alt=""></p>
+<p>最终 <code>ByteBuffer</code> 对象中存储的是下面的一些字段:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-09:33:07_757_129.png" alt=""></p>
+<p>括号里面的数字表示字段长度。位于密码字段的 (4 + 16) 表示，发送了 4 个字节的长度和 16 字节的字节数组，<code>BinaryOutputArchive</code> 在写字节数组的时候，会先写进去长度，然后再写实际的字节数组进去。由上图可知，客户端在尝试建立连接的时候，给服务器发送了共 48 字节的数据。</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-09:35:56_678_149.png" alt=""></p>
+<p>当客户端检测到有可读或者可写事件的时候，它会调用 <code>doIO</code> 方法，来让我们处理可读或者可写的数据，<code>outgoingQueue</code> 会从头部取出第一个 <code>Packet</code>，然后通过 <code>SocketChannel</code> 发送出去:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-10:20:36_855_653.png" alt=""></p>
+<h4 id="服务器接受-ConnectRequest-对象"><a href="#服务器接受-ConnectRequest-对象" class="headerlink" title="服务器接受 ConnectRequest 对象"></a>服务器接受 ConnectRequest 对象</h4><p>与客户端一样，当服务器端有可读数据的时候，在 <code>doIO</code> 方法中会读取 <code>ConnectRequest</code> 对象:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-10:51:22_710_402.png" alt=""></p>
+<p>当读取到 <code>ConnectRequest</code> 对象的时候，才会将 <code>initialized</code> 标志设为 <code>true</code>:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-10:55:11_937_611.png" alt=""></p>
+<p>前面讲到，客户端在发送 <code>ConnectRequest</code> 对象的时候，在前面还发送了一个 4 字节长的长度，然后再发送的 <code>ConnectRequest</code> 对象的那些字段，再读取 <code>ConnectRequest</code> 对象数据之前，服务器端会先把这个长度给读取了:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-11:10:18_747_513.png" alt=""></p>
+<h4 id="服务器返回-ConnectResponse-对象"><a href="#服务器返回-ConnectResponse-对象" class="headerlink" title="服务器返回 ConnectResponse 对象"></a>服务器返回 ConnectResponse 对象</h4><p>当服务器发现有连接过来的时候，便会检查该客户端的 <code>session</code> 状况，如果 <code>sessionId</code> 不为 0，那么则重新打开 <code>session</code>，否则会创建新的 <code>session</code>。<code>session</code> 具体的执行机制我们后续会讲到，这里先假设按照正常逻辑执行，请求创建 <code>session</code>，会提交一个类型为 <code>OpCode.createSession</code> 请求:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-22:00:22_845_169.png" alt=""></p>
+<p>这个请求沿着调用链执行过去，最终会在 <code>FinalRequestProcessor</code> 停下来:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-22:08:06_787_85.png" alt=""></p>
+<p><code>FinalRequestProcessor</code> 对象会根据请求的类型来执行相应的方法。当创建会话完成的时候，这个时候 ZooKeeper 调用了 <code>finishSessionInit</code> 方法:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-21:45:20_540_150.png" alt=""></p>
+<p>在 <code>finishSessionInit</code> 方法内部，服务器会发送一个 <code>ConnectResponse</code> 对象给客户端，告诉其会话创建完毕，也意味着初始化完毕，可以干其他事情了:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-21:48:35_1148_341.png" alt=""></p>
+<p>其中 <code>ConnectRequest</code> 的构成如下所示:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-22:11:39_682_141.png" alt=""></p>
+<p>所谓 <code>sendBuffer</code> 其实就是将 <code>ByteBuffer</code> 对象放入了阻塞队列 <code>outgoingBuffers</code> 队列中，等待发送。这部分机制与客户端发送机制大同小异，如此不在赘述。</p>
+<h4 id="客户端收到-ConnectResponse-对象"><a href="#客户端收到-ConnectResponse-对象" class="headerlink" title="客户端收到 ConnectResponse 对象"></a>客户端收到 ConnectResponse 对象</h4><p>当客户端准备好数据开始往客户端写的时候，与此同时久久等待的客户端早已经翘首以盼了。在自己的 <code>doIO</code> 方法里一旦检测到有数据可读便立马着手处理了…</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-22:21:04_667_256.png" alt=""><br><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-22:23:17_869_426.png" alt=""></p>
+<h4 id="客户端与服务器的交互机制"><a href="#客户端与服务器的交互机制" class="headerlink" title="客户端与服务器的交互机制"></a>客户端与服务器的交互机制</h4><p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-22:29:44_524_371.png" alt=""></p>
+<p>这一去一回的交互机制，主要是为了建立客户端到服务器的一个会话信任机制。</p>
+<h4 id="客户端的连接失败情况"><a href="#客户端的连接失败情况" class="headerlink" title="客户端的连接失败情况"></a>客户端的连接失败情况</h4><p>上述我们讲到的是，当服务器接收到来自客户端的 <code>ConnectRequest</code> 对象的时候，初始化成功；当客户端接收到返回自服务器的 <code>ConnectResponse</code> 的时候，客户端初始化成功。那么什么时候客户端会初始化失败呢？有这么几种情况:</p>
+<ul>
+<li>客户端携带的 <code>sessionId</code> 与 <code>passwd</code> 不匹配</li>
+<li>客户端携带的 <code>sessionId</code> 在服务器端并不存在</li>
+</ul>
+<p>在这两种情况下，服务器会往客户端发送一个长度为 0 字节的 <code>ByteBuffer</code>:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-22:59:02_736_196.png" alt=""></p>
+<p>而客户端 <code>ClientCnxn</code> 在收到这样一个 0 字节数据的时候，会抛出异常:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-17-23:03:56_820_277.png" alt=""></p>
+<p>这个时候，客户端会稍稍调整，以准备下一次重新发送 <code>ConnectRequest</code> 对象给服务器。</p>
+<h3 id="Session"><a href="#Session" class="headerlink" title="Session"></a>Session</h3><h4 id="SessionId-的生成"><a href="#SessionId-的生成" class="headerlink" title="SessionId 的生成"></a>SessionId 的生成</h4><p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-16-21:12:56_849_69.png" alt=""></p>
+<p>在生成完 <code>Session</code> 之后，会将其保存到两个地方，一个是 <code>sessionsWithTimeout</code> 字典里面，另外一个是 <code>sessionsById</code> 字典里面:</p>
+<p><img src="/2017/05/16/ZooKeeper源码分析一/17-05-16-21:25:26_862_278.png" alt=""></p>
+
+
+
+
+
+
+</body>
+</html>

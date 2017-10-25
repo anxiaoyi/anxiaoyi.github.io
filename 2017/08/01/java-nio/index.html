@@ -1,0 +1,108 @@
+<html>
+<head>
+	
+	<title>java-nio</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="Java-NIO"><a href="#Java-NIO" class="headerlink" title="Java NIO"></a>Java NIO</h2><h3 id="为什么要使用-NIO"><a href="#为什么要使用-NIO" class="headerlink" title="为什么要使用 NIO"></a>为什么要使用 <code>NIO</code></h3><p>在大多数情况下，Java 应用程序并非真的受着 I/O 的束缚。操作系统并非不能快速传送数据，让 Java 有事可做；相反，是<strong> JVM 自身在 I/O 方面效率欠佳</strong>。操作系统与 Java 基于流的 I/O模型有些不匹配。<strong>操作系统要移动的是大块数据（缓冲区）</strong>，这往往是在硬件直接存储器存取（DMA）的协助下完成的。而 <strong>JVM 的 I/O 类喜欢操作小块数据——单个字节、几行文本</strong>。结果，操作系统送来整缓冲区的数据，<code>java.io</code>的流数据类再花大量时间把它们拆成小块，往往拷贝一个小块就要往返于几层对象。操作系统喜欢整卡车地运来数据，java.io 类则喜欢一铲子一铲子地加工数据。有了 <code>NIO</code>，就可以轻松地把一卡车数据备份到您能直接使用的地方（<code>ByteBuffer</code> 对象）。</p>
+<p>这并不是说使用传统的 I/O 模型无法移动大量数据——当然可以（现在依然可以）。具体地说，<code>RandomAccessFile</code> 类在这方面的效率就不低，只要坚持使用基于数组的 <code>read( )</code> 和 <code>write( )</code>方法。这些方法与底层操作系统调用相当接近，尽管必须保留至少一份缓冲区拷贝。</p>
+<h3 id="内存页面调度"><a href="#内存页面调度" class="headerlink" title="内存页面调度"></a>内存页面调度</h3><p>为了支持虚拟内存的第二个特性（<strong>寻址空间大于物理内存</strong>），就必须进行虚拟内存分页（经常称为<strong>交换</strong>，虽然真正的交换是在进程层面完成，而非页层面）。依照该方案，虚拟内存空间的页面能够继续存在于外部磁盘存储，这样就为物理内存中的其他虚拟页面腾出了空间。从本质上说，物理内存充当了分页区的高速缓存；而所谓分页区，即从物理内存置换出来，转而存储于磁盘上的内存页面。</p>
+<h3 id="Buffer-线程安全吗？"><a href="#Buffer-线程安全吗？" class="headerlink" title="Buffer 线程安全吗？"></a><code>Buffer</code> 线程安全吗？</h3><p><strong>缓冲区并不是多线程安全的</strong>。如果您想以多线程同时存取特定的缓冲区，您需要在存取缓冲区之前进行同步（例如对缓冲区对象进行跟踪） 。</p>
+<h3 id="ByteBuffer-的重要属性"><a href="#ByteBuffer-的重要属性" class="headerlink" title="ByteBuffer 的重要属性"></a><code>ByteBuffer</code> 的重要属性</h3><ul>
+<li><strong><code>ByteBuffer.position()</code></strong>: <strong>下一个要被读或写</strong>的元素的索引。位置会自动由相应的 <code>get()</code> 和 <code>put()</code> 函数更新。</li>
+<li><strong><code>ByteBuffer.limit()</code></strong>: 缓冲区的<strong>第一个不能被读或写</strong>的元素。 或者说,缓冲区中现存元素的计数。</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> length = byteBuffer.limit();</div></pre></td></tr></table></figure>
+<ul>
+<li><strong><code>ByteBuffer.hasRemaining()</code></strong>: Tells whether there are any elements <strong>between the current position and the limit</strong>.</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">transferTo</span><span class="params">(WritableByteChannel target, <span class="keyword">long</span> position)</span> <span class="keyword">throws</span> IOException </span>&#123;</div><div class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.byteBufferHeader.hasRemaining()) &#123;</div><div class="line">        transferred += target.write(<span class="keyword">this</span>.byteBufferHeader);</div><div class="line">        <span class="keyword">return</span> transferred;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>读取与写入</strong>:</p>
+<p><strong>① 准备写</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">ByteBuffer result = ByteBuffer.allocate(size);</div><div class="line">result.put(...);</div><div class="line">result.put(...);</div><div class="line">result.put(...);</div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="comment">// flip it !</span></div><div class="line">result.flip();</div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="keyword">while</span> (result.hasRemaining()) &#123;</div><div class="line">    <span class="keyword">int</span> length = socketChannel.write(result);</div><div class="line">    <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><strong>② 准备读</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">ByteBuffer byteBufferBody = ByteBuffer.allocate(size);</div><div class="line"><span class="keyword">while</span> (byteBufferBody.hasRemaining()) &#123;</div><div class="line">    <span class="keyword">int</span> length = socketChannel.read(byteBufferBody);</div><div class="line">    <span class="comment">// ...</span></div><div class="line">&#125;</div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="comment">// flip it !</span></div><div class="line">byteBufferBody.flip();</div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="comment">// ...</span></div><div class="line"><span class="keyword">byte</span>[] headerData = <span class="keyword">new</span> <span class="keyword">byte</span>[headerLength];</div><div class="line">byteBuffer.get(headerData);</div><div class="line"></div><div class="line"><span class="keyword">byte</span>[] headerData2 = <span class="keyword">new</span> <span class="keyword">byte</span>[headerLength];</div><div class="line">byteBuffer.get(headerData2);</div><div class="line"></div><div class="line"><span class="keyword">byte</span>[] headerData3 = <span class="keyword">new</span> <span class="keyword">byte</span>[headerLength];</div><div class="line">byteBuffer.get(headerData3);</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>复制缓冲区</strong>:</p>
+<ul>
+<li><code>duplicate()</code>: 创建了一个与原始缓冲区相似的新缓冲区。两个缓冲区<strong>共享</strong>数据元素，拥有同样的容量，但每个缓冲区<strong>拥有各自的位置，上界和标记属性</strong>。对一个缓冲区内的数据<strong>元素所做的改变</strong>会反映在另外一个缓冲区上。这一副本缓冲区具有与原始缓冲区同样的数据视图。如果原始的缓冲区为只读，或者为直接缓冲区，新的缓冲区将继承这些属性。</li>
+<li><code>asReadOnlyBuffer()</code>:生成一个只读的缓冲区视图。这与 <code>duplicate()</code> 相同，除了这个新的缓冲区<strong>不允许使用 <code>put()</code></strong>，并且其 <code>isReadOnly()</code> 函数将会返回 <code>true</code>。</li>
+<li><code>slice()</code>: 创建一个从原始缓冲区的<strong>当前位置开始的新缓冲区</strong>，并且其容量是原始缓冲区的剩余元素数量（<code>limit - position</code>）。这个新缓冲区与原始缓冲区<strong>共享</strong>一段数据元素子序列。</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">CharBuffer buffer = CharBuffer.allocate(<span class="number">8</span>);</div><div class="line">buffer.position(<span class="number">3</span>).limit (<span class="number">5</span>);</div><div class="line">CharBuffer sliceBuffer = buffer.slice();</div></pre></td></tr></table></figure>
+<p>假设原来的数据集是这样的:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">|A|B|C|D|E|F|G|H| |</div></pre></td></tr></table></figure>
+<ul>
+<li><code>8</code> 位置不存储字符，<code>capacity</code> 为 8</li>
+<li><code>position</code> 当前指向 3，即 <code>D</code> 字符</li>
+<li><code>limit</code> 当前指向 5，即 <code>F</code> 字符</li>
+</ul>
+<p>那么，当调用 <code>slice</code> 之后，新创建的 <code>CharBuffer</code> 的数据集是这样的:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">|D|E| |</div></pre></td></tr></table></figure>
+<ul>
+<li><code>2</code> 位置不存储字符，<code>capacity</code> 为 2</li>
+<li><code>position</code> 当前指向 0，即 <code>D</code> 字符</li>
+<li><code>limit</code> 当前指向 2，即结束字符</li>
+</ul>
+<p><code>ZooKeeper</code> 中的直接应用:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">if</span> (LOG.isTraceEnabled()) &#123;</div><div class="line">    LOG.trace(<span class="string">"after readBytes message readable "</span></div><div class="line">              + message.readableBytes()</div><div class="line">              + <span class="string">" bb len "</span> + bb.remaining() + <span class="string">" "</span> + bb);</div><div class="line">    ByteBuffer dat = bb.duplicate();</div><div class="line">    dat.flip();</div><div class="line">    LOG.trace(<span class="string">"after readbytes "</span></div><div class="line">              + Long.toHexString(sessionId)</div><div class="line">              + <span class="string">" bb 0x"</span></div><div class="line">              + ChannelBuffers.hexDump(ChannelBuffers.copiedBuffer(dat)));</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<ul>
+<li><code>clear()</code> :将缓冲区重置为<strong>空状态</strong>。 它并不改变缓冲区中的任何数据元素，而是<strong>仅仅将上界设为容量的值</strong>，并把<strong>位置设回 <code>0</code></strong>。</li>
+</ul>
+<h3 id="创建缓冲区"><a href="#创建缓冲区" class="headerlink" title="创建缓冲区"></a>创建缓冲区</h3><p>新的缓冲区是由分配或包装操作创建的。<strong><code>allocate</code></strong> 操作创建一个缓冲区对象并分配一个<strong>私有的空间</strong>来储存容量大小的数据元素。<code>wrap</code> 操作创建一个缓冲区对象但是<strong>不分配任何空间</strong>来储存数据元素。它<strong>使用您所提供的数组</strong>作为存储空间来储存缓冲区中的数据元素。</p>
+<p>要分配一个容量为 100 个 <code>char</code> 变量的 <code>Charbuffer</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">CharBuffer charBuffer = CharBuffer.allocate (<span class="number">100</span>);</div></pre></td></tr></table></figure>
+<p>这段代码隐含地从<strong>堆空间</strong>中分配了一个 <code>char</code> 型数组作为备份存储器来储存 100 个 <code>char</code> 变量。</p>
+<p>如果您想提供您<strong>自己的数组</strong>用做缓冲区的备份存储器，请调用 <code>wrap()</code> 函数：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">char</span> [] myArray = <span class="keyword">new</span> <span class="keyword">char</span> [<span class="number">100</span>];</div><div class="line">CharBuffer charbuffer = CharBuffer.wrap (myArray);</div></pre></td></tr></table></figure>
+<p>这段代码构造了一个新的缓冲区对象，但数据元素会存在于数组中。这意味着通过调用 <code>put()</code> 函数造成的对缓冲区的改动会<strong>直接影响这个数组</strong>，而且对这个数组的任何改动也会对这个缓冲区对象可见。</p>
+<hr>
+<p>在 <code>ZooKeeper</code> 中的应用:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">ByteArrayOutputStream baos = <span class="keyword">new</span> ByteArrayOutputStream();</div><div class="line">baos.close();</div><div class="line"><span class="keyword">this</span>.bb = ByteBuffer.wrap(baos.toByteArray());</div></pre></td></tr></table></figure>
+<h3 id="翻转"><a href="#翻转" class="headerlink" title="翻转"></a>翻转</h3><p>我们已经写满了缓冲区，现在我们必须准备将其清空。我们想把这个缓冲区传递给一个通道，以使内容能被全部写出。但如果通道现在在缓冲区上执行 <code>get()</code>，那么它将从我们刚刚插入的有用数据之外取出未定义数据。如果我们<strong>将位置值重新设为 0</strong>，通道就会从正确位置开始获取，但是它是怎样知道<strong>何时到达</strong>我们所插入数据末端的呢？这就是<strong>上界属性</strong>被引入的目的。上界属性指明了缓冲区有效内容的末端。我们需要将上界属性设置为当前位置，然后将位置重置为 0。我们可以人工用下面的代码实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">buffer.limit(buffer.position()).position(<span class="number">0</span>);</div></pre></td></tr></table></figure>
+<p>但这种从填充到释放状态的缓冲区翻转是 API 设计者预先设计好的，他们为我们提供了一个非常便利的函数：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Buffer.flip();</div></pre></td></tr></table></figure>
+<p><code>flip()</code> 函数将一个能够<strong>继续添加</strong>数据元素的填充状态的缓冲区<strong>翻转成一个准备读出元素的释放状态</strong>。</p>
+<p><code>rewind()</code> 函数与 <code>flip()</code> 相似，但<strong>不影响上界属性</strong>。它只是将位置值设回 0。您可以使用 <code>rewind()</code> 后退，<font color="red"><strong>重读</strong></font>已经被翻转的缓冲区中的数据。</p>
+<p>如果将缓冲区翻转两次会怎样呢？它实际上会大小变为 0。把上界设为位置的值，并把位置设为 0。上界和位置都变成 0。尝试对缓冲区上<br>位置和上界都为 0 的 <code>get()</code> 操作会导致 <code>BufferUnderflowException</code> 异常。而 <code>put()</code> 则会导致 <code>BufferOverflowException</code> 异常。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">remaining</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">return</span> limit - position;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> Buffer <span class="title">flip</span><span class="params">()</span> </span>&#123;</div><div class="line">    limit = position; <span class="comment">// 比 rewind() 多了这一行</span></div><div class="line">    position = <span class="number">0</span>;</div><div class="line">    mark = -<span class="number">1</span>;</div><div class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> Buffer <span class="title">rewind</span><span class="params">()</span> </span>&#123;</div><div class="line">    position = <span class="number">0</span>;</div><div class="line">    mark = -<span class="number">1</span>;</div><div class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="Selector"><a href="#Selector" class="headerlink" title="Selector"></a><code>Selector</code></h3><p>仅用单个线程来处理多个 <code>Channels</code> 的好处是，只需要更少的线程来处理通道。<strong>事实上，可以只用一个线程处理所有的通道</strong>。对于操作系统来说，线程之间上下文切换的开销很大，而且每个线程都要占用系统的一些资源（如内存）。因此，使用的线程越少越好。</p>
+<p>下面是单线程使用一个 <code>Selector</code> 处理 3 个 <code>channel</code> 的示例图：</p>
+<p><img src="overview-selectors.png" alt=""></p>
+<p>Java NIO 根据操作系统不同， 针对 <code>nio</code> 中的 <code>Selector</code> 有不同的实现：</p>
+<p><img src="2017_09_11_21_33_02.png" alt=""></p>
+<hr>
+<p>参考:</p>
+<ul>
+<li><a href="http://ifeve.com/selectors/" target="_blank" rel="external">Java NIO系列教程（六） Selector</a></li>
+</ul>
+
+
+
+
+
+
+</body>
+</html>
