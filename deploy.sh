@@ -23,8 +23,11 @@ function main() {
         'pull')
             git_pull
             ;;
+        'deploy')
+            github_deploy
+            ;;
         *)
-            echo 'Usage: zk-blog [run | clean | ssh | commit | pull | emacs]'
+            echo 'Usage: zk-blog [run | clean | ssh | commit | pull | emacs | deploy]'
             exit 1
     esac
     
@@ -62,6 +65,16 @@ function git_pull() {
 function run_emacs() {
     DIR_NAME=`dirname $_SCRIPT_PATH`
     LC_CTYPE='zh_CN.UTF-8' emacs "$DIR_NAME/_posts"
+}
+
+function github_deploy() {
+    cd ..
+    sudo hexo generate
+    cp source/CNAME public/
+    cd public
+    git add --a
+    git commit -m 'update site'
+    git push origin master
 }
 
 main $1
