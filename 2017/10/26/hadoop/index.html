@@ -1,0 +1,136 @@
+<html>
+<head>
+	
+	<title>Hadoop</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+
+</head>
+
+<body>
+
+<h2 id="Hadoop"><a href="#Hadoop" class="headerlink" title="Hadoop"></a>Hadoop</h2><blockquote>
+<p>算法再好，通常也难敌更多的数据．</p>
+</blockquote>
+<h3 id="为什么不能使用数据库加上更多磁盘来做大规模的批量分析"><a href="#为什么不能使用数据库加上更多磁盘来做大规模的批量分析" class="headerlink" title="为什么不能使用数据库加上更多磁盘来做大规模的批量分析"></a>为什么不能使用数据库加上更多磁盘来做大规模的批量分析</h3><p>这个问题来自于磁盘驱动器的发展趋势: <strong>寻址时间的提高速度远远慢于传输速率的提高速度</strong>．</p>
+<h3 id="map-的工作方式"><a href="#map-的工作方式" class="headerlink" title="map 的工作方式"></a><code>map</code> 的工作方式</h3><p><img src="2017_10_26_09_14_46.png" alt=""></p>
+<p>这些行以<strong>键/值对</strong>的方式来表示 <code>map</code> 函数:</p>
+<p><img src="2017_10_26_09_15_41.png" alt=""></p>
+<p>行号会被忽略，<code>map</code> 函数提取年份和气温，并将其作为输出发送:</p>
+<p><img src="2017_10_26_09_17_11.png" alt=""></p>
+<p><code>map</code> 函数的输出先由　<code>MapReduce</code> 框架处理，然后再被发送到 <code>reduce</code> 函数．这一处理过程根据键来键/值对进行<strong>排序和分组</strong>．<code>reduce</code> 函数会看到如下输入:</p>
+<p><img src="2017_10_26_09_18_45.png" alt=""></p>
+<p>每年的年份都有一系列气温读数，所有 <code>reduce</code> 函数必须重复这个列表并从中找出最大的读数:</p>
+<p><img src="2017_10_26_09_20_42.png" alt=""></p>
+<p>整个逻辑数据流:</p>
+<p><img src="2017_10_26_09_21_52.png" alt=""></p>
+<h3 id="提交作业后"><a href="#提交作业后" class="headerlink" title="提交作业后"></a>提交作业后</h3><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mapred.mapper.new-api</code></td>
+<td><code>false</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>mapred.reducer.new-api</code></td>
+<td><code>false</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>yarn.app.mapreduce.client.job.max-retries</code></td>
+<td><code>3</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>yarn.app.mapreduce.client.job.retry-interval</code></td>
+<td><code>2000</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>mapreduce.job.reduces</code></td>
+<td><code>1</code></td>
+<td>the number of reduce tasks for this job</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>创建 <code>Cluster</code><ul>
+<li>使用 <code>YarnClientProtocolProvider</code> 创建 <code>ClientProtocol</code></li>
+<li>如果配置文件设置了 <code>mapreduce.framework.name</code> 为 <code>yarn</code>,就返回 <code>YARNRunner</code></li>
+<li>TODO: 猜测可能使用的是 <code>LocalJobRunner</code></li>
+</ul>
+</li>
+<li>假设是 <code>LocalJobRunner</code><ul>
+<li>本地 <code>mapreduce.jobtracker.system.dir</code> 目录 : <code>/tmp/hadoop/mapred/system</code></li>
+<li><code>stageArea 目录</code> = <code>/tmp/hadoop/mapred/staging</code> + <code>groupName</code> + <code>randid</code> + <code>/.staging</code></li>
+</ul>
+</li>
+<li><p>检查 <code>OutputSpecs</code>:</p>
+<ul>
+<li>保障 <code>Output</code> 目录不存在</li>
+</ul>
+</li>
+<li><p><code>jobId</code> = <code>new JobID(&quot;local&quot; + randid, ++jobid)</code></p>
+</li>
+<li><code>submit 目录</code> = <code>stageArea 目录</code> + <code>/</code> + <code>jobId</code></li>
+<li>如果 <code>submit 目录</code> 已经存在于 <code>HDFS</code> 中, 抛出 <code>IOException</code></li>
+<li>授予 <code>submit 目录</code> 一个 <code>0700 (rwx------)</code> 权限</li>
+<li>在 <code>HDFS</code> 中创建 <code>submit 目录</code></li>
+<li>比对本地 <code>HDFS 目录</code> 和想要上传的 <code>HDFS</code> 是否是同一个 (仅仅比对 <code>uri</code> 字符串)</li>
+<li>开始上传 <code>jobjar</code>, <code>libjar</code>, <code>jobjar</code>, <code>archives</code> 等到 <code>HDFS</code> 中</li>
+<li>获取 <code>submit 目录</code> + <code>/</code> + <code>job.xml</code></li>
+</ul>
+<p><strong>(1) 得到 <code>map-reduce</code> 任务的 <code>InputFormat</code> 表示</strong>:</p>
+<ul>
+<li>默认切成 <code>1</code> 份 <code>InputSplit</code></li>
+<li>获得输入 <code>Path</code> 列表</li>
+<li>过滤 <code>_</code> 或者 <code>.</code> 开头的文件</li>
+<li>计算目标大小: <code>totalSize / numSplits</code></li>
+<li>对于每一个文件,获取分区信息:</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">BlockLocation(offset: <span class="number">0</span>, length: BLOCK_SIZE, hosts: &#123;<span class="string">"host1:9866"</span>, <span class="string">"host2:9866, host3:9866"</span>&#125;)</div></pre></td></tr></table></figure>
+<ul>
+<li>根据文件大小排序,大的排在前面,先运行</li>
+</ul>
+<p><strong>(2) 获取 <code>Job</code> 提交的队列的名字,默认 <code>default</code></strong>:</p>
+<ul>
+<li>配置写入 <code>job.xml</code> 文件中</li>
+<li>正式提交 <code>Job</code></li>
+</ul>
+<p>**(3) 查询信息:</p>
+<ul>
+<li>使用 <code>NetworkedJob</code> 封装 <code>Job</code></li>
+<li>监控 <code>Job</code> 的运行和状态信息</li>
+</ul>
+<h3 id="必读"><a href="#必读" class="headerlink" title="必读"></a>必读</h3><ul>
+<li><a href="https://www.zhihu.com/question/19795366" target="_blank" rel="external">知乎-零基础学习 Hadoop 该如何下手？</a></li>
+</ul>
+
+
+
+
+
+
+</body>
+</html>
