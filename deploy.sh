@@ -68,10 +68,11 @@ function run_emacs() {
 }
 
 function github_deploy() {
-    cd ..
+    DIR_NAME=`dirname $_SCRIPT_PATH`
+    cd `dirname $DIR_NAME`
     sudo hexo generate
     cp source/CNAME public/
-    cd public
+    cd public/
     git add --a
     git commit -m 'update site'
     git push origin master
