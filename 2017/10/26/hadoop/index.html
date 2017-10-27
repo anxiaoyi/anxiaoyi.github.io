@@ -86,27 +86,43 @@
 <li><code>stageArea 目录</code> = <code>/tmp/hadoop/mapred/staging</code> + <code>groupName</code> + <code>randid</code> + <code>/.staging</code></li>
 </ul>
 </li>
-<li><p>检查 <code>OutputSpecs</code>:</p>
-<ul>
+<li>检查 <code>OutputSpecs</code>:<ul>
 <li>保障 <code>Output</code> 目录不存在</li>
-</ul>
-</li>
-<li><p><code>jobId</code> = <code>new JobID(&quot;local&quot; + randid, ++jobid)</code></p>
-</li>
+<li><code>jobId</code> = <code>new JobID(&quot;local&quot; + randid, ++jobid)</code></li>
 <li><code>submit 目录</code> = <code>stageArea 目录</code> + <code>/</code> + <code>jobId</code></li>
-<li>如果 <code>submit 目录</code> 已经存在于 <code>HDFS</code> 中, 抛出 <code>IOException</code></li>
-<li>授予 <code>submit 目录</code> 一个 <code>0700 (rwx------)</code> 权限</li>
-<li>在 <code>HDFS</code> 中创建 <code>submit 目录</code></li>
-<li>比对本地 <code>HDFS 目录</code> 和想要上传的 <code>HDFS</code> 是否是同一个 (仅仅比对 <code>uri</code> 字符串)</li>
-<li>开始上传 <code>jobjar</code>, <code>libjar</code>, <code>jobjar</code>, <code>archives</code> 等到 <code>HDFS</code> 中</li>
-<li>获取 <code>submit 目录</code> + <code>/</code> + <code>job.xml</code></li>
 </ul>
-<p><strong>(1) 得到 <code>map-reduce</code> 任务的 <code>InputFormat</code> 表示</strong>:</p>
-<ul>
-<li>默认切成 <code>1</code> 份 <code>InputSplit</code></li>
+</li>
+<li>上传资源文件夹<ul>
+<li><code>sharedCache</code> 只在 <code>Yarn</code> 平台上才可以使用</li>
+<li>默认 <code>replication</code> 是 <code>10</code></li>
+<li>如果 <code>submit 目录</code> 已经存在于本地的 <code>HDFS</code> 中, 抛出 <code>IOException</code></li>
+<li>授予 <code>submit 目录</code> 一个 <code>0700 (rwx------)</code> 权限</li>
+<li>创建 <code>submit 目录</code></li>
+<li><code>Job 分布式缓存文件目录</code> = <code>submit 目录</code> + <code>/</code> + <code>files</code></li>
+<li><code>Job 分布式缓存库目录</code> = <code>submit 目录</code> + <code>/</code> + <code>libjars</code></li>
+<li><code>Job 分布式缓存 archives 目录</code> = <code>submit 目录</code> + <code>/</code> + <code>archives</code></li>
+<li><code>job.jar 路径</code> = <code>submit 目录</code> + <code>/</code> + <code>job.jar</code></li>
+<li>将用户配置的 <code>tmpfiles</code> 文件拷贝到 <code>Job 分布式缓存目录</code></li>
+<li>将用户配置的 <code>tmpjars</code> 文件拷贝到 <code>Job 分布式缓存库目录</code></li>
+<li>将用户配置的 <code>tmparchives</code> 文件拷贝到 <code>Job 分布式缓存 archives 目录</code></li>
+<li>讲用户配置的 <code>jobJar</code> 路径拷贝到 <code>job.jar</code> 路劲下面<ul>
+<li>以上拷贝的时候, 特意对比了两个是不是位于同一个文件系统上,仅仅比对 <code>uri</code> 字符串,没有 <code>DNS Lookup</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>获取 <code>submit 目录</code> + <code>/</code> + <code>job.xml</code><ul>
+<li><code>InputFormat</code> 转为 <code>InputSplit[]</code><ul>
 <li>获得输入 <code>Path</code> 列表</li>
 <li>过滤 <code>_</code> 或者 <code>.</code> 开头的文件</li>
 <li>计算目标大小: <code>totalSize / numSplits</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>(1) 得到 <code>map-reduce</code> 任务的 <code>InputFormat</code> 表示</strong>:</p>
+<ul>
 <li>对于每一个文件,获取分区信息:</li>
 </ul>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">BlockLocation(offset: <span class="number">0</span>, length: BLOCK_SIZE, hosts: &#123;<span class="string">"host1:9866"</span>, <span class="string">"host2:9866, host3:9866"</span>&#125;)</div></pre></td></tr></table></figure>
@@ -123,8 +139,13 @@
 <li>使用 <code>NetworkedJob</code> 封装 <code>Job</code></li>
 <li>监控 <code>Job</code> 的运行和状态信息</li>
 </ul>
+<h3 id="格式化文件系统"><a href="#格式化文件系统" class="headerlink" title="格式化文件系统"></a>格式化文件系统</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">hadoop namenode -format</div></pre></td></tr></table></figure>
 <h3 id="必读"><a href="#必读" class="headerlink" title="必读"></a>必读</h3><ul>
 <li><a href="https://www.zhihu.com/question/19795366" target="_blank" rel="external">知乎-零基础学习 Hadoop 该如何下手？</a></li>
+<li><a href="https://wiki.apache.org/hadoop#Setting_up_a_Hadoop_Cluster" target="_blank" rel="external">配置 <code>Hadoop</code> 集群教程</a><ul>
+<li><a href="http://www.michael-noll.com/tutorials/running-hadoop-on-ubuntu-linux-single-node-cluster/" target="_blank" rel="external">Running Hadoop on Ubuntu Linux (Single-Node Cluster)</a></li>
+</ul>
+</li>
 </ul>
 
 
