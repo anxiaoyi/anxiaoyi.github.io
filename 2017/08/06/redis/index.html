@@ -1,7 +1,7 @@
 <html>
 <head>
 	
-	<title>Redis</title>
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>Redis</title>
 	<meta name="keywords" content="代码人生,程序员,赵坤" />
 
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -16,14 +16,14 @@
     <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
 
     
-	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
     
 
 </head>
 
 <body>
 
-<h2 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h2><h3 id="1-Jedis-的用法"><a href="#1-Jedis-的用法" class="headerlink" title="(1) Jedis 的用法"></a>(1) <a href="https://github.com/xetorthio/jedis/wiki/Getting-started" target="_blank" rel="external"><code>Jedis</code></a> 的用法</h3><h4 id="1-1-多线程环境"><a href="#1-1-多线程环境" class="headerlink" title="(1.1) 多线程环境"></a>(1.1) 多线程环境</h4><p><strong>单个 <code>Jedis</code> 实例不是线程安全</strong>的，于是我看见了这样的代码，这样的问题在于不停地在创建 <code>Jedis</code> 实例，而<strong>每一个 <code>Jedis</code> 就意味着一条连接</strong>:</p>
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h2><h3 id="1-Jedis-的用法"><a href="#1-Jedis-的用法" class="headerlink" title="(1) Jedis 的用法"></a>(1) <a href="https://github.com/xetorthio/jedis/wiki/Getting-started" target="_blank" rel="external"><code>Jedis</code></a> 的用法</h3><h4 id="1-1-多线程环境"><a href="#1-1-多线程环境" class="headerlink" title="(1.1) 多线程环境"></a>(1.1) 多线程环境</h4><p><strong>单个 <code>Jedis</code> 实例不是线程安全</strong>的，于是我看见了这样的代码，这样的问题在于不停地在创建 <code>Jedis</code> 实例，而<strong>每一个 <code>Jedis</code> 就意味着一条连接</strong>:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</div><div class="line">    Jedis jedis = <span class="keyword">null</span>;</div><div class="line">    </div><div class="line">    <span class="keyword">if</span> ( tasknum.get() &gt; <span class="number">49</span> )&#123;</div><div class="line">        Thread.sleep(<span class="number">1000</span>);</div><div class="line">        <span class="keyword">continue</span>;</div><div class="line">    &#125;</div><div class="line">        </div><div class="line">    jedis = <span class="keyword">new</span> Jedis(redisip, <span class="number">6379</span>);</div><div class="line">    <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>所以，推荐<strong>使用 <code>JedisPool</code> 来获得更好的性能</strong>:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">final</span> <span class="keyword">static</span> JedisPool pool = <span class="keyword">new</span> JedisPool(<span class="keyword">new</span> JedisPoolConfig(), <span class="string">"localhost"</span>);</div><div class="line"></div><div class="line">Jedis jedis = <span class="keyword">null</span>;</div><div class="line"><span class="keyword">try</span> &#123;</div><div class="line">    jedis = pool.getResource();</div><div class="line">    <span class="comment">/// ... do stuff here ... for example</span></div><div class="line">    jedis.set(<span class="string">"foo"</span>, <span class="string">"bar"</span>);</div><div class="line">    String foobar = jedis.get(<span class="string">"foo"</span>);</div><div class="line">    jedis.zadd(<span class="string">"sose"</span>, <span class="number">0</span>, <span class="string">"car"</span>); jedis.zadd(<span class="string">"sose"</span>, <span class="number">0</span>, <span class="string">"bike"</span>); </div><div class="line">    Set&lt;String&gt; sose = jedis.zrange(<span class="string">"sose"</span>, <span class="number">0</span>, -<span class="number">1</span>);</div><div class="line">&#125; <span class="keyword">finally</span> &#123;</div><div class="line">    <span class="keyword">if</span> (jedis != <span class="keyword">null</span>) &#123;</div><div class="line">        jedis.close();</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"><span class="comment">/// ... when closing your application:</span></div><div class="line">pool.destroy();</div></pre></td></tr></table></figure>
@@ -334,7 +334,7 @@
 <li><code>volatile-random</code>： <strong>随机删除过期键</strong>，直到腾出足够空间为止。</li>
 <li><code>volatile-ttl</code>：根据键值对象的 <code>ttl</code> 属性，<strong>删除最近将要过期数据</strong>。如果没有，回退到 <code>noeviction</code> 策略。</li>
 </ul>
-<p>内存溢出控制策略可以采用 <code>config set maxmemory-policy {policy}</code> 动态配置。 Redis 支持丰富的内存溢出应对策略，可以根据实际需求灵活定制，比如当设置 <code>volatile-lru</code> 策略时，保证具有过期属性的键可以根据 LRU 剔除，而未设置超时的键可以永久保留。还可以采用 <code>allkeys-lru</code> 策略把 Redis 变为纯缓存服务器使用。当Redis 因为内存溢出删除键时，可以通过执行 <code>info stats</code> 命令查看 <code>evicted_keys</code> 指标找出当前 Redis 服务器已剔除的键数量。每次Redis 执行命令时如果设置了 <code>maxmemory</code> 参数，都会尝试执行回收内存操作。当 Redis 一直工作在内存溢出 <code>（used_ memory&gt; maxmemory）</code> 的状态下且设置非 <code>noeviction</code> 策略时，会频繁地触发回收内存的操作，影响Redis 服务器的性能。</p>
+<p>内存溢出控制策略可以采用 <code>config set maxmemory-policy {policy}</code> 动态配置。 Redis 支持丰富的内存溢出应对策略，可以根据实际需求灵活定制，比如当设置 <code>volatile-lru</code> 策略时，保证具有过期属性的键可以根据 LRU 剔除，而未设置超时的键可以永久保留。还可以采用 <code>allkeys-lru</code> 策略把 Redis 变为纯缓存服务器使用。当Redis 因为内存溢出删除键时，可以通过执行 <code>info stats</code> 命令查看 <code>evicted_keys</code> 指标找出当前 Redis 服务器已剔除的键数量。每次Redis 执行命令时如果设置了 <code>maxmemory</code> 参数，都会尝试执行回收内存操作。当 Redis 一直工作在内存溢出 <code>（used_ memory&gt; maxmemory）</code> 的状态下且设置非 <code>noeviction</code> 策略时，会频繁地触发回收内存的操作，影响Redis 服务器的性能。</p><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 
 

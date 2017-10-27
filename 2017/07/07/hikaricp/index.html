@@ -1,7 +1,7 @@
 <html>
 <head>
 	
-	<title>HikariCP 性能分析</title>
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>HikariCP 性能分析</title>
 	<meta name="keywords" content="代码人生,程序员,赵坤" />
 
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -16,14 +16,14 @@
     <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
 
     
-	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
     
 
 </head>
 
 <body>
 
-<h2 id="HikariCP-性能分析"><a href="#HikariCP-性能分析" class="headerlink" title="HikariCP 性能分析"></a>HikariCP 性能分析</h2><h3 id="用-wait-还是用-yield"><a href="#用-wait-还是用-yield" class="headerlink" title="用 wait() 还是用 yield()"></a>用 <code>wait()</code> 还是用 <code>yield()</code></h3><p>下面代码摘自 <a href="https://github.com/brettwooldridge/HikariCP/blob/61be9b923d8608605eb97264129d4f0467a0a2cc/src/main/java/com/zaxxer/hikari/util/ConcurrentBag.java#L206,L219" target="_blank" rel="external">HikariCP</a> 在添加一个 <code>BagEntry</code> 时候的实现:</p>
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="HikariCP-性能分析"><a href="#HikariCP-性能分析" class="headerlink" title="HikariCP 性能分析"></a>HikariCP 性能分析</h2><h3 id="用-wait-还是用-yield"><a href="#用-wait-还是用-yield" class="headerlink" title="用 wait() 还是用 yield()"></a>用 <code>wait()</code> 还是用 <code>yield()</code></h3><p>下面代码摘自 <a href="https://github.com/brettwooldridge/HikariCP/blob/61be9b923d8608605eb97264129d4f0467a0a2cc/src/main/java/com/zaxxer/hikari/util/ConcurrentBag.java#L206,L219" target="_blank" rel="external">HikariCP</a> 在添加一个 <code>BagEntry</code> 时候的实现:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">final</span> T bagEntry)</span> </span>&#123;</div><div class="line">    sharedList.add(bagEntry);</div><div class="line">    <span class="comment">// spin until a thread takes it or none are waiting</span></div><div class="line">    <span class="keyword">while</span> (waiters.get() &gt; <span class="number">0</span> &amp;&amp; !handoffQueue.offer(bagEntry)) &#123;</div><div class="line">        yield();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>这个地方，我<strong>不明白为什么使用 <code>yield</code></strong>，于是上网搜索得到三个网友的答案:</p>
 <p><code>yield()</code> is a <code>Thread</code> method , <code>wait()</code> is at the origins <code>Object</code> method inheritid in thread as for all classes.</p>
@@ -104,7 +104,7 @@
 <li><a href="https://www.oschina.net/p/hikaricp" target="_blank" rel="external">HikariCP 详细介绍</a></li>
 <li><a href="https://github.com/brettwooldridge/HikariCP" target="_blank" rel="external">Github - HikariCP</a></li>
 <li><a href="https://github.com/brettwooldridge/HikariCP/wiki/Down-the-Rabbit-Hole" target="_blank" rel="external">Github - WIKI - Down the Rabbit Hole</a></li>
-</ul>
+</ul><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 
 

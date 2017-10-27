@@ -1,7 +1,7 @@
 <html>
 <head>
 	
-	<title>Spring (三) - 自定义标签的解析</title>
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>Spring (三) - 自定义标签的解析</title>
 	<meta name="keywords" content="代码人生,程序员,赵坤" />
 
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -16,14 +16,14 @@
     <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
 
     
-	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
     
 
 </head>
 
 <body>
 
-<h2 id="Spring-三-自定义标签的解析"><a href="#Spring-三-自定义标签的解析" class="headerlink" title="Spring (三) - 自定义标签的解析"></a>Spring (三) - 自定义标签的解析</h2><p>在 <a href="/2017/06/27/Spring一/" title="Spring (一) - XML 文件解析与 Bean 的注册">Spring (一) - XML 文件解析与 Bean 的注册</a> 中，我们在最后讲到 <code>Spring</code> 中存在默认标签和自定义标签两种标签，在 上一节 <a href="/2017/06/27/Spring一/" title="Spring (一) - XML 文件解析与 Bean 的注册">Spring (一) - XML 文件解析与 Bean 的注册</a> 中，我们分析了 <code>Spring</code> 对默认标签是如何解析的进行了分析，那么在这一节中我们将会着重讲述如何对自定义标签进行解析。</p>
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="Spring-三-自定义标签的解析"><a href="#Spring-三-自定义标签的解析" class="headerlink" title="Spring (三) - 自定义标签的解析"></a>Spring (三) - 自定义标签的解析</h2><p>在 <a href="/2017/06/27/Spring一/" title="Spring (一) - XML 文件解析与 Bean 的注册">Spring (一) - XML 文件解析与 Bean 的注册</a> 中，我们在最后讲到 <code>Spring</code> 中存在默认标签和自定义标签两种标签，在 上一节 <a href="/2017/06/27/Spring一/" title="Spring (一) - XML 文件解析与 Bean 的注册">Spring (一) - XML 文件解析与 Bean 的注册</a> 中，我们分析了 <code>Spring</code> 对默认标签是如何解析的进行了分析，那么在这一节中我们将会着重讲述如何对自定义标签进行解析。</p>
 <h3 id="1-自定义标签使用"><a href="#1-自定义标签使用" class="headerlink" title="1. 自定义标签使用"></a>1. 自定义标签使用</h3><p>这里以 <a href="https://github.com/weibocom/motan" target="_blank" rel="external">Motan</a> 为例来讲解。</p>
 <h4 id="1-1-定义-XSD-文件"><a href="#1-1-定义-XSD-文件" class="headerlink" title="1.1 定义 XSD 文件"></a>1.1 定义 XSD 文件</h4><p>定义一个 XSD 文件描述组件内容:</p>
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line"><span class="comment">&lt;!-- resources/META-INF/motan.xsd --&gt;</span></div><div class="line">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</div><div class="line"><span class="tag">&lt;<span class="name">xsd:schema</span> <span class="attr">xmlns</span>=<span class="string">"http://api.weibo.com/schema/motan"</span></span></div><div class="line"><span class="tag">	        <span class="attr">xmlns:xsd</span>=<span class="string">"http://www.w3.org/2001/XMLSchema"</span> </span></div><div class="line"><span class="tag">	        <span class="attr">targetNamespace</span>=<span class="string">"http://api.weibo.com/schema/motan"</span>&gt;</span></div><div class="line"></div><div class="line">  <span class="tag">&lt;<span class="name">xsd:element</span> <span class="attr">name</span>=<span class="string">"method"</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">xsd:complexType</span>&gt;</span></div><div class="line">      <span class="tag">&lt;<span class="name">xsd:attribute</span> <span class="attr">name</span>=<span class="string">"name"</span> <span class="attr">type</span>=<span class="string">"xsd:string"</span> <span class="attr">use</span>=<span class="string">"required"</span>&gt;</span></div><div class="line">		<span class="tag">&lt;<span class="name">xsd:annotation</span>&gt;</span></div><div class="line">		  <span class="tag">&lt;<span class="name">xsd:documentation</span>&gt;</span>&lt;![CDATA[ The method name (method.toString()). ]]&gt;<span class="tag">&lt;/<span class="name">xsd:documentation</span>&gt;</span></div><div class="line">		<span class="tag">&lt;/<span class="name">xsd:annotation</span>&gt;</span></div><div class="line">      <span class="tag">&lt;/<span class="name">xsd:attribute</span>&gt;</span></div><div class="line"></div><div class="line">      <span class="tag">&lt;<span class="name">xsd:attribute</span> <span class="attr">name</span>=<span class="string">"requestTimeout"</span> <span class="attr">type</span>=<span class="string">"xsd:string"</span> <span class="attr">use</span>=<span class="string">"optional"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">xsd:annotation</span>&gt;</span></div><div class="line">          <span class="tag">&lt;<span class="name">xsd:documentation</span>&gt;</span>&lt;![CDATA[ The method invoke timeout. ]]&gt;<span class="tag">&lt;/<span class="name">xsd:documentation</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">xsd:annotation</span>&gt;</span></div><div class="line">      <span class="tag">&lt;/<span class="name">xsd:attribute</span>&gt;</span></div><div class="line"></div><div class="line">    <span class="tag">&lt;/<span class="name">xsd:complexType</span>&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="name">xsd:element</span>&gt;</span></div><div class="line">  </div><div class="line"><span class="tag">&lt;/<span class="name">xsd:schema</span>&gt;</span></div></pre></td></tr></table></figure>
@@ -87,7 +87,7 @@
 
 <div style="display:none">
 <script src="http://s4.cnzz.com/stat.php?id=&web_id=" language="JavaScript"></script>script>
-</div>
+</div><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 
 

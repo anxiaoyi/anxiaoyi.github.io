@@ -1,7 +1,7 @@
 <html>
 <head>
 	
-	<title>ZooKeeper源码分析(三) - 会话管理</title>
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>ZooKeeper源码分析(三) - 会话管理</title>
 	<meta name="keywords" content="代码人生,程序员,赵坤" />
 
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -16,14 +16,14 @@
     <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
 
     
-	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
     
 
 </head>
 
 <body>
 
-<h2 id="ZooKeeper源码分析-三-会话管理"><a href="#ZooKeeper源码分析-三-会话管理" class="headerlink" title="ZooKeeper源码分析(三) - 会话管理"></a>ZooKeeper源码分析(三) - 会话管理</h2><h3 id="创建会话"><a href="#创建会话" class="headerlink" title="创建会话"></a>创建会话</h3><p>当有新的连接请求时，<code>NIOServerCnxn</code> 会检查 <code>ConnectRequest</code> 携带的 <code>sessionId</code>。如果为 0，那么 <code>ZooKeeper</code> 会为这个连接创建一个新的 <code>Session</code>，而在 <code>Session</code> 确定为有效之前，这个时候不会尝试从客户端读取任何数据:</p>
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="ZooKeeper源码分析-三-会话管理"><a href="#ZooKeeper源码分析-三-会话管理" class="headerlink" title="ZooKeeper源码分析(三) - 会话管理"></a>ZooKeeper源码分析(三) - 会话管理</h2><h3 id="创建会话"><a href="#创建会话" class="headerlink" title="创建会话"></a>创建会话</h3><p>当有新的连接请求时，<code>NIOServerCnxn</code> 会检查 <code>ConnectRequest</code> 携带的 <code>sessionId</code>。如果为 0，那么 <code>ZooKeeper</code> 会为这个连接创建一个新的 <code>Session</code>，而在 <code>Session</code> 确定为有效之前，这个时候不会尝试从客户端读取任何数据:</p>
 <p><img src="17-05-18-14:45:33_931_278.png" alt=""></p>
 <p><code>ZooKeeper</code> 中的会话机制由 <code>SessionTrackerImpl</code> 来实现和管理。<code>SessionTrackerImpl</code> 继承了 <code>Thread</code> 线程，在其构造函数内部，默认调用了 <code>start</code> 方法。当 <code>ZooKeeperServer</code> 实例化 <code>SessionTrackerImpl</code> 就会作为一个单独的线程运行起来:</p>
 <p><img src="17-05-18-14:56:52_955_361.png" alt=""></p>
@@ -75,7 +75,7 @@
 <p><img src="17-05-27-16:26:22_811_256.png" alt=""></p>
 <p>我们再往下看 <code>submitRequest</code> 方法:</p>
 <p><img src="17-05-27-16:28:55_908_490.png" alt=""></p>
-<p>我们会发现在每次 <code>submitRequest</code> 的时候，都会去调用 <code>touchSession</code> 方法，看这个会话是否需要迁移，客户端发来的每一种不同的操作类型 (除 <code>OpCode.auth</code> 类型) ，例如 <code>ping, setData, getData</code> 等都会调用 <code>touchSession</code> 方法。我们将 <code>touchSession</code> 称之为会话激活，也即会话迁移。这里最重要的就是 <code>ping</code> 请求的提交。我们在上一章中提到过，客户端会不停的往服务器发送心跳包，于此同时，客户端会间隔性的激活这个会话。只要收到心跳包不止，服务器就始终认为这个会话存在，始终认为其仍然有效。那些没有及时发送、或者因为网络原因断掉的客户端只能因为没有进行会话迁移而被服务器移除会话请单，可见维持好网络的畅通无阻，尽量保证延时时间的间隔要小是一件非常重要的事情。</p>
+<p>我们会发现在每次 <code>submitRequest</code> 的时候，都会去调用 <code>touchSession</code> 方法，看这个会话是否需要迁移，客户端发来的每一种不同的操作类型 (除 <code>OpCode.auth</code> 类型) ，例如 <code>ping, setData, getData</code> 等都会调用 <code>touchSession</code> 方法。我们将 <code>touchSession</code> 称之为会话激活，也即会话迁移。这里最重要的就是 <code>ping</code> 请求的提交。我们在上一章中提到过，客户端会不停的往服务器发送心跳包，于此同时，客户端会间隔性的激活这个会话。只要收到心跳包不止，服务器就始终认为这个会话存在，始终认为其仍然有效。那些没有及时发送、或者因为网络原因断掉的客户端只能因为没有进行会话迁移而被服务器移除会话请单，可见维持好网络的畅通无阻，尽量保证延时时间的间隔要小是一件非常重要的事情。</p><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 
 
