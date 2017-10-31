@@ -26,34 +26,34 @@
 <!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="IO-Input-和-Output"><a href="#IO-Input-和-Output" class="headerlink" title="IO - Input 和 Output"></a>IO - Input 和 Output</h2><h3 id="5-种-I-O-模型"><a href="#5-种-I-O-模型" class="headerlink" title="5 种 I/O 模型"></a>5 种 I/O 模型</h3><ul>
 <li>阻塞式 I/O</li>
 </ul>
-<p><img src="17-05-06-23:04:13_785_388.png" alt=""></p>
+<p><img src="17-05-06-23_04_13_785_388.png" alt=""></p>
 <p>可能阻塞的套接字调用可分为如下几类:</p>
 <p>输入操作: <code>read、readv、recv、recvfrom、recvmsg</code> 5 个函数<br>输出操作: <code>write、writev、send、sendto、sendmsg</code> 5 个函数<br>接受外来连接: <code>accept</code> 函数<br>发出外来连接: <code>connect</code> 函数</p>
 <p>标准访问文的方式: 当应用程序调用 <code>read()</code> 接口时，操作系统检查在内核的告诉缓存中有没有需要的数据，如果已经缓存了，那么就直接从缓存中返回。写入的时候，从用户地址空间复制到内核地址空间的缓存中，什么时候写到磁盘由操作系统决定。</p>
-<p><img src="17-05-17-20:39:07_411_271.png" alt=""></p>
+<p><img src="17-05-17-20_39_07_411_271.png" alt=""></p>
 <p>直接 I/O 的方式: 应用程序直接访问磁盘数据，不经过操作系统内核数据缓冲区，减少一次从内核缓冲区到用户数据缓存的数据复制。这种访问文件的方式通常是在对数据的缓存管理由应用程序的数据库管理系统中。</p>
-<p><img src="17-05-17-20:43:00_447_290.png" alt=""></p>
+<p><img src="17-05-17-20_43_00_447_290.png" alt=""></p>
 <ul>
 <li>非阻塞式 I/O</li>
 </ul>
-<p><img src="17-05-08-21:05:13_734_355.png" alt=""></p>
+<p><img src="17-05-08-21_05_13_734_355.png" alt=""></p>
 <p>设置非阻塞 I/O:</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> val = fcntl(STDOUT_FILENO, F_GETFL, <span class="number">0</span>);</div><div class="line">fcntl(STDOUT_FILENO, F_SETFL, val | O_NONBLOCK);</div></pre></td></tr></table></figure>
 <ul>
 <li>I/O 复用 (<code>select</code> 和 <code>poll</code>)</li>
 </ul>
-<p><img src="17-05-08-21:21:11_717_340.png" alt=""></p>
+<p><img src="17-05-08-21_21_11_717_340.png" alt=""></p>
 <ul>
 <li>信号驱动式 I/O (<code>SIGIO</code>)</li>
 </ul>
-<p><img src="17-05-08-21:23:49_760_365.png" alt=""></p>
+<p><img src="17-05-08-21_23_49_760_365.png" alt=""></p>
 <ul>
 <li>异步 I/O (POSIX 的 <code>aio_</code> 系列函数)</li>
 </ul>
 <p>信号驱动式 I/O 是由内核通知我们<strong>何时可以启动</strong>一个 I/O 操作，而异步 I/O 模型是由内核通知我们<strong>何时完成</strong>。</p>
-<p><img src="17-05-08-21:26:37_741_386.png" alt=""></p>
+<p><img src="17-05-08-21_26_37_741_386.png" alt=""></p>
 <p>5 种 I/O 模型比较:</p>
-<p><img src="17-05-08-21:29:37_796_397.png" alt=""></p>
+<p><img src="17-05-08-21_29_37_796_397.png" alt=""></p>
 <p><code>select</code> 指示内核等待多个事件中的任何一个发生，并只在有一个或多个事件发生或经历一段指定的时间后才唤醒它，函数原型:</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/select.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">select</span><span class="params">(<span class="keyword">int</span> maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, <span class="keyword">const</span> struct timespec *timeout)</span></span>;</div></pre></td></tr></table></figure>
 <p>我们可以在下列情况收到内核通知:</p>
@@ -110,10 +110,10 @@
 <h4 id="Memory-Mapped-I-O-内存映射-I-O"><a href="#Memory-Mapped-I-O-内存映射-I-O" class="headerlink" title="Memory-Mapped I/O 内存映射 I/O"></a>Memory-Mapped I/O 内存映射 I/O</h4><p>Memory-Mapped I/O 让我们可以将位于磁盘上的一个文件映射到内存上的一个缓冲区中，当我们从缓冲区中读，我们就是从文件中读；当我们向缓冲区写，对象的文件也被写入了。Memory-Mapped I/O 已经被用于 virtual memory systems 很多年了。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></div><div class="line"><span class="function"><span class="keyword">void</span> *<span class="title">mmap</span><span class="params">(<span class="keyword">void</span> *addr, <span class="keyword">size_t</span> len, <span class="keyword">int</span> prot, <span class="keyword">int</span> flag, <span class="keyword">int</span> fd, <span class="keyword">off_t</span> off )</span></span>;</div></pre></td></tr></table></figure>
 <p>内存映射文件:</p>
-<p><img src="17-05-08-22:09:32_629_472.png" alt=""></p>
-<h3 id="Client-Server-IO"><a href="#Client-Server-IO" class="headerlink" title="Client/Server IO"></a>Client/Server IO</h3><h4 id="BIO"><a href="#BIO" class="headerlink" title="BIO"></a>BIO</h4><p><img src="17-05-08-22:45:10_757_283.png" alt=""></p>
+<p><img src="17-05-08-22_09_32_629_472.png" alt=""></p>
+<h3 id="Client-Server-IO"><a href="#Client-Server-IO" class="headerlink" title="Client/Server IO"></a>Client/Server IO</h3><h4 id="BIO"><a href="#BIO" class="headerlink" title="BIO"></a>BIO</h4><p><img src="17-05-08-22_45_10_757_283.png" alt=""></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">ServerSocket server = <span class="keyword">null</span>;</div><div class="line"><span class="keyword">try</span> &#123;</div><div class="line">    server = <span class="keyword">new</span> ServerSocket(port);</div><div class="line">    Socket socket = <span class="keyword">null</span>;</div><div class="line">    <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</div><div class="line">        socket = server.accept();</div><div class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> Request(socket)).start();</div><div class="line">    &#125;</div><div class="line">&#125; <span class="keyword">finally</span> &#123;</div><div class="line">    <span class="keyword">if</span> (server != <span class="keyword">null</span>) &#123;</div><div class="line">        server.close();</div><div class="line">        server = <span class="keyword">null</span>;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<h4 id="伪异步-IO"><a href="#伪异步-IO" class="headerlink" title="伪异步 IO"></a>伪异步 IO</h4><p><img src="17-05-08-22:44:31_784_278.png" alt=""></p>
+<h4 id="伪异步-IO"><a href="#伪异步-IO" class="headerlink" title="伪异步 IO"></a>伪异步 IO</h4><p><img src="17-05-08-22_44_31_784_278.png" alt=""></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">TimeServerHandlerExcutePool singleExecutor = <span class="keyword">new</span> TimeServerHandlerExecutePool(<span class="number">50</span>, <span class="number">10000</span>);</div><div class="line"><span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</div><div class="line">    socket = server.accept();</div><div class="line">    singleExecutor.execute(<span class="keyword">new</span> TimeServerHandler(socket));</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>当对 <code>Socket</code> 的输入流进行读取的操作的时候，它会一直阻塞下去，直到发生三种事件:</p>
 <ul>
@@ -128,15 +128,16 @@
 <p><img src="reactordiagram.png" alt=""></p>
 <p>通过 <code>Channel</code> 对象获取的 I/O 数据首先要经过操作系统的 Socket 缓冲区，再将数据复制到 <code>Buffer</code> 中，这个操作系统缓冲区就是底层的 TCP 所关联的 RecvQ 或者 SendQ 队列，从操作系统缓冲区到用户缓冲区复制数据比较消耗性能，<code>Buffer</code> 还提供了另外一种直接操作系统缓冲区的方式，即 <code>ByteBuffer.allocateDirector(size)</code>，这个方法返回的 <code>DirectByteBuffer</code> 就是与底层存储空间关联的缓冲区，它通过 Native 代码操作非 JVM 堆的内存空间。每次创建或者释放的时候都会调用一次 <code>System.gc()</code>。一般在数据量比较大、生命周期比较长的情况下比较合适。</p>
 <p><code>FileChannel.transferXXX</code> 与传统的访问文件方式相比可以减少数据从内核到用户空间的复制，数据直接在内核空间中移动:</p>
-<p><img src="17-05-17-20:54:48_510_282.png" alt=""></p>
+<p><img src="17-05-17-20_54_48_510_282.png" alt=""></p>
 <p><code>FileChannel.map</code> 将文件按照一定大小块映射为内存区域，当程序访问这个内存区域时，将直接操作这个文件数据，这种方式省去了数据从内核空间向用户空间复制的损耗。这种方式适合对大文件的只读性操作，如大文件的 MD5 校验。</p>
 <h4 id="AIO-编程"><a href="#AIO-编程" class="headerlink" title="AIO 编程"></a>AIO 编程</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AsyncTimeServerHandler</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</div><div class="line">    </div><div class="line">    CountDownLatch latch;</div><div class="line">    AsynchronousServerSocketChannel asynchronousServerSocketChannel;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">AsyncTimeServerHandler</span><span class="params">(<span class="keyword">int</span> port)</span> </span>&#123;</div><div class="line">        <span class="keyword">try</span> &#123;</div><div class="line">            asynchronousServerSocketChannel = AsynchronousServerSocketChannel.open();</div><div class="line">            asynchronousServerSocketChannel.bind(<span class="keyword">new</span> InetSocketAddress(port));</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</div><div class="line">        latch = <span class="keyword">new</span> CountDownLatch();</div><div class="line">        <span class="keyword">try</span> &#123;</div><div class="line">            latch.await();    </div><div class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</div><div class="line">            e.printStackTrace();</div><div class="line">        &#125;</div><div class="line">        asynchronousServerSocketChannel.accept(<span class="keyword">this</span>, <span class="keyword">new</span> AcceptCompletionHandler());</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">completed</span><span class="params">(AsynchronousServerSocketChannel result, AcceptCompletionHandler attachment)</span> </span>&#123;</div><div class="line">        attachment.asynchronousServerSocketChannel.accept(attachment, <span class="keyword">this</span>);</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&#125;</div><div class="line"><span class="comment">// 代码未完继续 ...</span></div></pre></td></tr></table></figure>
 <h4 id="I-O-调优"><a href="#I-O-调优" class="headerlink" title="I/O 调优"></a>I/O 调优</h4><p>性能检测: 通过压力测试，看系统 I/O wait 指标是否异常。例如，测试机器有 4 个 CPU，那么理想的 I/O wait 参数不应该超过 25%，如果超过，则 I/O 很可能成为应用程序的性能瓶颈。在 Linux 下通过 <code>iostat</code> 命令查看。通常我们还会查看另外一个参数，就是 IOPS，即要查看应用程序需要的最低的 IOPS 是多少，磁盘的 IOPS 能不能达到要求。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">(磁盘数 * 每块磁盘的 IOPS) / (磁盘块的吞吐量 + RAID 因子 * 磁盘写的吞吐量) = IOPS</div></pre></td></tr></table></figure>
 <p>TCP 连接查看主机可以使用的端口范围:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">cat /proc/sys/net/ipv4/ip_local_port_range</div></pre></td></tr></table></figure>
-<p><img src="17-05-17-21:11:26_708_54.png" alt=""></p>
+<p><img src="17-05-17-21_11_26_708_54.png" alt=""></p>
 <p>可用端口数量: 60999 - 32768 = 28231，如果这个值偏小，则遇到大量并发请求时就会成为性能瓶颈。</p>
+<div class="table-container">
 <table>
 <thead>
 <tr>
@@ -191,6 +192,7 @@
 </tr>
 </tbody>
 </table>
+</div>
 <p>以上设置都是临时性的，系统重新启动后就会丢失。</p>
 <h3 id="Buffered-I-O"><a href="#Buffered-I-O" class="headerlink" title="Buffered I/O"></a>Buffered I/O</h3><p><code>BufferedOutputStream</code> 经常被用在<strong>避免频繁操作磁盘和网络</strong>的地方(<a href="https://stackoverflow.com/questions/6821887/bufferedoutputstream-vs-bytearrayoutputstream" target="_blank" rel="external">参考</a>):</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">BufferedOutputStream bos = <span class="keyword">new</span> BufferedOutputStream(zip);</div><div class="line">ObjectOutputStream oos = <span class="keyword">new</span> ObjectOutputStream(bos);</div><div class="line">oos.writeObject(prices);</div></pre></td></tr></table></figure>
@@ -204,12 +206,27 @@
 <li><a href="https://unix.stackexchange.com/questions/36841/why-is-number-of-open-files-limited-in-linux" target="_blank" rel="external">Why is number of open files limited in Linux?</a></li>
 <li><a href="https://item.jd.com/11520670.html" target="_blank" rel="external">《深入分析 Java Web 内幕》</a></li>
 <li><a href="https://item.jd.com/11896988.html" target="_blank" rel="external">《Java Performance: The Definitive Guide》</a></li>
-</ul><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</ul>
 
 
 
 
 
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 </body>
 </html>

@@ -53,7 +53,7 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@Component</span></div><div class="line"><span class="meta">@Scope</span>(value=WebApplicationContext.SCOPE_SESSION,</div><div class="line">       proxyMode=ScopedProxyMode.INTERFACES)</div><div class="line"><span class="function"><span class="keyword">public</span> ShoppingCart <span class="title">cart</span><span class="params">()</span> </span>&#123;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>As configured, <code>proxyMode</code> is set to <code>ScopedProxyMode.INTERFACES</code>, indicating that the proxy should implement the <strong><code>ShoppingCart</code> interface</strong> and delegate to the implementation bean.</p>
 <p>This is fine (and the most ideal proxy mode) as long as <strong><code>ShoppingCart</code> is an interface</strong> and not a class. But if <code>ShoppingCart</code> is a concrete class, there’s no way Spring can create an interface-based proxy. Instead, it must <strong>use <code>CGLib</code> to generate a class-based proxy</strong>. So, if the bean type is a concrete class, you must set <code>proxyMode</code> to <code>ScopedProxyMode.TARGET_CLASS</code> to indicate that the proxy should be generated as an extension of the target class.</p>
-<p><img src="17-07-21-20:42:47_1316_722.png" alt=""></p>
+<p><img src="17-07-21-20_42_47_1316_722.png" alt=""></p>
 <h3 id="Bean-的生命周期"><a href="#Bean-的生命周期" class="headerlink" title="Bean 的生命周期"></a><code>Bean</code> 的生命周期</h3><p>使用 <code>initMethod</code> 和 <code>destroyMethod</code> 方法来声明<strong>初始化和销毁</strong>的时候调用的方法:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@Configuration</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Config</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="meta">@Primary</span></div><div class="line">    <span class="meta">@Bean</span>(initMethod = <span class="string">"init"</span>, destroyMethod = <span class="string">"destroy"</span>)</div><div class="line">    <span class="function"><span class="keyword">public</span> Car <span class="title">bicycle</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Bicycle();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>与此同时，<code>Bicycle</code> 类中一定要有这两个方法:</p>
@@ -74,12 +74,27 @@
 <p>Prior to Spring 3.1, only path-based resource locations (typically XML configuration files) were supported. As of Spring 3.1, context loaders may choose to support either path-based or class-based resources. As of Spring 4.0.4, context loaders may choose to support <strong>path-based and class-based resources</strong> simultaneously. Consequently <code>@ContextConfiguration</code> can be used to declare either path-based resource locations (via the <code>locations()</code> or <code>value()</code> attribute) or annotated classes (via the <code>classes()</code> attribute).</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@ContextConfiguration</span>(locations = <span class="string">"classpath:spring-beans.xml"</span>)</div><div class="line"><span class="meta">@ContextConfiguration</span>(classes = Config.class)</div></pre></td></tr></table></figure>
 <p>测试的时候，<strong>类上一定要标注上这两行注解</strong>，否则会抛出异常:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@RunWith</span>(SpringJUnit4ClassRunner.class)</div><div class="line"><span class="meta">@ContextConfiguration</span>(classes = Config.class)</div></pre></td></tr></table></figure><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@RunWith</span>(SpringJUnit4ClassRunner.class)</div><div class="line"><span class="meta">@ContextConfiguration</span>(classes = Config.class)</div></pre></td></tr></table></figure>
 
 
 
 
 
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 </body>
 </html>

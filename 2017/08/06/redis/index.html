@@ -29,7 +29,7 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">final</span> <span class="keyword">static</span> JedisPool pool = <span class="keyword">new</span> JedisPool(<span class="keyword">new</span> JedisPoolConfig(), <span class="string">"localhost"</span>);</div><div class="line"></div><div class="line">Jedis jedis = <span class="keyword">null</span>;</div><div class="line"><span class="keyword">try</span> &#123;</div><div class="line">    jedis = pool.getResource();</div><div class="line">    <span class="comment">/// ... do stuff here ... for example</span></div><div class="line">    jedis.set(<span class="string">"foo"</span>, <span class="string">"bar"</span>);</div><div class="line">    String foobar = jedis.get(<span class="string">"foo"</span>);</div><div class="line">    jedis.zadd(<span class="string">"sose"</span>, <span class="number">0</span>, <span class="string">"car"</span>); jedis.zadd(<span class="string">"sose"</span>, <span class="number">0</span>, <span class="string">"bike"</span>); </div><div class="line">    Set&lt;String&gt; sose = jedis.zrange(<span class="string">"sose"</span>, <span class="number">0</span>, -<span class="number">1</span>);</div><div class="line">&#125; <span class="keyword">finally</span> &#123;</div><div class="line">    <span class="keyword">if</span> (jedis != <span class="keyword">null</span>) &#123;</div><div class="line">        jedis.close();</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"><span class="comment">/// ... when closing your application:</span></div><div class="line">pool.destroy();</div></pre></td></tr></table></figure>
 <h3 id="2-查看日志"><a href="#2-查看日志" class="headerlink" title="(2) 查看日志"></a>(2) 查看日志</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">cat /var/log/redis</div></pre></td></tr></table></figure>
 <h3 id="3-Redis-简介"><a href="#3-Redis-简介" class="headerlink" title="(3) Redis 简介"></a>(3) Redis 简介</h3><p><code>Redis</code> 的全称是:</p>
-<p><img src="17-08-13-11:12:27_709_221.png" alt=""></p>
+<p><img src="17-08-13-11_12_27_709_221.png" alt=""></p>
 <p><code>Redis</code> 可以做:</p>
 <ul>
 <li>缓存</li>
@@ -49,13 +49,13 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="variable">$redis</span>-cli -v</div><div class="line">redis-cli 3.0.6</div></pre></td></tr></table></figure>
 <hr>
 <p>安装完 <code>redis</code> 之后，多了<strong>几个 <code>redis</code> 工具</strong>:</p>
-<p><img src="17-08-13-11:24:14_791_153.png" alt=""></p>
+<p><img src="17-08-13-11_24_14_791_153.png" alt=""></p>
 <hr>
 <p>启动:</p>
 <ul>
 <li>使用 <strong><code>redis-sever</code> 启动</strong>:</li>
 </ul>
-<p><img src="17-08-13-11:29:01_1300_567.png" alt=""></p>
+<p><img src="17-08-13-11_29_01_1300_567.png" alt=""></p>
 <p>这种方式<strong>无法自定义配置</strong>，生成环境中根本不会使用</p>
 <ul>
 <li>使用 <strong><code>redis-server --port 6380</code></strong> 启动:</li>
@@ -65,7 +65,7 @@
 <li>使用 <strong><code>redis-sever xxx.conf</code></strong> 配置文件来启动:</li>
 </ul>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">redis-server ~/Documents/github/redis/redis.conf</div></pre></td></tr></table></figure>
-<p><img src="17-08-13-11:53:23_892_77.png" alt=""></p>
+<p><img src="17-08-13-11_53_23_892_77.png" alt=""></p>
 <hr>
 <p><strong><code>redis</code></strong> 默认的几个比较<strong>重要的配置</strong>:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"># By default Redis does not run as a daemon. Use &apos;yes&apos; if you need it.</div><div class="line"># Note that Redis will write a pid file in /var/run/redis.pid when daemonized.</div><div class="line">daemonize no</div><div class="line"># Accept connections on the specified port, default is 6379.</div><div class="line"># If port 0 is specified Redis will not listen on a TCP socket.</div><div class="line">port 6379</div><div class="line"># The working directory.</div><div class="line">#</div><div class="line"># The DB will be written inside this directory, with the filename specified</div><div class="line"># above using the &apos;dbfilename&apos; configuration directive.</div><div class="line">#</div><div class="line"># The Append Only File will also be created inside this directory.</div><div class="line">#</div><div class="line"># Note that you must specify a directory here, not a file name.</div><div class="line">dir ./</div><div class="line"># Specify the log file name. Also the empty string can be used to force</div><div class="line"># Redis to log on the standard output. Note that if you use standard</div><div class="line"># output for logging but daemonize, logs will be sent to /dev/null</div><div class="line">logfile &quot;&quot;</div></pre></td></tr></table></figure>
@@ -109,7 +109,7 @@
 <h3 id="7-哈希"><a href="#7-哈希" class="headerlink" title="(7) 哈希"></a>(7) 哈希</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># 设置值 &#123;name=Tom&#125;</span></div><div class="line">hset user:1 name Tom</div><div class="line"></div><div class="line"><span class="comment"># 获取值</span></div><div class="line">hget user:1 name</div><div class="line"></div><div class="line"><span class="comment"># 删除值</span></div><div class="line">hdel user:1 name</div><div class="line"></div><div class="line"><span class="comment"># 得到字段的个数</span></div><div class="line">hlen user:1</div><div class="line"></div><div class="line"><span class="comment"># 批量设置</span></div><div class="line">hmset user:1 name Tom age 23</div><div class="line"></div><div class="line"><span class="comment"># 批量获取</span></div><div class="line">hmget user:1 name age</div><div class="line"></div><div class="line"><span class="comment"># 获取所有的字段</span></div><div class="line">hkeys user:1</div><div class="line"></div><div class="line"><span class="comment"># 获取所有的值</span></div><div class="line">hvals user:1</div><div class="line"></div><div class="line"><span class="comment"># 获取所有的 &#123;key=value&#125;</span></div><div class="line">hgetall user:1</div></pre></td></tr></table></figure>
 <p>在使用 <strong><code>hgetall</code></strong> 的时候，如果哈希元素个数比较多，会存在<strong>阻塞 <code>Redis</code> 的可能</strong>。如果开发人员只需要获取部分字段，可以使用 <code>hmget</code>，如果一定要获取全部 <code>field-value</code>，可以使用 <strong><code>hscan</code></strong> 命令，该命令会<strong>渐进式遍历哈希类型</strong>。</p>
 <p><strong>两种情况会触发哈希类型的内部编码发生变化</strong>:</p>
-<p><img src="17-08-13-14:46:05_693_312.png" alt=""></p>
+<p><img src="17-08-13-14_46_05_693_312.png" alt=""></p>
 <h3 id="8-列表"><a href="#8-列表" class="headerlink" title="(8) 列表"></a>(8) 列表</h3><p>列表<strong>两端插入和弹出</strong>操作:</p>
 <p><img src="1584601931.jpg" alt=""></p>
 <p>列表<strong>获取、删除</strong>等操作:</p>
@@ -176,7 +176,7 @@
 <li>每个客户端的输入缓冲区的大小都不能超过 1G，超过后客户端将会被关闭</li>
 <li><strong>输入缓冲区不受 <code>maxmemory</code> 控制</strong></li>
 </ul>
-<p><img src="17-08-15-11:23:56_1051_198.png" alt=""></p>
+<p><img src="17-08-15-11_23_56_1051_198.png" alt=""></p>
 <p>同样，<code>Redis</code> 为每个客户端分配了输出缓冲区，它的作用是保存命令执行的结果返回给客户端，为 <code>Redis</code> 和客户端交互返回结果提供缓冲:</p>
 <p><img src="1502022510.jpg" alt=""></p>
 <p>输出缓冲区做的很细致，按照客户端的不同分为三种: <strong>普通客户端、发布订阅客户端、<code>slave</code> 客户端</strong>:</p>
@@ -189,7 +189,7 @@
 <li><code>&lt;sort limit&gt;, &lt;soft seconds&gt;</code>: 如果客户端使用的输出缓冲区超过了 <code>&lt;soft limit&gt;</code> 并且<strong>持续了</strong> <code>&lt;sort seconds&gt;</code> 秒，客户端会被立即关闭。</li>
 </ul>
 <p>实际上输出缓冲区由两部分组成: 固定缓冲区 (16KB) 和动态缓冲区，其中固定缓冲区返回比较小的执行结果，而动态缓冲区返回比较大的结果。固定缓冲区使用的是字节数组，动态缓冲区使用的是列表。当固定缓冲区存满后会将 <code>Redis</code> 新的返回结果存放在动态缓冲区的队列中:</p>
-<p><img src="17-08-15-11:15:08_1050_232.png" alt=""></p>
+<p><img src="17-08-15-11_15_08_1050_232.png" alt=""></p>
 <p><strong>输出缓冲区同样也不会收到 <code>maxmemory</code> 的限制</strong>，如果使用不当同样会造成 <code>maxmemory</code> 用满产生的数据丢失、键值淘汰、OOM 等情况。</p>
 <h3 id="13-如何识别-Redis-是否有内存交换"><a href="#13-如何识别-Redis-是否有内存交换" class="headerlink" title="(13) 如何识别 Redis 是否有内存交换"></a>(13) 如何识别 Redis 是否有内存交换</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># 查询进程号</span></div><div class="line">redis-cli -p 6379 info server | grep process_id</div><div class="line"><span class="comment"># 查询内存交换信息</span></div><div class="line">sudo cat /proc/1166/smaps | grep Swap</div></pre></td></tr></table></figure>
 <p>如果<strong>交换量都是 0KB 或者个别的是 4KB</strong>，则是正常现象，说明 <code>Redis</code> 进程内存没有被交换。预防内存交换主要就是：</p>
@@ -241,7 +241,7 @@
 <li><strong>-n</strong>: 客户端请求总量，默认 100000</li>
 </ul>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># 100 个客户端同时请求 Redis，一共执行 20000 次</span></div><div class="line">redis-benchmark -c 100 -n 20000</div></pre></td></tr></table></figure>
-<p><img src="17-08-16-15:38:06_781_228.png" alt=""></p>
+<p><img src="17-08-16-15_38_06_781_228.png" alt=""></p>
 <p>在一个空的 Redis 上执行了 <code>redis-benchmark</code> 后会发现只有 3 个键:</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">127.0.0.1:6379&gt; keys *</div><div class="line">1) <span class="string">"key:__rand_int__"</span></div><div class="line">2) <span class="string">"mylist"</span></div><div class="line">3) <span class="string">"counter:__rand_int__"</span></div></pre></td></tr></table></figure>
 <p>如果想向 Redis 插入更多的键，可以执行使用 <code>-r (random)</code> 选项，向 Redis 插入更多随机键。</p>
@@ -258,7 +258,7 @@
 <ul>
 <li><strong><code>bgsave</code> 手动触发</strong>: Redis 进程执行 <code>fork</code> 操作创建子进程，RDB 持久化过程由子进程负责，完成后自动结束。阻塞只发生在 <code>fork</code> 阶段，一般时间很短。运行 <code>bgsave</code> 命令对应的 Redis 日志如下:</li>
 </ul>
-<p><img src="17-08-16-16:04:49_945_125.png" alt=""></p>
+<p><img src="17-08-16-16_04_49_945_125.png" alt=""></p>
 <p>查看最近一次 <code>fork</code> 操作的耗时 (723 微秒):</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">zk@zk-pc:~$ redis-cli info stats | grep latest_fork_usec</div><div class="line">latest_fork_usec:723</div></pre></td></tr></table></figure>
 <p>子进程创建 <code>RDB</code> 文件，根据父进程内存生成临时快照文件，完成后<strong>对原有文件进行原子替换</strong>，执行 <code>lastsave</code> 命令可以获取最后一次生成 <code>RDB</code> 的时间:</p>
@@ -287,14 +287,14 @@
 <p>Redis 的 RDB 文件保存的位置，如果使用 Redis 默认自带的配置文件 <a href="https://github.com/antirez/redis/blob/unstable/redis.conf" target="_blank" rel="external"><code>redis.conf</code></a> 来启动 <code>redis-server</code> 的话，那么其工作目录如下所示:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">dir ./</div></pre></td></tr></table></figure>
 <p>其代表的含义是，在哪个目录运行的 <code>redis-server</code> 启动的 <code>redis</code> 服务器，那么 <code>dir</code> 目录就会指向哪个文件，相应的 <code>dump.rdb</code> 文件也就会保存在这个目录下:</p>
-<p><img src="17-08-16-16:38:56_1301_114.png" alt=""></p>
+<p><img src="17-08-16-16_38_56_1301_114.png" alt=""></p>
 <p><code>dump.rdb</code> 文件也在这个目录下:</p>
-<p><img src="17-08-16-16:39:47_1129_50.png" alt=""></p>
+<p><img src="17-08-16-16_39_47_1129_50.png" alt=""></p>
 <p>另外使用命令 <strong><code>redis-cli config get dir</code></strong> 也能得到工作目录:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">1) &quot;dir&quot;</div><div class="line">2) &quot;/home/zk/Documents/bupt_518/appsec_search_redis/search-redis&quot;</div></pre></td></tr></table></figure>
 <h3 id="20-AOF-持久化"><a href="#20-AOF-持久化" class="headerlink" title="(20) AOF 持久化"></a>(20) AOF 持久化</h3><h3 id="21-客户端管理"><a href="#21-客户端管理" class="headerlink" title="(21) 客户端管理"></a>(21) 客户端管理</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># 列出能与 Redis 服务端相连的所有客户端连接信息</span></div><div class="line">client list</div></pre></td></tr></table></figure>
 <p><code>age</code> 和 <code>idle</code> 字段分别代表<strong>当前客户端已经连接的时间和最近一次的空闲时间</strong>:</p>
-<p><img src="17-08-16-22:42:36_1297_180.png" alt=""></p>
+<p><img src="17-08-16-22_42_36_1297_180.png" alt=""></p>
 <p>某些情况下，可能存在大量 <code>idle</code> 连接，无论是从网络连接的成本还是超过 <code>maxclients</code> 的后果来说都不是什么好事，因此 Redis 提供了 <code>timeout</code> (单位为秒) 参数来限制连接的最大空闲时间，<strong>一旦客户端连接的 <code>idle</code> 时间超过了 <code>timeout</code>，连接将会被关闭</strong>。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">127.0.0.1:6379&gt; config <span class="built_in">set</span> timeout 300</div><div class="line">OK</div></pre></td></tr></table></figure>
 <p>实际开发中，应该在<strong>客户端使用上添加空闲检测和验证</strong>等措施，例如 <code>JedisPool</code> 使用 <code>common-pool</code> 提供的三个属性:</p>
@@ -334,12 +334,27 @@
 <li><code>volatile-random</code>： <strong>随机删除过期键</strong>，直到腾出足够空间为止。</li>
 <li><code>volatile-ttl</code>：根据键值对象的 <code>ttl</code> 属性，<strong>删除最近将要过期数据</strong>。如果没有，回退到 <code>noeviction</code> 策略。</li>
 </ul>
-<p>内存溢出控制策略可以采用 <code>config set maxmemory-policy {policy}</code> 动态配置。 Redis 支持丰富的内存溢出应对策略，可以根据实际需求灵活定制，比如当设置 <code>volatile-lru</code> 策略时，保证具有过期属性的键可以根据 LRU 剔除，而未设置超时的键可以永久保留。还可以采用 <code>allkeys-lru</code> 策略把 Redis 变为纯缓存服务器使用。当Redis 因为内存溢出删除键时，可以通过执行 <code>info stats</code> 命令查看 <code>evicted_keys</code> 指标找出当前 Redis 服务器已剔除的键数量。每次Redis 执行命令时如果设置了 <code>maxmemory</code> 参数，都会尝试执行回收内存操作。当 Redis 一直工作在内存溢出 <code>（used_ memory&gt; maxmemory）</code> 的状态下且设置非 <code>noeviction</code> 策略时，会频繁地触发回收内存的操作，影响Redis 服务器的性能。</p><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<p>内存溢出控制策略可以采用 <code>config set maxmemory-policy {policy}</code> 动态配置。 Redis 支持丰富的内存溢出应对策略，可以根据实际需求灵活定制，比如当设置 <code>volatile-lru</code> 策略时，保证具有过期属性的键可以根据 LRU 剔除，而未设置超时的键可以永久保留。还可以采用 <code>allkeys-lru</code> 策略把 Redis 变为纯缓存服务器使用。当Redis 因为内存溢出删除键时，可以通过执行 <code>info stats</code> 命令查看 <code>evicted_keys</code> 指标找出当前 Redis 服务器已剔除的键数量。每次Redis 执行命令时如果设置了 <code>maxmemory</code> 参数，都会尝试执行回收内存操作。当 Redis 一直工作在内存溢出 <code>（used_ memory&gt; maxmemory）</code> 的状态下且设置非 <code>noeviction</code> 策略时，会频繁地触发回收内存的操作，影响Redis 服务器的性能。</p>
 
 
 
 
 
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 </body>
 </html>

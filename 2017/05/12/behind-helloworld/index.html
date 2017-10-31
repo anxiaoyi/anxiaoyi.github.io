@@ -49,20 +49,35 @@
 <p>链接器的主要工作内容包括: 地址和空间分配、符号决议 (Symbol Resolution) 和重定位等。</p>
 <p><img src="220px-Linker.svg.png" alt=""></p>
 <h3 id="目标文件"><a href="#目标文件" class="headerlink" title="目标文件"></a>目标文件</h3><p>目标文件本身就是按照可执行文件格式存储的，只是还没有经过链接，可能有些符号或者地址需要被调整。可执行文件格式一般为分 Windows 平台下的 <strong>PE (Portable Executable)</strong> 和 Linux 平台下的 <strong>ELF (Executable Linkable Format)</strong>，它们都是 <strong>COFF (Common file format)</strong> 格式的变种。不管是可执行文件，动态链接库 (Dynamic Linking Library, .dll 文件和 .so 文件) 以及静态链接库 (Static Linking Library) 都是按照这种格式存储的。</p>
-<p><img src="17-05-12-21:19:17_1365_249.png" alt=""></p>
+<p><img src="17-05-12-21_19_17_1365_249.png" alt=""></p>
 <p>总体而言，程序源代码被编译后主要分成两种段: 程序指令和程序数据。代码段属于程序指令，而数据段和 .bss 段 (未初始化的全局变量和局部静态变量) 属于程序数据。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">printf</span><span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* format, ... )</span></span>;</div><div class="line"></div><div class="line"><span class="keyword">int</span> global_init_var = <span class="number">84</span>;</div><div class="line"><span class="keyword">int</span> global_uninit_var;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">func1</span><span class="params">( <span class="keyword">int</span> i )</span> </span>&#123;</div><div class="line">    <span class="built_in">printf</span>( <span class="string">"%d\n"</span>, i );</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</div><div class="line">    <span class="keyword">static</span> <span class="keyword">int</span> static_var = <span class="number">85</span>;</div><div class="line">    <span class="keyword">static</span> <span class="keyword">int</span> static_var2;</div><div class="line">    <span class="keyword">int</span> a = <span class="number">1</span>;</div><div class="line">    <span class="keyword">int</span> b;</div><div class="line">    func1( static_var + static_var2 + a + b );</div><div class="line">    <span class="keyword">return</span> a;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>我们使用 <code>gcc -c simplesection.c</code> 来编译，参数 <code>-c</code> 表示只编译不链接</p>
-<p><img src="17-05-12-21:29:17_1058_503.png" alt=""></p>
+<p><img src="17-05-12-21_29_17_1058_503.png" alt=""></p>
 <p>有一个专门的命令叫做 <code>size</code>，它可以专门用来查看 <strong>ELF</strong> 文件的各个段的长度:</p>
-<p><img src="17-05-12-21:31:14_761_84.png" alt=""></p>
+<p><img src="17-05-12-21_31_14_761_84.png" alt=""></p>
 <p><code>objdump</code> 的 <code>-s</code> 参数可以将所有段的内容以十六进制打印出来，<code>-d</code> 参数可以将所有包含指令的段反编译:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">objdump -s -d simplesection.o</div></pre></td></tr></table></figure><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">objdump -s -d simplesection.o</div></pre></td></tr></table></figure>
 
 
 
 
 
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 </body>
 </html>

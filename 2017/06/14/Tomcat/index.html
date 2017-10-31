@@ -155,16 +155,16 @@
 <h3 id="Tomcat-类加载器"><a href="#Tomcat-类加载器" class="headerlink" title="Tomcat 类加载器"></a>Tomcat 类加载器</h3><p>对于某个网络程序所<strong>特有</strong>的类和资源,这些未包装的类和资源放置在你的网络程序档案 <code>/WEB-INF/classes</code> 目录下面,或者,包含这些类和资源的 JAR 文件放置在你的网络程序档案 <code>/WEB-INF/lib</code> 目录下面;</p>
 <p>对于必须被所有网络程序<strong>共享</strong>的类和资源, 未包装的这些类和资源放置在 <code>$CATALINA_HOME/shared/classes</code> 下面,或者,包含这些类和资源的 JAR 文件放置在 <code>$CATALINA_HOME/shared/lib</code> 下面。</p>
 <p><strong>Tomcat 类加载器父子关系图</strong>:</p>
-<p><img src="17-06-15-15:28:10_377_316.png" alt=""></p>
+<p><img src="17-06-15-15_28_10_377_316.png" alt=""></p>
 <p><strong>Tomcat 与 Java 类加载器关系图</strong>:</p>
-<p><img src="17-06-15-15:28:40_212_474.png" alt=""></p>
+<p><img src="17-06-15-15_28_40_212_474.png" alt=""></p>
 <p><strong>catalina.sh 指定 CLASSPATH 内容</strong>:</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># Add on extra jar files to CLASSPATH</span></div><div class="line"><span class="keyword">if</span> [ ! -z <span class="string">"<span class="variable">$CLASSPATH</span>"</span> ] ; <span class="keyword">then</span></div><div class="line">    CLASSPATH=<span class="string">"<span class="variable">$CLASSPATH</span>"</span>:</div><div class="line"><span class="keyword">fi</span></div><div class="line">CLASSPATH=<span class="string">"<span class="variable">$CLASSPATH</span>"</span><span class="string">"<span class="variable">$CATALINA_HOME</span>"</span>/bin/bootstrap.jar</div><div class="line"></div><div class="line"><span class="keyword">if</span> [ -r <span class="string">"<span class="variable">$CATALINA_BASE</span>/bin/tomcat-juli.jar"</span> ] ; <span class="keyword">then</span></div><div class="line">    CLASSPATH=<span class="variable">$CLASSPATH</span>:<span class="variable">$CATALINA_BASE</span>/bin/tomcat-juli.jar</div><div class="line"><span class="keyword">else</span></div><div class="line">    CLASSPATH=<span class="variable">$CLASSPATH</span>:<span class="variable">$CATALINA_HOME</span>/bin/tomcat-juli.jar</div><div class="line"><span class="keyword">fi</span></div></pre></td></tr></table></figure>
 <p><strong>Bootstrap.createClassLoader</strong>:</p>
 <p>在 <code>conf/catalina.properties</code> 中定义了 <code>Common, Server, Shared</code> 三个 <code>ClassLoader</code> 载入类的路径以及一些包的安全权限:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">common.loader=&quot;$&#123;catalina.base&#125;/lib&quot;,&quot;$&#123;catalina.base&#125;/lib/*.jar&quot;,&quot;$&#123;catalina.home&#125;/lib&quot;,&quot;$&#123;catalina.home&#125;/lib/*.jar&quot;</div><div class="line">server.loader=</div><div class="line">shared.loader=</div></pre></td></tr></table></figure>
 <p>加载 <code>tomcat85/output/build/lib/*.jar</code></p>
-<p><img src="17-06-15-15:54:12_1085_203.png" alt=""></p>
+<p><img src="17-06-15-15_54_12_1085_203.png" alt=""></p>
 <p><strong>ClassLoaderFactory.createClassLoader</strong>:</p>
 <p>主要工作是进行加载路径的格式化</p>
 <p><strong>Tomcat 热部署</strong>:</p>
@@ -174,7 +174,7 @@
 <p>直接把项目放到 <code>webapps</code> 下面</p>
 <p>实现方法如下:</p>
 <p>所有继承了 <code>ContainerBase</code> 的容器如下:</p>
-<p><img src="17-06-15-17:06:18_716_155.png" alt=""></p>
+<p><img src="17-06-15-17_06_18_716_155.png" alt=""></p>
 <p><code>ContainerBase</code> 在启动的时候启动了一个<strong>后台线程</strong>:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@Override</span></div><div class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">startInternal</span><span class="params">()</span></span></div><div class="line"><span class="function">    <span class="keyword">throws</span> LifecycleException </span>&#123;</div><div class="line">    threadStart();</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">threadStart</span><span class="params">()</span> </span>&#123;</div><div class="line">    String threadName = <span class="string">"ContainerBackgroundProcessor["</span> + toString() + <span class="string">"]"</span>;</div><div class="line">    thread = <span class="keyword">new</span> Thread(<span class="keyword">new</span> ContainerBackgroundProcessor(), threadName);</div><div class="line">    thread.setDaemon(<span class="keyword">true</span>);</div><div class="line">    thread.start();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>后台线程每隔一段时间就会调用 <code>processChildren</code> 方法:</p>
@@ -296,12 +296,27 @@
 <li><a href="">精通 Tomcat</a></li>
 <li><a href="http://blog.csdn.net/lantian0802/article/details/8870286" target="_blank" rel="external">Tomcat 热部署实现方式源码分析总结</a></li>
 <li><a href="https://item.jd.com/10913619.html" target="_blank" rel="external">《深入剖析 Tomcat》</a></li>
-</ul><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</ul>
 
 
 
 
 
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 </body>
 </html>

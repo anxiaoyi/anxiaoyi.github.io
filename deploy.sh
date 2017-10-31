@@ -70,9 +70,14 @@ function run_emacs() {
 function github_deploy() {
     DIR_NAME=`dirname $_SCRIPT_PATH`
     cd `dirname $DIR_NAME`
-    sudo hexo generate
+    hexo generate
     cp source/CNAME public/
     cd public/
+	git init
+	git remote add origin https://github.com/anxiaoyi/anxiaoyi.github.io.git
+	rm -f *.java
+	rm -f *.class
+	git pull origin master
     git add --a
     git commit -m 'update site'
     git push origin master

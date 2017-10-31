@@ -53,14 +53,14 @@
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="comment">&lt;!-- https://mvnrepository.com/artifact/log4j/log4j --&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>log4j<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>log4j<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.2.17<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure>
 <p><img src="log-levels.png" alt=""></p>
 <h4 id="2-1-打印到-Console"><a href="#2-1-打印到-Console" class="headerlink" title="2.1 打印到 Console:"></a>2.1 打印到 <code>Console</code>:</h4><p><strong><code>log4j.properties</code></strong> 文件的内容:</p>
-<p><img src="17-08-05-16:34:39_745_152.png" alt=""></p>
+<p><img src="17-08-05-16_34_39_745_152.png" alt=""></p>
 <p>使用:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Foo</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="keyword">final</span> Logger classLogger = Logger.getLogger(Foo.class);</div><div class="line">    <span class="keyword">final</span> Logger infoLogger = Logger.getLogger(<span class="string">"INFO"</span>);</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Foo</span><span class="params">()</span> </span>&#123;</div><div class="line">        classLogger.info(<span class="string">"new Foo"</span>);</div><div class="line">        infoLogger.info(<span class="string">"new Foo"</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">        <span class="keyword">new</span> Foo();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <h4 id="2-2-同时打印到-Console-和文件-log-out-中"><a href="#2-2-同时打印到-Console-和文件-log-out-中" class="headerlink" title="2.2 同时打印到 Console 和文件 log.out 中:"></a>2.2 同时打印到 <code>Console</code> 和文件 <code>log.out</code> 中:</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">log4j.rootLogger = DEBUG, console, file</div><div class="line"></div><div class="line">log4j.appender.console = org.apache.log4j.ConsoleAppender</div><div class="line">log4j.appender.console.layout=org.apache.log4j.PatternLayout</div><div class="line"></div><div class="line">log4j.appender.file = org.apache.log4j.RollingFileAppender</div><div class="line">log4j.appender.file.file = log.out</div><div class="line">log4j.appender.file.layout = org.apache.log4j.PatternLayout</div><div class="line">log4j.appender.file.layout.ConversionPattern=%<span class="number">5</span>p [%t] (%F:%L) - %m%n</div></pre></td></tr></table></figure>
 <p>在 <code>Intellij Idea</code> 中直接运行后 <code>log.out</code> 文件存放的位置:</p>
-<p><img src="17-08-05-16:50:11_355_205.png" alt=""></p>
+<p><img src="17-08-05-16_50_11_355_205.png" alt=""></p>
 <p>打成 <code>Jar</code> 包以后运行后 <code>log.out</code> 文件存放的位置:</p>
-<p><img src="17-08-05-16:54:16_1164_84.png" alt=""></p>
+<p><img src="17-08-05-16_54_16_1164_84.png" alt=""></p>
 <h4 id="2-3-单独指定某个类的日志输出到指定文件中"><a href="#2-3-单独指定某个类的日志输出到指定文件中" class="headerlink" title="2.3 单独指定某个类的日志输出到指定文件中"></a>2.3 单独指定某个类的日志输出到指定文件中</h4><p>你需要<strong>自定义 <code>Logger</code></strong>:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">log4j.logger.com.zk.Foo = DEBUG, fooFile</div><div class="line"></div><div class="line">log4j.appender.fooFile.file = fooFile.out</div><div class="line">log4j.appender.fooFile = org.apache.log4j.RollingFileAppender</div><div class="line">log4j.appender.fooFile.layout = org.apache.log4j.PatternLayout</div><div class="line">log4j.appender.fooFile.layout.ConversionPattern=%<span class="number">5</span>p [%t] (%F:%L) - %m%n</div></pre></td></tr></table></figure>
 <p>使用:</p>
@@ -111,12 +111,27 @@
 <p><img src="459592bfa3f6e6a23e7d8856360f3592.png" alt=""></p>
 <ul>
 <li>能找到<strong>用户做了什么</strong></li>
-</ul><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</ul>
 
 
 
 
 
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 </body>
 </html>
