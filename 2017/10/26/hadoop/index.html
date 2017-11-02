@@ -28,6 +28,12 @@
 </blockquote>
 <h3 id="为什么不能使用数据库加上更多磁盘来做大规模的批量分析"><a href="#为什么不能使用数据库加上更多磁盘来做大规模的批量分析" class="headerlink" title="为什么不能使用数据库加上更多磁盘来做大规模的批量分析"></a>为什么不能使用数据库加上更多磁盘来做大规模的批量分析</h3><p>这个问题来自于磁盘驱动器的发展趋势: <strong>寻址时间的提高速度远远慢于传输速率的提高速度</strong>．</p>
 <h3 id="Hadoop-源码最重要的几个库"><a href="#Hadoop-源码最重要的几个库" class="headerlink" title="Hadoop 源码最重要的几个库"></a><code>Hadoop</code> 源码最重要的几个库</h3><p><img src="2017_10_27_20_26_31.png" alt=""></p>
+<p>这几个库的系统默认配置文件:</p>
+<ul>
+<li><code>./hadoop-common-project/hadoop-common/src/main/resources/core-default.xml</code></li>
+<li><code>./hadoop-hdfs-project/hadoop-hdfs/src/main/resources/hdfs-default.xml</code></li>
+<li><code>./hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-core/src/main/resources/mapred-default.xml</code></li>
+</ul>
 <p>相应的这几个库的重要配置文件:</p>
 <ul>
 <li><code>./hadoop-common-project/hadoop-common/src/main/conf/core-site.xml</code></li>
@@ -48,6 +54,11 @@
 <ul>
 <li><code>./hadoop-mapreduce-project/hadoop-mapreduce-examples/src/main/java/org/apache/hadoop/examples/WordCount.java</code></li>
 </ul>
+<hr>
+<p>配置文件：</p>
+<p><img src="2017_10_31_17_20_21.png" alt=""></p>
+<p><code>Configuration</code> 一上来会加载这两个类:</p>
+<p><img src="2017_10_31_17_25_47.png" alt=""></p>
 <h3 id="WordCount-运行过程"><a href="#WordCount-运行过程" class="headerlink" title="WordCount 运行过程"></a><code>WordCount</code> 运行过程</h3><p><img src="2017_10_27_22_05_31.png" alt=""></p>
 <ul>
 <li>将数据切分为若干个<strong>输入分片</strong></li>
@@ -204,7 +215,7 @@
 <li>配置写入 <code>job.xml</code> 文件中</li>
 <li>正式提交 <code>Job</code></li>
 </ul>
-<p>**(3) 查询信息:</p>
+<p><strong>(3) 查询信息:</strong></p>
 <ul>
 <li>使用 <code>NetworkedJob</code> 封装 <code>Job</code></li>
 <li>监控 <code>Job</code> 的运行和状态信息</li>
@@ -219,6 +230,10 @@
 <p><code>Hadoop</code> 启动/停止脚本时需要通过 <code>SSH</code> 发送命令启动相关守护进程,为了避免每次启动/停止 <code>Hadoop</code> 输入密码进行验证,需要设置免密码登录:拷贝本机的 <code>./ssh/id_rsa.pub</code> 到 <code>authorized_keys</code> 中.</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># 格式化文件系统</span></div><div class="line">hadoop namenode -format</div><div class="line"><span class="comment"># 启动 Hadoop</span></div><div class="line"><span class="variable">$HADOOP</span>/sbin/start-all.sh</div></pre></td></tr></table></figure>
 <p>启动之后可以使用 <code>$HADOOP/bin/hadoop</code> 来输入命令,完成各种操作,支持的命令请参考: <a href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CommandsManual.html" target="_blank" rel="external">Commands Guide</a></p>
+<h3 id="序列化"><a href="#序列化" class="headerlink" title="序列化"></a>序列化</h3><p>在 <code>Hadoop MapReduce</code> 中， 序列化的主要作用有两个： <strong>永久存储和进程间通信</strong>。在 <code>Hadoop MapReduce</code> 中， 使一个 Java 对象可序列化的方法是让其对应的类实现 <code>Writable</code> 接口。 但对于 <code>key</code> 而言， 由于它是<strong>数据排序</strong>的关键字， 因此还需要提供比较两个 <code>key</code> 对象的方法。 为此， <code>key</code> 对应类需实现 <code>WritableComparable</code> 接口。</p>
+<p><img src="2017_10_31_16_37_07.png" alt=""></p>
+<h3 id="报告进度"><a href="#报告进度" class="headerlink" title="报告进度"></a>报告进度</h3><p><code>Reporter</code> 是 <code>MapReduce</code> 提供给应用程序的工具。 如图 3-4 所示， 应用程序可使用 <code>Reporter</code> 中的方法报告完成进度（ progress）、 设定状态消息（ setStatus） 以及更新计数器<br>（ incrCounter）。</p>
+<h3 id="InputFormat"><a href="#InputFormat" class="headerlink" title="InputFormat"></a><code>InputFormat</code></h3><p><img src="2017_10_31_17_56_09.png" alt=""></p>
 <h3 id="必读"><a href="#必读" class="headerlink" title="必读"></a>必读</h3><ul>
 <li><a href="https://www.zhihu.com/question/19795366" target="_blank" rel="external">知乎-零基础学习 Hadoop 该如何下手？</a></li>
 <li><a href="https://wiki.apache.org/hadoop#Setting_up_a_Hadoop_Cluster" target="_blank" rel="external">配置 <code>Hadoop</code> 集群教程</a><ul>

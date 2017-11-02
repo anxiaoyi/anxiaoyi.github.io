@@ -273,6 +273,36 @@
 </ul>
 <h3 id="volatile"><a href="#volatile" class="headerlink" title="volatile"></a><code>volatile</code></h3><p><strong><code>volatile</code> 用来确保将变量的更新操作通知到其他线程</strong>。当把变量声明为 <code>volatile</code> 类型后，编译器与运行时都会注意到这个变量是共享的，因此不会将该变量的操作与其他内存操作一起重排序。</p>
 <h3 id="Final-域"><a href="#Final-域" class="headerlink" title="Final 域"></a><code>Final</code> 域</h3><p><strong><code>final</code></strong> 域能确保初始化过程的安全性，从而可以不受限制地访问不可变对象，并在共享这些对象时<strong>无须同步</strong>。即使对象是可变的，通过将对象的某些域声明为 <code>final</code> 类型，仍然可以<strong>简化对状态的判断</strong>，因此限制对象的可变性也就相当于限制了该对象可能的状态的集合。</p>
+<h3 id="Java-内存模型"><a href="#Java-内存模型" class="headerlink" title="Java 内存模型"></a>Java 内存模型</h3><p><code>JMM</code> 未程序中所有的操作定义了一个偏序关系，称之为 <code>Happens-Before</code> 规则。要想保证执行操作 <code>B</code> 的线程看到操作 <code>A</code> 的结果，那么在 <code>A</code> 和 <code>B</code> 之间必须满足 <code>Happens-Before</code> 关系:</p>
+<p><img src="2017_11_02_15_06_48.png" alt=""></p>
+<p>如果两个操作之间缺乏 <code>Happens-Before</code> 关系，那么 <code>JVM</code> 可以对他们进行任意重排序。</p>
+<p><img src="2017_11_02_15_11_18.png" alt=""></p>
+<h3 id="Timer"><a href="#Timer" class="headerlink" title="Timer"></a><code>Timer</code></h3><ul>
+<li>在执行所有定时任务时只会创建一个线程。如果<strong>某个任务的执行时间过长，那么将破坏其它 <code>TimerTask</code> 的定时精确性</strong>。例如某个周期 <code>TimerTask</code> 需要每 10ms 执行一次，而另外一个 <code>TimerTask</code> 需要执行 40ms，那么这个周期任务或者在 40ms 任务执行完快速连续地调用 4 次，或者彻底 “丢失” 4 次调用。 (取决于它是基于固定速率调度还是基于固定延时来调度)。</li>
+<li><code>TimerTask</code> 抛出了一个未检查异常，那么 <code>Timer</code> 将表现出糟糕的行为。它不捕获异常，也不会恢复线程的执行，而是会错误的认为<strong>整个 <code>Timer</code> 被取消了</strong>。</li>
+</ul>
+<h3 id="正确提交并使用多个-Callable-任务"><a href="#正确提交并使用多个-Callable-任务" class="headerlink" title="正确提交并使用多个 Callable 任务"></a>正确提交并使用多个 <code>Callable</code> 任务</h3><p><code>ExecutorCompletionService</code> 将 <code>Executor</code> 和 <code>BlockingQueue</code> 的功能融合在一起:</p>
+<p><img src="2017_11_02_15_42_28.png" alt=""></p>
+<h3 id="一次提交多个任务，并等待返回"><a href="#一次提交多个任务，并等待返回" class="headerlink" title="一次提交多个任务，并等待返回"></a>一次提交多个任务，并等待返回</h3><p><img src="2017_11_02_15_50_50.png" alt=""></p>
+<h3 id="任务取消"><a href="#任务取消" class="headerlink" title="任务取消"></a>任务取消</h3><p><img src="2017_11_02_15_59_07.png" alt=""></p>
+<p><code>volatile</code> 变量的问题:</p>
+<p><img src="2017_11_02_16_00_42.png" alt=""></p>
+<blockquote>
+<p>实际上，在<strong>取消</strong>之外的其它操作中使用<strong>中断</strong>，都是不合适的，并且很难支撑起更大的应用。</p>
+</blockquote>
+<p><img src="2017_11_02_16_06_46.png" alt=""></p>
+<h3 id="防止死锁"><a href="#防止死锁" class="headerlink" title="防止死锁"></a>防止死锁</h3><p>在<strong>内置锁</strong>中，恢复程序的唯一方法就是重新请程序，而防止死锁的唯一方法就是在构造程序时避免出现不一致的加锁顺序。</p>
+<p><img src="2017_11_02_16_20_07.png" alt=""></p>
+<h3 id="线程池大小"><a href="#线程池大小" class="headerlink" title="线程池大小"></a>线程池大小</h3><p>对于计算密集型任务，在拥有 $N_{cpu}$ 个处理器的系统上，当线程池的大小为 $N_{cpu} + 1$ 时，通常能够实现最优的利用率。</p>
+<p>对于包含 <code>I/O</code> 操作或者其它<strong>阻塞</strong>操作的任务，由于线程池并<strong>不会一直执行</strong>，因此<strong>线程池的规模应该更大</strong>。</p>
+<p>要正确地设置线程池的大小，你必须估算出任务的等待时间和计算时间的比值:</p>
+<script type="math/tex; mode=display">
+N_{threads} = N_{cpu} * U_{cpu} * (1 + \frac{W}{C})</script><p>其中:</p>
+<ul>
+<li>$N_{cpu}$: CPU 的个数</li>
+<li>$U_{cpu}$: CPU 的利用率</li>
+<li>$\frac{W}{C}$: 等待时间/计算时间</li>
+</ul>
 <h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
 <li><a href="http://wilddiary.com/understanding_custom_threadfactory_in_java/" target="_blank" rel="external">Understanding Custom ThreadFactory In Java</a></li>
 <li><a href="http://www.infoq.com/cn/minibooks/Alibaba-Java-minibook?utm_source=tuicool&amp;utm_medium=referral" target="_blank" rel="external">《阿里巴巴Java开发手册》</a></li>
