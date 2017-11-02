@@ -74,7 +74,7 @@ function github_deploy() {
     cp source/CNAME public/
     cd public/
 	git init
-	git remote add origin https://github.com/anxiaoyi/anxiaoyi.github.io.git
+	git remote add origin git@github.com:anxiaoyi/anxiaoyi.github.io.git
 	rm -f *.java
 	rm -f *.class
 	git pull origin master

@@ -303,6 +303,41 @@ N_{threads} = N_{cpu} * U_{cpu} * (1 + \frac{W}{C})</script><p>其中:</p>
 <li>$U_{cpu}$: CPU 的利用率</li>
 <li>$\frac{W}{C}$: 等待时间/计算时间</li>
 </ul>
+<h3 id="可阻塞的-take-的调用"><a href="#可阻塞的-take-的调用" class="headerlink" title="可阻塞的 take 的调用"></a>可阻塞的 <code>take</code> 的调用</h3><p>前提条件:</p>
+<p><img src="2017_11_02_17_35_56.png" alt=""></p>
+<p>当前提条件失败以后，调用者必须自行处理:</p>
+<ul>
+<li>容忍<strong>自旋</strong>导致的 CPU 时钟周期浪费</li>
+<li>容忍由于<strong>休眠</strong>而导致的低响应性</li>
+<li><strong><code>Thread.yield</code></strong> 给调度器一个提示: 现在需要让出一定时间使另一个线程运行。假如正在等待另外一个线程执行工作，那么如果选择让出处理器而不是消耗完整个 CPU 调度时间片，那么可以让整体的执行速度变快。</li>
+</ul>
+<p>通过<strong>轮询与休眠</strong>实现简单的阻塞:</p>
+<p><img src="2017_11_02_17_44_28.png" alt=""></p>
+<p>在 <code>take()</code> 出现可用空间的时刻与线程醒来并再次检查的时刻之间可能<strong>存在延迟</strong>:</p>
+<p><img src="2017_11_02_17_46_44.png" alt=""></p>
+<hr>
+<p><strong>条件队列</strong>就好像烤面包机中通知 “面包已烤好” 的铃声。如果你注意听着铃声，那么当面包烤好后<strong>可以立刻得到通知</strong>。如果没有听见铃声，那么会错过通知消息，但是回到厨房时还可以<strong>观察烤面包机的状态</strong>，如果已经烤好，就取出面包；否则，再次留意铃声。</p>
+<p>在 <code>Java</code> 中每个对象都可以作为一个条件队列，<code>Object</code> 中的 <code>wait</code>, <code>notify</code> 和 <code>notifyAll</code> 方法构成了内部条件队列的 API。</p>
+<p>使用 <code>wait</code> 和 <code>notifyAll</code> 比使用 “休眠” <strong>更简单，更高效</strong> (醒来的次数更少)，<strong>响应性</strong>也更高 (发生特定状态变化时将立刻醒来)。但是需要注意的是，条件队列只是在多个方面进行了<font color="red"><strong>优化</strong></font>: CPU 效率、上下文切换开销和响应性等。</p>
+<blockquote>
+<p>如果某个功能无法通过 “轮询和休眠” 来实现，那么使用条件队列也无法实现。</p>
+</blockquote>
+<p><img src="2017_11_02_17_58_15.png" alt=""></p>
+<hr>
+<p>在产品的正式版本中，还应该包括限时版本的 <code>put</code> 和 <code>take</code> ，这样当操作不能在预计时间内完成时，可以因超时而返回。通过使用<strong>定时版本的 <code>Object.wait</code></strong>，可以很容易实现这些方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title">wait</span><span class="params">(<span class="keyword">long</span> timeout)</span> <span class="keyword">throws</span> InterruptedException</span>;</div></pre></td></tr></table></figure>
+<hr>
+<p>通过一个锁来保护条件谓词:</p>
+<p><img src="2017_11_02_21_27_18.png" alt=""></p>
+<hr>
+<p>在条件队列 API 中有两个发出<strong>通知</strong>的方法，即 <code>notify</code> 和 <code>notifyAll</code> 。无论使用哪一个，都必须持有与条件队列对象相关联的锁。在调用 <code>notify</code> 时，JVM 会从这个条件队列上等待的多个线程中选择<strong>一个</strong>来唤醒, 而调用 <code>notifyAll</code> 时则会唤醒<strong>所有</strong>在这个条件队列上等待的线程。</p>
+<h4 id="Condition-对象"><a href="#Condition-对象" class="headerlink" title="Condition 对象"></a><code>Condition</code> 对象</h4><p>内置条件队列存在一些缺陷:</p>
+<ul>
+<li>每个内置锁都只能有<strong>一个</strong>相关联的条件队列，因此可能存在<strong>多个</strong>线程在同一个条件队列上<strong>等待不同条件谓词</strong>的情况。</li>
+</ul>
+<p>一个 <code>Condition</code> 和一个 <code>Lock</code> 关联在一起，就好像一个条件队列和一个内置锁相关联一样。调用 <code>Lock.newCondition</code> 方法就能直接创建一个 <code>Condition</code>。</p>
+<p>与内置对象不同，对于每一个 <code>Lock</code>，可以有任意数量的 <code>Condition</code> 对象。</p>
+<p><img src="2017_11_02_21_38_11.png" alt=""></p>
 <h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
 <li><a href="http://wilddiary.com/understanding_custom_threadfactory_in_java/" target="_blank" rel="external">Understanding Custom ThreadFactory In Java</a></li>
 <li><a href="http://www.infoq.com/cn/minibooks/Alibaba-Java-minibook?utm_source=tuicool&amp;utm_medium=referral" target="_blank" rel="external">《阿里巴巴Java开发手册》</a></li>
