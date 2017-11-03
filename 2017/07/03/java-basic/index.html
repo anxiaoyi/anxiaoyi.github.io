@@ -184,6 +184,9 @@
 <hr>
 <p>正则表达式如下这样写，是可以正确匹配的:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// N: "http://download.pchome.net/ios/list-377-1-1.html"</span></div><div class="line"><span class="comment">// Y: "http://download.pchome.net/ios/list-957-1-1.html"</span></div><div class="line"><span class="comment">// Y: "http://download.pchome.net/ios/list-956-1-1.html"</span></div><div class="line"><span class="keyword">final</span> String PAGINATION_URL_REGEX = <span class="string">"http://download\\.pchome\\.net/ios/list-(955|956|957)-1-\\d+\\.html"</span>;</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>贪婪非贪婪 (直接写 <code>.*</code> 的话，就是贪婪匹配)</strong>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">*  - zero or more</div><div class="line">*? - zero or more (non-greedy)</div><div class="line">+  - one or more</div><div class="line">+? - one or more (non-greedy)</div><div class="line">?  - zero or one</div><div class="line">?? - zero or one (non-greedy)</div></pre></td></tr></table></figure>
 <h3 id="Java-Properties"><a href="#Java-Properties" class="headerlink" title="Java Properties"></a>Java Properties</h3><p><img src="17-08-08-09_57_08_605_310.png" alt=""></p>
 <h3 id="indexOf"><a href="#indexOf" class="headerlink" title="indexOf"></a><code>indexOf</code></h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> index = <span class="string">"abcdefghijklmn"</span>.indexOf( <span class="string">"def"</span> );</div></pre></td></tr></table></figure>
 <p><strong><code>index</code> 的值是指向的 <code>d</code></strong>，而不是 <code>f</code> 的下标:</p>
@@ -236,7 +239,32 @@
 <p>如图，如果 <code>while(true)</code> 直接写在外面，那么下面的的代码不在执行，必须放在一个新的线程中才能执行。</p>
 <h3 id="定时提交任务"><a href="#定时提交任务" class="headerlink" title="定时提交任务"></a>定时提交任务</h3><p><img src="2017_09_15_22_27_30.png" alt=""></p>
 <h3 id="URI-各部分字段的值"><a href="#URI-各部分字段的值" class="headerlink" title="URI 各部分字段的值"></a>URI 各部分字段的值</h3><p><img src="URI-construct.png" alt=""></p>
-<h3 id="Java-8"><a href="#Java-8" class="headerlink" title="Java 8"></a>Java 8</h3><h3 id="DataOutputStream-vs-ObjectOutputStream"><a href="#DataOutputStream-vs-ObjectOutputStream" class="headerlink" title="DataOutputStream vs ObjectOutputStream"></a><code>DataOutputStream</code> vs <code>ObjectOutputStream</code></h3><p>处理基本类型的时候，这两个没有任何区别。</p>
+<h3 id="Java-8"><a href="#Java-8" class="headerlink" title="Java 8"></a>Java 8</h3><p><code>List</code> 中的所有字符串调用 <code>trim</code> 方法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">List&lt;String&gt; appScrenshot = originList.stream().map(String :: trim).collect(Collectors.toList());</div></pre></td></tr></table></figure>
+<p>什么叫做 <code>Function Interface</code>:</p>
+<p><img src="2017_11_03_17_50_43.png" alt=""></p>
+<p>原来的<strong>匿名类</strong>怎么写:</p>
+<p><img src="2017_11_03_17_53_09.png" alt=""></p>
+<p>匿名类转为<strong>lambda</strong>写法:</p>
+<p><img src="2017_11_03_17_53_39.png" alt=""></p>
+<p><code>java.util.function</code> 下面为你定义好了一些能够直接使用的 <code>Function Interface</code>，比如上面的接口就可以使用 <code>Predicate</code> 来代替:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">interface</span> <span class="title">Predicate</span>&lt;<span class="title">T</span>&gt; </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">test</span><span class="params">(T t)</span></span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><img src="2017_11_03_18_02_12.png" alt=""></p>
+<hr>
+<p>接受一个参数，然后在这个参数上执行某些行为最后返回一个 <code>void</code> ，可以使用 <code>Consumer&lt;T&gt;</code> 接口的 <code>accept(T t)</code> 方法:</p>
+<p><img src="2017_11_03_18_02_12.png" alt=""></p>
+<p><img src="2017_11_03_18_07_32.png" alt=""></p>
+<hr>
+<p>返回一个参数，可以使用 <code>Function&lt;T, R&gt;</code> 接口提供的 <code>R apply&lt;T t&gt;</code> 方法:</p>
+<p><img src="2017_11_03_18_09_31.png" alt=""></p>
+<p><img src="2017_11_03_18_10_06.png" alt=""></p>
+<hr>
+<p><strong>Aggregate Operations</strong>:</p>
+<p><img src="2017_11_03_18_12_26.png" alt=""></p>
+<ul>
+<li><a href="https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1" target="_blank" rel="external">待读</a></li>
+</ul>
+<h3 id="DataOutputStream-vs-ObjectOutputStream"><a href="#DataOutputStream-vs-ObjectOutputStream" class="headerlink" title="DataOutputStream vs ObjectOutputStream"></a><code>DataOutputStream</code> vs <code>ObjectOutputStream</code></h3><p>处理基本类型的时候，这两个没有任何区别。</p>
 <p><code>DataOutputStream</code> and <code>ObjectOutputStream</code>: when handling basic types, there is no difference apart from the header that <code>ObjectOutputStream</code> creates.</p>
 <p>With the <code>ObjectOutputStream</code> class, instances of a class that implements <code>Serializable</code> can be written to the output stream, and can be read back with <code>ObjectInputStream</code>.</p>
 <h3 id="java-sql-Connection"><a href="#java-sql-Connection" class="headerlink" title="java.sql.Connection"></a><code>java.sql.Connection</code></h3><p>在 <code>auto-commit</code> 模式下，执行 <code>rollback()</code> 会抛出 <code>SQLException</code> 异常:</p>
