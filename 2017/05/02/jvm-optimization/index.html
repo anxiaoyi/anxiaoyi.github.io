@@ -409,7 +409,7 @@
 <p>你需要创建一个安全策略文件: <code>jstatd.all.policy</code>，里面写上这句话:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">grant codebase &quot;file:/opt/java/jdk1.7.0_21/lib/tools.jar&quot; &#123; permission java.security.AllPermission; &#125;;</div></pre></td></tr></table></figure>
 <p>然后使用如下命令重新启动:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">jstatd -J -Djava.security.policy=/home/user/jstatd.all.policy</div></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">jstatd -J-Djava.security.policy=/home/user/jstatd.all.policy</div></pre></td></tr></table></figure>
 <p>在本机测试，是否能够 <code>telnet</code> 到 <code>jstatd</code> 服务:</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">telnet 10.108.112.218 1099</div></pre></td></tr></table></figure>
 <p>有些时候，<code>jstatd</code> 可能绑定的并不是正确的网卡:</p>
@@ -538,6 +538,22 @@
 </ul>
 <h3 id="JConsole"><a href="#JConsole" class="headerlink" title="JConsole"></a><code>JConsole</code></h3><p><img src="2017_11_02_15_37_16.png" alt=""></p>
 <h3 id="JVisualVM-1"><a href="#JVisualVM-1" class="headerlink" title="JVisualVM"></a><code>JVisualVM</code></h3><p><img src="2017_11_02_15_38_23.png" alt=""></p>
+<h3 id="执行-jmap-不允许操作"><a href="#执行-jmap-不允许操作" class="headerlink" title="执行 jmap 不允许操作"></a>执行 <code>jmap</code> 不允许操作</h3><p><img src="2017_11_06_10_59_36.png" alt=""></p>
+<p>解决办法就是在运行 <code>jmap</code> 之前执行命令:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope</div></pre></td></tr></table></figure>
+<h3 id="jstack-分析"><a href="#jstack-分析" class="headerlink" title="jstack 分析"></a><code>jstack</code> 分析</h3><p>线程状态:</p>
+<ul>
+<li><code>BLOCKED</code>: 这个线程正在等待其它线程释放锁</li>
+<li><code>WAITING</code>: 使用 <code>wait</code>, <code>join</code>, <code>park</code> 命令之后，线程正在等待</li>
+<li><code>TIMED_WAITING</code>: 使用 <code>sleep</code>, <code>wait</code>, <code>join</code>, <code>park</code> 命令之后， 线程正在等待，最大等待时间是由方法参数决定的</li>
+</ul>
+<hr>
+<p>线程类型:</p>
+<ul>
+<li><code>daemon</code> 线程: 当没有其它非 <code>daemon</code> 线程之后， <code>daemon</code> 线程自动停止工作</li>
+</ul>
+<hr>
+<p><img src="2017_11_06_11_31_19.png" alt=""></p>
 <h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
 <li><a href="https://item.jd.com/11099999.html" target="_blank" rel="external">《Java 程序性能优化》</a></li>
 <li><a href="http://www.journaldev.com/2856/java-jvm-memory-model-memory-management-in-java" target="_blank" rel="external">Java (JVM) Memory Model – Memory Management in Java</a></li>

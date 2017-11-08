@@ -49,6 +49,92 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">ZooKeeper zk = mock(ZooKeeper.class);</div><div class="line">when(zk.getClientConfig()).thenReturn(<span class="keyword">new</span> ZKClientConfig());</div></pre></td></tr></table></figure>
 <h3 id="RunWith"><a href="#RunWith" class="headerlink" title="@RunWith"></a>@RunWith</h3><p>默认的 <code>Runner</code> 是 <code>BlockJUnit4ClassRunner</code>，使用 <code>@RunWith</code> 可以显示声明<strong>e当运行测试的时候需要 <code>invoke</code> 的类</strong>。</p>
 <h3 id="如何测试没有异常抛出"><a href="#如何测试没有异常抛出" class="headerlink" title="如何测试没有异常抛出"></a>如何测试没有异常抛出</h3><p>如果异常抛出的话，那么测试会<strong>自动失败</strong></p>
+<h3 id="好的单元测试应具有的品质"><a href="#好的单元测试应具有的品质" class="headerlink" title="好的单元测试应具有的品质"></a>好的单元测试应具有的品质</h3><ul>
+<li>运行快</li>
+<li>能够帮助我们定位问题所在</li>
+</ul>
+<blockquote>
+<p>一个需要耗时十分之一秒才能执行完的单元测试就已算是一个慢的单元测试了。</p>
+</blockquote>
+<hr>
+<p>下面这些测试不是单元测试:</p>
+<ul>
+<li>跟数据库有交互</li>
+<li>进行了网络通信</li>
+<li>调用了文件系统</li>
+<li>需要你对环境做特定的准备 (如编辑配置文件) 才能运行的</li>
+</ul>
+<hr>
+<p>当一个类直接依赖 (构造器依赖) 某些难以在测试中使用的东西 (<code>DBConnection</code>, <code>InvoceUpdateServlet</code>) 时，这个类就是难以修改和处理的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="title">InvoiceUpdateResponder</span><span class="params">(DBConnection conn, InvoceiUpdateServlet servlet)</span> </span>&#123;</div><div class="line">    <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>对于某个特定的类来说，不改变它就难以为它编写测试的话，那么<strong>转而去测试使用它的那些类</strong>往往会简单一些。我们可以解开 <code>InvoiceUpdateResponder</code> 对 <code>InvoiceUpdateServlet</code> 的依赖：只需将 <code>InvoiceUpdateResponder</code> <strong>真正需要的东西传给它</strong>就行。同样我们也可以解开 <code>InvoiceUpdateResponder</code> 对 <code>DBConnection</code> 的依赖，只需要引入一个<strong>接口</strong> <code>IDBConnection</code>，并将 <code>InvoiceUpdateResponder</code> 改为使用该接口即可。</p>
+<p>实际上，在没有测试保护的情况下进行上述的重构依然是<strong>安全</strong>的。</p>
+<hr>
+<p>依赖性往往是进行测试的最为明显的障碍。表现在两个方面:</p>
+<ul>
+<li>难以在测试用具中<strong>实例化</strong>目标对象</li>
+<li>难以在测试用具中<strong>运行方法</strong></li>
+</ul>
+<hr>
+<p>当 <code>scan</code> 被调用的时候，<code>Sale</code> 对象需要在收银机的显示器上显示出被扫描商品的名称及价格:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">------------------------</div><div class="line">|         Sale        |</div><div class="line">------------------------</div><div class="line">|+scan(barcode: String)|</div><div class="line">------------------------</div></pre></td></tr></table></figure>
+<p>假如我们想测试一下 <code>Sale</code> 对象能否在显示器上正确显示商品的名称及价格，那么我们该怎么做？ 倘若我们能够找到实际刷新的那行代码…</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">------------------------         --------------------------</div><div class="line">|         Sale        |          |      ArtR56Display    |</div><div class="line">--------------------------------&gt;--------------------------</div><div class="line">|+scan(barcode: String)|         | +showLine(line: String)|</div><div class="line">------------------------         --------------------------</div></pre></td></tr></table></figure>
+<p>如此改动一番之后，我们就可以进一步得到如下设计:</p>
+<p><img src="2017_11_06_21_05_51.png" alt=""></p>
+<p>我们的测试类就可以这么写:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testDisplayAnItem</span><span class="params">()</span> </span>&#123;</div><div class="line">    FakeDisplay display = <span class="keyword">new</span> FakeDisplay();</div><div class="line">    Sale sale = <span class="keyword">new</span> Sale(display);</div><div class="line">    sale.scan(<span class="string">"1"</span>);</div><div class="line">    assertEquals(<span class="string">"Milk $3.99"</span>, display.getLastLine());</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>如果要编写许许多多的伪对象的话，建议你考虑一种更高级的伪对象，即所谓的 <code>Mock Object</code>。</p>
+<h3 id="库依赖问题"><a href="#库依赖问题" class="headerlink" title="库依赖问题"></a>库依赖问题</h3><blockquote>
+<p>尽量避免在你的代码中到处出现对库的直接调用。你可能会觉得永远也不会去修改这些调用，但最终可能只是自欺欺人。</p>
+</blockquote>
+<h3 id="应用毫无架构可言"><a href="#应用毫无架构可言" class="headerlink" title="应用毫无架构可言"></a>应用毫无架构可言</h3><p>通常架构师的任务就是<strong>掌控全局</strong>，为团队做出能够维持系统整体架构不变的决策。有一个特别需要注意的地方，那就是架构师必须得跟团队的其他成员打成一片，否则代码就会逐渐偏离主航向。</p>
+<p>要想发挥架构师的最大作用，关键还是要看团队的成员是否能够清楚架构师到底意味着什么，并能够感到架构师是跟他们休戚相关的一个角色。每一个接触代码的人都应该了解架构，如果团队里每个人都有共同的想法，那么整体的力量就会大大增强。如果你有一个 20 人的团队，其中只有 3 个人了解架构细节，则要么这 3 人需要<strong>多做额外的工作</strong>来让其余 17 人都能够跟上，要么就等着其余 17 人因<strong>对大局不熟而犯错误</strong>吧。</p>
+<p>我们怎样才能获得读一个大型系统的整体认识呢？方法很多。Serge Derneyer、Stephane Ducasse 和 Oscar M. Nicrstrasz 合著的 《Object-Oriented Reengineering Patterns》 一书中就包含了一组用来解决这些问题的技术。还有几个相当强大的技术，如果你常在团队里实践这些技术，就会发现它们能够使你的团队始终保持对架构的关注，对于架构的维持来说，或许没有什么比这个还要重要的了。</p>
+<h3 id="需要修改大量相同的代码"><a href="#需要修改大量相同的代码" class="headerlink" title="需要修改大量相同的代码"></a>需要修改大量相同的代码</h3><p>面对代码重复，其实只需要<strong>从删除小块重复代码开始</strong>就行。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">c</span><span class="params">()</span> </span>&#123;</div><div class="line">    a();</div><div class="line">    a();</div><div class="line">    b();</div><div class="line">    a();</div><div class="line">    b();</div><div class="line">    b();</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">c</span><span class="params">()</span> </span>&#123;</div><div class="line">    aa();</div><div class="line">    b();</div><div class="line">    a();</div><div class="line">    bb();</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">c</span><span class="params">()</span> </span>&#123;</div><div class="line">    a();</div><div class="line">    ab();</div><div class="line">    ab();</div><div class="line">    b();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="解依赖技术"><a href="#解依赖技术" class="headerlink" title="解依赖技术"></a>解依赖技术</h3><p>将类解依赖以使它们能被置于测试之下的技术:</p>
+<ul>
+<li><strong>接口提取</strong></li>
+</ul>
+<p>在对方法作改动时有时会发现难以创建所需的参数，又比如需要测试某方法对其某个参数的影响。在参数依赖问题上，<strong>接口提取</strong>往往是不二之选。</p>
+<p><img src="2017_11_06_21_38_43.png" alt=""></p>
+<p>将参数类型外覆起来，从而完全解除对 <code>API</code> 接口的依赖:</p>
+<p><img src="2017_11_06_21_39_53.png" alt=""></p>
+<blockquote>
+<p>接口应该传达职责而非实现细节，这样的接口令代码易于阅读和维护。</p>
+</blockquote>
+<p><img src="2017_11_06_21_42_30.png" alt=""></p>
+<p><img src="2017_11_06_21_43_01.png" alt=""></p>
+<p>遗留代码基中的一个普遍问题就是<strong>抽象层次不够</strong>。系统中最重要的代码往往跟底层 <code>API</code> 耦合在一起。</p>
+<ul>
+<li><strong>分解出方法对象</strong></li>
+<li><strong>封装全局引用</strong></li>
+</ul>
+<blockquote>
+<p>如果若干个全局变量总是被一起使用一起修改，则它们应该属同一个类。</p>
+</blockquote>
+<ul>
+<li><strong>暴露静态方法</strong></li>
+</ul>
+<p>假如你有一个方法，该方法<strong>不使用实例变量或其他方法</strong>，就可以将它设置成静态的。</p>
+<ul>
+<li><strong>提取并重写调用</strong></li>
+</ul>
+<p><img src="2017_11_06_22_14_39.png" alt=""></p>
+<p><img src="2017_11_06_22_16_07.png" alt=""></p>
+<ul>
+<li><strong>实现提取</strong></li>
+</ul>
+<p>提取一个接口，却发现我想给它取的名字已经被当前类给占用了。</p>
+<ul>
+<li><strong>接口提取</strong></li>
+</ul>
+<p>在编写新类时，最简单的事情莫过于起个简单的名字了，即便是对于大型的抽象也是如此。例如，如果我们正在编写一个 <code>account</code> 包，则我们可以从一个就叫 <code>Account</code> 的类开始。然后开始编写测试添加新的特性，随着系统的增长，迟早你会想要把 <code>Account</code> 做成一个接口。这时可以在 <code>Account</code> 下创建一个派生类，并将 <code>Account</code> 中的所有数据方法都转移到它里面，将 <code>Account</code> <strong>架空成一个接口</strong>，这么做的好处就是你无需将代码中所有引用 <code>Account</code> 的地方修改成引用新的接口。</p>
+<p>许多时候，在得到足够的测试覆盖之前，最好避免大规模的改动。</p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://book.douban.com/subject/2248759/" target="_blank" rel="external">《修改代码的艺术》</a></li>
+</ul>
 
 
 

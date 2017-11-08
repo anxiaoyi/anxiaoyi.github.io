@@ -83,6 +83,12 @@
 <hr>
 <p><strong>时间加减</strong>:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">LocalDateTime currentTime = LocalDateTime.now(ZoneId.of(<span class="string">"UTC"</span>));</div><div class="line">LocalDateTime nextTime = currentTime.plusHours(<span class="number">12</span>);</div></pre></td></tr></table></figure>
+<p>这个构造 <code>LocalDateTime</code> 的时候，必须使用参数 <code>Clock.systemUTC()</code>，否则算出来的时间是错误的:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">LocalDateTime currentTime = LocalDateTime.now(Clock.systemUTC());</div></pre></td></tr></table></figure>
+<p><strong><code>LocalDateTime</code></strong> 转为 <strong><code>java.util.Date</code></strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Instant instant = localDateTime.toInstant(ZoneOffset.UTC);</div><div class="line">Date date = Date.from(instant);</div></pre></td></tr></table></figure>
+<p><strong><code>java.util.Date</code></strong> 转为 <strong><code>LocalDateTime</code></strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Instant instant = Instant.ofEpochMilli(date.getTime());</div><div class="line">LocalDateTime ldt = LocalDateTime.ofInstant(instant, ZoneOffset.UTC);</div></pre></td></tr></table></figure>
 <hr>
 <p><strong>格式化模式</strong>:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">Letter  Date or Time Component  Presentation        Examples</div><div class="line">------  ----------------------  ------------------  -------------------------------------</div><div class="line">G       Era designator          Text                AD</div><div class="line">y       Year                    Year                1996; 96</div><div class="line">Y       Week year               Year                2009; 09</div><div class="line">M/L     Month in year           Month               July; Jul; 07</div><div class="line">w       Week in year            Number              27</div><div class="line">W       Week in month           Number              2</div><div class="line">D       Day in year             Number              189</div><div class="line">d       Day in month            Number              10</div><div class="line">F       Day of week in month    Number              2</div><div class="line">E       Day in week             Text                Tuesday; Tue</div><div class="line">u       Day number of week      Number              1</div><div class="line">a       Am/pm marker            Text                PM</div><div class="line">H       Hour in day (0-23)      Number              0</div><div class="line">k       Hour in day (1-24)      Number              24</div><div class="line">K       Hour in am/pm (0-11)    Number              0</div><div class="line">h       Hour in am/pm (1-12)    Number              12</div><div class="line">m       Minute in hour          Number              30</div><div class="line">s       Second in minute        Number              55</div><div class="line">S       Millisecond             Number              978</div><div class="line">z       Time zone               General time zone   Pacific Standard Time; PST; GMT-08:00</div><div class="line">Z       Time zone               RFC 822 time zone   -0800</div><div class="line">X       Time zone               ISO 8601 time zone  -08; -0800; -08:00</div></pre></td></tr></table></figure>
@@ -94,6 +100,16 @@
 <p>根据 <a href="https://docs.oracle.com/javase/8/docs/api/java/time/package-summary.html" target="_blank" rel="external">The main API for dates, times, instants, and durations</a>，定义在 <code>java.time</code> 包下面的所有类都是 <strong>immutable and thread-safe</strong> 的。</p>
 <h3 id="Java-正则表达式"><a href="#Java-正则表达式" class="headerlink" title="Java 正则表达式"></a>Java 正则表达式</h3><p><strong>查找并替换</strong>:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">String oldSequence = <span class="string">"(?&lt;=[A-Z])(%d)"</span>;</div><div class="line">String newSequence = <span class="string">"新的字符串"</span>;</div><div class="line"></div><div class="line">Pattern pattern = Pattern.compile(oldSequence);</div><div class="line">Matcher matcher = pattern.matcher(input);</div><div class="line"></div><div class="line">StringBuffer sb = <span class="keyword">new</span> StringBuffer(input.length());</div><div class="line"><span class="keyword">while</span> (matcher.find()) &#123;</div><div class="line">    <span class="comment">// (%d) 部分将会被替换，(%d) 前面的部分并不会被替换</span></div><div class="line">    matcher.appendReplacement(sb, Matcher.quoteReplacement(<span class="string">"新的字符串"</span>));</div><div class="line">&#125;</div><div class="line">matcher.appendTail(sb);</div><div class="line"></div><div class="line">System.out.println(sb.toString());</div></pre></td></tr></table></figure>
+<hr>
+<p>如何找到匹配的字符串:</p>
+<p>假设原来的字符串 (即使没有括号) 为: <code>http://down6.apk8.com:8020/qu/星座运程-求签测字[www.apkxyx.com].apk</code>，那么用如下代码运行后:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Pattern ILLEGAL_URL_CHARACTER =</div><div class="line">            Pattern.compile(<span class="string">"[\\u4e00-\\u9fa5|\\[|\\]]+"</span>);</div><div class="line"></div><div class="line"><span class="keyword">while</span> (matcher.find()) &#123;</div><div class="line">    String matched = originDownloadURL.substring(matcher.start(), matcher.end());</div><div class="line">    matcher.appendReplacement(stringBuilder,</div><div class="line">                              Matcher.quoteReplacement(URLEncoder.encode(matched, <span class="string">"UTF-8"</span>)));</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><code>matched</code> 的值依次是:</p>
+<ul>
+<li><code>星座运程</code></li>
+<li><code>求签测字[</code></li>
+<li><code>]</code></li>
+</ul>
 <hr>
 <p><a href="http://www.rexegg.com/regex-lookarounds.html" target="_blank" rel="external">Mastering Lookahead and Lookbehind</a></p>
 <div class="table-container">
@@ -181,6 +197,56 @@
 </tbody>
 </table>
 </div>
+<p><strong>Character classes</strong>:</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>正则表达式</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[abc]</td>
+<td>a, b, or c (simple class)</td>
+</tr>
+<tr>
+<td>[\^abc]</td>
+<td>除了 a, b, or c 之外的任何字符 (negation)</td>
+</tr>
+<tr>
+<td>[a-zA-Z]</td>
+<td>a through z or A through Z, inclusive (range)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Greedy quantifiers</strong>:</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>正则表达式</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>X{n}</td>
+<td>X, exactly n times</td>
+</tr>
+<tr>
+<td>X{n,}</td>
+<td>X, at least n times</td>
+</tr>
+<tr>
+<td>X{n,m}</td>
+<td>X, at least n but not more than m times</td>
+</tr>
+</tbody>
+</table>
+</div>
 <hr>
 <p>正则表达式如下这样写，是可以正确匹配的:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// N: "http://download.pchome.net/ios/list-377-1-1.html"</span></div><div class="line"><span class="comment">// Y: "http://download.pchome.net/ios/list-957-1-1.html"</span></div><div class="line"><span class="comment">// Y: "http://download.pchome.net/ios/list-956-1-1.html"</span></div><div class="line"><span class="keyword">final</span> String PAGINATION_URL_REGEX = <span class="string">"http://download\\.pchome\\.net/ios/list-(955|956|957)-1-\\d+\\.html"</span>;</div></pre></td></tr></table></figure>
@@ -252,7 +318,7 @@
 <p><img src="2017_11_03_18_02_12.png" alt=""></p>
 <hr>
 <p>接受一个参数，然后在这个参数上执行某些行为最后返回一个 <code>void</code> ，可以使用 <code>Consumer&lt;T&gt;</code> 接口的 <code>accept(T t)</code> 方法:</p>
-<p><img src="2017_11_03_18_02_12.png" alt=""></p>
+<p><img src="2017_11_03_18_06_56.png" alt=""></p>
 <p><img src="2017_11_03_18_07_32.png" alt=""></p>
 <hr>
 <p>返回一个参数，可以使用 <code>Function&lt;T, R&gt;</code> 接口提供的 <code>R apply&lt;T t&gt;</code> 方法:</p>
@@ -261,8 +327,10 @@
 <hr>
 <p><strong>Aggregate Operations</strong>:</p>
 <p><img src="2017_11_03_18_12_26.png" alt=""></p>
+<p>函数意义:</p>
+<p><img src="2017_11_03_20_14_03.png" alt=""></p>
 <ul>
-<li><a href="https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1" target="_blank" rel="external">待读</a></li>
+<li><a href="https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach1" target="_blank" rel="external">参考</a></li>
 </ul>
 <h3 id="DataOutputStream-vs-ObjectOutputStream"><a href="#DataOutputStream-vs-ObjectOutputStream" class="headerlink" title="DataOutputStream vs ObjectOutputStream"></a><code>DataOutputStream</code> vs <code>ObjectOutputStream</code></h3><p>处理基本类型的时候，这两个没有任何区别。</p>
 <p><code>DataOutputStream</code> and <code>ObjectOutputStream</code>: when handling basic types, there is no difference apart from the header that <code>ObjectOutputStream</code> creates.</p>
