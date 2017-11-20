@@ -24,7 +24,7 @@
 <body>
 
 <!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="ZooKeeper源码分析-一-建立连接"><a href="#ZooKeeper源码分析-一-建立连接" class="headerlink" title="ZooKeeper源码分析(一) - 建立连接"></a>ZooKeeper源码分析(一) - 建立连接</h2><h3 id="版本选择"><a href="#版本选择" class="headerlink" title="版本选择"></a>版本选择</h3><p>从 Github 下载源码，执行命令:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">cd</span> zookeeper</div><div class="line">git checkout e048893ec04a250fcb50853d6b47594fa81b0ea2</div><div class="line">ant</div></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> zookeeper</span><br><span class="line">git checkout e048893ec04a250fcb50853d6b47594fa81b0ea2</span><br><span class="line">ant</span><br></pre></td></tr></table></figure>
 <p>编译成功后，将文件夹 <code>build/java/generated</code> 中的源文件拷贝到 <code>src</code> 目录下面，以便我们从源码运行程序。如果导入到 <strong>idea</strong> 的话，需要将 <code>src</code> 文件夹标记为源码根路径。</p>
 <p>我们之所以要切换到这一个不同的分支上，是因为这个阶段的代码处于 ZooKeeper 的早期阶段，且功能较为成型，有助于简化我们对 ZooKeeper 的分析。</p>
 <p><img src="17-05-17-11:17:08_374_434.png" alt=""></p>
@@ -35,7 +35,7 @@
 <p><img src="17-05-16-20:52:59_738_169.png" alt="">，之后运行 <code>ZooKeeper.main()</code> 方法启动 ZooKeeper 客户端。</p>
 <h3 id="代码说明"><a href="#代码说明" class="headerlink" title="代码说明"></a>代码说明</h3><p>为了简化节省篇幅，着重描述核心处理流程，我在不影响运行逻辑的情况下，对代码片段进行了简化与修改，将一些异常处理机制，上下文等信息都去掉了，方便我们分析整个执行流程。</p>
 <h3 id="建立连接"><a href="#建立连接" class="headerlink" title="建立连接"></a>建立连接</h3><h4 id="服务器地址的选择"><a href="#服务器地址的选择" class="headerlink" title="服务器地址的选择"></a>服务器地址的选择</h4><p>在创建 <code>ClientCnxn</code> 对象的时候，其 <code>hosts</code> 参数允许你传入一系列服务器地址，就像下面这样:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">public ClientCnxn(&quot;192.168.1.2:2181,192.168.1.3:2181&quot;, ...)</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public ClientCnxn(&quot;192.168.1.2:2181,192.168.1.3:2181&quot;, ...)</span><br></pre></td></tr></table></figure>
 <p>之后客户端会把这些地址全部放入 <code>serverAddrs</code> 数组列表中，然后随机打乱:</p>
 <p><img src="17-05-18-11_12_02_959_509.png" alt=""></p>
 <p>当客户端每次尝试连接的时候，便会从这些列表中按照顺序选择下一个地址进行连接尝试:</p>

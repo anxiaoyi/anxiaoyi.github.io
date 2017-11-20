@@ -23,11 +23,11 @@
 
 <body>
 
-<!-- hexo-inject:begin --><!-- hexo-inject:end --><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">sudo add-apt-repository ppa:wireshark-dev/stable</div><div class="line">sudo apt-get update</div><div class="line">sudo apt-get install wireshark</div></pre></td></tr></table></figure>
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo add-apt-repository ppa:wireshark-dev/stable</span><br><span class="line">sudo apt-get update</span><br><span class="line">sudo apt-get install wireshark</span><br></pre></td></tr></table></figure>
 <p>为了关掉 <code>wireshark</code> 每次运行都弹出的一个警告小窗口:</p>
 <p><img src="2017_09_01_15_08_26.png" alt=""></p>
 <p>你需要编辑文件 <code>/usr/share/wireshark/init.lua</code>，里面有一行:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">disable_lua = false</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">disable_lua = false</span><br></pre></td></tr></table></figure>
 <p>这个地方 <code>false</code> 改为 <code>true</code> 就行了。</p>
 <h3 id="基础使用"><a href="#基础使用" class="headerlink" title="基础使用"></a>基础使用</h3><h4 id="1-过滤-SSH"><a href="#1-过滤-SSH" class="headerlink" title="(1) 过滤 SSH"></a>(1) 过滤 SSH</h4><p><img src="17-08-15-22_15_50_804_180.png" alt=""></p>
 <h4 id="2-过滤一段帧"><a href="#2-过滤一段帧" class="headerlink" title="(2) 过滤一段帧"></a>(2) 过滤一段帧</h4><p><img src="17-08-15-22_17_03_604_145.png" alt=""></p>
@@ -42,7 +42,7 @@
 <p>同时还可以看到双方的 MAC 地址:</p>
 <p><img src="17-08-16-11_08_23_948_431.png" alt=""></p>
 <h3 id="5-ping-的过程"><a href="#5-ping-的过程" class="headerlink" title="(5) ping 的过程"></a>(5) ping 的过程</h3><p><img src="17-08-16-11_31_28_1121_130.png" alt=""></p>
-<h3 id="HTTP-有关的过滤"><a href="#HTTP-有关的过滤" class="headerlink" title="HTTP 有关的过滤"></a>HTTP 有关的过滤</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">http.request</div><div class="line">http.request.method == &quot;post&quot;</div></pre></td></tr></table></figure>
+<h3 id="HTTP-有关的过滤"><a href="#HTTP-有关的过滤" class="headerlink" title="HTTP 有关的过滤"></a>HTTP 有关的过滤</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">http.request</span><br><span class="line">http.request.method == &quot;post&quot;</span><br></pre></td></tr></table></figure>
 <p>So now wireshark shows those packets that initiate an http request. But remember these packets do no have the full data. So to <strong>view the full request data</strong>, right click a packet and click <strong>“Follow TCP Stream”</strong>. It will open up a dialog that shows the full http request by combining all the packets of the particular tcp stream (sequence).</p>
 <h3 id="快递员的工作策略-TCP-窗口"><a href="#快递员的工作策略-TCP-窗口" class="headerlink" title="快递员的工作策略 - TCP 窗口"></a>快递员的工作策略 - TCP 窗口</h3><p>发送方要知道接受方的接受窗口和网络这两个限制因素中哪一个更严格，然后在其限制范围内尽可能多发包。这个一口气能发送的数据量就是传说中的<strong>TCP 发送窗口</strong>。</p>
 <p>真实环境中，<strong>发送窗口常常可以达到数十个 MSS</strong>。</p>
@@ -62,17 +62,17 @@
 <ul>
 <li><strong>被拒绝</strong>:</li>
 </ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">(tcp.flags.reset == 1) &amp;&amp; (tcp.seq == 1)</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(tcp.flags.reset == 1) &amp;&amp; (tcp.seq == 1)</span><br></pre></td></tr></table></figure>
 <ul>
 <li><strong>重传</strong>:</li>
 </ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">(tcp.flags.syn == 1) &amp;&amp; (tcp.analysis.retransmission)</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(tcp.flags.syn == 1) &amp;&amp; (tcp.analysis.retransmission)</span><br></pre></td></tr></table></figure>
 <p>做运维的工程师们都知道，大规模 DDoS (Distributed Denial of Service, 分布式拒绝服务攻击) 来临的时候最惊心动魄。DDoS 的形式有很多种，其中最流行的就是基于三次握手的 SYN flood，其原理就是<strong>从大量主机发送 SYN 请求给服务器，假装要建立 TCP 连接。这些 SYN 请求可能含有假的源地址，所以服务器响应后永远也收不到 Ack，就会留下 half-open 状态的 TCP 连接</strong>。由于每个 TCP 连接都会消耗一定的系统资源，如果攻击足够猛烈，此类连接越建越多，服务器的资源就会被耗光，真正的用户访问也会被拒绝。</p>
 <p>我们可以把 <code>SYN flood</code> 看做是 TCP 协议的设计缺陷，有办法可以防御，却无法根除。大公司一般会 <code>Reset (RST)</code> 大多数握手请求。</p>
 <h3 id="被误解的-TCP"><a href="#被误解的-TCP" class="headerlink" title="被误解的 TCP"></a>被误解的 TCP</h3><p>TCP 的 ACK 的频率，不同的操作系统有不同的偏好。Linux 对流量更 “大手大脚” 一点，因为纯 ACK 也算流量的。</p>
 <p>既然接收方不一定收到每个包都要 Ack，那发送方怎么知道哪些包虽然没有相应的 Ack，但其实已经送达了呢？记住，<strong>Ack 是有累积效应的</strong>，它隐含了 “在此之前的其他包也都已经收到” 的意思。</p>
 <h3 id="最经典的网络问题"><a href="#最经典的网络问题" class="headerlink" title="最经典的网络问题"></a>最经典的网络问题</h3><p>在某些情况下，应用层传递给 TCP 层的数据量很小，比如在 SSH 客户端以一般速度打字时，几乎是逐个字节传递到 TCP 层的。传输这么少的数据量却要耗费 20 字节 IP 头 + 20 字节 TCP 头，是非常浪费的，这种情况称为发送方的 Silly window syndrome，也叫 small packet problem。为了提高传输效率，纳格提出了一个算法:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">if 有新数据要发送:</div><div class="line">    if 数据量超过 MSS (即一个 TCP 包所能携带的最大数据量):</div><div class="line">        立即发送</div><div class="line">    else:</div><div class="line">        if 之前发出去的数据尚未确认:</div><div class="line">            把新数据缓存起来，凑够 MSS 或等确认到达再发送</div><div class="line">        else:</div><div class="line">            立即发送</div><div class="line">        end if</div><div class="line">    end if</div><div class="line">end if</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">if 有新数据要发送:</span><br><span class="line">    if 数据量超过 MSS (即一个 TCP 包所能携带的最大数据量):</span><br><span class="line">        立即发送</span><br><span class="line">    else:</span><br><span class="line">        if 之前发出去的数据尚未确认:</span><br><span class="line">            把新数据缓存起来，凑够 MSS 或等确认到达再发送</span><br><span class="line">        else:</span><br><span class="line">            立即发送</span><br><span class="line">        end if</span><br><span class="line">    end if</span><br><span class="line">end if</span><br></pre></td></tr></table></figure>
 <p>Nagle 和延迟确认本身都没有问题，但一起使用就会影响性能。</p>
 <h3 id="虚惊一场"><a href="#虚惊一场" class="headerlink" title="虚惊一场"></a>虚惊一场</h3><p><img src="fourway-handshake-delay-ack.png" alt=""></p>
 <h3 id="书上错了吗？"><a href="#书上错了吗？" class="headerlink" title="书上错了吗？"></a>书上错了吗？</h3><p><img src="17-08-16-09_28_07_640_544.png" alt=""></p>
@@ -103,7 +103,7 @@
 <h3 id="谁动了我的网络"><a href="#谁动了我的网络" class="headerlink" title="谁动了我的网络"></a>谁动了我的网络</h3><p>HTTP 劫持的几种工作方式之一:</p>
 <p><img src="17-08-16-10_38_43_869_384.png" alt=""></p>
 <p>假 Web 服务器是抢先应答的，所以它发出的包到达用户时，TTL (Time to Live) 可能和真实的包不一样。考虑到 3 次握手发生在 HTTP 劫持之前，所以我们可以假定参与 3 次握手的那台服务器是真的，使用如下方式过滤:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">(ip.srceq 123.125.29.243) &amp;&amp; !(ip.ttl == 54)</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(ip.srceq 123.125.29.243) &amp;&amp; !(ip.ttl == 54)</span><br></pre></td></tr></table></figure>
 <p>在这个案例中，万一真假网络包的 TTL 恰好一样，还有什么办法可以找出假的包吗？仔细想想还是有的。比如服务器每发送一个包，<strong>就会对其网络层的 Identification 作加 1 递增</strong>。</p>
 
 

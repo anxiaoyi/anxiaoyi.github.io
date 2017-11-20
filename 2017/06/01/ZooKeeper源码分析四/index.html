@@ -24,7 +24,7 @@
 <body>
 
 <!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="ZooKeeper源码分析-四-dataTree"><a href="#ZooKeeper源码分析-四-dataTree" class="headerlink" title="ZooKeeper源码分析(四) - dataTree"></a>ZooKeeper源码分析(四) - dataTree</h2><h3 id="创建-snapshot"><a href="#创建-snapshot" class="headerlink" title="创建 snapshot"></a>创建 <code>snapshot</code></h3><p>我们在运行 <code>ZooKeeperServer</code> 的时候，需要至少传入两个参数:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">2181 /home/zk/Documents/github/zookeeper/zookeeper/datadir</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2181 /home/zk/Documents/github/zookeeper/zookeeper/datadir</span><br></pre></td></tr></table></figure>
 <p>一个是服务器监听的端口号，另外一个是 <code>ZooKeeperServer</code> 用来存放数据的文件夹 (注意，此文件夹一定要实现创建好，<code>ZooKeeperServer</code> 是不会默认为你创建的)。接下来我们就会对这个文件夹内创建的文件做详细分析。<code>ZooKeeperServer</code> 的 <code>main</code> 方法实例化了 <code>ZooKeeperServer</code> 服务，并调用了自身的 <code>startup</code> 方法来启动服务，在 <code>startup</code> 方法其会尝试进行加载数据:</p>
 <p><img src="17-06-01-10_12_19_793_168.png" alt=""></p>
 <p>在首次运行 <code>ZooKeeperServer</code> 的时候，这个文件夹是空的，所以位于 <code>loadData()</code> 中的一些代码并不会执行，简而言之，<code>loadData()</code> 首次运行主要是创建了一个文件: <code>snapshot.0</code> ，其中 <code>0</code> 代表的是事务 ID，由于首次事务 ID 从 <code>0</code> 开始，所以第一个运行 <code>ZooKeeperServer</code> 就会创建这个文件。<code>snapshot</code> 方法接着会将这个文件写到文件夹中去:</p>
@@ -37,7 +37,6 @@
 <p><img src="17-06-01-11_12_25_717_529.png" alt=""></p>
 <p>在 <code>DataNode</code> 中，会看到每个节点，主要是把 <code>data、acl、stat</code> 这三个信息序列化到文件中去了:</p>
 <p><img src="17-06-01-11_00_41_852_381.png" alt=""></p>
-<div class="table-container">
 <table>
 <thead>
 <tr>
@@ -60,10 +59,8 @@
 </tr>
 </tbody>
 </table>
-</div>
 <p><code>Stat</code> 结构中存储并将会序列化的信息如下:</p>
 <p><img src="17-06-01-11_19_47_456_212.png" alt=""></p>
-<div class="table-container">
 <table>
 <thead>
 <tr>
@@ -106,10 +103,9 @@
 </tr>
 </tbody>
 </table>
-</div>
 <h3 id="当第一次客户端连接"><a href="#当第一次客户端连接" class="headerlink" title="当第一次客户端连接"></a>当第一次客户端连接</h3><h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
-<li><a href="https://zookeeper.apache.org/doc/trunk/zookeeperProgrammers.html" target="_blank" rel="external">ZooKeeper Programmer’s Guide</a></li>
-<li><a href="https://zookeeper.apache.org/doc/r3.3.2/zookeeperInternals.html" target="_blank" rel="external">ZooKeeper Internals</a></li>
+<li><a href="https://zookeeper.apache.org/doc/trunk/zookeeperProgrammers.html" target="_blank" rel="noopener">ZooKeeper Programmer’s Guide</a></li>
+<li><a href="https://zookeeper.apache.org/doc/r3.3.2/zookeeperInternals.html" target="_blank" rel="noopener">ZooKeeper Internals</a></li>
 </ul>
 
 
