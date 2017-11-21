@@ -249,6 +249,25 @@
 <p>现在我想在 <code>deploy.sh</code> 脚本中获取到 <code>-y 2017 -m 6</code> 这个参数:</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">shift</span></span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$@</span></span><br></pre></td></tr></table></figure>
 <p>输出的就是 <code>-y 2017 -m 6</code> 这个参数</p>
+<h4 id="数字比较"><a href="#数字比较" class="headerlink" title="数字比较"></a>数字比较</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[ <span class="variable">$var</span> -eq 0 ] <span class="comment"># It returns true when $var equal to 0.</span></span><br><span class="line">[ <span class="variable">$var</span> -ne 0 ] <span class="comment"># It returns true when $var not equals 0</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>-gt</code>: Greater than</li>
+<li><code>-lt</code>: Less than</li>
+<li><code>-ge</code>: Greater than or equal to</li>
+<li><code>-le</code>: Less than or equal to</li>
+</ul>
+<h4 id="数学计算"><a href="#数学计算" class="headerlink" title="数学计算"></a>数学计算</h4><p>The <code>let</code> command can be used to perform basic operations directly:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#求和</span></span><br><span class="line"><span class="built_in">let</span> result=no1+no2</span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$result</span></span><br><span class="line"><span class="comment">#自增</span></span><br><span class="line"><span class="built_in">let</span> no1++</span><br></pre></td></tr></table></figure>
+<p>使用 <code>[]</code> 可以达到和 <code>let</code> 相同的目的:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">result=$[ no1 + no2 ]</span><br></pre></td></tr></table></figure>
+<p>使用 <code>$</code> 前缀是可以的:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">result=$[ <span class="variable">$no1</span> + 5 ]</span><br></pre></td></tr></table></figure>
+<p>也可以使用 <code>(())</code> ：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">result=$(( no1 + 50 ))</span><br></pre></td></tr></table></figure>
+<p><code>expr</code> can also be used for basic operations:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">result=`expr 3 + 4`</span><br><span class="line">result=$(expr <span class="variable">$no1</span> + 5)</span><br></pre></td></tr></table></figure>
+<p>All of the above methods do not support floating point numbers, and operate on <strong>整数</strong> only.</p>
+<h4 id="if-多个条件"><a href="#if-多个条件" class="headerlink" title="if 多个条件"></a><code>if</code> 多个条件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># AND -a 和</span></span><br><span class="line">[ <span class="variable">$var1</span> -ne 0 -a <span class="variable">$var2</span> -gt 2 ]</span><br><span class="line"></span><br><span class="line"><span class="comment"># OR -r 或</span></span><br><span class="line">[ <span class="variable">$var1</span> -ne 0 -o <span class="variable">$var2</span> -gt 2 ]</span><br></pre></td></tr></table></figure>
 <h3 id="xxd-make-a-hexdump-or-do-the-reverse"><a href="#xxd-make-a-hexdump-or-do-the-reverse" class="headerlink" title="xxd - make a hexdump or do the reverse"></a>xxd - make a hexdump or do the reverse</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// 二进制</span><br><span class="line">xxd -b file</span><br><span class="line">// 十六进制</span><br><span class="line">xxd file</span><br></pre></td></tr></table></figure>
 <h3 id="od-dump-files-in-octal-and-other-formats"><a href="#od-dump-files-in-octal-and-other-formats" class="headerlink" title="od - dump files in octal and other formats"></a>od - dump files in octal and other formats</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// ASCII 编码方式打印</span><br><span class="line">od -c file</span><br><span class="line">// 十六进制</span><br><span class="line">od -cx file</span><br></pre></td></tr></table></figure>
 <h3 id="grep"><a href="#grep" class="headerlink" title="grep"></a>grep</h3><ul>
@@ -352,6 +371,18 @@
 <hr>
 <p>编辑文件:</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 打开 crontab 文件用当前用户进行编辑/添加</span></span><br><span class="line">crontab -e</span><br><span class="line"></span><br><span class="line"><span class="comment"># 列举任务</span></span><br><span class="line">crontab -l</span><br></pre></td></tr></table></figure>
+<hr>
+<p><strong>每分钟</strong>运行一次脚本：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">* * * * * script.sh</span><br></pre></td></tr></table></figure>
+<hr>
+<p><strong>每 10 分钟</strong>运行一次脚本:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">*/10 * * * * script.sh</span><br></pre></td></tr></table></figure>
+<hr>
+<p>查看 <code>crontab</code> 的日志:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tail -f /var/<span class="built_in">log</span>/syslog</span><br></pre></td></tr></table></figure>
+<p><img src="2017_11_21_14_59_09.png" alt=""></p>
+<p>This happens because your cron jobs are producing output and then the cron daemon tries to <strong>发送邮件</strong> that output to you. If you don’t need that output, the easiest way to solve this is to <strong>丢弃</strong> it at the crontab:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">* * * * * yourCommand &gt;/dev/null 2&gt;&amp;1</span><br></pre></td></tr></table></figure>
 <h3 id="ls"><a href="#ls" class="headerlink" title="ls"></a>ls</h3><p><img src="17-08-16-16_46_41_784_270.png" alt=""></p>
 <h3 id="ps-ef-和-ps-aux"><a href="#ps-ef-和-ps-aux" class="headerlink" title="ps -ef 和 ps -aux"></a><code>ps -ef</code> 和 <code>ps -aux</code></h3><ul>
 <li><code>ps -ef</code>:</li>
