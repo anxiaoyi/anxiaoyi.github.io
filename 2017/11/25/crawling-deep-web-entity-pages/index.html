@@ -31,7 +31,7 @@
 <li>Curate structured entities: almost all online shopping sites</li>
 </ul>
 <p>Existing crawling techniques optimized for document oriented content <strong>are not best suited for</strong> entity-oriented sites.</p>
-<p>In this paper we focus on entity-oriented deep-web sites. These sites <strong>curate structured entities</strong> and expose them through <strong>search</strong> interfaces</p>
+<p>In this paper we focus on entity-oriented deep-web sites. These sites <strong>curate structured entities</strong> and expose them through <strong>search</strong> interfaces.</p>
 <h4 id="Deep-Web"><a href="#Deep-Web" class="headerlink" title="Deep Web"></a>Deep Web</h4><p><strong>定义</strong>: The deep web, invisible web, or hidden web are parts of the World Wide Web whose contents are <strong>not indexed by standard search engines</strong> for any reason. The content is <strong>hidden behind HTML forms</strong>.</p>
 <p><strong>大小</strong>:</p>
 <ul>
@@ -45,6 +45,14 @@
 <p><img src="2017_11_15_22_36_01.png" alt=""></p>
 <p><strong>movie.mtime.com</strong>:</p>
 <p><img src="2017_11_15_22_37_46.png" alt=""></p>
+<h3 id="现有搜索引擎爬取暗网解决方案"><a href="#现有搜索引擎爬取暗网解决方案" class="headerlink" title="现有搜索引擎爬取暗网解决方案"></a>现有搜索引擎爬取暗网解决方案</h3><ul>
+<li><strong><code>Baidu</code></strong>: 第三方平台通过提交<strong>结构化数据</strong>给百度，从而获得百度的搜索结果。</li>
+</ul>
+<p><img src="2017_11_25_19_28_30.png" alt=""></p>
+<ul>
+<li><strong><code>Google</code></strong>: 自动模拟 <code>form</code> 表单提交过程，来尽量进行一个更全的数据索引。</li>
+</ul>
+<p><img src="2017_11_25_19_46_34.png" alt=""><br><img src="2017_11_25_19_43_48.png" alt=""></p>
 <h4 id="The-goal-of-our-system"><a href="#The-goal-of-our-system" class="headerlink" title="The goal of our system"></a>The goal of our system</h4><p>Crawl product entities from a large number of online retailers for <strong>advertisement landing page</strong> purposes. The purpose of the system is <strong>not to obtain</strong> all <code>iphone</code> listings, but only a representative few of these listings for ads landing pages.</p>
 <p>While the exact use of such entities content in advertisement is <strong>beyond</strong> the scope of this paper, the system requirement is simple to state: We are provided as <strong>input</strong> a list of retailers’ websites, and the objective is to <strong>crawl</strong> high-quality product entity <strong>pages</strong> efficiently and effectively.</p>
 <p><img src="2017_11_15_22_41_42.png" alt=""></p>
@@ -150,7 +158,7 @@
 <p>“Men’s silver jewelry” is an example of a long tail keyword as it gets searched for less than the more generic “jewelry” keyword. As these long tail keywords are searched for less often, they can be less attractive for large and successful websites with big marketing budgets to try and rank for.</p>
 <p>On the other hand, we observe that there exists manually curated entity repositories (e.g., Freebase), that maintain entities <strong>in certain domains with very high coverage (city names, books, car models, movies, etc) 在相应领域覆盖面都比较全</strong>.Thus, for each site, we need to bootstrap from these seed entities to <strong>expand</strong> to Freebase entity “types” that are relevant to each site’s semantics.</p>
 <p>我们可以…继续使用 <code>Freebase</code> 来扩展我们的种子 <code>entities</code>。</p>
-<p>We borrow classical techniques from information retrieval: if we view the multi-set of Freebase entity mentions for each site as a <strong>document</strong>, and <strong>the list of entities</strong> in each Freebase <strong>type</strong> as a <strong>query</strong>, then the classical term-frequency, inverse document frequency (<strong>TF-IDF</strong>) ranking can be applied.</p>
+<hr>
 <ul>
 <li><strong>词频 (term frequency, TF)</strong>: </li>
 </ul>
@@ -165,6 +173,14 @@
 </ul>
 <p><img src="bg2013031507.png" alt=""></p>
 <p><strong>可以看到，TF-IDF与一个词在文档中的出现次数成正比，与该词在整个语言中的出现次数成反比。</strong></p>
+<p><a href="http://www.ruanyifeng.com/blog/2013/03/tf-idf.html" target="_blank" rel="noopener">TF-IDF 的应用</a>:</p>
+<ul>
+<li>提取文档关键词</li>
+<li>信息检索时，对于每个文档，都可以分别计算<strong>一组搜索词</strong>（”中国”、”蜜蜂”、”养殖”）的 TF-IDF，将它们<strong>相加</strong>，就可以得到整个文档的TF-IDF。这个<strong>值最高</strong>的文档就是与搜索词最相关的文档</li>
+<li>寻找与原文章相似的其他文章</li>
+<li>对文章进行自动摘要</li>
+</ul>
+<p>We borrow classical techniques from information retrieval: if we view the multi-set of Freebase entity mentions for each site as a <strong>document</strong>, and <strong>the list of entities</strong> in each Freebase <strong>type</strong> as a <strong>query</strong>, then the classical term-frequency, inverse document frequency (<strong>TF-IDF</strong>) ranking can be applied.</p>
 <p>For each Freebase type, we use TF-IDF to produce <strong>a ranked list of deep-web sites by their similarity scores</strong>. We then “threshold” the sorted list using a relative score. That is, we include all sites with scores <strong>above</strong> a fixed percentage, τ, <strong>of the highest similarity score in the same Freebase type as matches</strong>. Empirically results in Section 8 show that setting <strong>τ = 0.5</strong> achieves good results and is used in our system. This approach is significantly <strong>more effective</strong> than other alternatives like <strong>Cosine or Jaccard Similarity</strong>.</p>
 <p>对于 <code>ebay.com</code>，我们获取了一个初始的 <code>document</code>:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">iphone 4</span><br><span class="line">lenovo</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
@@ -173,7 +189,6 @@
 <p>然后我们有一个 <code>Freebase Type</code>, 比如 <code>Electronics</code>， 有关键词:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Samsung Galaxy s8,</span><br><span class="line">lenovo</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
 <p><img src="2017_11_25_15_26_42.png" alt=""></p>
-<p><a href="https://janav.wordpress.com/2013/10/27/tf-idf-and-cosine-similarity/" target="_blank" rel="noopener">tf-idf-and-cosine-similarity</a></p>
 <h3 id="Empty-page-filter"><a href="#Empty-page-filter" class="headerlink" title="Empty page filter"></a><font color="red">Empty page filter</font></h3><p>我们发现… Empty pages from the same site <strong>tend to be highly similar</strong>.</p>
 <p>随机输入采集空页面样本:</p>
 <p><img src="2017_11_16_11_20_38.png" alt=""><br><img src="2017_11_16_11_21_01.png" alt=""></p>
@@ -266,6 +281,7 @@
 <li>Utilizing additional signals (e.g., entities bootstrapped from crawled pages) for <strong>entity expansion</strong> is an interesting area.</li>
 <li>Efficiently enumerate entity query for search forms with <strong>多个文本框</strong> is another interesting challenge.</li>
 </ul>
+<p>（完）</p>
 
 
 
