@@ -1,0 +1,129 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>System Hardware</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="System-Hardware"><a href="#System-Hardware" class="headerlink" title="System Hardware"></a>System Hardware</h2><h3 id="CPU"><a href="#CPU" class="headerlink" title="CPU"></a>CPU</h3><p>The CPU has several layers of cache between it and main memory (RAM), because even accessing main memory is too slow.</p>
+<p><strong>The closer the cache is to the CPU, the faster it is and the smaller it is</strong>.  L1 cache is small and very fast, and right next to the core that uses it.  L2 is bigger and slower, and still only used by a single core.  L3 is more common with modern multi-core machines, and is bigger again, slower again, and shared across cores on a single socket.  Finally you have main memory, which is shared across all cores and all sockets.</p>
+<table>
+<thead>
+<tr>
+<th>Latency from CPU to…</th>
+<th>Approx. number of CPU cycles</th>
+<th>Approx. time in nanoseconds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Main memory</td>
+<td></td>
+<td>~60-80ns</td>
+</tr>
+<tr>
+<td>QPI transit (between sockets, not drawn)</td>
+<td></td>
+<td>~20ns</td>
+</tr>
+<tr>
+<td>L3 cache</td>
+<td>~40-45 cycles,</td>
+<td>~15ns</td>
+</tr>
+<tr>
+<td>L2 cache</td>
+<td>~10 cycles,</td>
+<td>~3ns</td>
+</tr>
+<tr>
+<td>L1 cache</td>
+<td>~3-4 cycles,</td>
+<td>~1ns</td>
+</tr>
+<tr>
+<td>Register</td>
+<td>1 cycle</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><img src="CacheHierarchy.jpg" alt=""><br><img src="CacheCoherency.jpg" alt=""><br><img src="cacheline.png" alt=""></p>
+<p><strong>(1) Cache lines</strong></p>
+<p>Now the interesting thing to note is that it’s not individual items that get stored in the cache - i.e. it’s not a single variable, a single pointer.  The cache is made up of cache lines, typically 64 bytes, and it effectively references a location in main memory.  A Java long is 8 bytes, so in a single cache line you could have 8 long variables.</p>
+<p><img src="CacheLines.png" alt=""></p>
+<p>参考 <a href="http://mechanitis.blogspot.jp/2011/07/dissecting-disruptor-why-its-so-fast_22.html" target="_blank" rel="noopener">Dissecting the Disruptor: Why it’s so fast (part two) - Magic cache line padding</a></p>
+<h4 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h4><p>It is a basic Law of Computing that given <strong>a single CPU</strong> resource, <strong>executing A and B sequentially will always be faster than executing A and B “simultaneously” through time-slicing</strong>. Once the number of threads exceeds the number of CPU cores, you’re going slower by adding more threads, not faster.</p>
+<p>Don’t be tricked into thinking, “SSDs are faster and therefore I can have more threads”. That is exactly 180 degrees backwards. Faster, no seeks, no rotational delays means less blocking and therefore fewer threads [closer to core count] will perform better than more threads. <strong>More threads only perform better when blocking creates opportunities for executing</strong>.</p>
+<h4 id="False-Sharing"><a href="#False-Sharing" class="headerlink" title="False Sharing"></a>False Sharing</h4><p>多个线程修改共享一个 Cache Line 的独立变量的时候，会造成这个 Cache Line 中的其他变量缓存失效，这被称之为 False sharing</p>
+<p><img src="cache-line.png" alt=""></p>
+<p>在核心 1 上运行的线程想更新变量 X，同时核心2上的线程想要更新变量 Y。不幸的是，这两个变量在同一个缓存行中。每个线程都要去竞争缓存行的所有权来更新变量。如果核心 1 获得了所有权，缓存子系统将会使核心 2 中对应的缓存行失效。当核心 2 获得了所有权然后执行更新操作，核心 1 就要使自己对应的缓存行失效。这会来来回回的经过 L3 缓存，大大影响了性能。如果互相竞争的核心位于不同的插槽，就要额外横跨插槽 (socket interconnect) 连接，问题可能更加严重。</p>
+<p><img src="5-4-figure-1.gif" alt=""></p>
+<p><strong>False sharing occurs when threads on different processors modify variables that reside on the same cache line. This invalidates the cache line and forces a memory update to maintain cache coherency</strong>.</p>
+<p>(1) Java 6 通过填充缓存行 (padding the cache) 来避免:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">RingBufferPad</span> </span>&#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">long</span> p1, p2, p3, p4, p5, p6, p7;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>参考 <a href="https://github.com/LMAX-Exchange/disruptor/blob/master/src/main/java/com/lmax/disruptor/RingBuffer.java" target="_blank" rel="noopener">RingBuffer.java</a></p>
+<p>(2) Java 7</p>
+<p>It seems Java 7 <strong>got clever and eliminated or re-ordered the unused fields</strong>, thus re-introducing false sharing.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">long</span> <span class="title">sumPaddingToPreventOptimisation</span><span class="params">(<span class="keyword">final</span> <span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">    PaddedAtomicLong v = longs[index];</span><br><span class="line">    <span class="keyword">return</span> v.p1 + v.p2 + v.p3 + v.p4 + v.p5 + v.p6;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">PaddedAtomicLong</span> <span class="keyword">extends</span> <span class="title">AtomicLong</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">volatile</span> <span class="keyword">long</span> p1, p2, p3, p4, p5, p6 = <span class="number">7L</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>参考 <a href="https://mechanical-sympathy.blogspot.jp/2011/08/false-sharing-java-7.html" target="_blank" rel="noopener">False Sharing &amp;&amp; Java 7</a></p>
+<p>(3) Java 8 通过声明 <code>sun.misc.Contended</code> 注解加启动参数 <code>-XX:-RestrictContended</code> 来搞定:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConcurrentHashMap</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">AbstractMap</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt;</span></span><br><span class="line"><span class="class">    <span class="keyword">implements</span> <span class="title">ConcurrentMap</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt;, <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@sun</span>.misc.Contended</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">CounterCell</span> </span>&#123;</span><br><span class="line">        <span class="keyword">volatile</span> <span class="keyword">long</span> value;</span><br><span class="line">        CounterCell(<span class="keyword">long</span> x) &#123; value = x; &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>参考 <a href="http://budairenqin.iteye.com/blog/2048257" target="_blank" rel="noopener">Java8 中用 <code>sun.misc.Contended</code> 避免伪共享(false sharing)</a></p>
+<h3 id="位数"><a href="#位数" class="headerlink" title="位数"></a>位数</h3><p>虽然 32 位使用较小的指针大小可以节约内存，但由于操作系统的<strong>寻址受限</strong>，它在缓冲区大小设置上存在固有的约束，理论上，每个进程在 32 为系统上的最大可用内存为 4GB，实际上在很多系统上这个数值很小。</p>
+<h3 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a>磁盘</h3><p>关于磁盘，你需要关注<strong>磁盘读延迟</strong> (每次读访问需要多长时间) 和 <strong><code>fsync</code> 延迟</strong> (每个 <code>fsync</code> 耗时多少)，大多数存储引擎是针对硬盘读写优化的，所以不要指望固态硬盘能够出现什么性能上的奇迹。</p>
+<hr>
+<ul>
+<li><code>Hd(0,0)</code> is the <strong>1st</strong> partition of the <strong>1st physical disk</strong>.</li>
+<li><code>Hd(0,1)</code> is the <strong>2nd</strong> partition of the <strong>1st physical disk</strong>.</li>
+</ul>
+<p>I believe that</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sda = hd0, </span><br><span class="line">sdb = hd1,</span><br></pre></td></tr></table></figure>
+<p>so on etc. etc. <code>sdc = hd2</code> When it says <code>sda1</code> that would be <code>(hd0, 0)</code> and <code>sda2 (hd0, 1)</code> and <code>sda3 (hd0, 2)</code> and <code>sdb1 (hd1, 0)</code> so on and so forth…</p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://fuzzyreflection.com/" target="_blank" rel="noopener">Knowing the hardware</a></li>
+<li><a href="https://confluence.csiro.au/display/SC/Multi+CPU+Optimisation" target="_blank" rel="noopener">Multi CPU Optimisation</a></li>
+<li><a href="https://item.jd.com/11741440.html" target="_blank" rel="noopener">《MySQL 排错指南》</a></li>
+<li><a href="https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing" target="_blank" rel="noopener">HikariCP - About Pool Sizing</a></li>
+</ul>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>

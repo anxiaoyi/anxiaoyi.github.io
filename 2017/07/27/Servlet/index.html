@@ -1,0 +1,159 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>Servlet</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h3 id="Servlet"><a href="#Servlet" class="headerlink" title="Servlet"></a>Servlet</h3><p>A servlet is a Java™ technology-based <strong>Web component</strong>, managed by a container, that <strong>generates dynamic content</strong>.</p>
+<p>The two classes in the <strong>Java Servlet API that implement the <code>Servlet</code> interface are <code>GenericServlet</code> and <code>HttpServlet</code></strong>.</p>
+<hr>
+<p>The basic <strong><code>Servlet</code></strong> interface defines a <strong><code>service</code></strong> method for handling client requests. This method is called for each request that the servlet container routes to an instance of a servlet.</p>
+<p>The <strong><code>HttpServlet</code></strong> abstract subclass <strong>adds additional methods</strong> beyond the basic <code>Servlet</code> interface that are automatically called by the service method in the <code>HttpServlet</code> class to aid in processing HTTP-based requests. These methods are:</p>
+<ul>
+<li><code>doGet</code> for handling HTTP GET requests</li>
+<li><code>doPost</code> for handling HTTP POST requests</li>
+<li><code>doPut</code> for handling HTTP PUT</li>
+<li><code>doDelete</code> for handling HTTP DELETE requests</li>
+<li><code>doHead</code> for handling HTTP HEAD requests</li>
+<li><code>doOptions</code> for handling HTTP OPTIONS requests</li>
+<li><code>doTrace</code> for handling HTTP TRACE requests</li>
+</ul>
+<hr>
+<p><strong>A servlet is managed through a well defined life cycle</strong> that defines how it is loaded and instantiated, is initialized, handles requests from clients, and is taken out of service. This life cycle is expressed in the API by the <code>init</code>, <code>service</code>, and <code>destroy</code> methods of the <code>javax.servlet.Servlet</code> interface that <strong>all servlets must implement directly or indirectly through the <code>GenericServlet</code> or <code>HttpServlet</code> abstract classes</strong>.</p>
+<p><strong>The servlet container is responsible for loading and instantiating servlets</strong>. The loading and instantiation can occur when the container is started, or delayed until the container determines the servlet is needed to service a request. </p>
+<p><strong>The servlet container loads the servlet class using normal Java class loading facilities.</strong> The loading may be from a local file system, a remote file system, or other network services.</p>
+<p>The container initializes the servlet instance by calling the <code>init</code> method of the <code>Servlet</code> interface with a unique (per servlet declaration) object implementing the <code>ServletConfig</code> interface. <strong>This configuration object allows the servlet to access name-value initialization parameters from the Web application’s configuration information. The configuration object also gives the servlet access to an object (implementing the <code>ServletContext</code> interface) that describes the servlet’s runtime environment</strong>. </p>
+<p>After a servlet is properly initialized, the servlet container may use it to handle client requests. Requests are represented by request objects of type <code>ServletRequest</code>. The servlet fills out response to requests by calling methods of a provided object of type <code>ServletResponse</code>. These objects are passed as parameters to the service method of the <code>Servlet</code> interface.</p>
+<p>In the case of an HTTP request, the objects provided by the container are of types <code>HttpServletRequest</code> and <code>HttpServletResponse</code>.</p>
+<hr>
+<p>If the servlet container provides <strong><code>multipart/form-data</code></strong> processing, the data is made available through the following methods in <code>HttpServletRequest</code>:</p>
+<ul>
+<li><code>public Collection&lt;Part&gt; getParts()</code></li>
+<li><code>public Part getPart(String name)</code></li>
+</ul>
+<p>If the servlet container does not provide the <code>multi-part/form-data</code> processing, the data will be available through the <code>HttpServletReuqest.getInputStream</code>.</p>
+<hr>
+<h4 id="Request-data-encoding"><a href="#Request-data-encoding" class="headerlink" title="Request data encoding"></a>Request data encoding</h4><p>The default encoding of a request the container uses to create the request reader and parse POST data must be <code>“ISO-8859-1”</code> if none has been specified by the client request. However, in order to indicate to the developer, in this case, the failure of the client to send a character encoding, the container returns <code>null</code> from the <code>getCharacterEncoding</code> method.</p>
+<p>If the client hasn’t set character encoding and the request data is encoded with a different encoding than the default as described above, breakage can occur. To remedy this situation, a new method <code>setCharacterEncoding(String enc)</code> has been added to the <code>ServletRequest</code> interface. Developers can override the character encoding supplied by the container by calling this method. It must be called prior to parsing any post data or reading any input from the request.</p>
+<h3 id="Servlet-Container"><a href="#Servlet-Container" class="headerlink" title="Servlet Container"></a>Servlet Container</h3><p>The servlet container is a part of a Web server or application server that <strong>provides the network services</strong> over which requests and responses are sent, <strong>decodes MIME-based requests</strong>, and <strong>formats MIME-based responses</strong>. A servlet container also <strong>contains and manages servlets through their lifecycle.</strong></p>
+<h3 id="javax-servlet-ServletContext"><a href="#javax-servlet-ServletContext" class="headerlink" title="javax.servlet.ServletContext"></a><code>javax.servlet.ServletContext</code></h3><p><code>javax.servlet.ServletContext</code> 是用来充当<strong><a href="https://docs.oracle.com/javaee/7/api/javax/servlet/ServletContext.html?is-external=true" target="_blank" rel="noopener">媒人角色</a></strong>，用来实现的:</p>
+<p><img src="Servlet_Context_Config.jpg" alt=""></p>
+<p>The Container Provider is responsible for providing an implementation of the <code>ServletContext</code> interface in the servlet container. Using the <code>ServletContext</code> object, a servlet can <strong>log events, obtain URL references to resources, and set and store attributes that other servlets in the context can access</strong>. </p>
+<h4 id="Initialization-Parameters"><a href="#Initialization-Parameters" class="headerlink" title="Initialization Parameters"></a>Initialization Parameters</h4><p>The following methods of the <code>ServletContext</code> interface allow the servlet <strong>access to context initialization parameters</strong> associated with a Web application as specified by the Application Developer in the deployment descriptor:</p>
+<ul>
+<li><code>getInitParameter</code></li>
+<li><code>getInitParameterNames</code></li>
+</ul>
+<h4 id="Configuration-methods"><a href="#Configuration-methods" class="headerlink" title="Configuration methods"></a>Configuration methods</h4><p>The following methods are added to <code>ServletContext</code> since Servlet 3.0 to <strong>enable programmatic definition of servlets, filters and the url pattern that they map to</strong>. </p>
+<p><strong>Programmatically adding and configuring Servlets:</strong></p>
+<p>The return value of this method is a <code>ServletRegistration</code> or a <code>ServletRegistration.Dynamic</code> object which further allows you to setup the other parameters of the servlet like <code>init-params</code>, <code>url-mappings</code> etc.</p>
+<ul>
+<li><code>addServlet(String servletName, String className)</code></li>
+</ul>
+<p><strong>Programmatically adding and configuring Filters:</strong></p>
+<ul>
+<li><code>addFilter(String filterName, String className)</code></li>
+</ul>
+<p><strong>Programmatically adding and configuring Listeners:</strong></p>
+<ul>
+<li><code>void addListener(String className)</code></li>
+</ul>
+<hr>
+<h4 id="Context-Attributes"><a href="#Context-Attributes" class="headerlink" title="Context Attributes"></a>Context Attributes</h4><p>A servlet can bind an object attribute into the context by name. <strong>Any attribute bound into a context is available to any other servlet that is part of the same Web application</strong>. The following methods of ServletContext interface allow access to this functionality:</p>
+<ul>
+<li><code>setAttribute</code></li>
+<li><code>getAttribute</code></li>
+</ul>
+<p>Context attributes are local to the JVM in which they were created. This prevents <code>ServletContext</code> attributes from being a shared memory store in a distributed container. When information needs to be shared between servlets running in a distributed environment, <strong>the information should be placed into a session, stored in a database, or set in an Enterprise JavaBeans™ component</strong>.</p>
+<h4 id="Resources"><a href="#Resources" class="headerlink" title="Resources"></a>Resources</h4><p>The <code>ServletContext</code> interface provides direct access only to the hierarchy of static content documents that are part of the Web application, including HTML, GIF, and JPEG files, via the following methods of the <code>ServletContext</code> interface:</p>
+<ul>
+<li><code>getResource</code></li>
+<li><code>getResourceAsStream</code></li>
+</ul>
+<p>The <code>getResource</code> and <code>getResourceAsStream</code> methods take a String with a leading “/” as an argument that gives the path of the resource relative to the <strong>root of the context</strong> or relative to the <code>META-INF/resources</code> directory of a <strong>JAR file</strong> inside the web application’s <code>WEB-INF/lib</code> directory</p>
+<h3 id="Filtering"><a href="#Filtering" class="headerlink" title="Filtering"></a>Filtering</h3><p>A filter is a reusable piece of code that can transform the content of HTTP requests, responses, and header information. Filters do not generally create a response or respond to a request as servlets do, rather they <strong>modify or adapt the requests for a resource, and modify or adapt responses from a resource</strong>.</p>
+<p>The application developer creates a filter by implementing the <strong><code>javax.servlet.Filter</code> interface</strong> and providing <strong>a public constructor taking no arguments</strong>. The class is packaged in the Web Archive along with the static content and servlets that make up the Web application.</p>
+<h3 id="Sessions"><a href="#Sessions" class="headerlink" title="Sessions"></a>Sessions</h3><p>This specification defines a simple <code>HttpSession</code> interface that allows a servlet container to use any of several approaches to track a user’s session without involving the Application Developer in the nuances of any one approach.</p>
+<h4 id="Cookies"><a href="#Cookies" class="headerlink" title="Cookies"></a>Cookies</h4><p>Session tracking through HTTP cookies is the most used session tracking mechanism and is required to be supported by all servlet containers.</p>
+<p>The container sends a cookie to the client. The client will then return the cookie on each subsequent request to the server, unambiguously associating the request with a session. The standard name of the session tracking cookie must be <strong><code>JSESSIONID</code></strong>. Containers may allow the name of the session tracking cookie to be customized through container specific configuration.</p>
+<p>All servlet containers MUST provide an ability to configure whether or not the container marks the session tracking cookie as <code>HttpOnly</code>. The established configuration must apply to all contexts for which a context specific configuration has not been established (see <code>SessionCookieConfig</code> javadoc for more details).</p>
+<hr>
+<p>Associated with each session, there is a string containing a unique identifier, which is referred to as the session id. The value of the session id can be obtained by calling <code>javax.servlet.http.HttpSession.getId()</code> and can be changed after creation by invoking <code>javax.servlet.http.HttpServletRequest.changeSessionId()</code>.</p>
+<h4 id="Session-Timeouts"><a href="#Session-Timeouts" class="headerlink" title="Session Timeouts"></a>Session Timeouts</h4><p>In the HTTP protocol, there is no explicit termination signal when a client is no longer active. This means that the <strong>only mechanism</strong> that can be used to indicate when a client is no longer active is <strong>a time out period</strong>.</p>
+<p>The default time out period for sessions is defined by the servlet container and can be obtained via the <code>getMaxInactiveInterval</code> method of the <code>HttpSession</code> interface. This time out can be changed by the Developer using the <code>setMaxInactiveInterval</code> method of the <code>HttpSession</code> interface. The time out periods used by these methods are defined in seconds. By definition, if the time out period for a session is set to 0 or lesser value, the session will never expire. The session invalidation will not take effect until all servlets using that session have exited the service method. Once the session invalidation is initiated, a new request must not be able to see that session.</p>
+<p>The distributed servlet container must support the mechanism necessary for migrating objects that implement <strong><code>Serializable</code></strong>.</p>
+<h3 id="War-Web-Archive"><a href="#War-Web-Archive" class="headerlink" title="War - Web Archive"></a>War - Web Archive</h3><p><img src="lecture-3-servlets-session-management-7-638.jpg" alt=""></p>
+<p><img src="Context+Adheres+to+Java+Servlet+Specifications.jpg" alt=""></p>
+<h3 id="Ear-File"><a href="#Ear-File" class="headerlink" title="Ear File"></a>Ear File</h3><p><img src="ear.png" alt=""></p>
+<h3 id="How-do-servlets-work-Instantiation-sessions-shared-variables-and-multithreading"><a href="#How-do-servlets-work-Instantiation-sessions-shared-variables-and-multithreading" class="headerlink" title="How do servlets work? Instantiation, sessions, shared variables and multithreading"></a>How do servlets work? Instantiation, sessions, shared variables and multithreading</h3><h4 id="创建"><a href="#创建" class="headerlink" title="创建"></a>创建</h4><p>When the servlet container (like Apache Tomcat) starts up, it will deploy and load all its web applications. When a web application is loaded, the servlet container <strong>创建 the <code>ServletContext</code> 一次</strong> and keeps it in the server’s memory. The web app’s <code>web.xml</code> file is parsed, and each <code>&lt;servlet&gt;</code>, <code>&lt;filter&gt;</code> and <code>&lt;listener&gt;</code> found (or each class annotated with <code>@WebServlet</code>, <code>@WebFilter</code> and <code>@WebListener</code> respectively) is instantiated <strong>一次</strong> and kept in the server’s memory as well. For each instantiated filter, its <strong><code>init()</code></strong> method is invoked with a new <code>FilterConfig</code>.</p>
+<p>When the servlet container shuts down, it unloads all web applications, invokes the <strong><code>destroy()</code></strong> method of all its initialized servlets and filters, and all <code>ServletContext</code>, <code>Servlet</code>, <code>Filter</code> and <code>Listener</code> instances are trashed.</p>
+<p>When a <code>Servlet</code> has a <code>&lt;servlet&gt;&lt;load-on-startup&gt;</code> or <code>@WebServlet</code>(loadOnStartup) value greater than 0, its <strong><code>init()</code></strong> method is also invoked <strong>启动的时候</strong> with a new <strong><code>ServletConfig</code></strong>. Those servlets are initialized in the same order specified by that value (1 -&gt; 1st, 2 -&gt; 2nd, etc). If the same value is specified for more than one servlet, then each of those servlets is loaded in the order they appear in the <code>web.xml</code>, or <code>@WebServlet</code> classloading. In the event the “load-on-startup” value is <strong>没有</strong>, the <code>init()</code> method will be invoked whenever the <strong>HTTP 请求</strong> hits that servlet for <strong>第一次</strong>.</p>
+<ul>
+<li><a href="https://stackoverflow.com/questions/3106452/how-do-servlets-work-instantiation-sessions-shared-variables-and-multithreadi" target="_blank" rel="noopener">参考</a></li>
+</ul>
+<h4 id="HttpServletRequest-and-HttpServletResponse"><a href="#HttpServletRequest-and-HttpServletResponse" class="headerlink" title="HttpServletRequest and HttpServletResponse"></a><code>HttpServletRequest</code> and <code>HttpServletResponse</code></h4><p>The servlet container is attached to a web server that listens for HTTP requests on a certain port number (port 8080 is usually used during development and port 80 in production). When a client (user with a web browser) sends an HTTP request, the servlet container creates new <code>HttpServletRequest</code> and <code>HttpServletResponse</code> objects and 经过一系列的 <strong><code>Filter</code> 过滤链</strong> and, eventually, the <code>Servlet</code> instance.</p>
+<p>In the case of filters, the <code>doFilter()</code> method is invoked. When its code calls <code>chain.doFilter(request, response)</code>, the request and response continue on to the next filter, or hit the servlet if there are no remaining filters.</p>
+<p>In the case of servlets, the <code>service()</code> method is invoked. By default, this method determines which one of the doXxx() methods to invoke based off of  request.getMethod(). If the determined method is absent from the servlet, then an HTTP 405 error is returned in the response.</p>
+<p>The request object provides access to all of the information about the HTTP request, such as its headers and body. The response object provides the ability to control and send the HTTP response the way you want by, for instance, allowing you to set the headers and the body (usually with generated HTML content from a JSP file). When the HTTP response is committed and finished, both the request and response objects are recycled and made for reuse.</p>
+<h4 id="HttpSession"><a href="#HttpSession" class="headerlink" title="HttpSession"></a><code>HttpSession</code></h4><p>When a client visits the webapp <strong>第一次</strong> and/or the <code>HttpSession</code> is obtained for the first time via <code>request.getSession()</code>, the servlet container creates a new <code>HttpSession</code> object, generates a long and unique ID (which you can get by <code>session.getId()</code>), and store it in the server’s <strong>内存</strong>. The servlet container also sets a <code>Cookie</code> in the Set-Cookie header of the HTTP response with <code>JSESSIONID</code> as its name and the unique session ID as its value.</p>
+<p><img src="ABDSX.png" alt=""><br><img src="IWAF3.png" alt=""></p>
+<p>As per the HTTP cookie specification (a contract a decent web browser and web server have to adhere to), the client (the web browser) is required to send this cookie back in subsequent requests in the Cookie header for as long as the cookie is valid (i.e. the unique ID must refer to an unexpired session and the domain and path are correct). Using your browser’s built-in HTTP traffic monitor, you can verify that the cookie is valid (press F12 in Chrome / Firefox 23+ / IE9+, and check the Net/Network tab). The servlet container will check the Cookie header of every incoming HTTP request for the presence of the cookie with the name JSESSIONID and use its value (the session ID) to <strong>从内存中取得关联的 <code>HttpSession</code></strong>.</p>
+<p>The HttpSession stays alive until it has not been used for more than the timeout value specified in <code>&lt;session-timeout&gt;</code>, a setting in <code>web.xml</code>. The timeout value defaults to <strong>30 分钟</strong>. So, when the client doesn’t visit the web app for longer than the time specified, the servlet container trashes the session. Every subsequent request, even with the cookie specified, will not have access to the same session anymore; the servlet container will create a new session.</p>
+<p>On the client side, the session cookie stays alive for as long as the browser instance is running. So, if the client closes the browser instance (all tabs/windows), then the session is trashed on the client’s side. In a new browser instance, the cookie associated with the session wouldn’t exist, so it would no longer be sent. This causes an entirely new <code>HTTPSession</code> to be created, with an entirely new session cookie begin used.</p>
+<hr>
+<p><strong>为什么我们需要 <code>Session</code></strong>:</p>
+<p><img src="2017_11_20_23_11_04.png" alt=""></p>
+<p><strong>管理 <code>Session</code> 的几种方式</strong>:</p>
+<p><img src="2017_11_20_23_12_10.png" alt=""></p>
+<h4 id="In-a-nutshell"><a href="#In-a-nutshell" class="headerlink" title="In a nutshell"></a>In a nutshell</h4><ul>
+<li>The <code>ServletContext</code> lives for as long as the web app lives. It is <strong>所有请求所有会话共享</strong></li>
+<li>The <code>HttpSession</code> lives for as long as the client is interacting with the web app with the <strong>相同浏览器实例</strong>, and the session hasn’t <strong>超时</strong> at the server side. It is shared among <strong>所有请求</strong> in the <strong>相同会话</strong>.</li>
+<li>The <code>HttpServletRequest</code> and <code>HttpServletResponse</code> live from the time the servlet receives an HTTP request from the client, until the complete response (the web page) has arrived. It is <strong>不会共享</strong> elsewhere.</li>
+<li>All Servlet, <code>Filter</code> and <code>Listener</code> instances live as long as the web app lives. They are <strong>所有请求所有会话共享</strong></li>
+<li>Any <strong>属性</strong> that is defined in <code>ServletContext</code>, <code>HttpServletRequest</code> and <code>HttpSession</code> will live as long as the object in question lives. The object itself represents the “scope” in bean management frameworks such as <code>JSF</code>, <code>CDI</code>, <strong><code>Spring</code></strong>, etc. Those frameworks store their scoped beans as an attribute of its closest matching scope.</li>
+</ul>
+<h4 id="线程安全"><a href="#线程安全" class="headerlink" title="线程安全"></a>线程安全</h4><p>That said, your major concern is possibly thread safety. You should now know that servlets and filters are shared among all requests. That’s the nice thing of Java, it’s <strong>多线程</strong> and different threads (read: HTTP requests) <strong>使用相同实例</strong>. It would otherwise be too expensive to recreate, <code>init()</code> and <code>destroy()</code> them for every single request.</p>
+<p>You should also realize that you should never assign any request or session scoped data as <strong>实例上的某个变量</strong> of a servlet or filter. It will be shared among all other requests in other sessions. That’s <strong>非线程安全</strong>! The below example illustrates this:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ExampleServlet</span> <span class="keyword">extends</span> <span class="title">HttpServlet</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object thisIsNOTThreadSafe;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doGet</span><span class="params">(HttpServletRequest request, HttpServletResponse response)</span> <span class="keyword">throws</span> ServletException, IOException </span>&#123;</span><br><span class="line">        Object thisIsThreadSafe;</span><br><span class="line"></span><br><span class="line">        thisIsNOTThreadSafe = request.getParameter(<span class="string">"foo"</span>); <span class="comment">// BAD!! Shared among all requests!</span></span><br><span class="line">        thisIsThreadSafe = request.getParameter(<span class="string">"foo"</span>); <span class="comment">// OK, this is thread safe.</span></span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>

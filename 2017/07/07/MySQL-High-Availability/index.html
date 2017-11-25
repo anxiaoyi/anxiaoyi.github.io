@@ -1,0 +1,56 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>MySQL_High_Availability</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="MySQL-High-Availability"><a href="#MySQL-High-Availability" class="headerlink" title="MySQL_High_Availability"></a>MySQL_High_Availability</h2><p><code>my.cnf</code> 位置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/etc/mysql/mysql.conf.d/mysqld.cnf</span><br></pre></td></tr></table></figure>
+<p>配置 Master:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">#</span><br><span class="line"># * Basic Settings</span><br><span class="line">#</span><br><span class="line">user        = mysql</span><br><span class="line">pid-file    = /var/run/mysqld/mysqld.pid</span><br><span class="line">socket      = /var/run/mysqld/mysqld.sock</span><br><span class="line">port        = 3306</span><br><span class="line">basedir     = /usr</span><br><span class="line">datadir     = /var/lib/mysql</span><br><span class="line">tmpdir      = /tmp</span><br><span class="line"></span><br><span class="line"># 添加如下三行</span><br><span class="line"># 二进制日志产生的所有文件的基本名</span><br><span class="line">log-bin     = master-bin</span><br><span class="line"># 二进制索引文件的文件名</span><br><span class="line">log-bin-index = master-bin.index</span><br><span class="line"># 每个服务器都有一个唯一的服务器 ID</span><br><span class="line">server-id   = 1</span><br></pre></td></tr></table></figure>
+<p>重启 Master 使配置生效:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo service mysql restart</span><br></pre></td></tr></table></figure>
+<p>Slave 启动一个标准的客户端连到 Master，并请求 Master 将所有的改动转储给它。Slave 连接时要求 Master 上有一个特殊复制权限的用户:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE USER repl_user;</span><br><span class="line">mysql&gt; GRANT REPLICATION SLAVE ON *.* TO repl_user IDENTIFIED BY 'xyzzy';</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>

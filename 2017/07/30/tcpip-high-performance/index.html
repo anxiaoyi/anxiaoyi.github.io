@@ -1,0 +1,100 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>TCP/IP High Performance</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="TCP-IP-High-Performance"><a href="#TCP-IP-High-Performance" class="headerlink" title="TCP/IP High Performance"></a>TCP/IP High Performance</h2><h3 id="1-套接字-API-调用过程"><a href="#1-套接字-API-调用过程" class="headerlink" title="(1) 套接字 API 调用过程"></a>(1) 套接字 API 调用过程</h3><p><strong>服务器</strong>套接字 API 调用过程:</p>
+<p><img src="17-07-31-09_24_37_375_535.png" alt=""></p>
+<h3 id="2-理解面向连接和无连接协议之间的区别"><a href="#2-理解面向连接和无连接协议之间的区别" class="headerlink" title="(2) 理解面向连接和无连接协议之间的区别"></a>(2) 理解面向连接和无连接协议之间的区别</h3><p>它们的本质区别在于，<strong>对无连接协议来说，每个分组的处理都独立于所有其他分组，而对免息那个连接的协议来说，协议实现则维护了与后继分组有关的状态信息</strong>。</p>
+<p>TCP 向基本的 IP 服务中添加了三项功能:</p>
+<ul>
+<li>为数据提供校验和</li>
+<li>为每字节分配了一个序列号</li>
+<li>提供确认-重传机制: TCP 段到达时，序列号在接受窗口范围之外的所有数据都会被丢弃。</li>
+</ul>
+<p>UDP 向底层的 IP 协议中添加了两项功能:</p>
+<ul>
+<li>可选的校验和检测数据的损坏情况</li>
+<li>端口的概念</li>
+</ul>
+<p>IP 也有校验和，但是它<strong>只对 IP 分组首</strong>部进行计算。</p>
+<h3 id="3-理解子网和-CIDR-概念"><a href="#3-理解子网和-CIDR-概念" class="headerlink" title="(3) 理解子网和 CIDR 概念"></a>(3) 理解子网和 CIDR 概念</h3><p>IP 地址为 32 比特长。通常会以点分十进制法来写 IP 地址，其中每 4 个字节由一个十进制数表示，并用点将其分割开来。因此，可以将地址 0x11345678 写作 17.52.86.120 。</p>
+<p>传统 IP 地址划分为 5 类，这种划分称之为<strong>分类编址 (classful addressing)</strong>:</p>
+<p><img src="ipclasses.png" alt=""></p>
+<p>我们希望有一种方法，使用很小的路由表，并使单个网络 ID 的 IP 地址空间得到有效利用，而且享有每个网段具有独立网络 ID 时所提供的路由便捷性。实现这种功能的机制被称为 — <strong>子网划分 (subnetting)</strong>:</p>
+<p><img src="subnetting1.jpg" alt=""></p>
+<p>每个子网都有一个与之相关的<strong>子网掩码 (subnet mask)</strong>，用来说明地址中组合了网络和子网络的部分。尽管被称为<strong>子网掩码，实际上它说明的是地址中的网络和子网部分 — 也就是除了主机部分之外所有的内容</strong>。和子网掩码进行与操作，解析出 IP 地址的网络部分:</p>
+<p><img src="17-07-31-09_52_34_531_150.png" alt=""></p>
+<p>大部分中等及较大规模的组织所需的 IP 地址都比 C 类网络 ID 所能提供的地址要多，CIDR (Classless Inter Domain Routing) 完全抛弃了分类的概念，掩码只是一个被称为前缀的数字，说明了地址中网络部分的比特长度。</p>
+<h3 id="4-理解私有地址和-NAT"><a href="#4-理解私有地址和-NAT" class="headerlink" title="(4) 理解私有地址和 NAT"></a>(4) 理解私有地址和 NAT</h3><p><img src="Private-IP-Address.jpg" alt=""></p>
+<p>使用私有 IP 地址的主机如何跟因特网或其他外网上的主机进行通信呢？这个问题最常见的答案就是使用 <strong>NAT (Network Address Translation)</strong>:</p>
+<p><img src="image0021083244899217.jpg" alt=""></p>
+<h3 id="5-记住，TCP-是一种流协议"><a href="#5-记住，TCP-是一种流协议" class="headerlink" title="(5) 记住，TCP 是一种流协议"></a>(5) 记住，TCP 是一种流协议</h3><p>读取 TCP 数据就像从串行端口读取数据一样 — <strong>无法预先得知在一次指定的读调用中会返回多少字节</strong>，调用两次 <code>send</code> 来发送的错误假想模型:</p>
+<p><img src="17-07-31-10_12_57_577_113.png" alt=""></p>
+<p>实际上，<code>send</code> 只是将数据复制到主机 A 的 TCP/IP 栈中，就返回了。由 TCP 来决定需要立即发送多少数据，更为可能的是如下的一些方式:</p>
+<p><img src="17-07-31-10_14_08_518_310.png" alt=""></p>
+<p>所以可以根据如下几种方式读取:</p>
+<ul>
+<li>划分成行:</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**  char *fgets(dst,max,fp) -- get string from stream */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">char</span> *</span><br><span class="line">fgets(<span class="keyword">char</span> *dst, <span class="keyword">int</span> max, FILE *fp)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">int</span> c;</span><br><span class="line">	<span class="keyword">char</span> *p;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* get max bytes or upto a newline */</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (p = dst, max--; max &gt; <span class="number">0</span>; max--) &#123;</span><br><span class="line">		<span class="keyword">if</span> ((c = fgetc (fp)) == EOF)</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		*p++ = c;</span><br><span class="line">		<span class="keyword">if</span> (c == <span class="string">'\n'</span>)</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	*p = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">if</span> (p == dst || c == EOF)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">	<span class="keyword">return</span> (p);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>定长报文:</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">recv(s, msg, <span class="keyword">sizeof</span>(msg), <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+<ul>
+<li>每条报文前面添加一个首部</li>
+</ul>
+<h3 id="不是绝对可靠"><a href="#不是绝对可靠" class="headerlink" title="不是绝对可靠"></a>不是绝对可靠</h3><ul>
+<li>网络中断: 读操作被挂起，会返回一条错误状况，并将 <code>errno</code> 置位 <code>ETIMEOUT</code>。</li>
+<li>对等实体崩溃: 从应用程序的角度来看，对等实体崩溃与对等实体调用 <code>close</code> 和 <code>exit</code> 是无法区分的。这两种情况下，对等实体的 TCP 都会向我们的 TCP 发送一个 <code>FIN</code></li>
+<li>对等实体的主机崩溃: 对等实体的 TCP 无法通过 <code>FIN</code> 来通知我们的应用沉痼，其对等实体已经不在运行了</li>
+</ul>
+<h3 id="总是设置-SO-REUSEADDR-选项"><a href="#总是设置-SO-REUSEADDR-选项" class="headerlink" title="总是设置 SO_REUSEADDR 选项"></a>总是设置 <code>SO_REUSEADDR</code> 选项</h3><p><strong>终止服务器</strong>的时候可能会出现这种 <code>Address already in use</code> 问题:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ badserver</span><br><span class="line">^C</span><br><span class="line">$ badserver</span><br><span class="line">badserver: Could not <span class="built_in">bind</span> socket:</span><br><span class="line">Address already <span class="keyword">in</span> use (48)</span><br></pre></td></tr></table></figure>
+<p>TCP 连接中进行主动关闭 (发送第一个 <code>FIN</code>) 的那一端会进入 <code>TIME-WAIT</code> 状态，并在此状态停留 <code>2MSL</code>，通过<strong>设置 <code>SO_REUSEADDR</code></strong>，指示 TCP 允许我们绑定到一个已经在使用的端口上去，这样就<strong>不用等待前一条连接的 <code>TIME-WAIT</code> 状态过期，就可以重启服务器。</strong></p>
+<h3 id="如何使-connect-调用超时"><a href="#如何使-connect-调用超时" class="headerlink" title="如何使 connect 调用超时"></a>如何使 <code>connect</code> 调用超时</h3><p><img src="17-07-30-14_37_21_750_432.png" alt=""></p>
+<p>通常在套接字阻塞的情况下，<strong>在收到对客户端 <code>SYN</code> 的 <code>ACK</code> 之前，<code>connect</code> 是不会返回的</strong>，所以允许 <code>connect</code> 超时是一项很有用的功能。当然，TCP 最终也会放弃 <code>connect</code> 调用的，但默认时间 (典型值是 75 秒) 比我们希望等待的时间要长。</p>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>

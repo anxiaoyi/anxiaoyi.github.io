@@ -1,0 +1,69 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>rocketmq</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="RocketMQ"><a href="#RocketMQ" class="headerlink" title="RocketMQ"></a>RocketMQ</h2><h3 id="Remoting"><a href="#Remoting" class="headerlink" title="Remoting"></a>Remoting</h3><p><strong>命令</strong>包含了一些<strong>基本信息</strong>:</p>
+<p><img src="remoting_command_structure.jpg" alt=""></p>
+<p>命令可以被<strong>序列化</strong>:</p>
+<p><img src="remoting_command_serialize_type.jpg" alt=""></p>
+<hr>
+<p>优先选用 <code>sun.nio.ch.EPollSelectorProvider</code>:</p>
+<p><img src="selector.jpg" alt=""></p>
+<h3 id="Client"><a href="#Client" class="headerlink" title="Client"></a>Client</h3><ul>
+<li>每隔 30 秒 <code>updateTopicRouteInfoFromNameServer</code></li>
+<li>每隔 5 秒，持久化:</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ConcurrentMap&lt;String, MQConsumerInner&gt; consumerTable =</span><br><span class="line">    <span class="keyword">new</span> ConcurrentHashMap&lt;String, MQConsumerInner&gt;();</span><br></pre></td></tr></table></figure>
+<p>每一个 <code>MQConsumerInner</code> 包含一个:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="keyword">final</span> ConcurrentMap&lt;MessageQueue, ProcessQueue&gt; processQueueTable =</span><br><span class="line">    <span class="keyword">new</span> ConcurrentHashMap&lt;MessageQueue, ProcessQueue&gt;(<span class="number">64</span>);</span><br></pre></td></tr></table></figure>
+<h3 id="如何-Benchmark-延迟"><a href="#如何-Benchmark-延迟" class="headerlink" title="如何 Benchmark 延迟"></a>如何 Benchmark 延迟</h3><ul>
+<li>Note timestamp before request,<code>t0</code>.</li>
+<li>Make <strong>同步</strong> request.</li>
+<li>Note timestamp after request, <code>t1</code>.</li>
+<li>Record latency <code>t1 – t0</code>.</li>
+<li>Repeat as needed for request schedule.</li>
+</ul>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>

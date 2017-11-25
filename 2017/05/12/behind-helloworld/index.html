@@ -1,0 +1,83 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>HelloWorld背后的故事</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="HelloWorld-背后的故事"><a href="#HelloWorld-背后的故事" class="headerlink" title="HelloWorld 背后的故事"></a>HelloWorld 背后的故事</h2><blockquote>
+<p>Any problem in computer science can be solved by another layer of indirection.</p>
+</blockquote>
+<h3 id="内存问题"><a href="#内存问题" class="headerlink" title="内存问题"></a>内存问题</h3><p>在早期的计算机中，程序是直接运行在物理内存上的，也就是说，程序在运行期间所访问的地址都是物理地址。当然如果一个计算机同时只运行一个程序，那么只要程序要求的内存空间不要超过物理内存的大小，就不会有问题。但事实上我们为了更有效的利用硬件资源，必须运行多个程序，那么问题来了，<strong>如何将计算机上有限的物理内存分配给多个程序使用？</strong> 直接划分物理内存地址会带来问题:</p>
+<ul>
+<li>地址空间不隔离: 恶意程序很容易改写其它程序的数据。</li>
+<li>内存使用效率低: 如果我们想要运行程序 C，这个时候发现内存不够了，这个时候我们可以暂时把其他程序的数据写到磁盘上，然后运行 C，等到时候再读取回来。这样一来，程序运行期间，可能会导致大量的数据换入换出，效率低下。</li>
+<li>程序运行的地址不确定: 给程序员访问地址造成了很大的麻烦</li>
+</ul>
+<p>随后，有人提到了<strong>分段</strong> (Segmentation) 的方法。它虽然解决了第一和第三个问题，然而还是会存在整个程序被换下的问题，从而严重影响速度。事实上，根据程序的局部性原理，当一个程序在运行时，在某个时间段内，它只是频繁地用到了一小部分数据，也就是说，程序的很多数据其实在一个时间段内都是不会被用到的。人们很自然的想到了更小粒度的内存分割与映射的方法，提高内存的使用率。这种方法就是<strong>分页</strong> (Paging)。</p>
+<p>那么我们可以把进程的虚拟地址空间按页分割，把常用的数据和代码页装载到内存中，把不常用的代码和数据保存在磁盘里，当需要用到的时候再把它从磁盘里取出来即可。当程序运行期间，如果用到的页还没有加载到内存中的时候，这个时候会产生<strong>页错误 (Page Fault)</strong>，这个时候，操作系统会负责从磁盘调度缺失的页并装载到内存中。</p>
+<h3 id="静态链接"><a href="#静态链接" class="headerlink" title="静态链接"></a>静态链接</h3><p><code>gcc hello.c</code> 的过程可以分解为 4 个步骤，分别是 <strong>Prepressing、Compilation、Assembly 和 Linking</strong>。</p>
+<p>预编译，处理以 # 开头的预编译指令:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -E hello.c -o hello.i</span><br></pre></td></tr></table></figure>
+<p>编译，进行词法分析，产生汇编代码文件:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -S hello.i -o hello.s</span><br></pre></td></tr></table></figure>
+<p>汇编，将汇编代码转为机器可以执行的指令:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">as hello.s -o hello.o</span><br></pre></td></tr></table></figure>
+<p>链接，拼接各个模块:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ld -<span class="keyword">static</span> /usr/lib/crt1.o /usr/lib/crti.o /usr/lib/gcc/i486-linux-gnu/<span class="number">4.1</span><span class="number">.3</span>/crtbeginT.o -L/usr/lib/gcci486-linux-gnu/<span class="number">4.1</span><span class="number">.3</span> -L/usr/lib -L/lib hello.o --start-group -lgcc -lgcc_eh -lc --end-group /usr/lib/gcc/i486-linux-gnu/<span class="number">4.1</span><span class="number">.3</span>/crtend.o /usr/lib/crtn.o</span><br></pre></td></tr></table></figure>
+<p>对于 C 语言的代码来说，这个预编译和编译的程序是 <code>cc1</code>，对于 <code>c++</code> 来说，有对应的程序叫做 <code>cc1plus</code>; <code>Objective-C</code> 是 <code>cc1obj</code>，<code>fortran</code> 是 <code>f771</code>，<code>Java</code> 是 <code>jc1</code>。所以实际上 <code>gcc</code> 这个命令只是这些后台程序的包装，它会根据不同的参数要求去调用预编译编译程序 <code>cc1</code>、汇编器 <code>as</code>、链接器 <code>ld</code>。</p>
+<p><img src="Preprocessor1.png" alt=""></p>
+<p>程序经过扫描、语法分析、语义分析、源代码优化、代码生成和目标代码优化之后，源代码终于被编译成为了目标代码，但是这个目标代码有一个问题是: <code>index</code> 和 <code>array</code> 的地址还没有确定。目标代码中有变量定义在其他模块，事实上，定义其他模块的全局变量和函数在最终运行时的绝对地址都要在最终链接的时候才能确定。</p>
+<p>链接器的主要工作内容包括: 地址和空间分配、符号决议 (Symbol Resolution) 和重定位等。</p>
+<p><img src="220px-Linker.svg.png" alt=""></p>
+<h3 id="目标文件"><a href="#目标文件" class="headerlink" title="目标文件"></a>目标文件</h3><p>目标文件本身就是按照可执行文件格式存储的，只是还没有经过链接，可能有些符号或者地址需要被调整。可执行文件格式一般为分 Windows 平台下的 <strong>PE (Portable Executable)</strong> 和 Linux 平台下的 <strong>ELF (Executable Linkable Format)</strong>，它们都是 <strong>COFF (Common file format)</strong> 格式的变种。不管是可执行文件，动态链接库 (Dynamic Linking Library, .dll 文件和 .so 文件) 以及静态链接库 (Static Linking Library) 都是按照这种格式存储的。</p>
+<p><img src="17-05-12-21_19_17_1365_249.png" alt=""></p>
+<p>总体而言，程序源代码被编译后主要分成两种段: 程序指令和程序数据。代码段属于程序指令，而数据段和 .bss 段 (未初始化的全局变量和局部静态变量) 属于程序数据。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">printf</span><span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* format, ... )</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> global_init_var = <span class="number">84</span>;</span><br><span class="line"><span class="keyword">int</span> global_uninit_var;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func1</span><span class="params">( <span class="keyword">int</span> i )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>( <span class="string">"%d\n"</span>, i );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> static_var = <span class="number">85</span>;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> static_var2;</span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> b;</span><br><span class="line">    func1( static_var + static_var2 + a + b );</span><br><span class="line">    <span class="keyword">return</span> a;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们使用 <code>gcc -c simplesection.c</code> 来编译，参数 <code>-c</code> 表示只编译不链接</p>
+<p><img src="17-05-12-21_29_17_1058_503.png" alt=""></p>
+<p>有一个专门的命令叫做 <code>size</code>，它可以专门用来查看 <strong>ELF</strong> 文件的各个段的长度:</p>
+<p><img src="17-05-12-21_31_14_761_84.png" alt=""></p>
+<p><code>objdump</code> 的 <code>-s</code> 参数可以将所有段的内容以十六进制打印出来，<code>-d</code> 参数可以将所有包含指令的段反编译:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">objdump -s -d simplesection.o</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>

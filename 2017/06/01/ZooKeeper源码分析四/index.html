@@ -1,0 +1,132 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>ZooKeeper源码分析(四) - dataTree</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="ZooKeeper源码分析-四-dataTree"><a href="#ZooKeeper源码分析-四-dataTree" class="headerlink" title="ZooKeeper源码分析(四) - dataTree"></a>ZooKeeper源码分析(四) - dataTree</h2><h3 id="创建-snapshot"><a href="#创建-snapshot" class="headerlink" title="创建 snapshot"></a>创建 <code>snapshot</code></h3><p>我们在运行 <code>ZooKeeperServer</code> 的时候，需要至少传入两个参数:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2181 /home/zk/Documents/github/zookeeper/zookeeper/datadir</span><br></pre></td></tr></table></figure>
+<p>一个是服务器监听的端口号，另外一个是 <code>ZooKeeperServer</code> 用来存放数据的文件夹 (注意，此文件夹一定要实现创建好，<code>ZooKeeperServer</code> 是不会默认为你创建的)。接下来我们就会对这个文件夹内创建的文件做详细分析。<code>ZooKeeperServer</code> 的 <code>main</code> 方法实例化了 <code>ZooKeeperServer</code> 服务，并调用了自身的 <code>startup</code> 方法来启动服务，在 <code>startup</code> 方法其会尝试进行加载数据:</p>
+<p><img src="17-06-01-10_12_19_793_168.png" alt=""></p>
+<p>在首次运行 <code>ZooKeeperServer</code> 的时候，这个文件夹是空的，所以位于 <code>loadData()</code> 中的一些代码并不会执行，简而言之，<code>loadData()</code> 首次运行主要是创建了一个文件: <code>snapshot.0</code> ，其中 <code>0</code> 代表的是事务 ID，由于首次事务 ID 从 <code>0</code> 开始，所以第一个运行 <code>ZooKeeperServer</code> 就会创建这个文件。<code>snapshot</code> 方法接着会将这个文件写到文件夹中去:</p>
+<p><img src="17-06-01-10_27_40_886_234.png" alt=""></p>
+<h3 id="序列化-dataTree-到-snapshot-中"><a href="#序列化-dataTree-到-snapshot-中" class="headerlink" title="序列化 dataTree 到 snapshot 中"></a>序列化 <code>dataTree</code> 到 <code>snapshot</code> 中</h3><p>在关闭 <code>snapshot</code> 的输出流之前，会序列化一些数据到这个文件中去，首先在 <code>snapshot(BinaryOutputArchive oa)</code> 这个方法中会把一些会话超时信息序列化到文件中去，然后接着会调用 <code>dataTree.serialize</code> 方法来序列化整个 <code>dataTree</code> 的信息到这个文件中去:</p>
+<p><img src="17-06-01-10_29_25_802_316.png" alt=""></p>
+<p><code>serialize</code> 方法，会从空字符串的路径开始序列化整个数据树，并采用深度优先算法依次调用 <code>serializeNode</code> 方法来序列化每一个节点:</p>
+<p><img src="17-06-01-10_49_40_664_254.png" alt=""></p>
+<p><code>serializeNode</code> 会依次拼接子路径，然后将路径字符串和节点信息一并写到文件中去:</p>
+<p><img src="17-06-01-11_12_25_717_529.png" alt=""></p>
+<p>在 <code>DataNode</code> 中，会看到每个节点，主要是把 <code>data、acl、stat</code> 这三个信息序列化到文件中去了:</p>
+<p><img src="17-06-01-11_00_41_852_381.png" alt=""></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>data</code></td>
+<td>每个节点存储的二进制字节数据</td>
+</tr>
+<tr>
+<td><code>acl</code></td>
+<td>用于对节点的访问控制</td>
+</tr>
+<tr>
+<td><code>stat</code></td>
+<td>每个节点的状态信息</td>
+</tr>
+</tbody>
+</table>
+<p><code>Stat</code> 结构中存储并将会序列化的信息如下:</p>
+<p><img src="17-06-01-11_19_47_456_212.png" alt=""></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>czxid</code></td>
+<td>创建这个节点的事务 ID</td>
+</tr>
+<tr>
+<td><code>mzxid</code></td>
+<td>上一次修改这个节点的事务 ID</td>
+</tr>
+<tr>
+<td><code>ctime</code></td>
+<td>创建的时间戳</td>
+</tr>
+<tr>
+<td><code>mtime</code></td>
+<td>修改的时间戳</td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>这个节点中的数据变化的次数</td>
+</tr>
+<tr>
+<td><code>cversion</code></td>
+<td>这个节点的孩子中的数据变化的次数</td>
+</tr>
+<tr>
+<td><code>aversion</code></td>
+<td>这个节点中 ACL 变化的次数</td>
+</tr>
+<tr>
+<td><code>ephemeralOwner</code></td>
+<td>临时节点 (如果是) 的会话 ID 的拥有者，如果不是，则默认为 0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="当第一次客户端连接"><a href="#当第一次客户端连接" class="headerlink" title="当第一次客户端连接"></a>当第一次客户端连接</h3><h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://zookeeper.apache.org/doc/trunk/zookeeperProgrammers.html" target="_blank" rel="noopener">ZooKeeper Programmer’s Guide</a></li>
+<li><a href="https://zookeeper.apache.org/doc/r3.3.2/zookeeperInternals.html" target="_blank" rel="noopener">ZooKeeper Internals</a></li>
+</ul>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>

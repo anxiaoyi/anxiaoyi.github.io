@@ -1,0 +1,60 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>zookeeper</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h3 id="构建一个可编译的全-Java-环境"><a href="#构建一个可编译的全-Java-环境" class="headerlink" title="构建一个可编译的全 Java 环境"></a>构建一个可编译的全 Java 环境</h3><p><img src="2017_09_21_11_25_40.png" alt=""></p>
+<p><img src="2017_09_21_11_35_06.png" alt=""></p>
+<h3 id="datadir-存放什么"><a href="#datadir-存放什么" class="headerlink" title="datadir 存放什么"></a>datadir 存放什么</h3><p><img src="2017_09_21_14_49_10.png" alt=""></p>
+<h3 id="服务器启动时做了什么"><a href="#服务器启动时做了什么" class="headerlink" title="服务器启动时做了什么"></a>服务器启动时做了什么</h3><ul>
+<li><code>JettyAdminServer</code></li>
+<li><code>NIOServerCnxnFactory</code></li>
+<li><code>SessionTrackerImpl</code></li>
+<li>加载/创建 <code>snapshot</code></li>
+<li><code>ContainerManager</code></li>
+</ul>
+<h3 id="如何计算平均延迟"><a href="#如何计算平均延迟" class="headerlink" title="如何计算平均延迟"></a>如何计算平均延迟</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">updateLatency</span><span class="params">(<span class="keyword">long</span> requestCreateTime)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> latency = System.nanoTime() / <span class="number">1000000</span> - requestCreateTime;</span><br><span class="line">    totalLatency += latency;</span><br><span class="line">    count++;</span><br><span class="line">    <span class="keyword">if</span> (latency &lt; minLatency) &#123;</span><br><span class="line">        minLatency = latency;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (latency &gt; maxLatency) &#123;</span><br><span class="line">        maxLatency = latency;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>If you are interested in <strong>measuring/calculating</strong> elapsed time, then always use <code>System.nanoTime()</code>.</p>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>

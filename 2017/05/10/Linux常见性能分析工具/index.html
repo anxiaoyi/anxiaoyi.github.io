@@ -1,0 +1,128 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>Linux常见性能分析工具</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="Linux常见性能分析工具"><a href="#Linux常见性能分析工具" class="headerlink" title="Linux常见性能分析工具"></a>Linux常见性能分析工具</h2><p>首先需要执行安装命令 <code>sysstat</code> :</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install sysstat</span><br></pre></td></tr></table></figure>
+<h3 id="vmstat-Virtual-Memory-Statistics-监控内存和-CPU"><a href="#vmstat-Virtual-Memory-Statistics-监控内存和-CPU" class="headerlink" title="vmstat - Virtual Memory Statistics - 监控内存和 CPU"></a>vmstat - Virtual Memory Statistics - 监控内存和 CPU</h3><p>每 1 秒更新一次输出信息:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vmstat 1</span><br></pre></td></tr></table></figure>
+<p>可以看到用红色框住的部分，有着很高的 cs (上下文切换) 值和 us(用户 CPU 时间) 值，表明系统上下文切换频繁，用户 CPU 占用率高:</p>
+<p><img src="17-06-14-17_50_25_1093_203.png" alt=""></p>
+<p>一般这样的代码容易产生上下文切换比较频繁的情况:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (lock[i]) &#123;</span><br><span class="line">        <span class="keyword">if</span> (i % <span class="number">2</span> == <span class="number">0</span>) &#123;</span><br><span class="line">            lock[i].wait(r.nextInt(<span class="number">10</span>));</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            lock[i].notifyAll();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>每 1 秒采样一次，共计 3 次:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vmstat 1 3</span><br></pre></td></tr></table></figure>
+<p><img src="17-05-10-10_21_37_1064_422.png" alt=""></p>
+<p>查看是否有<strong>大量磁盘交换</strong>，对于没有磁盘交换的服务器，这些值应该为 0:</p>
+<p><img src="17-07-07-15_39_00_815_173.png" alt=""></p>
+<h3 id="iostat-监控-I-O-使用-判断-I-O-是否过载"><a href="#iostat-监控-I-O-使用-判断-I-O-是否过载" class="headerlink" title="iostat - 监控 I/O 使用 - 判断 I/O 是否过载"></a>iostat - 监控 I/O 使用 - 判断 I/O 是否过载</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iostat 1 2</span><br></pre></td></tr></table></figure>
+<p>只输出磁盘使用情况:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iostat -d 1 2</span><br></pre></td></tr></table></figure>
+<h3 id="pidstat-监视进程和线程"><a href="#pidstat-监视进程和线程" class="headerlink" title="pidstat - 监视进程和线程"></a>pidstat - 监视进程和线程</h3><p>什么叫做占用 CPU 的线程:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(<span class="keyword">true</span>) &#123;</span><br><span class="line">    <span class="keyword">double</span> a = Math.random() * Math.random();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>什么叫做空闲线程:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(<span class="keyword">true</span>) &#123;</span><br><span class="line">    Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用 <code>jps</code> 找到 <code>Java</code> 程序的 <code>PID</code> 1187，然后执行下面命令查看 CPU 使用情况:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pidstat -p 1187 -u 1 3</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>-p</strong>: 指定进程 ID</li>
+<li><strong>-u</strong>: 对 CPU 使用率的监控</li>
+</ul>
+<p>监控线程信息:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pidstat -p 1187 1 3 -u -t</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>-t</strong>: 监控线程信息，输出的时候会多一个 <strong>TID</strong> 参数</li>
+</ul>
+<p><img src="17-06-14-20_12_26_1254_310.png" alt=""></p>
+<p>使用 <code>jstack</code> 可以导出指定 Java 应用程序的所有线程:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jstack -l 1187 &gt; /tmp/t.txt</span><br></pre></td></tr></table></figure>
+<p><img src="17-06-14-20_12_58_1211_257.png" alt=""></p>
+<p>如图所示，它的 <strong>nid (native ID)</strong> 为 0x4b4，转为 10 进制后，正好是 1024</p>
+<hr>
+<p><strong>有大量读写的线程</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">FileOutputStream fos = <span class="keyword">new</span> FileOutputStream(<span class="keyword">new</span> File(<span class="string">"temp"</span>));</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">10000</span>; i++) &#123;</span><br><span class="line">    fos.write(i);</span><br><span class="line">&#125;</span><br><span class="line">fos.close();</span><br><span class="line">FileInputStream fis = <span class="keyword">new</span> FileInputStream(<span class="keyword">new</span> File(<span class="string">"temp"</span>));</span><br><span class="line"><span class="keyword">while</span> (fis.read() != -<span class="number">1</span>) ;</span><br></pre></td></tr></table></figure>
+<p>使用如下命令监控磁盘 I/O 情况:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pidstat -p 22796 -d -t 1 3</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>-d</strong>: 监控磁盘 I/O</li>
+</ul>
+<hr>
+<p>进行内存监控</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pidstat -r -p 27233 1 5</span><br></pre></td></tr></table></figure>
+<h3 id="free-Display-amount-of-free-and-used-内存-in-the-system"><a href="#free-Display-amount-of-free-and-used-内存-in-the-system" class="headerlink" title="free - Display amount of free and used 内存 in the system"></a>free - Display amount of free and used 内存 in the system</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 以 M 为单位查看</span><br><span class="line">free -mt</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>-t</strong>: </li>
+<li><strong>–total</strong>: Display a line showing the column totals.</li>
+<li><strong>-h</strong>: human readable</li>
+</ul>
+<p><img src="17-05-10-10_34_20_1046_350.png" alt=""></p>
+<h3 id="sar-收集-报告以及保存系统活动信息"><a href="#sar-收集-报告以及保存系统活动信息" class="headerlink" title="sar - 收集, 报告以及保存系统活动信息"></a>sar - 收集, 报告以及保存系统活动信息</h3><p>首次使用，需要编辑文件:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/etc/default/sysstat</span><br></pre></td></tr></table></figure>
+<p>将里面的内容改为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">#</span><br><span class="line"># Default settings for /etc/init.d/sysstat, /etc/cron.d/sysstat</span><br><span class="line"># and /etc/cron.daily/sysstat files</span><br><span class="line">#</span><br><span class="line"></span><br><span class="line"># Should sadc collect system activity informations? Valid values</span><br><span class="line"># are &quot;true&quot; and &quot;false&quot;. Please do not put other values, they</span><br><span class="line"># will be overwritten by debconf!</span><br><span class="line">ENABLED=&quot;true&quot;</span><br></pre></td></tr></table></figure>
+<p>然后重新启动 <code>systat</code>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo service sysstat restart</span><br></pre></td></tr></table></figure>
+<p>才能直接使用 <code>sar</code></p>
+<h3 id="uptime-Tell-how-long-the-system-has-been-running"><a href="#uptime-Tell-how-long-the-system-has-been-running" class="headerlink" title="uptime - Tell how long the system has been running"></a>uptime - Tell how long the system has been running</h3><p><img src="17-05-10-10_42_04_931_272.png" alt=""></p>
+<h3 id="mpstat-Report-processors-related-statistics"><a href="#mpstat-Report-processors-related-statistics" class="headerlink" title="mpstat - Report processors related statistics"></a>mpstat - Report processors related statistics</h3><h3 id="netstat"><a href="#netstat" class="headerlink" title="netstat"></a>netstat</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">netstat -an</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>-a</strong>:</li>
+<li><strong>–all</strong>: 显示所有的监听和未监听的 Sockets</li>
+<li><strong>-n</strong>:</li>
+<li><strong>–numeric</strong>: 显示数字的地址，而不是显示 symbolic 地址，端口或用户名</li>
+</ul>
+<h3 id="top-显示系统整体资源使用情况"><a href="#top-显示系统整体资源使用情况" class="headerlink" title="top - 显示系统整体资源使用情况"></a>top - 显示系统整体资源使用情况</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 每隔 3 秒刷新一次</span></span><br><span class="line">top -d 3</span><br></pre></td></tr></table></figure>
+<h3 id="lsof-list-open-files"><a href="#lsof-list-open-files" class="headerlink" title="lsof - list open files"></a>lsof - list open files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsof -p <span class="variable">$PID</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>-p $PID</strong>: excludes or selects the listing  of  files  for  the  processes  whose  optional process  IDentification  (PID)  numbers are in the comma-separated set s.</li>
+</ul>
+<h3 id="strace-trace-system-calls-and-signals"><a href="#strace-trace-system-calls-and-signals" class="headerlink" title="strace - trace system calls and signals"></a>strace - trace system calls and signals</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strace git status</span><br></pre></td></tr></table></figure>
+<p>参考 <a href="https://item.jd.com/10948631481.html" target="_blank" rel="noopener">《TCP/IP高效编程改善网络程序的44个技巧》</a></p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://item.jd.com/1247899762.html" target="_blank" rel="noopener">《高性能Linux服务器构建实战:运维监控、性能调优与集群应用》</a></li>
+<li><a href="https://item.jd.com/11670385.html" target="_blank" rel="noopener">《实战 Java 虚拟机》</a></li>
+</ul>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>

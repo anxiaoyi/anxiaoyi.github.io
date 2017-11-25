@@ -1,0 +1,77 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>nginx</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="Nginx"><a href="#Nginx" class="headerlink" title="Nginx"></a>Nginx</h2><h3 id="默认配置文件"><a href="#默认配置文件" class="headerlink" title="默认配置文件"></a>默认配置文件</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/etc/nginx/nginx.conf</span><br></pre></td></tr></table></figure>
+<h3 id="转发请求"><a href="#转发请求" class="headerlink" title="转发请求"></a>转发请求</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">http &#123;</span><br><span class="line">    server &#123;</span><br><span class="line">        listen 80;</span><br><span class="line"></span><br><span class="line">        # 访问 / 的时候内部转发请求到 9001 端口</span><br><span class="line">        location / &#123;</span><br><span class="line">            proxy_pass http://localhost:9001/;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="server-block"><a href="#server-block" class="headerlink" title="server block"></a><code>server</code> block</h3><p>A server block is a subset of Nginx’s configuration that defines a virtual server used to handle requests of a defined type. Administrators often configure <strong>多个 <code>server</code> 块</strong> and decide which block should handle which connection based on the requested <strong>域名, 端口, IP 地址</strong>.</p>
+<p><code>server_name</code> 的匹配:</p>
+<ul>
+<li><code>Host</code> 头</li>
+<li>以 <code>*</code> 开头的字符匹配</li>
+<li>以 <code>*</code> 结尾的字符匹配</li>
+<li>以 <code>~</code> 开头的正则匹配</li>
+<li>选择默认的　<code>server block</code></li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">server &#123;</span><br><span class="line">    listen <span class="number">80</span>;</span><br><span class="line">    server_name example.com;</span><br><span class="line"></span><br><span class="line">    . . .</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">server &#123;</span><br><span class="line">    listen <span class="number">80</span>;</span><br><span class="line">    server_name ~^(www|host1).*\.example\.com$;</span><br><span class="line"></span><br><span class="line">    . . .</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">server &#123;</span><br><span class="line">    listen <span class="number">80</span>;</span><br><span class="line">    server_name ~^(subdomain|set|www|host1).*\.example\.com$;</span><br><span class="line"></span><br><span class="line">    . . .</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="location-block"><a href="#location-block" class="headerlink" title="location block"></a><code>location</code> block</h3><p>A location block lives within a server block and is used to define how Nginx should handle requests for <strong>different resources</strong> and URIs for the parent server. The URI space can be subdivided in whatever way the administrator likes using these blocks. It is an extremely flexible model.</p>
+<p><img src="2017_10_20_21_45_01.png" alt=""></p>
+<p><strong>前缀匹配</strong>:</p>
+<p><img src="2017_10_20_21_50_51.png" alt=""></p>
+<p><strong>正则敏感匹配</strong>:</p>
+<p><img src="2017_10_20_21_55_08.png" alt=""></p>
+<p><strong>阻止正则匹配</strong>:</p>
+<p><img src="2017_10_20_22_05_47.png" alt=""></p>
+<h3 id="nginx-是否启动"><a href="#nginx-是否启动" class="headerlink" title="nginx 是否启动"></a><code>nginx</code> 是否启动</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl status nginx</span><br></pre></td></tr></table></figure>
+<p>或者</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo service status nginx</span><br></pre></td></tr></table></figure>
+<h3 id="启动-nginx"><a href="#启动-nginx" class="headerlink" title="启动 nginx"></a>启动 <code>nginx</code></h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo service nginx start</span><br></pre></td></tr></table></figure>
+<h3 id="查看-nginx-有哪些命令"><a href="#查看-nginx-有哪些命令" class="headerlink" title="查看 nginx 有哪些命令"></a>查看 <code>nginx</code> 有哪些命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">zk@zk-Lenovo:~/Desktop$ sudo service nginx</span><br><span class="line">Usage: nginx &#123;start|stop|restart|reload|force-reload|status|configtest|rotate|upgrade&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="nginx-实际上在使用哪个位置的配置文件"><a href="#nginx-实际上在使用哪个位置的配置文件" class="headerlink" title="nginx 实际上在使用哪个位置的配置文件"></a><code>nginx</code> 实际上在使用哪个位置的配置文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo nginx -t</span><br></pre></td></tr></table></figure>
+<p>或者</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nginx -V</span><br></pre></td></tr></table></figure>
+<h3 id="待读文章"><a href="#待读文章" class="headerlink" title="待读文章"></a>待读文章</h3><p><a href="https://www.digitalocean.com/community/tutorials/understanding-nginx-server-and-location-block-selection-algorithms" target="_blank" rel="noopener">https://www.digitalocean.com/community/tutorials/understanding-nginx-server-and-location-block-selection-algorithms</a></p>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>
