@@ -57,27 +57,12 @@
 <h3 id="3-解析-Alias-标签"><a href="#3-解析-Alias-标签" class="headerlink" title="3. 解析 Alias 标签:"></a>3. 解析 Alias 标签:</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// DefaultBeanDefinitionDocumentReader.java</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">processAliasRegistration</span><span class="params">(Element ele)</span> </span>&#123;</span><br><span class="line">    String name = ele.getAttribute(NAME_ATTRIBUTE);</span><br><span class="line">    String alias = ele.getAttribute(ALIAS_ATTRIBUTE);</span><br><span class="line">    getReaderContext().getRegistry().registerAlias(name, alias);</span><br><span class="line">    getReaderContext().fireAliasRegistered(name, alias, extractSource(ele));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="4-解析-import-标签"><a href="#4-解析-import-标签" class="headerlink" title="4. 解析 import 标签:"></a>4. 解析 import 标签:</h3><p>获取位于 <code>&lt;resource&gt;</code> 属性中所表示的路径，然后判断是相对路径还是绝对路径，最后重新进行这个路径上 <code>bean</code> 资源文件的读取与加载:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// DefaultBeanDefinitionDocumentReader.java</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">importBeanDefinitionResource</span><span class="params">(Element ele)</span> </span>&#123;</span><br><span class="line">    String location = ele.getAttribute(RESOURCE_ATTRIBUTE);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Resolve system properties: e.g. "$&#123;user.dir&#125;"</span></span><br><span class="line">    location = getReaderContext().getEnvironment().resolveRequiredPlaceholders(location);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Discover whether the location is an absolute or relative URI</span></span><br><span class="line">    <span class="keyword">boolean</span> absoluteLocation = ResourcePatternUtils.isUrl(location) || ResourceUtils.toURI(location).isAbsolute();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Absolute or relative?</span></span><br><span class="line">    <span class="keyword">if</span> (absoluteLocation) &#123;</span><br><span class="line">        <span class="comment">// Another parse</span></span><br><span class="line">        getReaderContext().getReader().loadBeanDefinitions(location, actualResources);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// Convert relative to absolute path</span></span><br><span class="line">        <span class="keyword">int</span> importCount;</span><br><span class="line">        Resource relativeResource = getReaderContext().getResource().createRelative(location);</span><br><span class="line">        <span class="keyword">if</span> (relativeResource.exists()) &#123;</span><br><span class="line">            importCount = getReaderContext().getReader().loadBeanDefinitions(relativeResource);</span><br><span class="line">         &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    getReaderContext().fireImportProcessed(location, actResArray, extractSource(ele));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="5-嵌入式-beans-标签的解析"><a href="#5-嵌入式-beans-标签的解析" class="headerlink" title="5. 嵌入式 beans 标签的解析"></a>5. 嵌入式 beans 标签的解析</h3><p>递归调用 <code>beans</code> 的解析过程</p>
+<h3 id="5-嵌入式-beans-标签的解析"><a href="#5-嵌入式-beans-标签的解析" class="headerlink" title="5. 嵌入式 beans 标签的解析"></a>5. 嵌入式 beans 标签的解析</h3><p>递归调用 <code>beans</code> 的解析过程</p><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 
 
 
 
 
-<script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-        tex2jax: {
-            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
-            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-            processEscapes: true
-        }
-    });
-    MathJax.Hub.Queue(function() {
-        var all = MathJax.Hub.getAllJax();
-        for (var i = 0; i < all.length; ++i)
-            all[i].SourceElement().parentNode.className += ' has-jax';
-    });
-</script>
-<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 </body>
 </html>

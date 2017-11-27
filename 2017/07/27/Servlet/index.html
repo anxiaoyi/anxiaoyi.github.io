@@ -134,26 +134,40 @@
 <h4 id="线程安全"><a href="#线程安全" class="headerlink" title="线程安全"></a>线程安全</h4><p>That said, your major concern is possibly thread safety. You should now know that servlets and filters are shared among all requests. That’s the nice thing of Java, it’s <strong>多线程</strong> and different threads (read: HTTP requests) <strong>使用相同实例</strong>. It would otherwise be too expensive to recreate, <code>init()</code> and <code>destroy()</code> them for every single request.</p>
 <p>You should also realize that you should never assign any request or session scoped data as <strong>实例上的某个变量</strong> of a servlet or filter. It will be shared among all other requests in other sessions. That’s <strong>非线程安全</strong>! The below example illustrates this:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ExampleServlet</span> <span class="keyword">extends</span> <span class="title">HttpServlet</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object thisIsNOTThreadSafe;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doGet</span><span class="params">(HttpServletRequest request, HttpServletResponse response)</span> <span class="keyword">throws</span> ServletException, IOException </span>&#123;</span><br><span class="line">        Object thisIsThreadSafe;</span><br><span class="line"></span><br><span class="line">        thisIsNOTThreadSafe = request.getParameter(<span class="string">"foo"</span>); <span class="comment">// BAD!! Shared among all requests!</span></span><br><span class="line">        thisIsThreadSafe = request.getParameter(<span class="string">"foo"</span>); <span class="comment">// OK, this is thread safe.</span></span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Jetty"><a href="#Jetty" class="headerlink" title="Jetty"></a><a href="https://www.youtube.com/watch?v=8QCC4HaSy58" target="_blank" rel="noopener"><code>Jetty</code></a></h3><ul>
+<li><code>Jetty 7</code> –&gt; <code>Servlet 2.5</code></li>
+<li><code>Jetty 8,9</code> –&gt; <code>Servlet 3.0</code></li>
+<li><code>Jetty 9.1</code> –&gt; <code>Servlet 3.1</code></li>
+</ul>
+<p>Rethink locking for “mechanical sympathy”:</p>
+<ul>
+<li>Jetty 9 core rewrite taking that in account</li>
+<li>Keep thread context switching at minimum</li>
+<li>Reduce/Eliminate false sharing</li>
+<li>Use concurrent data structures</li>
+<li>Avoid <code>synchronized</code> in favor of atomic state machines</li>
+</ul>
+<p>Jetty 9.1 is 30% faster than Jetty 8</p>
+<ul>
+<li>Easy to push it to 70k or more requests/s    </li>
+<li>Easy to get it to 250k connections</li>
+</ul>
+<p>HTTP Limits (HTTP is an old protocol):</p>
+<ul>
+<li>Not bidirectional</li>
+<li>No mutiplexing</li>
+<li>No resource correlation</li>
+</ul>
+<p>Servlet Container need to become polyglot:</p>
+<ul>
+<li><code>WebSocket</code>: to support bidirectional communication</li>
+<li><code>SPDY</code>: to transport more efficiently today’s web</li>
+</ul><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 
 
 
 
 
-<script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-        tex2jax: {
-            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
-            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-            processEscapes: true
-        }
-    });
-    MathJax.Hub.Queue(function() {
-        var all = MathJax.Hub.getAllJax();
-        for (var i = 0; i < all.length; ++i)
-            all[i].SourceElement().parentNode.className += ' has-jax';
-    });
-</script>
-<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 </body>
 </html>

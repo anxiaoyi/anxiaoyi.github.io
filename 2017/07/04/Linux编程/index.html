@@ -36,27 +36,12 @@
 <h3 id="1-2-读取文件"><a href="#1-2-读取文件" class="headerlink" title="1.2 读取文件"></a>1.2 读取文件</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="comment">// buf: 数据将会被存储在 buf 区域中</span></span><br><span class="line"><span class="keyword">ssize_t</span> read (<span class="keyword">int</span> fd, <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> len);</span><br></pre></td></tr></table></figure>
 <p>A call is made for len bytes, but no bytes are available for reading, the call will block (sleep) until the bytes become available (assuming the file descriptor was not opened in nonblocking mode)</p>
 <p>The call may returns a value less than len, but greater than zero. The read bytes are stored in buf. This can occur because <strong>a signal interrupted the read midway; an error occurred in the middle of the read; more than zero, but less than len bytes’ worth of data was available; or EOF was reached before len bytes were read.</strong> Reissuing the<br>read (with correspondingly updated buf and len values) will read the remaining bytes into the rest of the buffer or indicate the cause of the problem.</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ssize_t</span> ret;</span><br><span class="line"><span class="keyword">while</span> (len != <span class="number">0</span> &amp;&amp; (ret = read (fd, buf, len)) != <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (ret == −<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (errno == EINTR)</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        perror (<span class="string">"read"</span>);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    len -= ret;</span><br><span class="line">    buf += ret;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ssize_t</span> ret;</span><br><span class="line"><span class="keyword">while</span> (len != <span class="number">0</span> &amp;&amp; (ret = read (fd, buf, len)) != <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (ret == −<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (errno == EINTR)</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        perror (<span class="string">"read"</span>);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    len -= ret;</span><br><span class="line">    buf += ret;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 
 
 
 
 
-<script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-        tex2jax: {
-            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
-            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-            processEscapes: true
-        }
-    });
-    MathJax.Hub.Queue(function() {
-        var all = MathJax.Hub.getAllJax();
-        for (var i = 0; i < all.length; ++i)
-            all[i].SourceElement().parentNode.className += ' has-jax';
-    });
-</script>
-<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 </body>
 </html>

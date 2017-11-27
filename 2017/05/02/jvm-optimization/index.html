@@ -554,6 +554,101 @@
 </ul>
 <hr>
 <p><img src="2017_11_06_11_31_19.png" alt=""></p>
+<h3 id="Analyzing-HotSpot-Crashes"><a href="#Analyzing-HotSpot-Crashes" class="headerlink" title="Analyzing HotSpot Crashes"></a>Analyzing HotSpot Crashes</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Crash</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">final</span> <span class="keyword">static</span> Unsafe	UNSAFE = getUnsafe();</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">crash</span><span class="params">(<span class="keyword">int</span> x)</span> </span>&#123;</span><br><span class="line">		UNSAFE.putInt(<span class="number">0x99</span>, x);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String...args)</span> </span>&#123;</span><br><span class="line">		crash(<span class="number">0x42</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>RAX</code>: register a extended, 64 bit register</li>
+<li><code>RDX</code>: register d extended, 64 bit register</li>
+<li><code>EAX</code>: 32 bit register</li>
+<li><code>R9</code>: register 9</li>
+</ul>
+<p><img src="2017_11_26_14_34_54.png" alt=""></p>
+<h3 id="JVM-Tuning-at-Twitter"><a href="#JVM-Tuning-at-Twitter" class="headerlink" title="JVM Tuning at Twitter"></a><a href="https://www.youtube.com/watch?v=8wHx31mvSLY" target="_blank" rel="noopener">JVM Tuning at Twitter</a></h3><p>Web services biggest enemy:</p>
+<ul>
+<li>Latency</li>
+</ul>
+<p>Server-side Latency contributors:</p>
+<ul>
+<li>By far the biggest contributror is garbage collector</li>
+<li>others are, in no particular order:<ul>
+<li>in-process locking and thread scheduling</li>
+<li>I/O</li>
+<li>application algorithm inefficiencies</li>
+</ul>
+</li>
+</ul>
+<p>Areas of performance tuning:</p>
+<ul>
+<li>Memory tuning</li>
+<li>Lock contention tuning</li>
+<li>CPU usage tuning</li>
+<li>I/O tuning</li>
+</ul>
+<hr>
+<p>Areas of memory performance tuning:</p>
+<ul>
+<li>Memory footprint tuning</li>
+<li>Allocation rate tuning</li>
+<li>Garbage collection tuning</li>
+</ul>
+<hr>
+<p>Memory footprint tuning:</p>
+<ul>
+<li>Maybe you have too much data !</li>
+<li>Maybe your data representation is fat !</li>
+<li>You can also have a genuine memory leack …</li>
+</ul>
+<hr>
+<p>Too much data:</p>
+<ul>
+<li>Run with <code>-verbosegc</code></li>
+<li>Observe numbers in “Full GC” messages</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[Full GC $before-&gt;$after($total), $time secs]</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Can you give the JVM more memory ?</li>
+<li>Do you need all that data in memory ? Consider using:<ul>
+<li>a LRU cache</li>
+<li>soft references</li>
+</ul>
+</li>
+</ul>
+<hr>
+<p>Fat data: object header</p>
+<ul>
+<li>JVM objects is normally two machine words.</li>
+<li>That’s 16 bytes, or 128 bits on a 64-bit JVM!</li>
+<li><code>new java.lang.Object()</code> takes 16 bytes.</li>
+<li><code>new byte[0]</code> takes 24 bytes.<ul>
+<li>16 bytes object header</li>
+<li>4 bytes for the length of the array</li>
+<li>4 bytes of padding</li>
+</ul>
+</li>
+</ul>
+<hr>
+<p>Fat data: padding</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span> </span>&#123;</span><br><span class="line">	<span class="keyword">byte</span> x;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span> <span class="keyword">extends</span> <span class="title">A</span> </span>&#123;</span><br><span class="line">	<span class="keyword">byte</span> y;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>new A()</code> takes 24 bytes<ul>
+<li>16 bytes object header</li>
+<li>1 byte filed</li>
+<li>7 bytes padding</li>
+</ul>
+</li>
+<li><code>new B()</code> takes 32 bytes<ul>
+<li>16 bytes object header</li>
+<li>1 byte for x</li>
+<li>7 bytes padding</li>
+<li>1 byte for y</li>
+<li>7 bytes padding</li>
+</ul>
+</li>
+</ul>
+<p>Fat data: no inline structs</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">C</span> </span>&#123;</span><br><span class="line">	Object A = <span class="keyword">new</span> Object();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>new C()</code> takes 40 bytes</li>
+</ul>
 <h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
 <li><a href="https://item.jd.com/11099999.html" target="_blank" rel="noopener">《Java 程序性能优化》</a></li>
 <li><a href="http://www.journaldev.com/2856/java-jvm-memory-model-memory-management-in-java" target="_blank" rel="noopener">Java (JVM) Memory Model – Memory Management in Java</a></li>
@@ -565,27 +660,12 @@
 <li><a href="https://www.amazon.com/Java-Performance-Definitive-Guide-Getting/dp/1449358454/" target="_blank" rel="noopener">《Java Performance: The Definitive Guide》</a></li>
 <li><a href="https://item.jd.com/11908449.html" target="_blank" rel="noopener">《大话 Java 性能调优》</a></li>
 <li><a href="https://item.jd.com/12087807.html" target="_blank" rel="noopener">《深入理解 JVM &amp; G1 GC》</a></li>
-</ul>
+</ul><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 
 
 
 
 
-<script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-        tex2jax: {
-            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
-            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-            processEscapes: true
-        }
-    });
-    MathJax.Hub.Queue(function() {
-        var all = MathJax.Hub.getAllJax();
-        for (var i = 0; i < all.length; ++i)
-            all[i].SourceElement().parentNode.className += ' has-jax';
-    });
-</script>
-<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 </body>
 </html>

@@ -73,26 +73,73 @@
 <h3 id="Configurable-可配置的作用"><a href="#Configurable-可配置的作用" class="headerlink" title="Configurable 可配置的作用"></a><code>Configurable</code> 可配置的作用</h3><p><img src="2017_11_02_22_08_42.png" alt=""></p>
 <p>然后提供一个基类:</p>
 <p><img src="2017_11_02_22_09_21.png" alt=""></p>
+<h3 id="The-Clean-Code-Talks"><a href="#The-Clean-Code-Talks" class="headerlink" title="The Clean Code Talks"></a>The Clean Code Talks</h3><ul>
+<li>Ask for Thinks ! Don’t look for Thinks !</li>
+</ul>
+<hr>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Document</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	String html;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Document</span><span class="params">(String url)</span> </span>&#123;</span><br><span class="line">		HtmlClient client = <span class="keyword">new</span> HtmlClient();</span><br><span class="line">		html = client.get(url);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>更好的写法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Document</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	String html;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Document</span><span class="params">(String html)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.html = html;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DocumentFactory</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	HtmlClient client;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">DocumentFactory</span><span class="params">(HtmlClient client)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.client = client;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function">Document <span class="title">build</span><span class="params">(String url)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">new</span> Document(client.get(url));</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<hr>
+<p><strong>Service Locator</strong>:</p>
+<p><img src="2017_11_26_16_10_28.png" alt=""></p>
+<p>应该这样做, The <code>House</code> has a clear API shown via the constructor:</p>
+<p><img src="2017_11_26_16_12_55.png" alt=""></p>
+<p>Service Locator 错在哪里:</p>
+<ul>
+<li>Mixing Respon    sibilities (Lookup, Factory)</li>
+</ul>
+<p>起如下这种名字的类都有可能有这种问题:</p>
+<ul>
+<li><code>Registry</code></li>
+<li><code>Locator</code></li>
+<li><code>Context</code></li>
+<li><code>Manager</code></li>
+<li><code>Handler</code></li>
+<li><code>Environment</code></li>
+<li><code>Principle</code></li>
+</ul>
+<hr>
+<p>违反迪米特法则:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Goods</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	AccountReceivable ar;</span><br><span class="line">	</span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">purchase</span><span class="params">(Customer c)</span> </span>&#123;</span><br><span class="line">		<span class="comment">// c.getWallet().getMoney() 违反 demeter 法则</span></span><br><span class="line">		Money m = c.getWallet().getMoney();</span><br><span class="line">		ar.recordSale(<span class="keyword">this</span>, m);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>遵循迪米特法则:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Goods</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	AccountReceivable ar;</span><br><span class="line">	</span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">purchase</span><span class="params">(Money m)</span> </span>&#123;</span><br><span class="line">		ar.recordSale(<span class="keyword">this</span>, m);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<hr>
+<p><strong>Law of Demeter</strong>:</p>
+<ul>
+<li>You only ask for objects which you directly need (operate on)</li>
+<li><code>a.getX().getY()</code> is a dead givaway</li>
+<li><code>serviceLocator.getService()</code> is breaking the Law of Demeter</li>
+<li>Dependency Injection of the specific object you need. Hollywood Principle.</li>
+</ul>
+<p>两个原则:</p>
+<ul>
+<li>业务逻辑不应该关心 object lookup of the construction, 它只需要说 I need all these things.</li>
+<li><code>Factory</code>, <code>Builder</code>, <code>DI</code> 负责将这些东西组装在一起</li>
+</ul>
+<h3 id="Good-API"><a href="#Good-API" class="headerlink" title="Good API"></a>Good API</h3><ul>
+<li>Easy to learn</li>
+<li>Easy to use, even without documentation</li>
+<li>Hard to misuse</li>
+<li>Easy to read and maintain code that uses it</li>
+<li>Sufficiently powerful to satisfy requirement</li>
+<li>Easy to evolve</li>
+</ul>
+<hr>
+<p>API should do one thing, and do it well.</p>
+<p>If it’s hard to name, that’s generally a bad sign.</p>
+<hr>
+<p>The fundamental rules of API design:</p>
+<ul>
+<li>When in doubt, leave it out.</li>
+<li>Don’t make the client    do anything the module could do.</li>
+</ul>
+<p>Reduce need for <strong>boilerplate code</strong></p><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 
 
 
 
 
-<script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-        tex2jax: {
-            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
-            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-            processEscapes: true
-        }
-    });
-    MathJax.Hub.Queue(function() {
-        var all = MathJax.Hub.getAllJax();
-        for (var i = 0; i < all.length; ++i)
-            all[i].SourceElement().parentNode.className += ' has-jax';
-    });
-</script>
-<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 </body>
 </html>
