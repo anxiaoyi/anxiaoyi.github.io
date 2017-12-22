@@ -387,6 +387,24 @@
 <p><img src="2017_11_21_14_59_09.png" alt=""></p>
 <p>This happens because your cron jobs are producing output and then the cron daemon tries to <strong>发送邮件</strong> that output to you. If you don’t need that output, the easiest way to solve this is to <strong>丢弃</strong> it at the crontab:</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">* * * * * yourCommand &gt;/dev/null 2&gt;&amp;1</span><br></pre></td></tr></table></figure>
+<hr>
+<p><code>cron</code> 环境的问题:</p>
+<p><code>Cron</code> provides only this environment by default :</p>
+<ul>
+<li><code>HOME</code> user’s home directory</li>
+<li><code>LOGNAME</code> user’s login</li>
+<li><code>PATH</code>=<code>/usr/bin:/usr/sbin</code></li>
+<li><code>SHELL</code>=<code>/usr/bin/sh</code></li>
+</ul>
+<p>If you need more you can <strong><code>source</code> a script</strong> where you define your environment before the scheduling table in the crontab.</p>
+<p>或者在自己写的脚本里面，指明路径:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="built_in">export</span> JAVA_HOME=/path/to/jdk</span><br><span class="line"></span><br><span class="line">some-other-command</span><br></pre></td></tr></table></figure>
+<hr>
+<p><code>top</code> 命令在 <code>cron</code> 里面没有输出的问题:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 应该加上 -b 参数</span></span><br><span class="line"><span class="comment"># :Batch-mode operation </span></span><br><span class="line"><span class="comment"># Starts top in Batch mode, which could be useful for sending output from top to other programs or to a file. </span></span><br><span class="line">top -b</span><br></pre></td></tr></table></figure>
+<ul>
+<li><a href="https://stackoverflow.com/questions/2229825/where-can-i-set-environment-variables-that-crontab-will-use" target="_blank" rel="noopener">参考</a></li>
+</ul>
 <h3 id="ls"><a href="#ls" class="headerlink" title="ls"></a>ls</h3><p><img src="17-08-16-16_46_41_784_270.png" alt=""></p>
 <h3 id="ps-ef-和-ps-aux"><a href="#ps-ef-和-ps-aux" class="headerlink" title="ps -ef 和 ps -aux"></a><code>ps -ef</code> 和 <code>ps -aux</code></h3><ul>
 <li><code>ps -ef</code>:</li>
@@ -704,6 +722,8 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo su -</span><br></pre></td></tr></table></figure>
 <p>就可以进来。</p>
 <h3 id="split-以及-merge"><a href="#split-以及-merge" class="headerlink" title="split 以及 merge"></a><code>split</code> 以及 <code>merge</code></h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 大文件切割为小文件</span></span><br><span class="line"><span class="comment"># 将会生成 WinXP_img_aa</span></span><br><span class="line"><span class="comment"># 将会生成 WinXP_img_ab</span></span><br><span class="line">split --bytes=2048m WinXP.img WinXP_img_</span><br><span class="line"></span><br><span class="line"><span class="comment"># 小文件合并成大文件</span></span><br><span class="line">cat WinXP_img_a* WinXP.img</span><br></pre></td></tr></table></figure>
+<h3 id="计算文件的-MD5-大小"><a href="#计算文件的-MD5-大小" class="headerlink" title="计算文件的 MD5 大小"></a>计算文件的 <code>MD5</code> 大小</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">md5sum xxx.iso</span><br></pre></td></tr></table></figure>
+<h3 id="查询-DNS"><a href="#查询-DNS" class="headerlink" title="查询 DNS"></a>查询 <code>DNS</code></h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nmcli device show eno1 | grep IP4.DNS</span><br></pre></td></tr></table></figure>
 <h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
 <li><a href="https://www.tutorialspoint.com/unix/unix-regular-expressions.htm" target="_blank" rel="noopener">Unix - Regular Expressions with SED</a></li>
 <li><a href="http://www.linfo.org/echo.html" target="_blank" rel="noopener">The echo Command</a></li>

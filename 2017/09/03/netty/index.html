@@ -23,8 +23,67 @@
 
 <body>
 
-<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="Netty"><a href="#Netty" class="headerlink" title="Netty"></a>Netty</h2><h3 id="io-netty-channel-FileRegion"><a href="#io-netty-channel-FileRegion" class="headerlink" title="io.netty.channel.FileRegion"></a><code>io.netty.channel.FileRegion</code></h3><p><strong>A region of a file</strong> that is sent via a <code>Channel</code> which supports <code>zero-copy file transfer</code>.</p>
-<h3 id="io-netty-channel-Channel"><a href="#io-netty-channel-Channel" class="headerlink" title="io.netty.channel.Channel"></a><code>io.netty.channel.Channel</code></h3><h3 id="io-netty-util-AbstractReferenceCounted"><a href="#io-netty-util-AbstractReferenceCounted" class="headerlink" title="io.netty.util.AbstractReferenceCounted"></a><code>io.netty.util.AbstractReferenceCounted</code></h3>
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="Netty"><a href="#Netty" class="headerlink" title="Netty"></a>Netty</h2><p><code>Netty</code> 是一个高性能、异步事件驱动的 <code>NIO</code> 框架，它提供了对<code>TCP</code>、<code>UDP</code>和文件传输的支持，作为一个异步<code>NIO</code>框架，<code>Netty</code>的所有<code>IO</code>操作都是异步非阻塞的，通过<code>Future-Listener</code>机制，用户可以方便的<strong>主动</strong>获取或者通过<strong>通知</strong>机制获得<code>IO</code>操作结果。</p>
+<h4 id="高性能的三个主题"><a href="#高性能的三个主题" class="headerlink" title="高性能的三个主题"></a>高性能的三个主题</h4><p>1) 传输：用什么样的通道将数据发送给对方，BIO、NIO或者AIO，IO模型在很大程度上决定了框架的性能。</p>
+<p>2) 协议：采用什么样的通信协议，HTTP或者内部私有协议。协议的选择不同，性能模型也不同。相比于公有协议，内部私有协议的性能通常可以被设计的更优。</p>
+<p>3) 线程：数据报如何读取？读取之后的编解码在哪个线程进行，编解码后的消息如何派发，Reactor线程模型的不同，对性能的影响也非常大。</p>
+<p>与传统的多线程/多进程模型比，I/O多路复用的最大优势是<strong>系统开销小，系统不需要创建新的额外进程或者线程，也不需要维护这些进程和线程的运行，降低了系统的维护工作量，节省了系统资源</strong>。</p>
+<p>Netty的IO线程NioEventLoop由于聚合了多路复用器Selector，可以同时并发处理成百上千个客户端Channel，由于读写操作都是非阻塞的，这就可以充分提升IO线程的运行效率，<strong>避免由于频繁IO阻塞导致的线程挂起</strong>。另外，由于Netty采用了异步通信模式，一个IO线程可以并发处理N个客户端连接和读写操作，这从根本上解决了传统同步阻塞IO一连接一线程模型，架构的性能、弹性伸缩能力和可靠性都得到了极大的提升。</p>
+<h4 id="零拷贝"><a href="#零拷贝" class="headerlink" title="零拷贝"></a>零拷贝</h4><p>1) <code>Netty</code>的接收和发送<code>ByteBuffer</code>采用<code>DIRECT BUFFERS</code>，使用<strong>堆外直接内存</strong>进行<code>Socket</code>读写，<strong>不需要进行字节缓冲区的二次拷贝</strong>。如果使用传统的堆内存（<code>HEAP BUFFERS</code>）进行<code>Socket</code>读写，<code>JVM</code>会将堆内存<code>Buffer</code>拷贝一份到直接内存中，然后才写入<code>Socket</code>中。相比于堆外直接内存，消息在发送过程中多了一次缓冲区的内存拷贝。</p>
+<p><img src="2017_12_22_14_11_53.png" alt="directBuffer"></p>
+<p>2) <code>Netty</code>提供了组合<code>Buffer</code>对象，可以聚合多个<code>ByteBuffer</code>对象，用户可以像操作一个<code>Buffer</code>那样方便的对组合Buffer进行操作，避免了传统通过内存拷贝的方式将几个小<code>Buffer</code>合并成一个大的<code>Buffer</code>。</p>
+<p><img src="2017_12_22_14_18_16.png" alt="CompositeByteBuf"></p>
+<p>3) <code>Netty</code>的文件传输采用了 <code>transferTo</code> 方法，它可以直接将文件缓冲区的数据发送到目标<code>Channel</code>，避免了传统通过循环<code>write</code>方式导致的<strong>内存拷贝问题</strong>。</p>
+<h4 id="内存池"><a href="#内存池" class="headerlink" title="内存池"></a>内存池</h4><p>随着<code>JVM</code>虚拟机和<code>JIT</code>即时编译技术的发展，对象的分配和回收是个非常轻量级的工作。但是对于缓冲区Buffer，情况却稍有不同，特别是<strong>对于堆外直接内存的分配和回收，是一件耗时的操作</strong>。为了尽量重用缓冲区，<code>Netty</code>提供了基于内存池的缓冲区重用机制。</p>
+<p><img src="2017_12_22_14_29_37.png" alt="PooledByteBufAllocator"><br><img src="2017_12_22_14_31_46.png" alt="PoolArena"></p>
+<p>我们重点分析<code>newByteBuf</code>的实现，它同样是个抽象方法，由子类<code>DirectArena</code>和<code>HeapArena</code>来实现不同类型的缓冲区分配。这两个实现类就在 <code>PoolArena.java</code> 文件里面。</p>
+<p><img src="2017_12_22_14_37_11.png" alt="PooledDirectByteBuf"></p>
+<p>通过<code>RECYCLER</code>的<code>get</code>方法循环使用<code>ByteBuf</code>对象，如果是非内存池实现，则直接创建一个新的<code>ByteBuf</code>对象。</p>
+<h4 id="高效的Reactor线程模型"><a href="#高效的Reactor线程模型" class="headerlink" title="高效的Reactor线程模型"></a>高效的Reactor线程模型</h4><p>常用的<code>Reactor</code>线程模型有三种，分别如下：</p>
+<p>1) <code>Reactor</code>单线程模型；</p>
+<p>指的是所有的IO操作都在<strong>同一个NIO线程</strong>上面完成，NIO线程的职责如下：</p>
+<ul>
+<li>作为NIO服务端，接收客户端的TCP连接；</li>
+<li>作为NIO客户端，向服务端发起TCP连接；</li>
+<li>读取通信对端的请求或者应答消息；</li>
+<li>向通信对端发送消息请求或者应答消息。</li>
+</ul>
+<p>由于<code>Reactor</code>模式使用的是异步非阻塞IO，所有的IO操作都不会导致阻塞，理论上一个线程可以独立处理所有IO相关的操作。从架构层面看，一个NIO线程确实可以完成其承担的职责。例如，通过<code>Acceptor</code>接收客户端的<code>TCP</code>连接请求消息，链路建立成功之后，通过<code>Dispatch</code>将对应的<code>ByteBuffer</code>派发到指定的<code>Handler</code>上进行消息解码。用户<code>Handler</code>可以通过<code>NIO</code>线程将消息发送给客户端。</p>
+<p><img src="https://res.infoq.com/articles/netty-high-performance/zh/resources/0808020.png" alt="single-thread-reactor"></p>
+<p>对于一些小容量应用场景，可以使用单线程模型。但是对于高负载、大并发的应用却不合适，主要原因如下：</p>
+<ul>
+<li>一个NIO线程同时处理成百上千的链路，性能上无法支撑，即便NIO线程的CPU负荷达到100%，也无法满足海量消息的编码、解码、读取和发送；</li>
+<li>当<strong>NIO线程负载过重之后，处理速度将变慢</strong>，这会导致大量客户端连接超时，超时之后往往会进行重发，这更加重了NIO线程的负载，最终会导致大量消息积压和处理超时，NIO线程会成为系统的性能瓶颈；</li>
+<li>可靠性问题：一旦NIO线程意外跑飞，或者进入死循环，会导致整个系统通信模块不可用，不能接收和处理外部消息，造成节点故障。</li>
+</ul>
+<p>2) <code>Reactor</code>多线程模型；</p>
+<p><code>Rector</code>多线程模型与单线程模型最大的区别就是有一组<code>NIO</code>线程处理<code>IO</code>操作，它的原理图如下：</p>
+<p><img src="https://res.infoq.com/articles/netty-high-performance/zh/resources/08080211.png" alt="multi-thread-reactor"></p>
+<p>Reactor多线程模型的特点：</p>
+<ul>
+<li>有专门一个<code>NIO</code>线程-Acceptor线程用于监听服务端，接收客户端的TCP连接请求；</li>
+<li>网络IO操作-读、写等由一个NIO线程池负责，线程池可以采用标准的JDK线程池实现，它包含一个任务队列和N个可用的线程，由这些NIO线程负责消息的读取、解码、编码和发送；</li>
+<li>1个NIO线程可以同时处理N条链路，但是1个链路只对应1个NIO线程，防止发生并发操作问题。</li>
+</ul>
+<p>在绝大多数场景下，<code>Reactor</code>多线程模型都可以满足性能需求；但是，在极特殊应用场景中，一个NIO线程负责监听和处理所有的客户端连接可能会存在性能问题。例如<strong>百万客户端并发连接</strong>，或者服务端需要对客户端的握手消息进行安全认证，认证本身非常损耗性能。在这类场景下，<strong>单独一个<code>Acceptor</code>线程可能会存在性能不足问题</strong>，为了解决性能问题，产生了第三种<code>Reactor</code>线程模型-主从Reactor多线程模型。</p>
+<p>3) 主从<code>Reactor</code>多线程模型</p>
+<p>主从<code>Reactor</code>线程模型的特点是：服务端用于接收客户端连接的不再是个1个单独的NIO线程，而是一个独立的NIO线程池。Acceptor接收到客户端TCP连接请求处理完成后（可能包含接入认证等），将新创建的<code>SocketChannel</code>注册到IO线程池（sub reactor线程池）的某个IO线程上，由它负责<code>SocketChannel</code>的读写和编解码工作。<code>Acceptor</code>线程池仅仅只用于客户端的登陆、握手和安全认证，一旦链路建立成功，就将链路注册到后端subReactor线程池的IO线程上，由IO线程负责后续的IO操作。</p>
+<p><img src="https://res.infoq.com/articles/netty-high-performance/zh/resources/08080221.png" alt="master-sub-reactor"></p>
+<p>利用主从<code>NIO</code>线程模型，可以解决1个服务端监听线程无法有效处理所有客户端连接的性能不足问题。因此，在Netty的官方demo中，推荐使用该线程模型。</p>
+<p>事实上，<strong><code>Netty</code>的线程模型并非固定不变</strong>，通过在启动辅助类中创建不同的<code>EventLoopGroup</code>实例并通过适当的参数配置，就可以支持上述三种<code>Reactor</code>线程模型。正是因为<code>Netty</code> 对<code>Reactor</code>线程模型的支持提供了灵活的定制能力，所以可以满足不同业务场景的性能诉求。</p>
+<h4 id="无锁化的串行设计理念"><a href="#无锁化的串行设计理念" class="headerlink" title="无锁化的串行设计理念"></a>无锁化的串行设计理念</h4><p>在大多数场景下，并行多线程处理可以提升系统的并发性能。但是，如果对于共享资源的并发访问处理不当，会带来严重的锁竞争，这最终会导致性能的下降。为了尽可能的避免锁竞争带来的性能损耗，可以通过串行化设计，即<strong>消息的处理尽可能在同一个线程内完成</strong>，期间不进行线程切换，这样就避免了多线程竞争和同步锁。</p>
+<p>为了尽可能提升性能，<code>Netty</code>采用了串行无锁化设计，在IO线程内部进行串行操作，避免多线程竞争导致的性能下降。表面上看，串行化设计似乎CPU利用率不高，并发程度不够。但是，通过调整NIO线程池的线程参数，可以同时启动多个串行化的线程并行运行，这种局部无锁化的串行线程设计相比一个队列-多个工作线程模型性能更优。</p>
+<p>Netty的串行化设计工作原理图如下：</p>
+<p><img src="https://res.infoq.com/articles/netty-high-performance/zh/resources/0529035.png" alt="Netty串行化工作原理图"></p>
+<p>Netty的<code>NioEventLoop</code>读取到消息之后，<strong>直接调用</strong><code>ChannelPipeline</code>的<code>fireChannelRead(Object msg)</code>，只要用户不主动切换线程，一直会由<code>NioEventLoop</code>调用到用户的<code>Handler</code>，期间不进行线程切换，这种串行化处理方式避免了多线程操作导致的锁的竞争，从性能角度看是最优的。</p>
+<h4 id="高效的并发编程"><a href="#高效的并发编程" class="headerlink" title="高效的并发编程"></a>高效的并发编程</h4><p><code>Netty</code>的高效并发编程主要体现在如下几点：</p>
+<p>1) <code>volatile</code> 的大量、正确使用;</p>
+<p>2) <code>CAS</code>和原子类的广泛使用；</p>
+<p>3) 线程安全容器的使用；</p>
+<p>4) 通过读写锁提升并发性能。</p>
+<h3 id="io-netty-channel-FileRegion"><a href="#io-netty-channel-FileRegion" class="headerlink" title="io.netty.channel.FileRegion"></a><code>io.netty.channel.FileRegion</code></h3><p><strong>A region of a file</strong> that is sent via a <code>Channel</code> which supports <code>zero-copy file transfer</code>.</p>
+<h3 id="io-netty-channel-Channel"><a href="#io-netty-channel-Channel" class="headerlink" title="io.netty.channel.Channel"></a><code>io.netty.channel.Channel</code></h3><h3 id="io-netty-util-AbstractReferenceCounted"><a href="#io-netty-util-AbstractReferenceCounted" class="headerlink" title="io.netty.util.AbstractReferenceCounted"></a><code>io.netty.util.AbstractReferenceCounted</code></h3><h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p><a href="http://www.infoq.com/cn/articles/netty-high-performance" target="_blank" rel="noopener">Netty系列值Netty高性能之道</a></p>
+
 
 
 
