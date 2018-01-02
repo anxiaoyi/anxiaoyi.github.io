@@ -1,7 +1,7 @@
 <html>
 <head>
 	
-	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>Operating System</title>
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>Operating System (操作系统)</title>
 	<meta name="keywords" content="代码人生,程序员,赵坤" />
 
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -23,7 +23,7 @@
 
 <body>
 
-<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="Operating-System"><a href="#Operating-System" class="headerlink" title="Operating System"></a>Operating System</h2><h3 id="What-is-wrong-with-the-code-x-x-a-in-context-of-a-concurrent-system"><a href="#What-is-wrong-with-the-code-x-x-a-in-context-of-a-concurrent-system" class="headerlink" title="What is wrong with the code : x = x + a , in context of a concurrent system?"></a>What is wrong with the code : <code>x = x + a</code> , in context of a concurrent system?</h3><p>At machine level, <code>x = x + a</code> is implemented in multiple instructions :</p>
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="Operating-System-操作系统"><a href="#Operating-System-操作系统" class="headerlink" title="Operating System (操作系统)"></a>Operating System (操作系统)</h2><h3 id="What-is-wrong-with-the-code-x-x-a-in-context-of-a-concurrent-system"><a href="#What-is-wrong-with-the-code-x-x-a-in-context-of-a-concurrent-system" class="headerlink" title="What is wrong with the code : x = x + a , in context of a concurrent system?"></a>What is wrong with the code : <code>x = x + a</code> , in context of a concurrent system?</h3><p>At machine level, <code>x = x + a</code> is implemented in multiple instructions :</p>
 <ul>
 <li>Load the value of <code>x</code> into register.</li>
 <li>Add <code>a</code> to the register value.</li>
@@ -163,6 +163,51 @@
 <li>Context switches to the scheduler’s context.</li>
 </ul>
 <h4 id="3-Context-Switching-Overhead"><a href="#3-Context-Switching-Overhead" class="headerlink" title="3. Context Switching Overhead"></a>3. Context Switching Overhead</h4><p><img src="2017_11_26_14_03_38.png" alt=""> </p>
+<h3 id="Memory-page-size-页大小"><a href="#Memory-page-size-页大小" class="headerlink" title="Memory page size 页大小"></a>Memory page size 页大小</h3><p>A <strong>page, memory page, or virtual page</strong> is a <strong>fixed-length (固定长度的)</strong> contiguous block of <strong>virtual memory (虚拟内存)</strong>, described by a single entry in the <strong>page table</strong>. It is the <strong>smallest unit (最小单位)</strong> of data for memory management in a virtual memory operating system. Similarly, a <strong>page frame (页帧)</strong> is the smallest fixed-length contiguous block of <strong>physical memory (物理内存)</strong> into which memory pages are mapped by the operating system.</p>
+<p>Linux 检测页大小:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt; /* sysconf(3) */</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// The page size for this system is 4096 bytes.</span></span><br><span class="line">	printf(<span class="string">"The page size for this system is %ld bytes.\n"</span>,</span><br><span class="line">	       sysconf(_SC_PAGESIZE)); <span class="comment">/* _SC_PAGE_SIZE is OK too. */</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>In many Unix systems, the command line utility <code>getconf</code> can be used. For example, <strong><code>getconf PAGESIZE</code></strong> will return the page size in bytes.</p>
+<p>目前基本上大多数电脑都是 4KB 页大小。</p>
+<hr>
+<p><a href="https://www.ibm.com/developerworks/cn/linux/l-cache/index.html" target="_blank" rel="noopener">参考</a>在 <code>Linux</code> 的实现中，文件 <code>Cache</code> 分为两个层面，一是 <code>Page Cache</code>，另一个 <code>Buffer Cache</code>，每一个 <code>Page Cache</code> 包含若干 <code>Buffer Cache</code>。Page Cache、Buffer Cache、文件以及磁盘之间的关系如图所示:</p>
+<p><img src="file_page_buffer_disk_relationship.jpg" alt="file_page_buffer_block_disk"></p>
+<p>Linux内核中<strong>文件预读算法</strong>的具体过程是这样的：对于每个文件的第一个读请求，<strong>系统读入所请求的页面并读入紧随其后的少数几个页面(不少于一个页面，通常是三个页面)</strong>，这时的预读称为<strong>同步预读</strong>。对于第二次读请求，如果所读页面不在Cache中，即不在前次预读的group中，则表明文件访问不是顺序访问，系统继续采用同步预读；如果所读页面在Cache中，则表明前次预读命中，操作系统把预读group扩大一倍，并让底层文件系统读入group中剩下尚不在Cache中的文件数据块，这时的预读称为异步预读。无论第二次读请求是否命中，系统都要更新当前预读group的大小。此外，系统中定义了一个window，它包括前一次预读的group和本次预读的group。任何接下来的读请求都会处于两种情况之一：第一种情况是所请求的页面处于预读window中，这时继续进行异步预读并更新相应的window和group；第二种情况是所请求的页面处于预读window之外，这时系统就要进行同步预读并重置相应的window和group。图5是Linux内核预读机制的一个示意图，其中a是某次读操作之前的情况，b是读操作所请求页面不在window中的情况，而c是读操作所请求页面在window中的情况。</p>
+<p><code>Linux</code>内核中与文件<code>Cache</code>操作相关的<code>API</code>有很多，按其使用方式可以分成两类：一类是以<strong>拷贝</strong>方式操作的相关接口， 如<code>read</code>/<code>write</code>/<code>sendfile</code>等，其中<code>sendfile</code>在2.6系列的内核中已经不再支持；另一类是以<strong>地址映射</strong>方式操作的相关接口，如<code>mmap</code>等。</p>
+<p>第一种类型的<code>API</code>在不同文件的<code>Cache</code>之间或者<code>Cache</code>与应用程序所提供的用户空间<code>buffer</code>之间拷贝数据，其实现原理如图所示:</p>
+<p><img src="read_write_sendfile.gif" alt="read_write_sendfile"></p>
+<p>第二种类型的<code>API</code>将<code>Cache</code>项<strong>映射</strong>到用户空间，使得应用程序可以像使用内存指针一样访问文件，<code>Memory map</code>访问<code>Cache</code>的方式在内核中是采用<strong>请求页面机制</strong>实现的，其工作过程如图所示:</p>
+<p><img src="memory_map.gif" alt="memory_map"></p>
+<p>首先，应用程序调用<code>mmap</code>（图中1），陷入到内核中后调用<code>do_mmap_pgoff</code>（图中2）。该函数从应用程序的地址空间中分配一段区域作为映射的内存地址，并使用一个<code>VMA</code>（<code>vm_area_struct</code>）结构代表该区域，之后就返回到应用程序（图中3）。当应用程序访问<code>mmap</code>所返回的地址指针时（图中4），由于虚实映射尚未建立，会触发<strong>缺页中断</strong>（图中5）。之后系统会调用<strong>缺页中断处理函数</strong>（图中6），在缺页中断处理函数中，内核通过相应区域的<code>VMA</code>结构判断出该区域属于文件映射，于是调用具体文件系统的接口读入相应的<code>Page Cache</code>项（图中7、8、9），并填写相应的虚实映射表。经过这些步骤之后，应用程序就可以正常访问相应的内存区域了。</p>
+<hr>
+<p><a href="http://hackershell.cn/?p=956" target="_blank" rel="noopener">参考</a> 在<code>Linux</code>下，<code>Page Cache</code>可以<strong>加速访问磁盘上的文件</strong>，这是因为，当它第一次读或写数据到类似硬盘一样的存储介质时，<code>Linux</code>会存储这些数据到闲置的内存区域，它充当于一个<strong>缓存</strong>的角色，如果以后读取数据，他就可以迅速的在缓存中读取:</p>
+<p>在<code>Linux</code>下，有多少内存被<code>Page Cache</code>使用，可以用<code>free -m</code>查看<code>Cached</code>那一列，例如：</p>
+<p><img src="2017_12_28_15_07_59.png" alt="page_cache_linux_memory"></p>
+<p><strong>数据写入</strong></p>
+<p>如果数据被写入，他<strong>首先会写到<code>Page Cache</code></strong>，并把其作为一个<strong>脏页</strong>(dirty page)进行管理，“dirty”意味着数据存储在<code>Page Cache</code>中，但<strong>需要</strong>先写入到底层的存储设备，这些脏页的内容会被周期性的转移（系统调用<code>sync</code>或<code>fsync</code>）到底层的存储设备上。</p>
+<p>下面的例子将会展示创建<code>10M</code>的文件，它首先将会写入到<code>Page Cache</code>中，相应的<strong>脏页</strong>将会增加，直到他把数据写到磁盘上，在这种情况下我们将会使用<code>sync</code>命令</p>
+<p><img src="2017_12_28_15_12_26.png" alt="dirty_page_linux_sync"></p>
+<p><strong>数据读取</strong></p>
+<p>文件的写入操作不仅仅只有写入，也有读的操作，例如，当你读取同一个<code>40M</code>的文件两次，<strong>第二次读取将会变快</strong>，因为文件的<code>block</code>直接来自<code>Page Cache</code>的内存而不会去读取磁盘。</p>
+<hr>
+<p><a href="http://www.linuxprobe.com/linux-read-write-tuning.html" target="_blank" rel="noopener">参考</a></p>
+<p><strong>读文件</strong>:</p>
+<ol>
+<li>用户发起<code>read</code>操作</li>
+<li>操作系统查找页缓存<br>a. 若未命中，则产生<strong>缺页异常</strong>，然后创建页缓存，并<strong>从磁盘读取相应页填充页缓存</strong><br>b. 若命中，则直接从页缓存返回要读取的内容</li>
+<li>用户<code>read</code>调用完成</li>
+</ol>
+<p><strong>写文件</strong>:</p>
+<ol>
+<li>用户发起<code>write</code>操作</li>
+<li>操作系统查找页缓存<br>a. 若未命中，则产生缺页异常，然后创建页缓存，将用户传入的内容写入页缓存<br>b. 若命中，则直接将用户传入的内容写入页缓存</li>
+<li>用户<code>write</code>调用完成</li>
+<li>页被修改后成为<strong>脏页</strong>，操作系统有两种机制将脏页写回磁盘</li>
+<li>用户手动调用<code>fsync()</code></li>
+<li>由<code>pdflush</code>进程定时将脏页写回磁盘</li>
+</ol>
+<p><code>mmap</code>除了可以减少<code>read</code>,<code>write</code>等系统调用以外，还可以<strong>减少内存的拷贝次数</strong>，比如在<code>read</code>调用时，一个完整的流程是<font color="red"><strong>操作系统读磁盘文件到页缓存，再从页缓存将数据拷贝到<code>read</code>传递的<code>buffer</code></strong></font>里，而如果使用<code>mmap</code>之后，操作系统<font color="red"><strong>只需要将磁盘读到页缓存</strong></font>，然后用户就可以直接通过指针的方式操作<code>mmap</code>映射的内存，<strong>减少了从内核态到用户态的数据拷贝</strong>。</p>
+<p><code>mmap</code>适合于<strong>对同一块区域频繁读写</strong>的情况，比如一个<code>64M</code>的文件存储了一些索引信息，我们需要频繁修改并持久化到磁盘，这样可以将文件通过<code>mmap</code>映射到用户虚拟内存，然后通过指针的方式修改内存区域，由操作系统自动将修改的部分刷回磁盘，也可以自己调用<code>fsync</code>手动刷磁盘。</p>
+<p><img src="wKioL1fhTeyxJpMqAAA7whzZS-Q963.jpg" alt="mmap"></p>
 
 
 

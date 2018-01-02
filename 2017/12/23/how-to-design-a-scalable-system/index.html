@@ -1,0 +1,63 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>How to design a scalable system</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h2 id="如何设计可扩展系统"><a href="#如何设计可扩展系统" class="headerlink" title="如何设计可扩展系统"></a>如何设计可扩展系统</h2><h3 id="RocketMQ"><a href="#RocketMQ" class="headerlink" title="RocketMQ"></a><code>RocketMQ</code></h3><h4 id="Map-Flag-标志位扩展"><a href="#Map-Flag-标志位扩展" class="headerlink" title="Map + Flag 标志位扩展"></a><code>Map</code> + <code>Flag</code> 标志位扩展</h4><p>消息 <code>Message</code> 的设计：</p>
+<p><img src="2017_12_23_21_48_16.png" alt="rocketmq-message"></p>
+<ul>
+<li><code>Map</code></li>
+<li><code>flag</code></li>
+</ul>
+<h4 id="Context-扩展"><a href="#Context-扩展" class="headerlink" title="Context 扩展"></a><code>Context</code> 扩展</h4><p><img src="2017_12_25_09_46_25.png" alt="MessateStoreFactory"></p>
+<h4 id="enum-code-注册器"><a href="#enum-code-注册器" class="headerlink" title="enum + code + 注册器"></a><code>enum</code> + <code>code</code> + 注册器</h4><p><code>RocketMQ</code> 服务端在收到客户端发送过来的消息之后，根据 <strong><code>cmd.getType()</code></strong> 来调用不同的函数:</p>
+<p><img src="2017_12_25_09_55_38.png" alt="processMessageReceived"></p>
+<p>注册处理器:</p>
+<p><img src="2017_12_25_10_02_43.png" alt="registerProcessor"></p>
+<p>注册处理器本质上就是放到一个 <code>Map</code> 里面了:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="keyword">final</span> HashMap&lt;Integer<span class="comment">/* request code */</span>, Pair&lt;NettyRequestProcessor, ExecutorService&gt;&gt; processorTable =</span><br><span class="line">        <span class="keyword">new</span> HashMap&lt;Integer, Pair&lt;NettyRequestProcessor, ExecutorService&gt;&gt;(<span class="number">64</span>);</span><br></pre></td></tr></table></figure>
+<p>收到对应的请求后，再根据一个叫做 <code>code</code> 的请求类型来从注册表里面取出相应的处理器:</p>
+<p><img src="2017_12_25_10_05_29.png" alt="code"></p>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>
