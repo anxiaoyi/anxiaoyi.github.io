@@ -1,0 +1,159 @@
+<html>
+<head>
+	
+	<!-- hexo-inject:begin --><!-- hexo-inject:end --><title>Linux Programming</title>
+	<meta name="keywords" content="代码人生,程序员,赵坤" />
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    
+    <!--<link rel="stylesheet" href="/css/main.css">-->
+	<link href="/css/main.css?v=2" rel="stylesheet" type="text/css" />
+    <!--<link rel="stylesheet" href="/css/style.css">-->
+    
+
+    <link rel="alternate" type="application/atom+xml" href="/atom.xml" title="Atom feed">
+
+    
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+    
+
+</head>
+
+<body>
+
+<!-- hexo-inject:begin --><!-- hexo-inject:end --><h1 id="Linux-Programming"><a href="#Linux-Programming" class="headerlink" title="Linux Programming"></a>Linux Programming</h1><h2 id="1-File-I-O"><a href="#1-File-I-O" class="headerlink" title="1 File I/O"></a>1 File I/O</h2><p>每个进程都有一个称之为 <strong>file table</strong> 的数据结构:</p>
+<p><img src="screen-shot-2013-02-11-at-11-13-21-am.png" alt=""></p>
+<p>每一个进程都有一个它能打开的文件描述符的最大数量限制，默认是 1024，最高可以设置为 1048576 。按照管理，每一个进程至少有 3 个文件描述符: 0(stdin), 1(stdout), 2(stderr)。默认情况下，子进程将会拥有一份父进程的 file table 拷贝。</p>
+<h3 id="1-1-打开文件"><a href="#1-1-打开文件" class="headerlink" title="1.1 打开文件"></a>1.1 打开文件</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">open</span> <span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">int</span> flags)</span></span>;</span><br><span class="line"><span class="comment">// 当使用 mode(权限) 参数的时候，必须指定使用了 O_CREAT 标志位</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">open</span> <span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">int</span> flags, <span class="keyword">mode_t</span> mode)</span></span>;</span><br><span class="line"><span class="comment">// 相当于 open(const char *name, O_WRONLY|O_CREAT|O_TRUNC)</span></span><br><span class="line"><span class="comment">// Yes, this function’s name is missing an e. Ken Thompson, the creator of Unix,</span></span><br><span class="line"><span class="comment">// once joked that the missing letter was his largest regret in the design of Unix.</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">creat</span> <span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *name, <span class="keyword">mode_t</span> mode)</span></span>;</span><br></pre></td></tr></table></figure>
+<p><a href="http://man7.org/linux/man-pages/man2/open.2.html" target="_blank" rel="noopener">open 函数参考手册</a></p>
+<ul>
+<li><strong>flags</strong>: <code>O_RDONLY</code>, <code>O_WRONLY</code>, <code>O_RDWR</code> …</li>
+<li><strong>谁是文件的拥有者? </strong>: The uid of the file’s owner is the effective uid of the process creating the file. The default behavior is to set the file’s group to the effective gid of the process creating the file.</li>
+</ul>
+<p>The actual permission bits that hit the disk are determined by binary-ANDing the mode argument with the complement of the user’s file creation mask (<code>umask</code>). The permissions of the created file are (<code>mode &amp; ~umask</code>). The <code>umask</code> is a process-specific attribute that is usually set via the login shell but is modifiable by the <code>umask()</code> call, allowing the user to modify the permissions placed on newly created files and directories. 通常是 <code>022</code></p>
+<h3 id="1-2-读取文件"><a href="#1-2-读取文件" class="headerlink" title="1.2 读取文件"></a>1.2 读取文件</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="comment">// buf: 数据将会被存储在 buf 区域中</span></span><br><span class="line"><span class="keyword">ssize_t</span> read (<span class="keyword">int</span> fd, <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> len);</span><br></pre></td></tr></table></figure>
+<p>A call is made for len bytes, but no bytes are available for reading, the call will block (sleep) until the bytes become available (assuming the file descriptor was not opened in nonblocking mode)</p>
+<p>The call may returns a value less than len, but greater than zero. The read bytes are stored in buf. This can occur because <strong>a signal interrupted the read midway; an error occurred in the middle of the read; more than zero, but less than len bytes’ worth of data was available; or EOF was reached before len bytes were read.</strong> Reissuing the<br>read (with correspondingly updated buf and len values) will read the remaining bytes into the rest of the buffer or indicate the cause of the problem.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ssize_t</span> ret;</span><br><span class="line"><span class="keyword">while</span> (len != <span class="number">0</span> &amp;&amp; (ret = read (fd, buf, len)) != <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (ret == −<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (errno == EINTR)</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        perror (<span class="string">"read"</span>);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    len -= ret;</span><br><span class="line">    buf += ret;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="机器字节序"><a href="#机器字节序" class="headerlink" title="机器字节序"></a>机器字节序</h3><p>下面代码清单可用于<strong>检查机器的字节序</strong>:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">byteorder</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">union</span> &#123;</span><br><span class="line">        <span class="keyword">short</span> value;</span><br><span class="line">        <span class="keyword">char</span> union_bytes[<span class="keyword">sizeof</span>(<span class="keyword">short</span>)];</span><br><span class="line">    &#125; test;</span><br><span class="line"></span><br><span class="line">    test.value = <span class="number">0x0102</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( (test.union_bytes[<span class="number">0</span>] == <span class="number">1</span>) &amp;&amp;</span><br><span class="line">         (test.union_bytes[<span class="number">1</span>] == <span class="number">2</span>) ) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"big endian\n"</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( (test.union_bytes[<span class="number">0</span>] == <span class="number">2</span>) &amp;&amp;</span><br><span class="line">         (test.union_bytes[<span class="number">1</span>] == <span class="number">1</span>) ) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"small endian\n"</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"unknown...\n"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>现代 PC 大多采用小端字节序，因此<strong>小端字节序又被称为主机字节序</strong>。<strong>大端字节序被称为网络字节序</strong>。</p>
+<p><code>Linux</code> 提供了这两个函数来完成主机字节序和网络字节序之间的转换。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netinet/in.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="title">htonl</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> hostlong)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="title">ntohl</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> netlong)</span></span>;</span><br></pre></td></tr></table></figure>
+<h3 id="Linux-网络基础、高级-I-O-函数"><a href="#Linux-网络基础、高级-I-O-函数" class="headerlink" title="Linux 网络基础、高级 I/O 函数"></a>Linux 网络基础、高级 I/O 函数</h3><h4 id="bind-函数"><a href="#bind-函数" class="headerlink" title="bind 函数"></a><code>bind</code> 函数</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">bind</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">const</span> struct sockaddr* my_addr, <span class="keyword">socklen_t</span> addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
+<p><code>bind</code> 成功返回 0 ，失败返回 -1，并设置 <code>errno</code>，其中两种常见的 <code>errno</code>:</p>
+<ul>
+<li><code>EACCES</code>: 被绑定的地址是<strong>受保护的地址</strong>，仅超级用户能够访问。例如普通用户绑定到知名服务端口 (0~1023) 上，<code>bind</code> 就会返回这个错误。</li>
+<li><code>EADDRINUSE</code>: 被绑定的地址<strong>正在使用中</strong>。</li>
+</ul>
+<h4 id="backlog"><a href="#backlog" class="headerlink" title="backlog"></a><code>backlog</code></h4><p><code>backlog</code> 参数提示内核<strong>监听队列</strong>的最大长度。如果超过 <code>backlog</code>，那么客户端收到 <code>ECONNREFUSED</code> 错误信息。</p>
+<ul>
+<li>内核 2.2 之前，<code>backlog</code> 指所有处于<strong>半连接状态 (<code>SYN_RCVD</code>)</strong>和<strong>完全连接状态 (<code>ESTABLISHED</code>)</strong> 的 <code>socket</code> 的上限。</li>
+<li>内核 2.2 之后，只表示处于完全连接状态的 <code>socket</code> 的上限，处于半连接状态的 <code>socket</code> 的上限则有 <code>/proc/sys/net/ipv4/tcp_max_syn_backlog</code> 内核参数定义。</li>
+</ul>
+<p><img src="2018_01_02_18_37_13.png" alt="tcp_max_syn_backlog"></p>
+<p>完整连接 (<code>ESTABLISHED</code>) 最多有 <strong><code>backlog + 1</code></strong> 个。</p>
+<h4 id="accept-函数"><a href="#accept-函数" class="headerlink" title="accept 函数"></a><code>accept</code> 函数</h4><p>如果监听队列中处于 <code>ESTABLISHED</code> 状态的连接对应的客户端出现网络异常，或者提前退出，那么服务器对这个连接执行 <code>accept</code> 已然成功，<code>accept</code> 调用对于客户端网络断开毫不知情。它只是从队列中取出连接，而不论连接处于何种状态。</p>
+<h4 id="close"><a href="#close" class="headerlink" title="close"></a><code>close</code></h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">close</span><span class="params">(<span class="keyword">int</span> fd)</span></span>;</span><br></pre></td></tr></table></figure>
+<p><code>close</code> 系统调用并非总是立即关闭一个连接，而是将 <code>fd</code> 的引用计数减 1.只有当 <code>fd</code> 的引用计数为 0 的时候，才会真正关闭连接。多进程程序中，一次 <code>fork</code> 系统调用偶人将使父进程中打开的 <code>socket</code> 的引用计数加 1，因此我们必须在父进程和子进程中都对该 <code>socket</code> 执行 <code>close</code> 调用才能将连接关闭。</p>
+<p>如果无论如何都要立即关闭，请使用:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">shutdown</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">int</span> howto)</span></span>;</span><br></pre></td></tr></table></figure>
+<h4 id="socket-选项"><a href="#socket-选项" class="headerlink" title="socket 选项"></a><code>socket</code> 选项</h4><p><code>fcntl</code> 系统调用是专门用于<strong>控制文件描述符属性</strong>的通用 <code>POSIX</code> 方法，那么下面这两个系统调用是专门用来<strong>读取和设置 <code>socket</code> 文件描述符属性</strong>的方法。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getsockopt</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">setsockopt</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>SO_REUSEADDR</code>: 强制使用处于 <code>TIME_WAIT</code> 状态的连接占用的 <code>socket</code> 地址</li>
+<li><code>SO_RCVBUF</code>: 最小值 256 字节</li>
+<li><code>SO_SENDBUF</code>: 最小值 2048 字节 (不同系统可能有不同默认值)</li>
+<li><code>SO_RCVLOWAT</code>: <code>TCP</code> 接收缓冲区第低水位标记，一般被 I/O 复用系统调用，判断 <code>socket</code> 是否可读。默认为 1。</li>
+<li><code>SO_SNDLOWAT</code>: <code>TCP</code> 发送缓冲区第低水位标记，一般被 I/O 复用系统调用，判断 <code>socket</code> 是否可写。默认为 1。</li>
+<li><code>SO_LINGER</code>: <code>l_onoff</code> 等于 0，<code>close</code> 用默认行为关闭 <code>socket</code>。<code>l_onoff</code> 不为 0，<code>TCP</code> 模块将<strong>丢弃</strong>被关闭的 <code>socket</code> 对应的 <code>TCP</code> 发送缓冲区中残留的数据，同时给对方发送一个<strong>复位报文段</strong>。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">linger</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> l_onoff; <span class="comment">/* 开启还是关闭 **/</span></span><br><span class="line">    <span class="keyword">int</span> l_linger; <span class="comment">/* 等待多长时间再关闭 **/</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="主机名、信息"><a href="#主机名、信息" class="headerlink" title="主机名、信息"></a>主机名、信息</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/** 根据主机名获取主机的完整信息 1. /etc/hosts, 2. DNS 服务器 **/</span></span><br><span class="line"><span class="function">struct hostent* <span class="title">gethostbyname</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span>* name)</span></span>;</span><br><span class="line"><span class="comment">/** 根据 IP 地址获取主机的完整信息 **/</span></span><br><span class="line"><span class="function">struct hostent* <span class="title">gethostbyaddr</span><span class="params">(<span class="keyword">const</span> <span class="keyword">void</span>* addr, <span class="keyword">size_t</span> len, <span class="keyword">int</span> type)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ================================================</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/** 根据名称获取某个服务的完整信息 1. /etc/services **/</span></span><br><span class="line"><span class="function">struct servent* <span class="title">getservbyname</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span>* name, <span class="keyword">const</span> <span class="keyword">char</span>* proto)</span></span>;</span><br><span class="line"><span class="comment">/** 根据端口号获取某个服务的完整信息， 1. /etc/services **/</span></span><br><span class="line"><span class="function">struct servent* <span class="title">getservbyport</span><span class="params">(<span class="keyword">int</span> port, <span class="keyword">const</span> <span class="keyword">char</span>* proto)</span></span>;</span><br></pre></td></tr></table></figure>
+<h4 id="pipe-函数"><a href="#pipe-函数" class="headerlink" title="pipe 函数"></a><code>pipe</code> 函数</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pipe</span><span class="params">(<span class="keyword">int</span> fd[<span class="number">2</span>])</span></span>;</span><br></pre></td></tr></table></figure>
+<p><code>pipe</code> 函数用于创建一个管道，以实现<strong>进程间通信</strong>。<code>fd[0]</code> 和 <code>fd[1]</code> 构成管道的两端，往 <code>fd[1]</code> 写入的数据可以从 <code>fd[0]</code> 读出。并且，<code>fd[0]</code> 只能用于从管道读出数据，<code>fd[1]</code> 则只能用于往管道写入数据，而不能反过来用。默认情况下，这一对文件描述符都是<strong>阻塞</strong>的。</p>
+<p>管道本身有一个<strong>容量</strong>限制，它规定如果应用程序不将数据从管道读走的话，该管道<strong>最多能被写入多少字节的数据</strong>。自 Linux 2.6.11 内核起，管道容量的大小默认 <code>65536</code> 字节。我们可以使用 <code>fcntl</code> 函数来修改管道容量。</p>
+<h4 id="dup-和-dup2-函数"><a href="#dup-和-dup2-函数" class="headerlink" title="dup 和 dup2 函数"></a><code>dup</code> 和 <code>dup2</code> 函数</h4><p>有时我们希望把标准输入<strong>重定向</strong>到一个文件，或者把标准输出输出重定向到一个网络连接 (<code>CGI</code> 编程)。</p>
+<p>通过 <code>dup</code> 和 <code>dup2</code> 创建的文件描述符并<strong>不继承</strong>原文件描述符的属性。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="comment">/* 返回的文件描述符总是取系统当前可用的最小整数值 **/</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">dup</span><span class="params">(<span class="keyword">int</span> file_descriptor)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">dup2</span><span class="params">(<span class="keyword">int</span> file_descriptor_one, <span class="keyword">int</span> file_descriptor_two)</span></span>;</span><br></pre></td></tr></table></figure>
+<h4 id="readv-和-writev-函数"><a href="#readv-和-writev-函数" class="headerlink" title="readv 和 writev 函数"></a><code>readv</code> 和 <code>writev</code> 函数</h4><p><code>readv</code> 函数将数据从文件描述符读到分散的内存块中，即<strong>分散读</strong>；<code>writev</code> 函数则将多块分散的内存数据一并写入文件描述符中，即<strong>集中写</strong>。</p>
+<p>当 <code>Web</code> 服务器解析完一个 HTTP 请求之后，如果目标文档存在且客户端具有读取该文档的权限，那么它就需要发送一个 HTTP 应答来传输该文档。这个 HTTP 应答包含 1 个状态行、多个头部字段、1 个空行和文档的内容。其中前 3 部分的内容可能被 Web 服务器放置在一块内存中，而文档的内容则通常被读入到另外一块单独的内存中。我们并<strong>不需要把这两部分内容拼接</strong>到一起再发送，而是可以使用 <code>writev</code> 函数将它们<strong>同时写出</strong>。</p>
+<h4 id="sendfile-零拷贝"><a href="#sendfile-零拷贝" class="headerlink" title="sendfile 零拷贝"></a><code>sendfile</code> 零拷贝</h4><p><code>sendfile</code> 函数在两个文件描述符之间直接传递数据 （<strong>完全在内核中操作</strong>），从而避免了内核缓冲区和用户缓冲区的数据拷贝，效率很高，这被成为<strong>零拷贝</strong>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/sendfile.h&gt;</span></span></span><br><span class="line"><span class="keyword">ssize_t</span> sendfile(<span class="keyword">int</span> out_fd, <span class="keyword">int</span> in_fd, <span class="keyword">off_t</span>* offset, <span class="keyword">size_t</span> count);</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>out_fd</code> 必须是一个 <code>socket</code>，由此可见，<code>sendfile</code> 几乎是<strong>专门为在网络上传输文件而设计</strong>的。</li>
+</ul>
+<h4 id="mmap-函数和-munmap-函数"><a href="#mmap-函数和-munmap-函数" class="headerlink" title="mmap 函数和 munmap 函数"></a><code>mmap</code> 函数和 <code>munmap</code> 函数</h4><p><code>mmap</code> 函数用于申请一段内存空间。我们可以将这段内存作为<strong>进程间通信的共享内存</strong>，也可以将文件直接映射到其中。<code>munmap</code> 函数则释放由 <code>mmap</code> 创建的这段内存空间。</p>
+<h4 id="splice-函数"><a href="#splice-函数" class="headerlink" title="splice 函数"></a><code>splice</code> 函数</h4><p><code>splice</code> 函数用于<strong>在两个文件描述符之间移动数据</strong>，也是<strong>零拷贝</strong>操作。</p>
+<h4 id="tee-函数"><a href="#tee-函数" class="headerlink" title="tee 函数"></a><code>tee</code> 函数</h4><p><code>tee</code> 函数<strong>在两个管道文件描述符之间复制数据</strong>，也是<strong>零拷贝</strong>操作。它<strong>不消耗数据</strong>。</p>
+<h4 id="fcntl-函数"><a href="#fcntl-函数" class="headerlink" title="fcntl 函数"></a><code>fcntl</code> 函数</h4><p>名字 (file control)，提供了对文件描述符的各种控制操作。<code>ioctl</code> 比 <code>fcntl</code> 能够执行更多的控制。但是，对于控制文件描述符常用的属性和行为，<code>fcntl</code> 函数是由 <code>POSIX</code> <strong>规范指定的首选方法</strong>。</p>
+<h4 id="epoll-函数"><a href="#epoll-函数" class="headerlink" title="epoll 函数"></a><code>epoll</code> 函数</h4><p><code>epoll</code> provides both <strong>edge-triggered</strong> and <strong>level-triggered</strong> modes.In <strong>edge-triggered</strong> mode, a call to <code>epoll_wait</code> will return only when a <strong>new event</strong> is <strong>enqueued (新事件进入队列)</strong> with the <code>epoll</code> object, while in <strong>level-triggered</strong> mode, <code>epoll_wait</code> will return as long as the condition holds.</p>
+<p>For instance, if a pipe registered with epoll has <strong>received data (收到数据)</strong>, a call to <code>epoll_wait</code> will return, signaling the presence of data to be read. Suppose the reader only consumed part of data from the buffer. In <strong>level-triggered</strong> mode, further calls to <code>epoll_wait</code> will return immediately, as long as the pipe’s buffer <strong>contains data (只要有数据)</strong> to be read. In <strong>edge-triggered</strong> mode, however, <code>epoll_wait</code> will return <strong>only once (只会触发一次)</strong> new data is written to the pipe.</p>
+<p>ET 模式在很大程度上降低了同一个 <code>epoll</code> 事件被重复触发的次数，因此效率要比 LT 模式要高。</p>
+<p><code>Java</code>的<code>NIO</code>属于水平触发，即条件触发。</p>
+<p>举个读<code>socket</code>的例子，假定经过长时间的沉默后，现在来了100个字节，这时无论边缘触发和条件触发都会产生一个<code>read ready notification</code>通知应用程序<strong>可读</strong>。</p>
+<p>应用程序读了<code>50</code>个字节，然后重新调用<code>API</code>等待<code>io</code>事件。这时条件触发的<code>api</code>会因为还有<code>50</code>个字节可读从而立即返回用户一个<code>read ready notification</code>。</p>
+<p>而边缘触发的<code>api</code>会因为可读这个状态没有发生变化而<strong>陷入长期等待</strong>。 因此在使用边缘触发的<code>api</code>时，要注意每次都要读到<code>socket</code>返回<code>EWOULDBLOCK</code>为止，否则这个<code>socket</code>就算废了。</p>
+<p>而使用条件触发的<code>API</code> 时，如果应用程序不需要写就不要关注<code>socket</code>可写的事件，否则就会无限次的立即返回一个<code>write ready notification</code>。大家常用的<code>select</code>就是属于条件触发这一类，长期关注<code>socket</code>写事件会出现CPU 100%的毛病。</p>
+<p>所以在使用<code>Java</code>的<code>NIO</code>编程的时候，在<strong>没有数据可以往外写的时候要取消写事件，在有数据往外写的时候再注册写事件</strong>。</p>
+<hr>
+<p><code>Java NIO</code> 的写法:</p>
+<p><strong>监听连接事件</strong>:</p>
+<p><img src="2018_01_03_16_28_37.png" alt="连接事件"></p>
+<p><strong>监听可读事件</strong>:</p>
+<p><img src="2018_01_03_16_29_27.png" alt="可读"></p>
+<p><strong>只要可读数据不为空，那么 <code>isReadable()</code> 会一直被调用</strong>:</p>
+<p><img src="2018_01_03_16_36_09.png" alt="isReadable"></p>
+<p><strong>只在有可写数据的时候，才注册 <code>OP_WRITE</code> 操作</strong>:</p>
+<p><img src="2018_01_03_16_44_32.png" alt="OP_WRITE"></p>
+<p>一旦一开始注册 <code>OP_WRITE</code> 的话，会发现一旦连接建立起来，屏幕上就会不停地输出:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">write</span><br><span class="line">write</span><br><span class="line">write</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>尽管这时客户端还没有任何输入，但<strong>这时<code>selector.select()</code>不会阻塞</strong>，因为<strong><code>socket</code>只要<code>send buffer</code>不满就可以写</strong>，刚开始<code>send buffer</code>为空，<code>socket</code>总是可以写，于是<code>server.select()</code>立即返回。由于这个<code>key</code>可写，所以服务器会执行 <code>isWritable()</code> 方法里面的逻辑。</p>
+<p>这样下去，服务器什么事情也没有干，但是却一直在<strong>消耗 CPU</strong>。</p>
+<blockquote>
+<p>不要在同一个<code>socket</code>同时注册多个操作。<strong>要么只注册<code>OP_READ</code>，要么只注册<code>OP_WRITE</code></strong>。</p>
+</blockquote>
+<p><strong>读取数据</strong>:</p>
+<p><img src="2018_01_03_16_57_06.png" alt="读取数据"></p>
+<p><code>sock.read(buffer)</code> 方法的返回值:</p>
+<ul>
+<li><code>0</code>: 表示读取了 0 字节数据</li>
+<li><code>-1</code>: 表示客户端关闭了连接</li>
+</ul>
+<p>在读取完成之后，如果有可写响应的话，那么应该<strong>关闭读，打开写</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">key.interestOps(SelectionKey.OP_WRITE);</span><br></pre></td></tr></table></figure>
+<p><strong>写入数据</strong>:</p>
+<p>写入数据完成后，应该<strong>关闭写，打开读</strong>:</p>
+<p><img src="2018_01_03_17_01_01.png" alt="写入数据"></p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://www.amazon.cn/dp/B00ETOV4N0" target="_blank" rel="noopener">Linux高性能服务器编程</a></li>
+<li><a href="https://www.zhihu.com/question/22524908" target="_blank" rel="noopener">java nio使用的是水平触发还是边缘触发？</a></li>
+<li><a href="https://banu.com/blog/2/how-to-use-epoll-a-complete-example-in-c/" target="_blank" rel="noopener">How to use epoll? A complete example in C</a></li>
+<li><a href="http://marlonyao.iteye.com/blog/1005690" target="_blank" rel="noopener">java nio网络编程的一点心得</a></li>
+<li><a href="http://adblogcat.com/asynchronous-java-nio-for-dummies/" target="_blank" rel="noopener">Asynchronous Java NIO for dummies</a></li>
+</ul>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+</body>
+</html>

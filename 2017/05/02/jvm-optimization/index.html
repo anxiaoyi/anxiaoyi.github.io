@@ -649,6 +649,21 @@
 <ul>
 <li><code>new C()</code> takes 40 bytes</li>
 </ul>
+<h3 id="JVM-概览"><a href="#JVM-概览" class="headerlink" title="JVM 概览"></a>JVM 概览</h3><p><u><strong>64 位 VM 带来哪些性能损失</strong></u>:</p>
+<p>内部 <code>Java</code> 对象表示 (成为<strong>普通对象指针</strong>，Ordinary Object Pointers, 或 oops) 的长度从 32 位变成了 64 位，导致 <code>CPU</code> 高速缓存行中可用的 <code>oops</code> 变少，从而降低了 <code>CPU</code> 缓存的效率。</p>
+<p>接着，Java 6 添加了<strong>压缩指针 (<code>-XX:+UseCompressedOops</code>)</strong>，它能够通过<strong>对齐、偏移量</strong>将 64 位指针压缩成 32 位。CPU 使用率由此得以<strong>改善</strong>。</p>
+<p><u><strong>什么时候触发类加载</strong></u>:</p>
+<p><code>HotSpot VM</code> 负责解析常量池符号，这个过程需要加载、链接，然后初始化 <code>Java</code> 类和 <code>Java</code> 接口。<strong>类加载的最佳时机是在解析 <code>Java</code> 字节码类文件中常量池符号的时候</strong>。 <code>Class.forName()</code>、<code>ClassLoader.loadClass()</code>、反射 <code>API</code>和<code>JNI_FindClass</code>都可以引发类加载。</p>
+<p>HotSpot VM 自身也会引发类加载，启动时，除了加载许多<strong>普通类</strong>，也会加载诸如 <code>java.lang.Object</code> 和 <code>java.lang.Thread</code> 这样的<strong>核心类</strong>。</p>
+<p>加载类时也需要加载它的所有 <code>Java</code> 超类和所有 <code>Java</code> 超接口。</p>
+<p>实际上，加载类是 <code>HotSpot VM</code> 和特定类加载器如 <code>java.lang.ClassLoader</code> 之间<strong>相互协作</strong>的过程。</p>
+<p><u><strong>类加载阶段可能遇见哪些异常</strong></u>:</p>
+<ul>
+<li>没有找到类名字对应的二进制文件: <code>NoClassDefFound</code></li>
+<li>语法错误: <code>ClassFormatError</code> 或者 <code>UnsupportedClassVersionError</code></li>
+<li>类继承层次有误: <code>ClassCircularityError</code></li>
+<li>直接超类本身并不是接口: <code>IncompatibleClassChangeError</code></li>
+</ul>
 <h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
 <li><a href="https://item.jd.com/11099999.html" target="_blank" rel="noopener">《Java 程序性能优化》</a></li>
 <li><a href="http://www.journaldev.com/2856/java-jvm-memory-model-memory-management-in-java" target="_blank" rel="noopener">Java (JVM) Memory Model – Memory Management in Java</a></li>
@@ -660,6 +675,8 @@
 <li><a href="https://www.amazon.com/Java-Performance-Definitive-Guide-Getting/dp/1449358454/" target="_blank" rel="noopener">《Java Performance: The Definitive Guide》</a></li>
 <li><a href="https://item.jd.com/11908449.html" target="_blank" rel="noopener">《大话 Java 性能调优》</a></li>
 <li><a href="https://item.jd.com/12087807.html" target="_blank" rel="noopener">《深入理解 JVM &amp; G1 GC》</a></li>
+<li><a href="https://www.amazon.cn/dp/B00IOB0K1Q" target="_blank" rel="noopener">《Java性能优化权威指南》</a></li>
+<li><a href="http://www.xwood.net/_site_domain_/_root/5870/5874/t_c255066.html" target="_blank" rel="noopener">【TODO】关于JVM内存参数在不同场景需求优化设置，并对相关参数进行详细分析及实例说明</a></li>
 </ul>
 
 

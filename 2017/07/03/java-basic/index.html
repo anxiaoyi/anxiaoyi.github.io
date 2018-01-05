@@ -410,6 +410,71 @@
 <p>There are lot of operations in Java that require the <strong>caller domain (域)</strong> to have <strong>certain permissions (权限)</strong> for successful execution of those operations. <code>System.getProperty</code> is one of those operations. <strong>All file related operations (所有文件操作)</strong> also need special permissions. When you use <code>AccessController.doPrivileged</code> to invoke those operations, the operation is executed with all the rights(permissions) of your protection domain. Hence if your code has enough rights only then it could execute those operations.</p>
 <hr>
 <p>Essentially, <code>AccessController.doPriviledged()</code> is the equivalent of a <code>set-user-id</code> file. It is saying “I hereby request that this method be done with <strong>my privileges (我的权限)</strong>, <strong>even if I was invoked by a method that does not have them (即使调用我的那个方法并没有这样的权限)</strong>.”</p>
+<h3 id="JVM-的编码问题"><a href="#JVM-的编码问题" class="headerlink" title="JVM 的编码问题"></a>JVM 的编码问题</h3><p>There are three “default” encodings:</p>
+<ul>
+<li><code>file.encoding</code>:</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">System.getProperty(<span class="string">"file.encoding"</span>)</span><br></pre></td></tr></table></figure>
+<p>默认值是 <code>UTF-8</code>，可以在启动 JVM 的时候通过指定参数来改变默认值: <code>java -Dfile.encoding=ASCII com.zk.Main</code></p>
+<ul>
+<li><code>java.nio.Charset</code>:</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Charset.defaultCharset()</span><br></pre></td></tr></table></figure>
+<p>默认实现：</p>
+<p><img src="2018_01_02_11_31_13.png" alt="defaultCharset"></p>
+<ul>
+<li>And the encoding of the <code>InputStreamReader</code>:</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">InputStreamReader.getEncoding()</span><br></pre></td></tr></table></figure>
+<p>这个方法的默认编码也是用的 <code>Charset.defaultCharset()</code>:</p>
+<p><img src="2018_01_02_11_29_20.png" alt="InputStreamReader.getEncoding"></p>
+<hr>
+<p>以下是一些实验数据:</p>
+<table>
+<thead>
+<tr>
+<th>BASH LANG</th>
+<th>Dfile.encoding</th>
+<th>file.encoding</th>
+<th>defaultCharset()</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td><code>ANSI_X3.4-1968</code></td>
+<td><code>US-ASCII</code></td>
+</tr>
+<tr>
+<td><code>C</code></td>
+<td></td>
+<td><code>ANSI_X3.4-1968</code></td>
+<td><code>US-ASCII</code></td>
+</tr>
+<tr>
+<td><code>C.UTF-8</code></td>
+<td></td>
+<td><code>UTF-8</code></td>
+<td><code>UTF-8</code></td>
+</tr>
+<tr>
+<td><code>C</code></td>
+<td><code>UTF-8</code></td>
+<td><code>UTF-8</code></td>
+<td><code>UTF-8</code></td>
+</tr>
+<tr>
+<td><code>en_US.utf8</code></td>
+<td><code>UTF-8</code></td>
+<td><code>UTF-8</code></td>
+<td><code>UTF-8</code></td>
+</tr>
+</tbody>
+</table>
+<p>使用命令 <code>locale -a</code> 来查看 <code>BASH LANG</code> 环境变量支持设置的值。</p>
+<hr>
+<p>综上，在不设置 <code>-Dfile.encoding</code> 的情况下，<code>UNIX</code> 的 <code>LANG</code> 环境变量对于 JVM 的编码有着<strong>直接影响</strong>。</p>
 <h3 id="Java-Code-Segments"><a href="#Java-Code-Segments" class="headerlink" title="Java Code Segments"></a>Java Code Segments</h3><ul>
 <li><a href="http://git.oschina.net/anxiaoyi/code-segments/blob/master/java/ThreadFactoryImpl.java" target="_blank" rel="noopener"><code>ThreadFactory</code></a></li>
 <li><a href="">使用 <code>HttpClient</code> 发起 <code>POST</code> 请求</a></li>
