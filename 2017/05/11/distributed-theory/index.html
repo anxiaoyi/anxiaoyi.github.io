@@ -484,6 +484,90 @@
 <li><a href="https://tech.meituan.com/MT_Leaf.html" target="_blank" rel="noopener">Leaf——美团点评分布式ID生成系统</a></li>
 </ul>
 <h3 id="幂等性"><a href="#幂等性" class="headerlink" title="幂等性"></a>幂等性</h3><p>某个服务调用两次，和调用一次没有什么区别。</p>
+<h3 id="通信"><a href="#通信" class="headerlink" title="通信"></a>通信</h3><p><strong>进程间通信</strong>是分布式系统的<strong>核心</strong>。</p>
+<ul>
+<li><strong>远程过程调用 (RPC)</strong>: 隐藏分布式系统中的通信是<strong>极其重要</strong>的。</li>
+<li><strong>消息队列系统</strong>: 提供消息的<strong>中介存储</strong>能力，这样就不需要消息发送方和接收方在消息传输过程中<strong>都保持激活</strong>状态。其设计目标一般都是支持那些<strong>时间要求较为宽松</strong>的消息传输，比如那些要求几分钟完成的传输，而不适用于那些必须在几秒甚至几微妙内完成的传输。</li>
+</ul>
+<p>使用队列的松散耦合的4种通信组合方式:</p>
+<p><img src="2018_01_05_16_25_24.png" alt="使用队列的松散耦合的4种通信组合方式"></p>
+<h3 id="同步化"><a href="#同步化" class="headerlink" title="同步化"></a>同步化</h3><p>虽然进程间通信很重要，但它并不是分布式系统的全部内容。与之紧密相关的问题是进程间如何<strong>协作和同步</strong>。</p>
+<p>在许多情况下，<strong>一组进程能够指定一个进程作为协作者是重要的</strong>，这可以通过<strong>选举算法</strong>来实现。</p>
+<p>与同步相关的两个主题是分布式系统中的<strong>互斥和分布式事务</strong>。分布式互斥保护共享资源不被多个进程同时访问。分布式事务也做类似的事情，但是它通过高级的并发控制机制来优化访问。</p>
+<p><strong>逻辑时钟 (logical clock)</strong>:</p>
+<p>在一篇著名的论文中，Lamport 阐明，尽管时钟同步是可能的，但它<strong>不是绝对必要的</strong>。如果两个进程不进行交互，那么它们的时钟也无需同步，即使不同步也不会产生什么问题。通常，<strong>重要的不是所有的进程在时间上完全一致，而是它们在事件的发生顺序上要达成一致</strong>。</p>
+<p><strong>happens-before</strong> 关系，<code>a→b</code> 读作 “<code>a</code> 在 <code>b</code> 之前发生”:</p>
+<ul>
+<li>如果 <code>a</code> 和 <code>b</code> 是同一个进程的两个事件，且 <code>a</code> 在 <code>b</code> 之前发生，则 <code>a→b</code> 为真。</li>
+<li>如果 <code>a</code> 是一个进程发送消息的事件，而 <code>b</code> 为另一个进程<strong>接受</strong>这个消息的事件，则 <code>a→b</code> 也为真。消息需要一定时间才能到达接收端。</li>
+</ul>
+<p>为了实现 <code>Lamport</code> 逻辑时钟:</p>
+<ul>
+<li>每个消息都应<strong>携带</strong>根据<strong>发送者</strong>时钟的<strong>发送时间</strong>。</li>
+<li>每个时钟 $R_i$ 维护一个<strong>局部计数器</strong> $C_i$</li>
+</ul>
+<p>在分布式系统中 <code>Lamport</code> 逻辑时钟的定位:</p>
+<p><img src="2018_01_07_00_06_19.png" alt="Lamport_logic_lock_position"></p>
+<p>具体实现过程:</p>
+<p><img src="2018_01_07_00_07_43.png" alt="具体执行步骤"></p>
+<p>示例: <strong>全序多播</strong></p>
+<p>当前账户上有 1000 美元，</p>
+<ul>
+<li>旧金山的客户，<strong>存 <code>100</code> 美元</strong></li>
+<li>纽约的银行职员，<strong>加 <code>1%</code> 利息</strong></li>
+</ul>
+<p>数据库的两个副本都应该执行这两次更新操作。由于网络中的传输延迟，这两次更新可能以如下顺序抵达:</p>
+<p><img src="2018_01_07_00_18_31.png" alt="update_db_backup"></p>
+<p>这会导致结果:</p>
+<ul>
+<li>旧金山，<strong>先存 <code>100</code> 美元，再加 <code>1%</code>，存款总数是 1111 美元</strong></li>
+<li>纽约，<strong>先加 <code>1%</code>，然后存入 <code>100</code> 美元，存款总数是 1110 美元</strong></li>
+</ul>
+<p>我们面临的问题是在每个副本上的两个更新操作应该<strong>以相同的顺序</strong>执行。<strong>对于一致性来说，遵循哪个顺序是无关紧要的</strong>，重要的是两个副本要完全相同。一般来说，像上面这样的情况需要进行一次<strong>全序多播 (totally ordered multicast)</strong>，即一次将所有的消息以同样的顺序传送给每个接受的多播操作。<code>Lamport</code> 时间戳可以用于以完全分布式的方式实现全序多播。</p>
+<p><strong>向量时钟</strong>:</p>
+<p><code>Lamport</code> 时间戳不能捕获<strong>因果关系</strong>。</p>
+<p><strong>互斥</strong>:</p>
+<p><strong>集中式算法</strong>: <strong>选举</strong>一个进程作为<strong>协作者</strong>。</p>
+<p><img src="2018_01_07_16_41_14.png" alt="集中式算法"></p>
+<ul>
+<li>优点: 公平、不会出现饥饿、易于实现。</li>
+<li>缺点: <strong>协作者是一个单个故障点</strong>，它崩溃，整个系统可能瘫痪。一般情况下，如果进程在发出请求之后被阻塞，那么请求者就<strong>不能区分</strong>“拒绝进入”和协作者已经崩溃这两种情况，因为上述情况<strong>都没有消息返回</strong>。在规模较大的系统中，单个协作者会成为<strong>性能的瓶颈</strong>。然而，其<strong>简单性带来的好处大于潜在的缺点</strong>。分布式解决方法并不比这好。</li>
+</ul>
+<p><strong>非集中式算法</strong>: 只要某个进程要访问资源，只需从 <code>m &gt; n/2</code> 个协作中获得多数投票即可。使得原来集中式算法<strong>少受单个协作者失败的影响</strong>。假设当前某个协作者崩溃，能够快速恢复，但会忘记崩溃前的所有投票。</p>
+<p><strong>分布式算法</strong>: 时间戳最小的获胜。</p>
+<p><img src="2018_01_07_16_47_51.png" alt="分布式算法"></p>
+<p><strong>令牌环算法</strong>: 进程之间传递一个特殊的消息，这个<strong>消息</strong>称为<strong>令牌</strong>。拥有令牌的进程就准许访问共享资源，完成后把该令牌传递给下一个进程。如果不需要访问，那就做一个简单的往下传递操作。</p>
+<p><img src="2018_01_07_16_49_17.png" alt="令牌环算法"></p>
+<ul>
+<li>优点: 每个进程都有机会访问资源，<strong>避免了饥饿</strong>。由于简单，很容易<strong>避免死锁</strong>。</li>
+<li>缺点: 令牌丢失，就需要重新开启一个复杂的分布式进程，以<strong>确保创建一个新的令牌</strong>，但总之，这也是唯一的一个令牌。实际上，检测令牌丢失是很困难的，这是因为网络中令牌两次出现的时间间隔是不确定的。<strong>一小时没有发现令牌</strong>并不意味着它丢失了，也许某个进程还在使用它。</li>
+</ul>
+<p><strong>四种互斥算法比较</strong>:</p>
+<p><img src="2018_01_07_16_51_39.png" alt="四种互斥算法"></p>
+<p><strong>选举算法</strong>:由哪个进程充当这个特殊的协作者角色并不重要，重要的是它们中要有一个进程来充当。</p>
+<p><strong>1. 欺负算法 (bully algorithm)</strong>:当任何一个进程发现协作者不再响应的时候，它就发起一次选举。向所有编号比自己大的进程发送一个 <code>ELECTION</code> 消息。</p>
+<p><img src="2018_01_07_17_00_11.png" alt="欺负算法选举"></p>
+<p><strong>2. 环算法</strong>:</p>
+<p><img src="2018_01_07_17_03_53.png" alt="环算法"></p>
+<p><strong>3. 点对点网络中的超级点选举</strong></p>
+<h3 id="容错性"><a href="#容错性" class="headerlink" title="容错性"></a>容错性</h3><p>分布式系统区别于单机系统的一个特性就是它可以<strong>容许部分失效</strong>。分布式系统设计中的一个<strong>重要目标</strong>就是: 它可以从部分失效中自动恢复，而且不会严重地影响整体性能。</p>
+<p><strong>容错</strong>与被称为<strong>可靠</strong>的系统紧密相关。可靠性包括:</p>
+<ul>
+<li>可用性: 任何给定的<strong>时刻</strong>，系统都可以正确地操作。</li>
+<li>可靠性: 无故障<strong>持续</strong>运行。</li>
+<li>安全性: <strong>偶然出故障能正确操作</strong>，而不会造成任何灾难。</li>
+<li>可维护性: 发生故障的系统被<strong>恢复的难易程度</strong>。</li>
+</ul>
+<p><strong>使用冗余来掩盖故障</strong>。<strong>物理冗余</strong>是提供容错性的著名技术。它用在生物学（哺乳动物具有两只眼睛、两个耳朵、两个肺等）、飞行器（747 具有四个引擎）和体育（有多个裁判）中。</p>
+<p><strong>防止进程失败</strong>: 容忍失败进程的关键方法是把多个同样的进程组织到一个组中。引入组的目的在于允许把进程的集合作为<strong>单一的抽象概念</strong>来处理。</p>
+<p>不同组之间的一个重要的区别在于它们的内部结构:</p>
+<p><img src="2018_01_07_17_49_08.png" alt="组内部结构"></p>
+<p><strong>故障检测</strong>:在分布式系统中，故障检测是容错的基石。无故障成员应该可以知道谁仍是成员，谁不是。要检测进程故障，只有两种方法。</p>
+<ul>
+<li>进程<strong>主动</strong>往其它进程发送 “Are you alive?” 消息</li>
+<li><strong>被动</strong>地等待来自其它进程的消息</li>
+</ul>
+<p>实际上，通常使用的是主动 <code>pinging</code>。故障检测的理论工作已经开展了很多，所有这些可以归结为，使用<strong>超时机制</strong>来检测某个进程是否发生故障。但是这种方法可能<strong>不准确</strong>或者<strong>太粗糙</strong>了。</p>
 <h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
 <li><a href="https://item.jd.com/11449803.html" target="_blank" rel="noopener">《大型网站系统与 Java 中间件实践》</a></li>
 <li><a href="http://www.broadview.com.cn/book/2683" target="_blank" rel="noopener">《从Paxos到Zookeeper：分布式一致性原理与实践》</a></li>
@@ -492,12 +576,13 @@
 <li><a href="http://the-paper-trail.org/blog/consensus-protocols-two-phase-commit/" target="_blank" rel="noopener">Consensus Protocols: Two-Phase Commit</a></li>
 <li><a href="http://the-paper-trail.org/blog/consensus-protocols-three-phase-commit/" target="_blank" rel="noopener">Consensus Protocols: Three-phase Commit</a></li>
 <li><a href="http://the-paper-trail.org/blog/consensus-protocols-paxos/" target="_blank" rel="noopener">Consensus Protocols: Paxos</a></li>
-<li><a href="">《大话 Java 性能优化》</a></li>
+<li><a href="https://www.amazon.cn/dp/B01EIE3KFU/" target="_blank" rel="noopener">《大话 Java 性能优化》</a></li>
 <li><a href="https://github.com/ty4z2008/Qix/blob/master/ds.md" target="_blank" rel="noopener">分布式系统(Distributed System)资料</a></li>
 <li><a href="https://www.v2ex.com/t/236294" target="_blank" rel="noopener">这四本书，是知乎上推荐的分布式经典书籍</a></li>
 <li><a href="https://www.zhihu.com/question/29597104" target="_blank" rel="noopener">如何的才能更好的学习MIT6.824分布式系统课程？</a></li>
 <li><a href="https://pdos.csail.mit.edu/6.824/schedule.html" target="_blank" rel="noopener">MIT 6.824 Schedule: Spring 2018</a></li>
 <li><a href="https://thesquareplanet.com/blog/students-guide-to-raft/" target="_blank" rel="noopener">MIT 6.824 老师的一篇博客 Students’ Guide to Raft </a></li>
+<li><a href="https://www.amazon.cn/dp/B001B1PT9Y" target="_blank" rel="noopener">分布式系统原理与范型(第2版)</a></li>
 </ul>
 
 
