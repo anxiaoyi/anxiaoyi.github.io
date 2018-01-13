@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Linux常见性能分析工具 | 代码人生</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Linux常见性能分析工具首先需要执行安装命令 sysstat : 1sudo apt install sysstat vmstat - Virtual Memory Statistics - 监控内存和 CPU每 1 秒更新一次输出信息: 1vmstat 1 可以看到用红色框住的部分，有着很高的 cs (上下文切换) 值和 us(用户 CPU 时间) 值，表明系统上下文切换频繁，用户 CPU 占">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux常见性能分析工具">
+<meta property="og:url" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/index.html">
+<meta property="og:site_name" content="代码人生">
+<meta property="og:description" content="Linux常见性能分析工具首先需要执行安装命令 sysstat : 1sudo apt install sysstat vmstat - Virtual Memory Statistics - 监控内存和 CPU每 1 秒更新一次输出信息: 1vmstat 1 可以看到用红色框住的部分，有着很高的 cs (上下文切换) 值和 us(用户 CPU 时间) 值，表明系统上下文切换频繁，用户 CPU 占">
+<meta property="og:locale" content="zh-cn">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/17-06-14-17_50_25_1093_203.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/17-05-10-10_21_37_1064_422.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/17-07-07-15_39_00_815_173.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/17-06-14-20_12_26_1254_310.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/17-06-14-20_12_58_1211_257.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/17-05-10-10_34_20_1046_350.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/17-05-10-10_42_04_931_272.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/2017_12_14_16_12_49.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/2017_12_14_16_15_01.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/2018_01_03_23_12_15.png">
+<meta property="og:updated_time" content="2018-01-03T15:17:48.508Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Linux常见性能分析工具">
+<meta name="twitter:description" content="Linux常见性能分析工具首先需要执行安装命令 sysstat : 1sudo apt install sysstat vmstat - Virtual Memory Statistics - 监控内存和 CPU每 1 秒更新一次输出信息: 1vmstat 1 可以看到用红色框住的部分，有着很高的 cs (上下文切换) 值和 us(用户 CPU 时间) 值，表明系统上下文切换频繁，用户 CPU 占">
+<meta name="twitter:image" content="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/17-06-14-17_50_25_1093_203.png">
+  
+    <link rel="alternate" href="/atom.xml" title="代码人生" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    
+  
+  <link rel="stylesheet" href="/blog/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    
+    <div id="header-inner" class="inner">
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://blog.kunzhao.org"></form>
+      </div>
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/blog/">首页</a>
+        
+          <a class="main-nav-link" href="/blog/archives">归档</a>
+        
+          <a class="main-nav-link" href="/blog/about">关于</a>
+        
+      </nav>
+      
+    </div>
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/blog/" id="logo">代码人生</a>
+      </h1>
+      
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Linux常见性能分析工具" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/05/10/Linux常见性能分析工具/" class="article-date">
+  <time datetime="2017-05-10T02:15:56.000Z" itemprop="datePublished">2017-05-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/开发者手册/">开发者手册</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Linux常见性能分析工具
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Linux常见性能分析工具"><a href="#Linux常见性能分析工具" class="headerlink" title="Linux常见性能分析工具"></a>Linux常见性能分析工具</h2><p>首先需要执行安装命令 <code>sysstat</code> :</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo apt install sysstat</div></pre></td></tr></table></figure>
+<h3 id="vmstat-Virtual-Memory-Statistics-监控内存和-CPU"><a href="#vmstat-Virtual-Memory-Statistics-监控内存和-CPU" class="headerlink" title="vmstat - Virtual Memory Statistics - 监控内存和 CPU"></a>vmstat - Virtual Memory Statistics - 监控内存和 CPU</h3><p>每 1 秒更新一次输出信息:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">vmstat 1</div></pre></td></tr></table></figure>
+<p>可以看到用红色框住的部分，有着很高的 cs (上下文切换) 值和 us(用户 CPU 时间) 值，表明系统上下文切换频繁，用户 CPU 占用率高:</p>
+<p><img src="17-06-14-17_50_25_1093_203.png" alt=""></p>
+<p>一般这样的代码容易产生上下文切换比较频繁的情况:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</div><div class="line">    <span class="keyword">synchronized</span> (lock[i]) &#123;</div><div class="line">        <span class="keyword">if</span> (i % <span class="number">2</span> == <span class="number">0</span>) &#123;</div><div class="line">            lock[i].wait(r.nextInt(<span class="number">10</span>));</div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line">            lock[i].notifyAll();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>每 1 秒采样一次，共计 3 次:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">vmstat 1 3</div></pre></td></tr></table></figure>
+<p><img src="17-05-10-10_21_37_1064_422.png" alt=""></p>
+<p>查看是否有<strong>大量磁盘交换</strong>，对于没有磁盘交换的服务器，这些值应该为 0:</p>
+<p><img src="17-07-07-15_39_00_815_173.png" alt=""></p>
+<h3 id="iostat-监控-I-O-使用-判断-I-O-是否过载"><a href="#iostat-监控-I-O-使用-判断-I-O-是否过载" class="headerlink" title="iostat - 监控 I/O 使用 - 判断 I/O 是否过载"></a>iostat - 监控 I/O 使用 - 判断 I/O 是否过载</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">iostat 1 2</div></pre></td></tr></table></figure>
+<p>只输出磁盘使用情况:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">iostat -d 1 2</div></pre></td></tr></table></figure>
+<h3 id="pidstat-监视进程和线程"><a href="#pidstat-监视进程和线程" class="headerlink" title="pidstat - 监视进程和线程"></a>pidstat - 监视进程和线程</h3><p>什么叫做占用 CPU 的线程:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">while</span>(<span class="keyword">true</span>) &#123;</div><div class="line">    <span class="keyword">double</span> a = Math.random() * Math.random();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>什么叫做空闲线程:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">while</span>(<span class="keyword">true</span>) &#123;</div><div class="line">    Thread.sleep(<span class="number">1000</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>使用 <code>jps</code> 找到 <code>Java</code> 程序的 <code>PID</code> 1187，然后执行下面命令查看 CPU 使用情况:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">pidstat -p 1187 -u 1 3</div></pre></td></tr></table></figure>
+<ul>
+<li><strong>-p</strong>: 指定进程 ID</li>
+<li><strong>-u</strong>: 对 CPU 使用率的监控</li>
+</ul>
+<p>监控线程信息:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">pidstat -p 1187 1 3 -u -t</div></pre></td></tr></table></figure>
+<ul>
+<li><strong>-t</strong>: 监控线程信息，输出的时候会多一个 <strong>TID</strong> 参数</li>
+</ul>
+<p><img src="17-06-14-20_12_26_1254_310.png" alt=""></p>
+<p>使用 <code>jstack</code> 可以导出指定 Java 应用程序的所有线程:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">jstack -l 1187 &gt; /tmp/t.txt</div></pre></td></tr></table></figure>
+<p><img src="17-06-14-20_12_58_1211_257.png" alt=""></p>
+<p>如图所示，它的 <strong>nid (native ID)</strong> 为 0x4b4，转为 10 进制后，正好是 1024</p>
+<hr>
+<p><strong>有大量读写的线程</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">FileOutputStream fos = <span class="keyword">new</span> FileOutputStream(<span class="keyword">new</span> File(<span class="string">"temp"</span>));</div><div class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">10000</span>; i++) &#123;</div><div class="line">    fos.write(i);</div><div class="line">&#125;</div><div class="line">fos.close();</div><div class="line">FileInputStream fis = <span class="keyword">new</span> FileInputStream(<span class="keyword">new</span> File(<span class="string">"temp"</span>));</div><div class="line"><span class="keyword">while</span> (fis.read() != -<span class="number">1</span>) ;</div></pre></td></tr></table></figure>
+<p>使用如下命令监控磁盘 I/O 情况:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">pidstat -p 22796 -d -t 1 3</div></pre></td></tr></table></figure>
+<ul>
+<li><strong>-d</strong>: 监控磁盘 I/O</li>
+</ul>
+<hr>
+<p>进行内存监控</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">pidstat -r -p 27233 1 5</div></pre></td></tr></table></figure>
+<h3 id="free-Display-amount-of-free-and-used-内存-in-the-system"><a href="#free-Display-amount-of-free-and-used-内存-in-the-system" class="headerlink" title="free - Display amount of free and used 内存 in the system"></a>free - Display amount of free and used 内存 in the system</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># 以 M 为单位查看</div><div class="line">free -mt</div></pre></td></tr></table></figure>
+<ul>
+<li><strong>-t</strong>: </li>
+<li><strong>–total</strong>: Display a line showing the column totals.</li>
+<li><strong>-h</strong>: human readable</li>
+</ul>
+<p><img src="17-05-10-10_34_20_1046_350.png" alt=""></p>
+<h3 id="sar-收集-报告以及保存系统活动信息"><a href="#sar-收集-报告以及保存系统活动信息" class="headerlink" title="sar - 收集, 报告以及保存系统活动信息"></a>sar - 收集, 报告以及保存系统活动信息</h3><p>首次使用，需要编辑文件:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/etc/default/sysstat</div></pre></td></tr></table></figure>
+<p>将里面的内容改为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">#</div><div class="line"># Default settings for /etc/init.d/sysstat, /etc/cron.d/sysstat</div><div class="line"># and /etc/cron.daily/sysstat files</div><div class="line">#</div><div class="line"></div><div class="line"># Should sadc collect system activity informations? Valid values</div><div class="line"># are &quot;true&quot; and &quot;false&quot;. Please do not put other values, they</div><div class="line"># will be overwritten by debconf!</div><div class="line">ENABLED=&quot;true&quot;</div></pre></td></tr></table></figure>
+<p>然后重新启动 <code>systat</code>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo service sysstat restart</div></pre></td></tr></table></figure>
+<p>才能直接使用 <code>sar</code></p>
+<h3 id="uptime-Tell-how-long-the-system-has-been-running"><a href="#uptime-Tell-how-long-the-system-has-been-running" class="headerlink" title="uptime - Tell how long the system has been running"></a>uptime - Tell how long the system has been running</h3><p><img src="17-05-10-10_42_04_931_272.png" alt=""></p>
+<h3 id="mpstat-Report-processors-related-statistics"><a href="#mpstat-Report-processors-related-statistics" class="headerlink" title="mpstat - Report processors related statistics"></a>mpstat - Report processors related statistics</h3><h3 id="netstat"><a href="#netstat" class="headerlink" title="netstat"></a>netstat</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">netstat -an</div></pre></td></tr></table></figure>
+<ul>
+<li><strong>-a</strong>:</li>
+<li><strong>–all</strong>: 显示所有的监听和未监听的 Sockets</li>
+<li><strong>-n</strong>:</li>
+<li><strong>–numeric</strong>: 显示数字的地址，而不是显示 symbolic 地址，端口或用户名</li>
+</ul>
+<h3 id="top-显示系统整体资源使用情况"><a href="#top-显示系统整体资源使用情况" class="headerlink" title="top - 显示系统整体资源使用情况"></a>top - 显示系统整体资源使用情况</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># 每隔 3 秒刷新一次</span></div><div class="line">top -d 3</div></pre></td></tr></table></figure>
+<h3 id="lsof-list-open-files"><a href="#lsof-list-open-files" class="headerlink" title="lsof - list open files"></a>lsof - list open files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">lsof -p <span class="variable">$PID</span></div></pre></td></tr></table></figure>
+<ul>
+<li><strong>-p $PID</strong>: excludes or selects the listing  of  files  for  the  processes  whose  optional process  IDentification  (PID)  numbers are in the comma-separated set s.</li>
+</ul>
+<h3 id="strace-trace-system-calls-and-signals"><a href="#strace-trace-system-calls-and-signals" class="headerlink" title="strace - trace system calls and signals"></a>strace - trace system calls and signals</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">strace git status</div></pre></td></tr></table></figure>
+<p>参考 <a href="https://item.jd.com/10948631481.html" target="_blank" rel="external">《TCP/IP高效编程改善网络程序的44个技巧》</a></p>
+<h3 id="dstat"><a href="#dstat" class="headerlink" title="dstat"></a>dstat</h3><p><code>dstat</code> 是一个可以取代 <code>vmstat</code>，<code>iostat</code>，<code>netstat</code> 和 <code>ifstat</code> 这些命令的多功能产品。<code>dstat</code> 克服了这些命令的局限并增加了一些另外的功能，增加了监控项，也变得更灵活了。<code>dstat</code> 可以很方便监控系统运行状况并用于基准测试和排除故障。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo apt install dstat</div></pre></td></tr></table></figure>
+<p><code>dstat</code> 是使用 <code>Python</code> 写的，源码<a href="https://github.com/dagwieers/dstat/blob/master/dstat" target="_blank" rel="external">参考</a></p>
+<p><img src="2017_12_14_16_12_49.png" alt=""></p>
+<p>线程如果被频繁休眠/唤醒，会造成 <code>kernal cpu</code> 利用率高， <code>context switch</code> 达到 <code>cpu</code> 极高水平，进而导致<strong>其他线程获取 <code>cpu</code> 时间少</strong>，吞吐量下降。</p>
+<p>就是下面这段代码导致的:</p>
+<p><img src="2017_12_14_16_15_01.png" alt=""></p>
+<h3 id="操作系统性能监控"><a href="#操作系统性能监控" class="headerlink" title="操作系统性能监控"></a>操作系统性能监控</h3><p><strong>CPU 使用率</strong>:</p>
+<ul>
+<li>图形界面: <code>gnome-system-monitor</code></li>
+</ul>
+<p><strong>CPU 调度程序运行队列 (等待好运行、正等待可用 CPU 的轻量级进程)</strong>:</p>
+<ul>
+<li><code>vmstat</code> 的第一列 <code>r</code> 列</li>
+</ul>
+<p><strong>内存使用率</strong>:</p>
+<ul>
+<li><code>vmstat</code> 的 <code>free</code> 列</li>
+<li><code>top</code></li>
+<li><code>/proc/meminfo</code></li>
+</ul>
+<p><strong>监控锁竞争</strong>:</p>
+<p><img src="2018_01_03_23_12_15.png" alt="context_switch"></p>
+<ul>
+<li><strong>让步式上下文切换</strong>: 执行线程主动释放 CPU</li>
+<li><strong>抢占式上下文切换</strong>: 线程因为分配的时间片用尽而被迫放弃 CPU 或者被更高优先级所抢占。</li>
+</ul>
+<p>通过命令 <strong><code>pidstat -w</code></strong> 的 <strong><code>nvcswch/s</code></strong> 这一列能够监控到抢占式上下文切换的数量。</p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://item.jd.com/1247899762.html" target="_blank" rel="external">《高性能Linux服务器构建实战:运维监控、性能调优与集群应用》</a></li>
+<li><a href="https://item.jd.com/11670385.html" target="_blank" rel="external">《实战 Java 虚拟机》</a></li>
+<li><a href="https://www.amazon.cn/dp/B00IOB0K1Q" target="_blank" rel="external">《Java性能优化权威指南》</a></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/05/10/Linux常见性能分析工具/" data-id="cjc5qrsuk00065cem20fil2id" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+    
+ <script src="/blog/jquery/jquery.min.js"></script>
+  <div id="random_posts">
+    <h2>Recommended Posts</h2>
+    <div class="random_posts_ul">
+      <script>
+          var random_count =4
+          var site = {BASE_URI:'/blog/'};
+          function load_random_posts(obj) {
+              var arr=site.posts;
+              if (!obj) return;
+              // var count = $(obj).attr('data-count') || 6;
+              for (var i, tmp, n = arr.length; n; i = Math.floor(Math.random() * n), tmp = arr[--n], arr[n] = arr[i], arr[i] = tmp);
+              arr = arr.slice(0, random_count);
+              var html = '<ul>';
+            
+              for(var j=0;j<arr.length;j++){
+                var item=arr[j];
+                html += '<li><strong>' + 
+                item.date + ':&nbsp;&nbsp;<a href="' + (site.BASE_URI+item.uri) + '">' + 
+                (item.title || item.uri) + '</a></strong>';
+                if(item.excerpt){
+                  html +='<div class="post-excerpt">'+item.excerpt+'</div>';
+                }
+                html +='</li>';
+                
+              }
+              $(obj).html(html + '</ul>');
+          }
+          $('.random_posts_ul').each(function () {
+              var c = this;
+              if (!site.posts || !site.posts.length){
+                  $.getJSON(site.BASE_URI + 'js/posts.js',function(json){site.posts = json;load_random_posts(c)});
+              } 
+               else{
+                load_random_posts(c);
+              }
+          });
+      </script>
+    </div>
+  </div>
+
+    
+<nav id="article-nav">
+  
+    <a href="/blog/2017/05/10/网站架构/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          网站架构
+        
+      </div>
+    </a>
+  
+  
+    <a href="/blog/2017/05/09/java-concurrency/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Java Concurrency</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+ 
+     
+  
+
+</section>
+           
+    <aside id="sidebar">
+  
+    
+
+  
+    
+    <div class="widget-wrap">
+    
+      <div class="widget" id="toc-widget-fixed">
+      
+        <strong class="toc-title">Content</strong>
+        <div class="toc-widget-list">
+              <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Linux常见性能分析工具"><span class="toc-number">1.</span> <span class="toc-text">Linux常见性能分析工具</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#vmstat-Virtual-Memory-Statistics-监控内存和-CPU"><span class="toc-number">1.1.</span> <span class="toc-text">vmstat - Virtual Memory Statistics - 监控内存和 CPU</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#iostat-监控-I-O-使用-判断-I-O-是否过载"><span class="toc-number">1.2.</span> <span class="toc-text">iostat - 监控 I/O 使用 - 判断 I/O 是否过载</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#pidstat-监视进程和线程"><span class="toc-number">1.3.</span> <span class="toc-text">pidstat - 监视进程和线程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#free-Display-amount-of-free-and-used-内存-in-the-system"><span class="toc-number">1.4.</span> <span class="toc-text">free - Display amount of free and used 内存 in the system</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sar-收集-报告以及保存系统活动信息"><span class="toc-number">1.5.</span> <span class="toc-text">sar - 收集, 报告以及保存系统活动信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#uptime-Tell-how-long-the-system-has-been-running"><span class="toc-number">1.6.</span> <span class="toc-text">uptime - Tell how long the system has been running</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#mpstat-Report-processors-related-statistics"><span class="toc-number">1.7.</span> <span class="toc-text">mpstat - Report processors related statistics</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#netstat"><span class="toc-number">1.8.</span> <span class="toc-text">netstat</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#top-显示系统整体资源使用情况"><span class="toc-number">1.9.</span> <span class="toc-text">top - 显示系统整体资源使用情况</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#lsof-list-open-files"><span class="toc-number">1.10.</span> <span class="toc-text">lsof - list open files</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#strace-trace-system-calls-and-signals"><span class="toc-number">1.11.</span> <span class="toc-text">strace - trace system calls and signals</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#dstat"><span class="toc-number">1.12.</span> <span class="toc-text">dstat</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#操作系统性能监控"><span class="toc-number">1.13.</span> <span class="toc-text">操作系统性能监控</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#参考"><span class="toc-number">1.14.</span> <span class="toc-text">参考</span></a></li></ol></li></ol>
+          </div>
+      </div>
+    </div>
+
+  
+    
+
+  
+    
+  
+    
+  
+    
+
+  
+    
+  
+</aside>
+
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-left">
+      &copy; 2014 - 2018 赵坤&nbsp;|&nbsp;
+      Theme by <a href="https://github.com/giscafer/hexo-theme-cafe/" target="_blank">Cafe</a>
+    </div>
+     <div id="footer-right">
+      Contact&nbsp;|&nbsp;igozhaokun@163.com
+    </div>
+  </div>
+</footer>
+ <script src="/blog/jquery/jquery.min.js"></script>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/blog/" class="mobile-nav-link">首页</a>
+  
+    <a href="/blog/archives" class="mobile-nav-link">归档</a>
+  
+    <a href="/blog/about" class="mobile-nav-link">关于</a>
+  
+</nav>
+    <img class="back-to-top-btn" src="/blog/images/fly-to-top.png"/>
+<script>
+// Elevator script included on the page, already.
+window.onload = function() {
+  var elevator = new Elevator({
+    selector:'.back-to-top-btn',
+    element: document.querySelector('.back-to-top-btn'),
+    duration: 1000 // milliseconds
+  });
+}
+</script>
+
+      
+
+  
+
+  
+
+
+
+
+
+
+
+<!-- author:forvoid begin -->
+<!-- author:forvoid begin -->
+
+<!-- author:forvoid end -->
+
+<!-- author:forvoid end -->
+
+
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      })
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      })
+    </script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js"></script>
+  
+
+
+ <script src="/blog/js/is.js"></script>
+
+
+  <link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
+  <script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/blog/js/script.js"></script>
+<script src="/blog/js/elevator.js"></script>
+  </div>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</body>
+</html>

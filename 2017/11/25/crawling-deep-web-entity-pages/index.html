@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>crawling-deep-web-entity-pages | 代码人生</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Crawling Deep Web Entity Pages 2013 年论文，发表在WSDM ‘13 Proceedings of the sixth ACM international conference on Web search and data mining  Introduction Document-oriented textual content: Wikipedia, PubM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="crawling-deep-web-entity-pages">
+<meta property="og:url" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/index.html">
+<meta property="og:site_name" content="代码人生">
+<meta property="og:description" content="Crawling Deep Web Entity Pages 2013 年论文，发表在WSDM ‘13 Proceedings of the sixth ACM international conference on Web search and data mining  Introduction Document-oriented textual content: Wikipedia, PubM">
+<meta property="og:locale" content="zh-cn">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/What-are-some-Positive-Uses-for-the-Deep-Web-1.jpg">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_15_22_34_27.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_15_22_36_01.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_15_22_37_46.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_25_19_28_30.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_25_19_46_34.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_25_19_43_48.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_15_22_41_42.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_15_23_02_42.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_18_11_58_08.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_25_11_47_19.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_18_12_05_47.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_27_10_53_07.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_16_09_24_10.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_16_09_35_22.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_25_10_59_26.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_16_09_39_27.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_16_09_40_23.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/820px-Freebase_Logo_optimised.svg.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/example-graph.jpg">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_25_11_13_54.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_16_10_33_18.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_16_11_05_51.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/Long-Tail-Large-1.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/bg2013031503.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/bg2013031504.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/bg2013031506.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/bg2013031507.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_25_15_26_42.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_16_11_20_38.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_16_11_21_01.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_18_11_29_34.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/20131015134839640.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_16_21_13_21.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_18_12_11_45.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_16_21_55_55.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_25_17_43_32.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_17_11_00_27.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_17_10_58_11.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_17_11_13_58.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_17_11_52_34.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_17_11_48_14.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/20111124212141974.jpg">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_17_17_18_12.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_17_17_34_31.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_17_21_08_37.png">
+<meta property="og:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/2017_11_17_21_12_14.png">
+<meta property="og:updated_time" content="2017-12-02T03:10:47.311Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="crawling-deep-web-entity-pages">
+<meta name="twitter:description" content="Crawling Deep Web Entity Pages 2013 年论文，发表在WSDM ‘13 Proceedings of the sixth ACM international conference on Web search and data mining  Introduction Document-oriented textual content: Wikipedia, PubM">
+<meta name="twitter:image" content="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/What-are-some-Positive-Uses-for-the-Deep-Web-1.jpg">
+  
+    <link rel="alternate" href="/atom.xml" title="代码人生" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    
+  
+  <link rel="stylesheet" href="/blog/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    
+    <div id="header-inner" class="inner">
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://blog.kunzhao.org"></form>
+      </div>
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/blog/">首页</a>
+        
+          <a class="main-nav-link" href="/blog/archives">归档</a>
+        
+          <a class="main-nav-link" href="/blog/about">关于</a>
+        
+      </nav>
+      
+    </div>
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/blog/" id="logo">代码人生</a>
+      </h1>
+      
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-crawling-deep-web-entity-pages" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/11/25/crawling-deep-web-entity-pages/" class="article-date">
+  <time datetime="2017-11-25T10:41:29.000Z" itemprop="datePublished">2017-11-25</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/论文/">论文</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      crawling-deep-web-entity-pages
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Crawling-Deep-Web-Entity-Pages"><a href="#Crawling-Deep-Web-Entity-Pages" class="headerlink" title="Crawling Deep Web Entity Pages"></a>Crawling Deep Web Entity Pages</h2><ul>
+<li><strong>2013</strong> 年论文，发表在<a href="https://dl.acm.org/citation.cfm?id=2433442" target="_blank" rel="external">WSDM ‘13 Proceedings of the sixth ACM international conference on Web search and data mining</a></li>
+</ul>
+<h3 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a><strong><font color="red">Introduction</font></strong></h3><ul>
+<li>Document-oriented textual content: Wikipedia, PubMed, Twitter</li>
+<li>Curate structured entities: almost all online shopping sites</li>
+</ul>
+<p>Existing crawling techniques optimized for document oriented content <strong>are not best suited for</strong> entity-oriented sites.</p>
+<p>In this paper we focus on entity-oriented deep-web sites. These sites <strong>curate structured entities</strong> and expose them through <strong>search</strong> interfaces.</p>
+<h4 id="Deep-Web"><a href="#Deep-Web" class="headerlink" title="Deep Web"></a>Deep Web</h4><p><strong>定义</strong>: The deep web, invisible web, or hidden web are parts of the World Wide Web whose contents are <strong>not indexed by standard search engines</strong> for any reason. The content is <strong>hidden behind HTML forms</strong>.</p>
+<p><strong>大小</strong>:</p>
+<ul>
+<li><strong>Only a 4% of information</strong> is visible to the search engines like <code>Google</code> or <code>Yahoo</code> which is said to be a “Visible Web” or “Surface Web“.</li>
+<li>The Deep Web is estimated to be <strong>500x</strong> the size of the Surface Web</li>
+</ul>
+<p><img src="What-are-some-Positive-Uses-for-the-Deep-Web-1.jpg" alt=""></p>
+<h4 id="Entity-oriented-Deep-Web"><a href="#Entity-oriented-Deep-Web" class="headerlink" title="Entity-oriented Deep Web"></a>Entity-oriented Deep Web</h4><p><strong>Amazon.com</strong>:</p>
+<p><img src="2017_11_15_22_34_27.png" alt=""></p>
+<p><strong>lagou.com</strong>:</p>
+<p><img src="2017_11_15_22_36_01.png" alt=""></p>
+<p><strong>movie.mtime.com</strong>:</p>
+<p><img src="2017_11_15_22_37_46.png" alt=""></p>
+<h3 id="现有搜索引擎爬取暗网解决方案"><a href="#现有搜索引擎爬取暗网解决方案" class="headerlink" title="现有搜索引擎爬取暗网解决方案"></a>现有搜索引擎爬取暗网解决方案</h3><ul>
+<li><strong><code>Baidu</code></strong>: 第三方平台通过提交<strong>结构化数据</strong>给百度，从而获得百度的搜索结果。</li>
+</ul>
+<p><img src="2017_11_25_19_28_30.png" alt=""></p>
+<ul>
+<li><strong><code>Google</code></strong>: 自动模拟 <code>form</code> 表单提交过程，来尽量进行一个更全的数据索引。</li>
+</ul>
+<p><img src="2017_11_25_19_46_34.png" alt=""><br><img src="2017_11_25_19_43_48.png" alt=""></p>
+<h4 id="The-goal-of-our-system"><a href="#The-goal-of-our-system" class="headerlink" title="The goal of our system"></a>The goal of our system</h4><p>Crawl product entities from a large number of online retailers for <strong>advertisement landing page</strong> purposes. The purpose of the system is <strong>not to obtain</strong> all <code>iphone</code> listings, but only a representative few of these listings for ads landing pages.</p>
+<p>While the exact use of such entities content in advertisement is <strong>beyond</strong> the scope of this paper, the system requirement is simple to state: We are provided as <strong>input</strong> a list of retailers’ websites, and the objective is to <strong>crawl</strong> high-quality product entity <strong>pages</strong> efficiently and effectively.</p>
+<p><img src="2017_11_15_22_41_42.png" alt=""></p>
+<p>Traditional deep-web crawl literature, which tends to deal with individual site and <strong>focus</strong> on obtaining <strong>exhausive</strong> content coverage.</p>
+<h3 id="System-Overview"><a href="#System-Overview" class="headerlink" title="System Overview"></a><strong><font color="red">System Overview</font></strong></h3><p><img src="2017_11_15_23_02_42.png" alt=""></p>
+<h3 id="URL-template-generation"><a href="#URL-template-generation" class="headerlink" title="URL template generation"></a><strong><font color="red">URL template generation</font></strong></h3><p>几个深网网站主页面作为输入:</p>
+<table>
+<thead>
+<tr>
+<th>Deep-Web sites</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>https://www.ebay.com</code></td>
+</tr>
+<tr>
+<td><code>https://www.taobao.com</code></td>
+</tr>
+</tbody>
+</table>
+<p>经过 <strong>URL 模板生成器</strong> 模块以后输出:</p>
+<table>
+<thead>
+<tr>
+<th>URL templates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>https://www.ebay.com/sch/i.html?_nkw={query}</code></td>
+</tr>
+<tr>
+<td><code>https://s.taobao.com/search?q={query}</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p>Parse search forms technique <a href="https://homes.cs.washington.edu/~alon/files/vldb08deepweb.pdf" target="_blank" rel="external">Google’s Deep-Web Crawl</a>:</p>
+<p><img src="2017_11_18_11_58_08.png" alt=""></p>
+<ul>
+<li>便于搜索引擎索引</li>
+<li>忽略带有 <code>password</code> 类型的 <code>input</code> ，需要输入个人信息</li>
+<li>忽略带有 <code>textarea</code> 类型的 <code>input</code> ，一般作为 <code>feedback</code>/<code>comments</code></li>
+<li>处理 <code>JavaScript</code> 事件，超出了论文范围</li>
+</ul>
+<p><img src="2017_11_25_11_47_19.png" alt=""></p>
+<p><img src="2017_11_18_12_05_47.png" alt=""></p>
+<p><strong>输入的查询组合</strong>:</p>
+<p><img src="2017_11_27_10_53_07.png" alt=""></p>
+<p>生成 7 个查询模板：</p>
+<ul>
+<li><code>{地点}</code></li>
+<li><code>{时间}</code></li>
+<li><code>{房客}</code></li>
+<li><code>{地点, 时间}</code></li>
+<li><code>{时间, 房客}</code></li>
+<li><code>{地点, 房客}</code></li>
+<li><code>{地点, 时间, 房客}</code></li>
+</ul>
+<p>每个模板，提交若干个查询，观察返回页面内容变化情况，如果大部分返回内容都相同或相似，则说明这个查询模板不是<strong>富含信息查询模板</strong>。</p>
+<p>假设按照上面方式对所有模板一一试探，判断对其是否富含信息查询模板，则因为查询模板数量太多，<strong>系统效率还是会低</strong>。为了进一步减少提交的查询数目，<code>Google</code> 又提出了 <u><code>ISIT (Incremental Search for Informative Query Templates)</code></u> 算法:</p>
+<p>首先从<strong>一维模板</strong>开始，对一维模板逐个考察，看其是否富含信息查询模板，如果是的话，则将这个<strong>一维模板扩展到二维</strong>，再次考察对应的二维模板，如此类推，逐步增加维数，直到再也无法找到富含信息查询模板为止。通过这种方式，能够大幅度提升系统效率。</p>
+<hr>
+<p>However, our analysis shows that generating URL templates by <strong>enumerating values combination in multiple input fields</strong> can lead to an inefficiently large number of templates and may not scale to the number of websites that we are interested in crawling.</p>
+<p>我们还发现 for entity-oriented sites:</p>
+<ul>
+<li>the main search form is almost <strong>always on home pages</strong> instead of somewhere deep in the site</li>
+<li>search forms predominantly <strong>use one main text fields</strong> to accept keyword queries</li>
+</ul>
+<p><img src="2017_11_16_09_24_10.png" alt=""></p>
+<p>This <strong>obviates</strong> the need to use sophisticated techniques to <strong>locate search forms</strong> deep in websites.</p>
+<h3 id="Query-generation-and-URL-generation"><a href="#Query-generation-and-URL-generation" class="headerlink" title="Query generation and URL generation"></a><font color="red">Query generation and URL generation</font></h3><p>We utilize two data sources for query generation: <strong>query logs</strong> and <strong>knowledge-bases</strong>. Our main observation here is that classical techniques in information retrieval and entity extraction are <strong>already effective</strong> in generating entity queries.</p>
+<h4 id="1-Entity-extraction-from-query-logs"><a href="#1-Entity-extraction-from-query-logs" class="headerlink" title="1. Entity extraction from query logs"></a><font color="#673AB7">1. Entity extraction from query logs</font></h4><p>Takes the <code>Freebase</code> and query logs as input, outputs queries consistent with the semantics of each deep-web site.</p>
+<p><img src="2017_11_16_09_35_22.png" alt=""></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&lt;查询的关键词, 点击的 URL, URL 被点击的次数&gt;</div></pre></td></tr></table></figure>
+<p><img src="2017_11_25_10_59_26.png" alt=""></p>
+<p>问题所在: queries in the query logs tend to <strong>contain extraneous tokens</strong> in addition to the central entity of interest:</p>
+<p><code>Google</code> 实际接受的关键字查询 <code>hp touchpad reviews</code> 用来直接在 <code>ebay</code> 上搜索:</p>
+<p><img src="2017_11_16_09_39_27.png" alt=""></p>
+<p><code>ebay</code> 实际上需要的词汇 <code>hp touchpad</code>:</p>
+<p><img src="2017_11_16_09_40_23.png" alt=""></p>
+<p>这个时候我们需要…<strong>a comprehensive entity dictionary</strong></p>
+<p><strong>Freebase</strong>: <code>Freebase</code> 是个类似 <code>wikipedia</code> 的创作共享类网站，所有内容都由用户添加，采用创意共用许可证，可以自由引用。两者之间最大的不同在于，<code>Freebase</code> 中的条目都采用<strong>结构化数据</strong>的形式，而 <code>wikipedia</code> 不是。 </p>
+<p><img src="820px-Freebase_Logo_optimised.svg.png" alt=""></p>
+<ul>
+<li>It was developed by the American software company <strong><code>Metaweb</code></strong> and ran publicly since <strong>March 2007</strong>.</li>
+<li><code>Metaweb</code> was acquired by Google in a private sale announced <strong>16 July 2010</strong>. Google’s Knowledge Graph was powered in part by Freebase.</li>
+<li>对外提供 <strong>RDF、API</strong> 形式的数据</li>
+<li>On 16 December 2015, Google officially announced the <strong>Knowledge Graph API</strong>, which is meant to be a replacement to the Freebase API. <code>Freebase.com</code> was officially shut down on 2 May 2016.</li>
+</ul>
+<p><strong>RDF 把天下所有的信息以同一种方式描述:</strong></p>
+<p>每一条描述都是一个<strong>主谓宾三元组</strong>构成的短句:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&#123; 苹果, 是, 公司 &#125;, </div><div class="line">&#123; 库克, 是, 人 &#125;, </div><div class="line">&#123; 苹果, CEO 是, 库克 &#125;</div></pre></td></tr></table></figure>
+<p>你要直接说 <strong>「苹果公司的 CEO 是个叫库克的人」</strong> ，计算机就凌乱了啊，因为<strong>自然语言包含太多的不确定性</strong>。有了许多这样的三元组以后，我们就可以得到一个<strong>知识网</strong>。</p>
+<p><img src="example-graph.jpg" alt=""></p>
+<p>“知识图谱” （Knowledge Graph） —— <strong>可以将搜索结果进行知识系统化，任何一个关键词都能获得完整的知识体系</strong>。比如搜索“Amazon”（亚马逊河），一般的搜索结果会给出和 <code>Amazon</code> 最相关的信息。比如 <code>Amazon</code> 网站，因为网上关于它的信息最多，但 <code>Amazon</code> 并不仅仅是一个网站，它还是全球流量最大的 <code>Amazon</code> 河流。如果在追溯历史，它可能还是希腊女战士一族的代称。而这些结果未来都会在 <code>Google</code> 搜索的“知识图谱”中展现出来。</p>
+<p><strong>Knowledge Graph data</strong> about <strong>Thomas Jefferson</strong> displayed on Google Web Search:</p>
+<p><img src="2017_11_25_11_13_54.png" alt=""></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">https://kgsearch.googleapis.com/v1/entities:search?query=taylor+swift&amp;key=API_KEY&amp;limit=1&amp;indent=True</div></pre></td></tr></table></figure>
+<p>服务器返回结果:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">  <span class="string">"@context"</span>: &#123;</div><div class="line">    <span class="string">"@vocab"</span>: <span class="string">"http://schema.org/"</span>,</div><div class="line">    <span class="string">"goog"</span>: <span class="string">"http://schema.googleapis.com/"</span>,</div><div class="line">    <span class="string">"resultScore"</span>: <span class="string">"goog:resultScore"</span>,</div><div class="line">    <span class="string">"detailedDescription"</span>: <span class="string">"goog:detailedDescription"</span>,</div><div class="line">    <span class="string">"EntitySearchResult"</span>: <span class="string">"goog:EntitySearchResult"</span>,</div><div class="line">    <span class="string">"kg"</span>: <span class="string">"http://g.co/kg"</span></div><div class="line">  &#125;,</div><div class="line">  <span class="string">"@type"</span>: <span class="string">"ItemList"</span>,</div><div class="line">  <span class="string">"itemListElement"</span>: [</div><div class="line">    &#123;</div><div class="line">      <span class="string">"@type"</span>: <span class="string">"EntitySearchResult"</span>,</div><div class="line">      <span class="string">"result"</span>: &#123;</div><div class="line">        <span class="string">"@id"</span>: <span class="string">"kg:/m/0dl567"</span>,</div><div class="line">        <span class="string">"name"</span>: <span class="string">"Taylor Swift"</span>,</div><div class="line">        <span class="string">"@type"</span>: [</div><div class="line">          <span class="string">"Thing"</span>,</div><div class="line">          <span class="string">"Person"</span></div><div class="line">        ],</div><div class="line">        <span class="string">"description"</span>: <span class="string">"Singer-songwriter"</span>,</div><div class="line">        <span class="string">"image"</span>: &#123;</div><div class="line">          <span class="string">"contentUrl"</span>: <span class="string">"https://t1.gstatic.com/images?q=tbn:ANd9GcQmVDAhjhWnN2OWys2ZMO3PGAhupp5tN2LwF_BJmiHgi19hf8Ku"</span>,</div><div class="line">          <span class="string">"url"</span>: <span class="string">"https://en.wikipedia.org/wiki/Taylor_Swift"</span>,</div><div class="line">          <span class="string">"license"</span>: <span class="string">"http://creativecommons.org/licenses/by-sa/2.0"</span></div><div class="line">        &#125;,</div><div class="line">        <span class="string">"detailedDescription"</span>: &#123;</div><div class="line">          <span class="string">"articleBody"</span>: <span class="string">"Taylor Alison Swift is an American singer-songwriter and actress. Raised in Wyomissing, Pennsylvania, she moved to Nashville, Tennessee, at the age of 14 to pursue a career in country music. "</span>,</div><div class="line">          <span class="string">"url"</span>: <span class="string">"http://en.wikipedia.org/wiki/Taylor_Swift"</span>,</div><div class="line">          <span class="string">"license"</span>: <span class="string">"https://en.wikipedia.org/wiki/Wikipedia:Text_of_Creative_Commons_Attribution-ShareAlike_3.0_Unported_License"</span></div><div class="line">        &#125;,</div><div class="line">        <span class="string">"url"</span>: <span class="string">"http://taylorswift.com/"</span></div><div class="line">      &#125;,</div><div class="line">      <span class="string">"resultScore"</span>: <span class="number">896.576599</span></div><div class="line">    &#125;</div><div class="line">  ]</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>we first obtained a dump of the Freebase data — a manually curated repository with about 22M entities. We then find the <strong>maximum-length subsequence</strong> in each search engine query that <strong>matches</strong> Freebase entities as an entity mention. The remaining tokens are treated as <strong>entity-irrelevant prefix/suffix</strong>. We aggregate distinct prefix/suffix across the query logs to obtain common patterns ordered by their <strong>frequency of occurrences</strong>. The most frequent patterns are likely to be irrelevant to entities and need to be cleaned.</p>
+<ul>
+<li>匹配 <code>entity</code></li>
+<li>按照出现的频率排序 <code>entity</code> 不想关的前缀/后缀</li>
+<li>移除出现较多的前缀/后缀</li>
+</ul>
+<p><img src="2017_11_16_10_33_18.png" alt=""></p>
+<p><strong>Example entities</strong> extracted for each deep-web site:</p>
+<p><img src="2017_11_16_11_05_51.png" alt=""></p>
+<h4 id="2-Entity-extraction-from-using-knowledge-bases"><a href="#2-Entity-extraction-from-using-knowledge-bases" class="headerlink" title="2. Entity extraction from using knowledge-bases"></a><font color="#673AB7">2. Entity extraction from using knowledge-bases</font></h4><p>While query logs provide a good set of initial seed entities, its <strong>coverage</strong> for each site depends on the <strong>site’s popularity</strong> as well as the <strong>item’s popularity</strong>. Even for highly popular sites, there is a <strong>long tail</strong> of less popular items which may not be captured by query logs.</p>
+<p><strong>长尾效应</strong>: 极少数个体（横轴）对应极高的值（纵轴），而拥有极低值的个体，数量却占总体的绝大多数:</p>
+<p><img src="Long-Tail-Large-1.png" alt=""></p>
+<p>Examples of these two types of keywords would be:</p>
+<ul>
+<li>Non-long tail: <strong>“jewelry”</strong> – 201,000 searches per month in Google </li>
+<li>Long tail:  <strong>“men’s silver jewelry”</strong> – 260 searches per month in Google </li>
+</ul>
+<p>“Men’s silver jewelry” is an example of a long tail keyword as it gets searched for less than the more generic “jewelry” keyword. As these long tail keywords are searched for less often, they can be less attractive for large and successful websites with big marketing budgets to try and rank for.</p>
+<p>On the other hand, we observe that there exists manually curated entity repositories (e.g., Freebase), that maintain entities <strong>in certain domains with very high coverage (city names, books, car models, movies, etc) 在相应领域覆盖面都比较全</strong>.Thus, for each site, we need to bootstrap from these seed entities to <strong>expand</strong> to Freebase entity “types” that are relevant to each site’s semantics.</p>
+<p>我们可以…继续使用 <code>Freebase</code> 来扩展我们的种子 <code>entities</code>。</p>
+<hr>
+<ul>
+<li><strong>词频 (term frequency, TF)</strong>: </li>
+</ul>
+<p><img src="bg2013031503.png" alt=""><br><img src="bg2013031504.png" alt=""></p>
+<ul>
+<li><strong>逆向文件频率 (inverse document frequency, IDF)</strong> 是一个词语普遍重要性的度量</li>
+</ul>
+<p><img src="bg2013031506.png" alt=""></p>
+<p>如果一个词越常见，那么分母就越大，逆文档频率就越小越接近0。分母之所以要加1，是为了避免分母为0（即所有文档都不包含该词）。log表示对得到的值取对数。</p>
+<ul>
+<li><strong>TF-IDF</strong>:</li>
+</ul>
+<p><img src="bg2013031507.png" alt=""></p>
+<p><strong>可以看到，TF-IDF与一个词在文档中的出现次数成正比，与该词在整个语言中的出现次数成反比。</strong></p>
+<p><a href="http://www.ruanyifeng.com/blog/2013/03/tf-idf.html" target="_blank" rel="external">TF-IDF 的应用</a>:</p>
+<ul>
+<li>提取文档关键词</li>
+<li>信息检索时，对于每个文档，都可以分别计算<strong>一组搜索词</strong>（”中国”、”蜜蜂”、”养殖”）的 TF-IDF，将它们<strong>相加</strong>，就可以得到整个文档的TF-IDF。这个<strong>值最高</strong>的文档就是与搜索词最相关的文档</li>
+<li>寻找与原文章相似的其他文章</li>
+<li>对文章进行自动摘要</li>
+</ul>
+<p>We borrow classical techniques from information retrieval: if we view the multi-set of Freebase entity mentions for each site as a <strong>document</strong>, and <strong>the list of entities</strong> in each Freebase <strong>type</strong> as a <strong>query</strong>, then the classical term-frequency, inverse document frequency (<strong>TF-IDF</strong>) ranking can be applied.</p>
+<p>For each Freebase type, we use TF-IDF to produce <strong>a ranked list of deep-web sites by their similarity scores</strong>. We then “threshold” the sorted list using a relative score. That is, we include all sites with scores <strong>above</strong> a fixed percentage, τ, <strong>of the highest similarity score in the same Freebase type as matches</strong>. Empirically results in Section 8 show that setting <strong>τ = 0.5</strong> achieves good results and is used in our system. This approach is significantly <strong>more effective</strong> than other alternatives like <strong>Cosine or Jaccard Similarity</strong>.</p>
+<p>对于 <code>ebay.com</code>，我们获取了一个初始的 <code>document</code>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">iphone 4</div><div class="line">lenovo</div><div class="line">...</div></pre></td></tr></table></figure>
+<p>对于 <code>bestbuy.com</code>,我们获取了一个初始的 <code>document</code>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">hp touchpad,</div><div class="line">sony vaio</div></pre></td></tr></table></figure>
+<p>然后我们有一个 <code>Freebase Type</code>, 比如 <code>Electronics</code>， 有关键词:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Samsung Galaxy s8,</div><div class="line">lenovo</div><div class="line">...</div></pre></td></tr></table></figure>
+<p><img src="2017_11_25_15_26_42.png" alt=""></p>
+<h3 id="Empty-page-filter"><a href="#Empty-page-filter" class="headerlink" title="Empty page filter"></a><font color="red">Empty page filter</font></h3><p>我们发现… Empty pages from the same site <strong>tend to be highly similar</strong>.</p>
+<p>随机输入采集空页面样本:</p>
+<p><img src="2017_11_16_11_20_38.png" alt=""><br><img src="2017_11_16_11_21_01.png" alt=""></p>
+<p>Let $S_{p1}$ and $S_{p2}$ be the sets of tokens representing the <strong>signature</strong> of the crawled page $p1$ and $p2$. The <strong><code>Jaccard Similarity</code></strong> between $S_{p1}$ and $S_{p2}$, denoted $Sim_{jac} (S_{p1}, S_{p2})$, is defined as:</p>
+<p><img src="2017_11_18_11_29_34.png" alt=""></p>
+<hr>
+<p><strong>Jaccard 相似度</strong>:</p>
+<p>计算两个集合之间的相似度</p>
+<p><img src="20131015134839640.png" alt=""></p>
+<p>当平均值大于 $\theta$ 的时候，我们将它判断为空页面。 As we will show in experiments, this approach is very effective in detecting empty pages across different websites (with an overall <strong>precision of 0.89</strong> and a <strong>recall of 0.9</strong>).</p>
+<hr>
+<p>对于 <code>signature</code> 是如何计算的:</p>
+<p>While the exact details of <code>Sig</code> are <strong>less important</strong>, we enumerate the important properties we want from such a function <a href="https://homes.cs.washington.edu/~alon/files/vldb08deepweb.pdf" target="_blank" rel="external">参考: Google’s Deep-Web Crawl</a>:</p>
+<ul>
+<li>the signature should be <strong>agnostic to HTML formatting</strong>, since presentation inputs often simply change the layout of the web page.</li>
+<li>Third, the signature must be <strong>tolerant to minor differences</strong> in page content. A common source of differences are advertisements, especially on commercial sites。 These advertisements are typically displayed on page margins. They contribute to the text on the page but do not reflect the content of the retrieved records and hence have to be filtered away.</li>
+<li>Lastly, the signature should <strong>not include the input values</strong> themselves.</li>
+</ul>
+<h3 id="二级页面抓取"><a href="#二级页面抓取" class="headerlink" title="二级页面抓取"></a><font color="red">二级页面抓取</font></h3><p>We refer to the first set of pages obtained through URL templates as “first-level pages” (because they are <strong>one click</strong> away from homepage), and those pages that are linked from first-level pages as “second-level pages”.</p>
+<h4 id="The-motivation-for-second-level-crawl"><a href="#The-motivation-for-second-level-crawl" class="headerlink" title="The motivation for second level crawl"></a>The motivation for second level crawl</h4><p><img src="2017_11_16_21_13_21.png" alt=""></p>
+<p>Faceted search/browsing paradigm:</p>
+<p><img src="2017_11_18_12_11_45.png" alt=""></p>
+<ul>
+<li>improving content coverage</li>
+</ul>
+<h4 id="URL-extraction-and-filtering"><a href="#URL-extraction-and-filtering" class="headerlink" title="URL extraction and filtering"></a>URL extraction and filtering</h4><ul>
+<li>Whil some second-level URLs are desirable, not all second level URLs should be crawled for effiency as well as <strong>quality</strong> reasons.</li>
+<li>We observe that filtering URLs by <strong>keyword-query arguments</strong> significantly reduces the number of URLs — typically by a factor of 3-5.</li>
+</ul>
+<h4 id="URL-deduplication"><a href="#URL-deduplication" class="headerlink" title="URL deduplication"></a>URL deduplication</h4><p>We observe that after URL filtering, there are groups of URLs that are different in their text string but really lead to <strong>similar or nearly identical</strong> deep-web content.</p>
+<p><img src="2017_11_16_21_55_55.png" alt=""></p>
+<p>content-based URL deduplication</p>
+<ul>
+<li><code>www.cnn.com/story?id=num</code></li>
+<li><code>www.cnn.com/story_num</code></li>
+</ul>
+<hr>
+<p>In this paper we propose an approach that analyzes <strong>URL argument patterns</strong> and deduplicates URLs even <strong>before</strong> any pages are crawled.</p>
+<p>First, we categorize query segments into <strong>three groups</strong>:</p>
+<ol>
+<li><u><strong>selection segments</strong></u>: are query segments that correspond to selection predicates and can <strong>affect</strong> the set of result entities.</li>
+<li><u><strong>presentation segments</strong></u>: are query segments that do not change the result set, but only affect how the set of entities are <strong>presented</strong>.</li>
+<li><u><strong>content irrelevant segments</strong></u>: are query segments that have no immediate impact on the result entities.</li>
+</ol>
+<p>We then define two URLs as <strong>semantic duplicates</strong> if the corresponding selection queries <strong>have the same set of selection segments</strong>.</p>
+<p>然后我们又注意到:</p>
+<ol>
+<li>The fact that these query segments in <strong>almost all pages</strong> indicates that they are not specific to the input keyword query, and are thus likely to be either <strong>presentational</strong> (sorting, page number, etc.), or <strong>content irrelevant</strong> (internal tracking, etc.).</li>
+<li>On the other hand, selection segments, like manufacturer name (“mfgid=-652” for “Garmin”) in the previous example, are <strong>much more sensitive to the input queries</strong>.</li>
+</ol>
+<p>To capture this intuition we define a notion of <strong>prevalence</strong> at the <u>query segment (argument/value pair) level</u> and also at the <u>argument level</u>:</p>
+<p><img src="2017_11_25_17_43_32.png" alt=""></p>
+<p>The average prevalence score at argument level is a more robust indicator of the prevalence of an argument.</p>
+<p>我们将 any argument with prevalence higher than <code>\theta</code> 视为 <strong>semantically-irrelevant</strong>. On the other hand, if an query segment’s arguments has prevalence lower than <code>\theta</code> it is assumed to be a <strong>selection argment</strong>.</p>
+<h3 id="Experiments"><a href="#Experiments" class="headerlink" title="Experiments"></a><font color="red">Experiments</font></h3><p>简单讨论一下实验结果</p>
+<h4 id="Query-extraction-from-query-logs"><a href="#Query-extraction-from-query-logs" class="headerlink" title="Query extraction from query logs"></a><font color="#673AB7">Query extraction from query logs</font></h4><p>In this experiment, we used <strong>6 month’s worth Google’s query logs</strong>, and entities in Freebase as seed entities. In order to evaluate whether patterns produced by our approach is truly entity-irrelevant or not, we asked a <strong>domain expert</strong> to manually label top 200 patterns, as correct predictions (irrelevant to entities) or incorrect predictions (relevant to entities).</p>
+<p>The top 10 most frequent prefix and suffix patterns we produced:</p>
+<p><img src="2017_11_17_11_00_27.png" alt=""></p>
+<p>We summarize the precision for top 10, 20, 50, 100 and 200 patterns:</p>
+<p><img src="2017_11_17_10_58_11.png" alt=""></p>
+<h4 id="Entity-expansion-using-Freebase"><a href="#Entity-expansion-using-Freebase" class="headerlink" title="Entity expansion using Freebase"></a><font color="#673AB7">Entity expansion using Freebase</font></h4><p><img src="2017_11_17_11_13_58.png" alt=""></p>
+<ul>
+<li>10 个领域</li>
+<li>流量最大的前 100 零售商</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&lt;网站, Freebase 类型&gt;</div></pre></td></tr></table></figure>
+<p><img src="2017_11_17_11_52_34.png" alt=""></p>
+<p><img src="2017_11_17_11_48_14.png" alt=""></p>
+<h4 id="Empty-page-filtering"><a href="#Empty-page-filtering" class="headerlink" title="Empty page filtering"></a><font color="#673AB7">Empty page filtering</font></h4><p><strong>Precision and recall (准确率 &amp; 召回率)</strong>:</p>
+<p><strong>准确率</strong>和<strong>召回率</strong>是广泛用于信息检索和统计学分类领域的两个度量值，用来评价结果的质量。其中精度是检索出相关文档数与检索出的文档总数的比率，衡量的是检索系统的<strong>查准率</strong>；召回率是指检索出的相关文档数和文档库中所有的相关文档数的比率，衡量的是检索系统的<strong>查全率</strong>。 <a href="http://bookshadow.com/weblog/2014/06/10/precision-recall-f-measure/" target="_blank" rel="external">参考</a></p>
+<p>一般来说，<code>Precision</code> 就是检索出来的条目（比如：文档、网页等）有多少是准确的，Recall就是所有准确的条目有多少被检索出来了。</p>
+<p>正确率、召回率是在鱼龙混杂的环境中，选出目标的重要评价指标。不妨看看这些指标的定义先：</p>
+<ul>
+<li><code>正确率 = 提取出的正确信息条数 /  提取出的信息条数</code></li>
+<li><code>召回率 = 提取出的正确信息条数 /  样本中的信息条数</code></li>
+</ul>
+<p>两者取值在 <code>0</code> 和 <code>1</code> 之间，数值越接近 <code>1</code>，查准率或查全率就越高。</p>
+<p><img src="20111124212141974.jpg" alt=""></p>
+<p>When a search engine returns 30 pages only 20 of which were relevant while failing to return 40 additional relevant pages, its precision is 20/30 = 2/3 while its recall is 20/60 = 1/3. So, in this case, precision is <strong>“how useful the search results are”</strong>, and recall is <strong>“how complete the results are”</strong>.</p>
+<p>In pattern recognition, information retrieval and binary classification, Precision and Recall 是<strong>两个很重要的评估指标</strong>。</p>
+<hr>
+<p><img src="2017_11_17_17_18_12.png" alt=""></p>
+<p>随机选择了 10 个高流量的网站:</p>
+<p><img src="2017_11_17_17_34_31.png" alt=""></p>
+<h4 id="URL-deduplication-1"><a href="#URL-deduplication-1" class="headerlink" title="URL deduplication"></a><font color="#673AB7">URL deduplication</font></h4><p>继续使用了上面 10 个网站，阈值在 0.01 ~ 0.5 之间的结果：</p>
+<p><img src="2017_11_17_21_08_37.png" alt=""><br><img src="2017_11_17_21_12_14.png" alt=""></p>
+<h3 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a><font color="red">Conclusion</font></h3><ul>
+<li>In the template generation, our parsing approach <strong>only handles HTML “GET”</strong> forms but not “POST” forms or javascript forms.</li>
+<li>In query generation, although Freebase-based entity expansion is useful, certain sites with <strong>低流量</strong> or diverse traffic do not get matched with Freebase types effectively using query logs alone.</li>
+<li>Utilizing additional signals (e.g., entities bootstrapped from crawled pages) for <strong>entity expansion</strong> is an interesting area.</li>
+<li>Efficiently enumerate entity query for search forms with <strong>多个文本框</strong> is another interesting challenge.</li>
+</ul>
+<p>（完）</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/11/25/crawling-deep-web-entity-pages/" data-id="cjc5qrt1c002v5cem6uw3m00a" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+    
+ <script src="/blog/jquery/jquery.min.js"></script>
+  <div id="random_posts">
+    <h2>Recommended Posts</h2>
+    <div class="random_posts_ul">
+      <script>
+          var random_count =4
+          var site = {BASE_URI:'/blog/'};
+          function load_random_posts(obj) {
+              var arr=site.posts;
+              if (!obj) return;
+              // var count = $(obj).attr('data-count') || 6;
+              for (var i, tmp, n = arr.length; n; i = Math.floor(Math.random() * n), tmp = arr[--n], arr[n] = arr[i], arr[i] = tmp);
+              arr = arr.slice(0, random_count);
+              var html = '<ul>';
+            
+              for(var j=0;j<arr.length;j++){
+                var item=arr[j];
+                html += '<li><strong>' + 
+                item.date + ':&nbsp;&nbsp;<a href="' + (site.BASE_URI+item.uri) + '">' + 
+                (item.title || item.uri) + '</a></strong>';
+                if(item.excerpt){
+                  html +='<div class="post-excerpt">'+item.excerpt+'</div>';
+                }
+                html +='</li>';
+                
+              }
+              $(obj).html(html + '</ul>');
+          }
+          $('.random_posts_ul').each(function () {
+              var c = this;
+              if (!site.posts || !site.posts.length){
+                  $.getJSON(site.BASE_URI + 'js/posts.js',function(json){site.posts = json;load_random_posts(c)});
+              } 
+               else{
+                load_random_posts(c);
+              }
+          });
+      </script>
+    </div>
+  </div>
+
+    
+<nav id="article-nav">
+  
+    <a href="/blog/2017/11/28/jetty/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          jetty
+        
+      </div>
+    </a>
+  
+  
+    <a href="/blog/2017/11/09/deep-web-paper/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">deep-web-paper</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+ 
+     
+  
+
+</section>
+           
+    <aside id="sidebar">
+  
+    
+
+  
+    
+    <div class="widget-wrap">
+    
+      <div class="widget" id="toc-widget-fixed">
+      
+        <strong class="toc-title">Content</strong>
+        <div class="toc-widget-list">
+              <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Crawling-Deep-Web-Entity-Pages"><span class="toc-number">1.</span> <span class="toc-text">Crawling Deep Web Entity Pages</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Introduction"><span class="toc-number">1.1.</span> <span class="toc-text">Introduction</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Deep-Web"><span class="toc-number">1.1.1.</span> <span class="toc-text">Deep Web</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Entity-oriented-Deep-Web"><span class="toc-number">1.1.2.</span> <span class="toc-text">Entity-oriented Deep Web</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#现有搜索引擎爬取暗网解决方案"><span class="toc-number">1.2.</span> <span class="toc-text">现有搜索引擎爬取暗网解决方案</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#The-goal-of-our-system"><span class="toc-number">1.2.1.</span> <span class="toc-text">The goal of our system</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#System-Overview"><span class="toc-number">1.3.</span> <span class="toc-text">System Overview</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#URL-template-generation"><span class="toc-number">1.4.</span> <span class="toc-text">URL template generation</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Query-generation-and-URL-generation"><span class="toc-number">1.5.</span> <span class="toc-text">Query generation and URL generation</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-Entity-extraction-from-query-logs"><span class="toc-number">1.5.1.</span> <span class="toc-text">1. Entity extraction from query logs</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-Entity-extraction-from-using-knowledge-bases"><span class="toc-number">1.5.2.</span> <span class="toc-text">2. Entity extraction from using knowledge-bases</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Empty-page-filter"><span class="toc-number">1.6.</span> <span class="toc-text">Empty page filter</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#二级页面抓取"><span class="toc-number">1.7.</span> <span class="toc-text">二级页面抓取</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#The-motivation-for-second-level-crawl"><span class="toc-number">1.7.1.</span> <span class="toc-text">The motivation for second level crawl</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#URL-extraction-and-filtering"><span class="toc-number">1.7.2.</span> <span class="toc-text">URL extraction and filtering</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#URL-deduplication"><span class="toc-number">1.7.3.</span> <span class="toc-text">URL deduplication</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Experiments"><span class="toc-number">1.8.</span> <span class="toc-text">Experiments</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Query-extraction-from-query-logs"><span class="toc-number">1.8.1.</span> <span class="toc-text">Query extraction from query logs</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Entity-expansion-using-Freebase"><span class="toc-number">1.8.2.</span> <span class="toc-text">Entity expansion using Freebase</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Empty-page-filtering"><span class="toc-number">1.8.3.</span> <span class="toc-text">Empty page filtering</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#URL-deduplication-1"><span class="toc-number">1.8.4.</span> <span class="toc-text">URL deduplication</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Conclusion"><span class="toc-number">1.9.</span> <span class="toc-text">Conclusion</span></a></li></ol></li></ol>
+          </div>
+      </div>
+    </div>
+
+  
+    
+
+  
+    
+  
+    
+  
+    
+
+  
+    
+  
+</aside>
+
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-left">
+      &copy; 2014 - 2018 赵坤&nbsp;|&nbsp;
+      Theme by <a href="https://github.com/giscafer/hexo-theme-cafe/" target="_blank">Cafe</a>
+    </div>
+     <div id="footer-right">
+      Contact&nbsp;|&nbsp;igozhaokun@163.com
+    </div>
+  </div>
+</footer>
+ <script src="/blog/jquery/jquery.min.js"></script>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/blog/" class="mobile-nav-link">首页</a>
+  
+    <a href="/blog/archives" class="mobile-nav-link">归档</a>
+  
+    <a href="/blog/about" class="mobile-nav-link">关于</a>
+  
+</nav>
+    <img class="back-to-top-btn" src="/blog/images/fly-to-top.png"/>
+<script>
+// Elevator script included on the page, already.
+window.onload = function() {
+  var elevator = new Elevator({
+    selector:'.back-to-top-btn',
+    element: document.querySelector('.back-to-top-btn'),
+    duration: 1000 // milliseconds
+  });
+}
+</script>
+
+      
+
+  
+
+  
+
+
+
+
+
+
+
+<!-- author:forvoid begin -->
+<!-- author:forvoid begin -->
+
+<!-- author:forvoid end -->
+
+<!-- author:forvoid end -->
+
+
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      })
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      })
+    </script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js"></script>
+  
+
+
+ <script src="/blog/js/is.js"></script>
+
+
+  <link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
+  <script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/blog/js/script.js"></script>
+<script src="/blog/js/elevator.js"></script>
+  </div>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</body>
+</html>

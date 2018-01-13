@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>代码人生</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="赵坤的个人网站">
+<meta property="og:type" content="website">
+<meta property="og:title" content="代码人生">
+<meta property="og:url" content="http://blog.kunzhao.org/page/18/index.html">
+<meta property="og:site_name" content="代码人生">
+<meta property="og:description" content="赵坤的个人网站">
+<meta property="og:locale" content="zh-cn">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="代码人生">
+<meta name="twitter:description" content="赵坤的个人网站">
+  
+    <link rel="alternate" href="/atom.xml" title="代码人生" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    
+  
+  <link rel="stylesheet" href="/blog/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    
+    <div id="header-inner" class="inner">
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://blog.kunzhao.org"></form>
+      </div>
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/blog/">首页</a>
+        
+          <a class="main-nav-link" href="/blog/archives">归档</a>
+        
+          <a class="main-nav-link" href="/blog/about">关于</a>
+        
+      </nav>
+      
+    </div>
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/blog/" id="logo">代码人生</a>
+      </h1>
+      
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-Redis五" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/06/20/Redis五/" class="article-date">
+  <time datetime="2017-06-20T08:14:44.000Z" itemprop="datePublished">2017-06-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/源代码阅读/">源代码阅读</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/06/20/Redis五/">Redis 五 - 整数集合</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Redis-五-整数集合"><a href="#Redis-五-整数集合" class="headerlink" title="Redis 五 - 整数集合"></a>Redis 五 - 整数集合</h2><p>涉及文件 <code>intset.h</code> 和 <code>intset.c</code></p>
+<h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">intset</span> &#123;</span></div><div class="line">    <span class="keyword">uint32_t</span> encoding;</div><div class="line">    <span class="keyword">uint32_t</span> length;</div><div class="line">    <span class="keyword">int8_t</span> contents[];</div><div class="line">&#125; intset;</div></pre></td></tr></table></figure>
+<p><code>encoding</code> 的值有:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">define</span> INTSET_ENC_INT16 (sizeof(int16_t))</span></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> INTSET_ENC_INT32 (sizeof(int32_t))</span></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> INTSET_ENC_INT64 (sizeof(int64_t))</span></div></pre></td></tr></table></figure>
+<h3 id="用于元素是整数且数量不多的集合底层实现"><a href="#用于元素是整数且数量不多的集合底层实现" class="headerlink" title="用于元素是整数且数量不多的集合底层实现"></a>用于元素是整数且数量不多的集合底层实现</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">127.0.0.1:6379&gt; SADD numbers 1 2 3 4 5</div><div class="line">(integer) 5</div><div class="line">127.0.0.1:6379&gt; OBJECT ENCODING numbers</div><div class="line">&quot;intset&quot;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/06/20/Redis五/" data-id="cjc5qrswt00175cem1c898v39" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-Redis四" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/06/20/Redis四/" class="article-date">
+  <time datetime="2017-06-20T08:05:48.000Z" itemprop="datePublished">2017-06-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/源代码阅读/">源代码阅读</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/06/20/Redis四/">Redis 四 - 跳跃表</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Redis-四-跳跃表"><a href="#Redis-四-跳跃表" class="headerlink" title="Redis 四 - 跳跃表"></a>Redis 四 - 跳跃表</h2><p>跳跃表实现比平衡树简单，效率可以和平衡树相媲美。主要涉及文件 <code>redis.h</code></p>
+<h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><p><code>zskiplistNode</code> 用于跳跃表节点:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="comment">/* ZSETs use a specialized version of Skiplists */</span></div><div class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> &#123;</span></div><div class="line">    robj *obj;</div><div class="line">    <span class="keyword">double</span> score;</div><div class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> *<span class="title">backward</span>;</span></div><div class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistLevel</span> &#123;</span></div><div class="line">        <span class="comment">/* forward pointer */</span></div><div class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> *<span class="title">forward</span>;</span></div><div class="line">        <span class="comment">/* spacing */</span></div><div class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span> span;</div><div class="line">    &#125; level[];</div><div class="line">&#125; zskiplistNode;</div></pre></td></tr></table></figure>
+<p><code>zskiplist</code> 用于保存跳跃表节点的相关信息</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">zskiplist</span> &#123;</span></div><div class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> *<span class="title">header</span>, *<span class="title">tail</span>;</span></div><div class="line">    <span class="comment">/* The count of node */</span></div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> length;</div><div class="line">    <span class="comment">/* the max level */</span></div><div class="line">    <span class="keyword">int</span> level;</div><div class="line">&#125; zskiplist;</div></pre></td></tr></table></figure>
+<p>跳跃表结构如下:</p>
+<p><img src="Skip_list.svg.png" alt=""></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/06/20/Redis四/" data-id="cjc5qrsx4001b5cemd633ilxm" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-Redis三" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/06/20/Redis三/" class="article-date">
+  <time datetime="2017-06-20T07:24:12.000Z" itemprop="datePublished">2017-06-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/源代码阅读/">源代码阅读</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/06/20/Redis三/">Redis 三 - 字典</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Redis-三-字典"><a href="#Redis-三-字典" class="headerlink" title="Redis 三 - 字典"></a>Redis 三 - 字典</h2><p>主要涉及到 <code>dict.c</code> 和 <code>dict.h</code> 文件</p>
+<h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><p>哈希表:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="comment">/* This is our hash table structure. Every dictionary has two of this as we</span></div><div class="line"><span class="comment"> * implement incremental rehashing, for the old to the new table. */</span></div><div class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">dictht</span> &#123;</span></div><div class="line">    <span class="comment">/* Hash Table Array */</span></div><div class="line">    dictEntry **table;</div><div class="line">    <span class="comment">/* Hash Table Size */</span></div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> size;</div><div class="line">    <span class="comment">/* For calculate index */</span></div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> sizemask;</div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> used;</div><div class="line">&#125; dictht;</div></pre></td></tr></table></figure>
+<p><code>table</code> 属性是一个数组，数组中的每个元素都是一个指向 <code>dictEntry</code> 结构体的指针，每个 <code>dictEntry</code> 保存着一个键值对:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">dictEntry</span> &#123;</span></div><div class="line">    <span class="comment">/* The Key */</span></div><div class="line">    <span class="keyword">void</span> *key;</div><div class="line">    <span class="comment">/* The Value */</span></div><div class="line">    <span class="comment">/* The Value Can be a pointer, </span></div><div class="line"><span class="comment">    or a uint64_t interger, </span></div><div class="line"><span class="comment">    or a int64_t interger,</span></div><div class="line"><span class="comment">    or a double value */</span></div><div class="line">    <span class="keyword">union</span> &#123;</div><div class="line">        <span class="keyword">void</span> *val;</div><div class="line">        <span class="keyword">uint64_t</span> u64;</div><div class="line">        <span class="keyword">int64_t</span> s64;</div><div class="line">        <span class="keyword">double</span> d;</div><div class="line">    &#125; v;</div><div class="line">    <span class="comment">/* The Pointer to The Next Node */</span></div><div class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">dictEntry</span> *<span class="title">next</span>;</span></div><div class="line">&#125; dictEntry;</div></pre></td></tr></table></figure>
+<p><img src="20141017180001203.png" alt=""></p>
+<p>字典由 <code>dict</code> 结构体表示:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">dict</span> &#123;</span></div><div class="line">    dictType *type;</div><div class="line">    <span class="keyword">void</span> *privdata;</div><div class="line">    dictht ht[<span class="number">2</span>];</div><div class="line">    <span class="keyword">long</span> rehashidx; <span class="comment">/* rehashing not in progress if rehashidx == -1 */</span></div><div class="line">    <span class="keyword">int</span> iterators; <span class="comment">/* number of iterators currently running */</span></div><div class="line">&#125; dict;</div></pre></td></tr></table></figure>
+<p><code>ht[0]</code> 用于存储数据，<code>ht[1]</code> 用于 <code>rehash</code> 的时候使用，当没有进行 <code>rehash</code> 的时候，<code>rehashidx</code> 的值为 -1</p>
+<p><code>dictType</code> 保存了一簇用于操作特定类型键值对的函数:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">dictType</span> &#123;</span></div><div class="line">    <span class="function"><span class="keyword">unsigned</span> <span class="title">int</span> <span class="params">(*hashFunction)</span><span class="params">(<span class="keyword">const</span> <span class="keyword">void</span> *key)</span></span>;</div><div class="line">    <span class="keyword">void</span> *(*keyDup)(<span class="keyword">void</span> *privdata, <span class="keyword">const</span> <span class="keyword">void</span> *key);</div><div class="line">    <span class="keyword">void</span> *(*valDup)(<span class="keyword">void</span> *privdata, <span class="keyword">const</span> <span class="keyword">void</span> *obj);</div><div class="line">    <span class="keyword">int</span> (*keyCompare)(<span class="keyword">void</span> *privdata, <span class="keyword">const</span> <span class="keyword">void</span> *key1, <span class="keyword">const</span> <span class="keyword">void</span> *key2);</div><div class="line">    <span class="keyword">void</span> (*keyDestructor)(<span class="keyword">void</span> *privdata, <span class="keyword">void</span> *key);</div><div class="line">    <span class="keyword">void</span> (*valDestructor)(<span class="keyword">void</span> *privdata, <span class="keyword">void</span> *obj);</div><div class="line">&#125; dictType;</div></pre></td></tr></table></figure>
+<p>普通状态下的词典:</p>
+<p><img src="dict.jpg" alt=""></p>
+<h3 id="计算哈希值和索引值"><a href="#计算哈希值和索引值" class="headerlink" title="计算哈希值和索引值:"></a>计算哈希值和索引值:</h3><p>计算键的哈希值:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">define</span> dictHashKey(d, key) (d)-&gt;type-&gt;hashFunction(key)</span></div></pre></td></tr></table></figure>
+<p>计算索引值:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">idx = h &amp; d-&gt;ht[table].sizemask;</div></pre></td></tr></table></figure>
+<h3 id="Hash-算法"><a href="#Hash-算法" class="headerlink" title="Hash 算法"></a>Hash 算法</h3><p>Redis 目前使用两种不同的哈希算法：</p>
+<p><strong>1. MurmurHash2 32 bit 算法</strong>：这种算法的分布率和速度都非常好。Redis，Memcached，Cassandra，HBase，Lucene, Hadoop, Nginx 等都在用 <code>MurmurHash</code> 算法，主要是因为算法快，速度快: 与 MD5 这些讲究安全性的摘要算法比，Redis 们内部为主键做个 Hash 而已，就不需要安全性了，因此 Google 家的 MurmurHash 这种 non-cryptographic 的速度会快几十倍</p>
+<p>有些人看到 murmur 就想到了陌陌就想到了别的，其实是 <strong>multiply and rotate</strong> 的意思，因为算法的核心就是不断的</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">x *= m; </div><div class="line">x = rotate_left(x,r);</div></pre></td></tr></table></figure>
+<p><strong>2. 基于 djb 算法实现的一个大小写无关散列算法</strong>：具体信息请参考 <a href="http://www.cse.yorku.ca/~oz/hash.html" target="_blank" rel="external">http://www.cse.yorku.ca/~oz/hash.html</a> 。</p>
+<h3 id="解决键冲突"><a href="#解决键冲突" class="headerlink" title="解决键冲突"></a>解决键冲突</h3><p>使用链地址法</p>
+<h3 id="rehash"><a href="#rehash" class="headerlink" title="rehash"></a>rehash</h3><h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://www.slideshare.net/tangfl/redis-9371197" target="_blank" rel="external">Redis 的坑</a></li>
+<li><a href="http://calvin1978.blogcn.com/articles/murmur.html" target="_blank" rel="external">陌生但默默一统江湖的MurmurHash</a></li>
+<li><a href="http://redisbook.readthedocs.io/en/latest/internal-datastruct/dict.html" target="_blank" rel="external">字典</a></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/06/20/Redis三/" data-id="cjc5qrswj00125cemm9uo9ji3" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-Redis二" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/06/20/Redis二/" class="article-date">
+  <time datetime="2017-06-20T07:17:29.000Z" itemprop="datePublished">2017-06-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/源代码阅读/">源代码阅读</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/06/20/Redis二/">Redis 二 - 链表</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Redis-二-链表"><a href="#Redis-二-链表" class="headerlink" title="Redis 二 - 链表"></a>Redis 二 - 链表</h2><p>涉及文件主要是 <code>adlist.h</code> 和 <code>adlist.c</code></p>
+<h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><p>每一个链表节点使用 <code>listNode</code> 表示:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">listNode</span> &#123;</span></div><div class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">listNode</span> *<span class="title">prev</span>;</span></div><div class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">listNode</span> *<span class="title">next</span>;</span></div><div class="line">    <span class="keyword">void</span> *value;</div><div class="line">&#125; listNode;</div></pre></td></tr></table></figure>
+<p>使用 <code>list</code> 来更加方便地表示一个链表:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">list</span> &#123;</span></div><div class="line">    listNode *head;</div><div class="line">    listNode *tail;</div><div class="line">    <span class="comment">/* copy data of node */</span></div><div class="line">    <span class="keyword">void</span> *(*dup)(<span class="keyword">void</span> *ptr);</div><div class="line">    <span class="comment">/* free data of node */</span></div><div class="line">    <span class="keyword">void</span> (*<span class="built_in">free</span>)(<span class="keyword">void</span> *ptr);</div><div class="line">    <span class="comment">/* compare is data equal */</span></div><div class="line">    <span class="keyword">int</span> (*match)(<span class="keyword">void</span> *ptr, <span class="keyword">void</span> *key);</div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> len;</div><div class="line">&#125; <span class="built_in">list</span>;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/06/20/Redis二/" data-id="cjc5qrswo00145ceme136v8g1" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-Redis一" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/06/20/Redis一/" class="article-date">
+  <time datetime="2017-06-20T03:56:00.000Z" itemprop="datePublished">2017-06-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/源代码阅读/">源代码阅读</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/06/20/Redis一/">Redis一 - 动态字符串 (Simple Dynamic String)</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Redis一-动态字符串-Simple-Dynamic-String"><a href="#Redis一-动态字符串-Simple-Dynamic-String" class="headerlink" title="Redis一 - 动态字符串 (Simple Dynamic String)"></a>Redis一 - 动态字符串 (Simple Dynamic String)</h2><p>主要文件 <code>sds.h</code> 和 <code>sds.c</code> 文件</p>
+<h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span> &#123;</span></div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> len;</div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="built_in">free</span>;</div><div class="line">    <span class="keyword">char</span> buf[];</div><div class="line">&#125;;</div></pre></td></tr></table></figure>
+<p>相比于传统 C 语言字符串，具有以下优势:</p>
+<ul>
+<li>常数复杂度获取字符串长度</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> size_t <span class="title">sdslen</span><span class="params">(<span class="keyword">const</span> sds s)</span> </span>&#123;</div><div class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span> *<span class="title">sh</span> = (<span class="title">void</span>*)(<span class="title">s</span>-(<span class="title">sizeof</span>(<span class="title">struct</span> <span class="title">sdshdr</span>)));</span></div><div class="line">    <span class="keyword">return</span> sh-&gt;len;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>杜绝缓冲区溢出</li>
+</ul>
+<p>克服传统 C 语言字符串容易溢出的问题:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">char</span> *<span class="title">strcat</span><span class="params">(<span class="keyword">char</span> *dest, <span class="keyword">const</span> <span class="keyword">char</span> *src)</span></span></div></pre></td></tr></table></figure>
+<p>先检查长度是否足够，不够的话自动扩展空间，然后执行拼接:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="function">sds <span class="title">sdscat</span><span class="params">(sds s, <span class="keyword">const</span> <span class="keyword">char</span> *t)</span> </span>&#123;</div><div class="line">    <span class="keyword">return</span> sdscatlen(s, t, <span class="built_in">strlen</span>(t));</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function">sds <span class="title">sdscatlen</span><span class="params">(sds s, <span class="keyword">const</span> <span class="keyword">void</span> *t, <span class="keyword">size_t</span> len)</span> </span>&#123;</div><div class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span> *<span class="title">sh</span>;</span></div><div class="line">    <span class="keyword">size_t</span> curlen = sdslen(s);</div><div class="line"></div><div class="line">    s = sdsMakeRoomFor(s,len);</div><div class="line">    <span class="keyword">if</span> (s == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="literal">NULL</span>;</div><div class="line">    sh = (<span class="keyword">void</span>*) (s-(<span class="keyword">sizeof</span>(struct sdshdr)));</div><div class="line">    <span class="built_in">memcpy</span>(s+curlen, t, len);</div><div class="line">    sh-&gt;len = curlen+len;</div><div class="line">    sh-&gt;<span class="built_in">free</span> = sh-&gt;<span class="built_in">free</span>-len;</div><div class="line">    s[curlen+len] = <span class="string">'\0'</span>;</div><div class="line">    <span class="keyword">return</span> s;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>减少修改字符串带来的内存重分配次数</li>
+</ul>
+<p><strong>空间预分配策略</strong>: 字符串长度小于 1MB，空间成倍增长；字符串长度大于 1MB，空间递进增长</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">define</span> SDS_MAX_PREALLOC (1024*1024)</span></div><div class="line"></div><div class="line"><span class="function">sds <span class="title">sdsMakeRoomFor</span><span class="params">(sds s, <span class="keyword">size_t</span> addlen)</span> </span>&#123;</div><div class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span> *<span class="title">sh</span>, *<span class="title">newsh</span>;</span></div><div class="line">    <span class="keyword">size_t</span> <span class="built_in">free</span> = sdsavail(s);</div><div class="line">    <span class="keyword">size_t</span> len, newlen;</div><div class="line"></div><div class="line">    <span class="keyword">if</span> (<span class="built_in">free</span> &gt;= addlen) <span class="keyword">return</span> s;</div><div class="line">    len = sdslen(s);</div><div class="line">    sh = (<span class="keyword">void</span>*) (s-(<span class="keyword">sizeof</span>(struct sdshdr)));</div><div class="line">    newlen = (len+addlen);</div><div class="line">    <span class="keyword">if</span> (newlen &lt; SDS_MAX_PREALLOC)</div><div class="line">        newlen *= <span class="number">2</span>;</div><div class="line">    <span class="keyword">else</span></div><div class="line">        newlen += SDS_MAX_PREALLOC;</div><div class="line">    newsh = zrealloc(sh, <span class="keyword">sizeof</span>(struct sdshdr)+newlen+<span class="number">1</span>);</div><div class="line">    <span class="keyword">if</span> (newsh == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="literal">NULL</span>;</div><div class="line"></div><div class="line">    newsh-&gt;<span class="built_in">free</span> = newlen - len;</div><div class="line">    <span class="keyword">return</span> newsh-&gt;buf;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><strong>惰性空间释放</strong>: 只是增加 <code>free</code> ，而并不会 <code>free</code> 空间</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"><span class="function">sds <span class="title">sdstrim</span><span class="params">(sds s, <span class="keyword">const</span> <span class="keyword">char</span> *cset)</span> </span>&#123;</div><div class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span> *<span class="title">sh</span> = (<span class="title">void</span>*) (<span class="title">s</span>-(<span class="title">sizeof</span>(<span class="title">struct</span> <span class="title">sdshdr</span>)));</span></div><div class="line">    <span class="keyword">char</span> *start, *end, *sp, *ep;</div><div class="line">    <span class="keyword">size_t</span> len;</div><div class="line"></div><div class="line">    sp = start = s;</div><div class="line">    ep = end = s+sdslen(s)<span class="number">-1</span>;</div><div class="line">    <span class="keyword">while</span>(sp &lt;= end &amp;&amp; <span class="built_in">strchr</span>(cset, *sp)) sp++;</div><div class="line">    <span class="keyword">while</span>(ep &gt; start &amp;&amp; <span class="built_in">strchr</span>(cset, *ep)) ep--;</div><div class="line">    len = (sp &gt; ep) ? <span class="number">0</span> : ((ep-sp)+<span class="number">1</span>);</div><div class="line">    <span class="keyword">if</span> (sh-&gt;buf != sp) memmove(sh-&gt;buf, sp, len);</div><div class="line">    sh-&gt;buf[len] = <span class="string">'\0'</span>;</div><div class="line">    sh-&gt;<span class="built_in">free</span> = sh-&gt;<span class="built_in">free</span>+(sh-&gt;len-len);</div><div class="line">    sh-&gt;len = len;</div><div class="line">    <span class="keyword">return</span> s;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>其中 <code>memmove</code> 函数从 <code>src</code> 位置拷贝 n 个字节到 <code>dest</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> *<span class="title">memmove</span><span class="params">(<span class="keyword">void</span> *dest, <span class="keyword">const</span> <span class="keyword">void</span> *src, <span class="keyword">size_t</span> n)</span></span>;</div></pre></td></tr></table></figure>
+<p>由上可知，只是移动了子串，而并没有 <code>free</code> 多余出来的空间，避免了缩短字符串时所需的内存重分配操作，并为将来可能有的增长提供了优化。</p>
+<ul>
+<li>二进制安全: 可以在中间保存 <code>\0</code> 字符</li>
+<li>可以使用部分 <code>&lt;string.h&gt;</code> 库中的函数</li>
+</ul>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="http://blog.csdn.net/guodongxiaren/article/details/44747719" target="_blank" rel="external">Redis内存管理的基石zmallc.c源码解读（一）</a></li>
+<li><a href="https://item.jd.com/11486101.html" target="_blank" rel="external">《Redis 设计与实现》</a></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/06/20/Redis一/" data-id="cjc5qrsw4000v5cem4kpohpcn" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+
+
+  <nav id="page-nav">
+    <a class="extend prev" rel="prev" href="/blog/page/17/">&laquo; Prev</a><a class="page-number" href="/blog/">1</a><span class="space">&hellip;</span><a class="page-number" href="/blog/page/16/">16</a><a class="page-number" href="/blog/page/17/">17</a><span class="page-number current">18</span><a class="page-number" href="/blog/page/19/">19</a><a class="page-number" href="/blog/page/20/">20</a><span class="space">&hellip;</span><a class="page-number" href="/blog/page/23/">23</a><a class="extend next" rel="next" href="/blog/page/19/">Next&raquo;</a>
+  </nav>
+</section>
+           
+    <aside id="sidebar">
+  
+    
+
+  
+    
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title recent-posts">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/blog/2018/01/06/where-the-time-actually-gone/">时间都去哪儿了</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/05/dev-reflection/">开发反思</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/05/my-microblog/">我的微博</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/04/gcc-basic/">gcc-basic</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/04/java-internal/">Java Internal</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+
+  
+    
+  
+</aside>
+
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-left">
+      &copy; 2014 - 2018 赵坤&nbsp;|&nbsp;
+      Theme by <a href="https://github.com/giscafer/hexo-theme-cafe/" target="_blank">Cafe</a>
+    </div>
+     <div id="footer-right">
+      Contact&nbsp;|&nbsp;igozhaokun@163.com
+    </div>
+  </div>
+</footer>
+ <script src="/blog/jquery/jquery.min.js"></script>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/blog/" class="mobile-nav-link">首页</a>
+  
+    <a href="/blog/archives" class="mobile-nav-link">归档</a>
+  
+    <a href="/blog/about" class="mobile-nav-link">关于</a>
+  
+</nav>
+    <img class="back-to-top-btn" src="/blog/images/fly-to-top.png"/>
+<script>
+// Elevator script included on the page, already.
+window.onload = function() {
+  var elevator = new Elevator({
+    selector:'.back-to-top-btn',
+    element: document.querySelector('.back-to-top-btn'),
+    duration: 1000 // milliseconds
+  });
+}
+</script>
+
+      
+
+  
+
+  
+
+
+
+
+
+
+
+<!-- author:forvoid begin -->
+<!-- author:forvoid begin -->
+
+<!-- author:forvoid end -->
+
+<!-- author:forvoid end -->
+
+
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      })
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      })
+    </script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js"></script>
+  
+
+
+ <script src="/blog/js/is.js"></script>
+
+
+  <link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
+  <script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/blog/js/script.js"></script>
+<script src="/blog/js/elevator.js"></script>
+  </div>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</body>
+</html>

@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>代码人生</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="赵坤的个人网站">
+<meta property="og:type" content="website">
+<meta property="og:title" content="代码人生">
+<meta property="og:url" content="http://blog.kunzhao.org/page/7/index.html">
+<meta property="og:site_name" content="代码人生">
+<meta property="og:description" content="赵坤的个人网站">
+<meta property="og:locale" content="zh-cn">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="代码人生">
+<meta name="twitter:description" content="赵坤的个人网站">
+  
+    <link rel="alternate" href="/atom.xml" title="代码人生" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    
+  
+  <link rel="stylesheet" href="/blog/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    
+    <div id="header-inner" class="inner">
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://blog.kunzhao.org"></form>
+      </div>
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/blog/">首页</a>
+        
+          <a class="main-nav-link" href="/blog/archives">归档</a>
+        
+          <a class="main-nav-link" href="/blog/about">关于</a>
+        
+      </nav>
+      
+    </div>
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/blog/" id="logo">代码人生</a>
+      </h1>
+      
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-java-se8-virtual-machine-specification" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/09/08/java-se8-virtual-machine-specification/" class="article-date">
+  <time datetime="2017-09-08T00:16:01.000Z" itemprop="datePublished">2017-09-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/开发者手册/">开发者手册</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/09/08/java-se8-virtual-machine-specification/">java-se8-virtual-machine-specification</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h1 id="Java-SE-8-Virtual-Machine-Specification"><a href="#Java-SE-8-Virtual-Machine-Specification" class="headerlink" title="Java SE 8 Virtual Machine Specification"></a>Java SE 8 Virtual Machine Specification</h1><h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>The Java Virtual Machine knows nothing of the Java programming language, only of a particular binary format, the <code>class</code> 文件格式. A <code>class</code> file contains Java Virtual Machine instructions (or <strong><code>bytecodes</code></strong>) and <strong>a symbol table</strong>, as well as other ancillary information.</p>
+<h2 id="The-Structure-of-the-Java-Virtual-Machine"><a href="#The-Structure-of-the-Java-Virtual-Machine" class="headerlink" title="The Structure of the Java Virtual Machine"></a>The Structure of the Java Virtual Machine</h2><p>This document specifies an abstract machine. It does not describe any particular implementation of the Java Virtual Machine.</p>
+<p>To implement the Java Virtual Machine correctly, you need only be able to read the class file format and correctly perform the operations specified therein. Implementation details that are not part of the Java Virtual Machine’s specification would unnecessarily constrain the creativity of implementors. For example, the memory layout of run time data areas, the garbage-collection algorithm used, and any internal optimization of the Java Virtual Machine instructions (for example, translating them into machine code) are left to the discretion of the implementor.</p>
+<h3 id="The-class-File-Format"><a href="#The-class-File-Format" class="headerlink" title="The class File Format"></a>The <code>class</code> File Format</h3><h3 id="Data-Types"><a href="#Data-Types" class="headerlink" title="Data Types"></a>Data Types</h3><h3 id="Primitive-Types-and-Values"><a href="#Primitive-Types-and-Values" class="headerlink" title="Primitive Types and Values"></a>Primitive Types and Values</h3><p>The <strong>原语</strong> data types supported by the Java Virtual Machine are the <strong>数值</strong> types, the <strong>布尔</strong> type, and the <strong><code>returnAddress</code></strong> type. The numeric types consist of the <strong>整数</strong> types and the <strong>浮点</strong> types.</p>
+<hr>
+<p>Although the Java Virtual Machine defines a boolean type, it only provides very limited support for it. There are <strong>没有</strong> Java Virtual Machine instructions solely dedicated to operations on boolean values. Instead, expressions in the Java programming language that operate on boolean values are compiled to use values of the Java Virtual Machine <strong><code>int</code></strong> data type.</p>
+<hr>
+<p>The values of the <code>returnAddress</code> type are <strong>指针</strong> to the opcodes of Java Virtual Machine instructions. The <code>returnAddress</code> type is used by the Java Virtual Machine’s <code>jsr</code>, <code>ret</code>, and <code>jsr_w</code> instructions.</p>
+<h3 id="Run-Time-Data-Areas"><a href="#Run-Time-Data-Areas" class="headerlink" title="Run-Time Data Areas"></a>Run-Time Data Areas</h3><p>The Java Virtual Machine defines various run-time data areas that are used during execution of a program. Some of these data areas are created on <strong>Java Virtual Machine</strong> start-up and are destroyed only when the Java Virtual Machine exits. Other data areas are <strong>每线程</strong>. Per-thread data areas are created when a thread is created and destroyed when the thread exits.</p>
+<hr>
+<p><strong><code>pc</code> register</strong>:</p>
+<p>The Java Virtual Machine can support many threads of execution <strong>同时</strong>. <strong>Each Java Virtual Machine thread has its own <code>pc</code> (program counter) register</strong>.If that method is not <code>native</code>, the <code>pc</code> register contains the <strong>地址</strong> of the Java Virtual Machine <strong>指令</strong> currently being executed. If the method currently being executed by the thread is <code>native</code>, the value of the Java Virtual Machine’s <code>pc</code> register is <strong><code>undefined</code></strong>. The Java Virtual Machine’s <code>pc</code> register is wide enough to hold a <code>returnAddress</code> or a <code>native</code> pointer on the specific platform.</p>
+<hr>
+<p><strong>Java Virtual Machine Stacks</strong>:</p>
+<p>Each Java Virtual Machine thread has a private Java Virtual Machine stack, created at the same time as the thread. A Java Virtual Machine stack stores <strong>帧</strong>. A Java Virtual Machine stack is analogous to the stack of a conventional language such as C: it holds <strong>本地变量和部分结果</strong>, and plays a part in method invocation and return. Because the Java Virtual Machine stack is never manipulated directly except to <strong><code>push</code> 和 <code>pop</code> 帧</strong>, frames may be heap allocated.</p>
+<p>This specification permits Java Virtual Machine stacks either to be of a <strong>固定大小或者</strong> to <strong>动态扩展</strong> and contract as required by the computation. </p>
+<ul>
+<li>If the computation in a thread requires a <strong>更大的</strong> Java Virtual Machine stack than is <strong>被允许的</strong>, the Java Virtual Machine throws a <code>StackOverflowError</code>.</li>
+<li>If Java Virtual Machine stacks can be <strong>动态扩展</strong>, and expansion is attempted but insufficient memory can be made available to effect the expansion, or if insufficient memory can be made available to create the initial Java Virtual Machine stack for a new thread, the Java Virtual Machine throws an <code>OutOfMemoryError</code>.</li>
+</ul>
+<hr>
+<p><strong>Heap</strong>:</p>
+<p>The Java Virtual Machine has a heap that is <strong>共享</strong> among all Java Virtual Machine <strong>线程</strong>. The heap is the run-time data area from which memory for all class <strong>类实例</strong> and <strong>数组</strong> is allocated.</p>
+<p>The heap is created on virtual machine start-up.</p>
+<ul>
+<li>If a computation requires more heap than can be made available by the automatic storage management system, the Java Virtual Machine throws an <code>OutOfMemoryError</code>.</li>
+</ul>
+<hr>
+<p><strong>Method Area</strong>:</p>
+<p>The Java Virtual Machine has a method area that is <strong>共享</strong> among all Java Virtual Machine <strong>线程</strong>. The method area is analogous to the storage area for <strong>编译后的代码</strong> of a conventional language or analogous to the “text” segment in an operating system process. It stores <strong>每个类的结构</strong> such as the run-time <strong>常量池，字段，方法数据</strong>, and the code for methods and constructors, including the special methods (§2.9) used in class and instance initialization and interface initialization.</p>
+<ul>
+<li>If memory in the method area cannot be made available to satisfy an allocation request, the Java Virtual Machine throws an <code>OutOfMemoryError</code>.</li>
+</ul>
+<hr>
+<p><strong>Run-Time Constant Pool</strong>:</p>
+<p>A run-time constant pool is a per-class or per-interface run-time representation of the <code>constant_pool</code> table in a <code>class</code> file. It contains <strong>几种类型的常量</strong>, ranging from <strong>数字常量</strong> known at compile-time to method and <strong>字段引用</strong> that must be resolved at run-time.</p>
+<p>Each run-time constant pool is allocated from the Java Virtual Machine’s <strong>方法区</strong>. The run-time constant pool for a class or interface is constructed <strong>当类或者接口被创建的时候</strong> by the Java Virtual Machine.</p>
+<ul>
+<li>When creating a class or interface, if the construction of the run-time constant pool requires more memory than can be made available in the method area of the Java Virtual Machine, the Java Virtual Machine throws an <code>OutOfMemoryError</code>.</li>
+</ul>
+<hr>
+<p><strong>Native Method Stacks</strong>:</p>
+<ul>
+<li>If the computation in a thread requires a larger native method stack than is permitted, the Java Virtual Machine throws a <code>StackOverflowError</code>.</li>
+<li>If native method stacks can be dynamically expanded and native method stack expansion is attempted but insufficient memory can be made available, or if insufficient memory can be made available to create the initial native method stack for a new thread, the Java Virtual Machine throws an <code>OutOfMemoryError</code>.</li>
+</ul>
+<h3 id="Frames"><a href="#Frames" class="headerlink" title="Frames"></a>Frames</h3><p>A <code>frame</code> is used to store data and partial results, as well as to perform <strong>动态链接，方法返回值，分发异常</strong>。</p>
+<p>A new frame is <strong>每次方法调用的时候被创建</strong>. A frame is destroyed when its method invocation completes, whether that completion is normal or abrupt (it throws an uncaught exception). Frames are allocated from the Java Virtual Machine stack (§2.5.2) of the thread creating the frame. Each frame has its <strong>自己的本地变量数组</strong> (§2.6.1), its <strong>自己的操作数栈</strong> (§2.6.2), and a <strong>指向运行常量池的一个引用</strong> (§2.5.5) of the class of the current method.</p>
+<p><strong>只有一个帧</strong>, the frame for the executing method, is active at any point in a given thread of control. This frame is referred to as the <code>current frame</code>, and its method is known as the <code>current method</code>. The class in which the current method is defined is the <code>current class</code>. </p>
+<p>Note that a frame created by a thread is local to that thread and <strong>无法在另外一个线程中被引用</strong>.</p>
+<hr>
+<p><strong>Local Variables</strong>: </p>
+<p>Each frame contains an array of variables known as its local variables. The length of the local variable array of a frame is determined at <strong>编译阶段</strong>.</p>
+<p>Local variables are addressed by indexing. The <strong>索引</strong> of the <strong>第一个</strong> local variable is <strong>0</strong>. A value of type <strong><code>long</code></strong> or type <strong><code>double</code> 占据两个连续的</strong> local variables.</p>
+<p>The Java Virtual Machine uses local variables to pass parameters on method invocation. On <strong>类方法调用</strong>, any parameters are passed in consecutive local variables starting from local variable 0. On <strong>实例方法调用</strong> invocation, local variable 0 is always used to pass a reference to the object on which the instance method is being invoked (this in the Java programming language). Any parameters are subsequently passed in consecutive local variables starting from local variable 1.</p>
+<hr>
+<p><strong>操作数栈</strong>:</p>
+<p>Each frame contains a <strong>last-in-first-out (LIFO)</strong> stack known as its operand stack.</p>
+<p>The operand stack is <strong>首次创建是空的</strong> when the frame that contains it is created. The Java Virtual Machine supplies instructions to load constants or values <strong>从</strong> local variables or fields <strong>到</strong> the operand stack. Other Java Virtual Machine instructions <strong>取</strong> operands from the operand stack, operate on them, and <strong>放回</strong> the result back onto the operand stack. The operand stack is also used to prepare parameters to be passed to methods and to receive method results.</p>
+<hr>
+<p><strong>动态链接</strong>:</p>
+<p>Each frame contains a reference to the run-time constant pool for the type of the current method to support dynamic linking of the method code. The class file code for a method refers to methods to be invoked and variables to be accessed via <strong>symbolic references</strong>. Dynamic linking <strong>翻译</strong> these symbolic method references into concrete method references, <strong>必要的时候加载类</strong> as necessary to resolve as-yet-undefined symbols, and translates variable accesses into appropriate offsets in storage structures associated with the run-time location of these variables.</p>
+<h3 id="Representation-of-Objects"><a href="#Representation-of-Objects" class="headerlink" title="Representation of Objects"></a>Representation of Objects</h3><p>The Java Virtual Machine <strong>没有指定</strong> any particular <strong>内部结构</strong> for objects.</p>
+<h3 id="Special-Methods"><a href="#Special-Methods" class="headerlink" title="Special Methods"></a>Special Methods</h3><p>At the level of the Java Virtual Machine, every <strong>构造器</strong> written in the Java programming language appears as an instance initialization method that has the special name <code>&lt;init&gt;</code>. Instance initialization methods may be invoked only within the Java Virtual Machine by the <strong><code>invokespecial</code></strong> instruction.</p>
+<p>A class or interface has <strong>最多一个</strong> class or interface initialization method and is initialized (§5.5) by invoking that method. The initialization method of a class or interface has the special name <code>&lt;clinit&gt;</code>, takes no arguments, and is void.</p>
+<p>In a class file whose version number is 51.0 or above, the method <strong>必须</strong> additionally have its <code>ACC_STATIC</code> flag (§4.6) set in order to be the class or interface initialization method.</p>
+<h2 id="Compiling-for-the-Java-Virtual-Machine"><a href="#Compiling-for-the-Java-Virtual-Machine" class="headerlink" title="Compiling for the Java Virtual Machine"></a>Compiling for the Java Virtual Machine</h2><p>Each <strong>指令</strong> takes the form:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&lt;index&gt; &lt;opcode&gt; [ &lt;operand1&gt; [ &lt;operand2&gt;... ]] [&lt;comment&gt;]</div></pre></td></tr></table></figure>
+<p>例如:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">8 bipush 100 // Push int constant 100</div></pre></td></tr></table></figure>
+<h3 id="Synchronization"><a href="#Synchronization" class="headerlink" title="Synchronization"></a>Synchronization</h3><p>Synchronization in the Java Virtual Machine is implemented by <strong>monitor entry and exit</strong>, either explicitly (by use of the <code>monitorenter</code> and <code>monitorexit</code> instructions) or implicitly (by the method invocation and return instructions).</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">onlyMe</span><span class="params">(Foo f)</span> </span>&#123;</div><div class="line">    <span class="keyword">synchronized</span>(f) &#123;</div><div class="line">        doSomething();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>被编译为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">Method void onlyMe(Foo)</div><div class="line">0 aload_1 // Push f</div><div class="line">1 dup // Duplicate it on the stack</div><div class="line">2 astore_2 // Store duplicate in local variable 2</div><div class="line">3 monitorenter // Enter the monitor associated with f</div><div class="line">4 aload_0 // Holding the monitor, pass this and...</div><div class="line">5 invokevirtual #5 // ...call Example.doSomething()V</div><div class="line">8 aload_2 // Push local variable 2 (f)</div><div class="line">9 monitorexit // Exit the monitor associated with f</div><div class="line">10 goto 18 // Complete the method normally</div><div class="line">13 astore_3 // In case of any throw, end up here</div><div class="line">14 aload_2 // Push local variable 2 (f)</div><div class="line">15 monitorexit // Be sure to exit the monitor!</div><div class="line">16 aload_3 // Push thrown value...</div><div class="line">17 athrow // ...and rethrow value to the invoker</div><div class="line">18 return // Return in the normal case</div><div class="line">Exception table:</div><div class="line">From To Target Type</div><div class="line">4 10 13 any</div><div class="line">13 16 13 any</div></pre></td></tr></table></figure>
+<h2 id="The-class-File-Format-1"><a href="#The-class-File-Format-1" class="headerlink" title="The class File Format"></a>The <code>class</code> File Format</h2><h3 id="ClassFile-结构体"><a href="#ClassFile-结构体" class="headerlink" title="ClassFile 结构体"></a><code>ClassFile</code> 结构体</h3><p><img src="2017_09_08_10_04_46.png" alt=""></p>
+<h3 id="Descriptors"><a href="#Descriptors" class="headerlink" title="Descriptors"></a>Descriptors</h3><p>A descriptor is a string representing the <strong>类型</strong> of a field or method.</p>
+<hr>
+<p>Interpretation of field descriptors:</p>
+<p><img src="2017_09_08_10_14_16.png" alt=""></p>
+<hr>
+<p>The method descriptor for the method:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function">Object <span class="title">m</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">double</span> d, Thread t)</span> </span>&#123;...&#125;</div></pre></td></tr></table></figure>
+<p>is:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">(IDLjava/lang/Thread;)Ljava/lang/Object;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/09/08/java-se8-virtual-machine-specification/" data-id="cjc5qrt2800475cemp50vbviw" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-netty" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/09/03/netty/" class="article-date">
+  <time datetime="2017-09-03T12:27:52.000Z" itemprop="datePublished">2017-09-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/开发者手册/">开发者手册</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/09/03/netty/">netty</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Netty"><a href="#Netty" class="headerlink" title="Netty"></a>Netty</h2><p><code>Netty</code> 是一个高性能、异步事件驱动的 <code>NIO</code> 框架，它提供了对<code>TCP</code>、<code>UDP</code>和文件传输的支持，作为一个异步<code>NIO</code>框架，<code>Netty</code>的所有<code>IO</code>操作都是异步非阻塞的，通过<code>Future-Listener</code>机制，用户可以方便的<strong>主动</strong>获取或者通过<strong>通知</strong>机制获得<code>IO</code>操作结果。</p>
+<h4 id="高性能的三个主题"><a href="#高性能的三个主题" class="headerlink" title="高性能的三个主题"></a>高性能的三个主题</h4><p>1) 传输：用什么样的通道将数据发送给对方，BIO、NIO或者AIO，IO模型在很大程度上决定了框架的性能。</p>
+<p>2) 协议：采用什么样的通信协议，HTTP或者内部私有协议。协议的选择不同，性能模型也不同。相比于公有协议，内部私有协议的性能通常可以被设计的更优。</p>
+<p>3) 线程：数据报如何读取？读取之后的编解码在哪个线程进行，编解码后的消息如何派发，Reactor线程模型的不同，对性能的影响也非常大。</p>
+<p>与传统的多线程/多进程模型比，I/O多路复用的最大优势是<strong>系统开销小，系统不需要创建新的额外进程或者线程，也不需要维护这些进程和线程的运行，降低了系统的维护工作量，节省了系统资源</strong>。</p>
+<p>Netty的IO线程NioEventLoop由于聚合了多路复用器Selector，可以同时并发处理成百上千个客户端Channel，由于读写操作都是非阻塞的，这就可以充分提升IO线程的运行效率，<strong>避免由于频繁IO阻塞导致的线程挂起</strong>。另外，由于Netty采用了异步通信模式，一个IO线程可以并发处理N个客户端连接和读写操作，这从根本上解决了传统同步阻塞IO一连接一线程模型，架构的性能、弹性伸缩能力和可靠性都得到了极大的提升。</p>
+<h4 id="零拷贝"><a href="#零拷贝" class="headerlink" title="零拷贝"></a>零拷贝</h4><p>1) <code>Netty</code>的接收和发送<code>ByteBuffer</code>采用<code>DIRECT BUFFERS</code>，使用<strong>堆外直接内存</strong>进行<code>Socket</code>读写，<strong>不需要进行字节缓冲区的二次拷贝</strong>。如果使用传统的堆内存（<code>HEAP BUFFERS</code>）进行<code>Socket</code>读写，<code>JVM</code>会将堆内存<code>Buffer</code>拷贝一份到直接内存中，然后才写入<code>Socket</code>中。相比于堆外直接内存，消息在发送过程中多了一次缓冲区的内存拷贝。</p>
+<p><img src="2017_12_22_14_11_53.png" alt="directBuffer"></p>
+<p>2) <code>Netty</code>提供了组合<code>Buffer</code>对象，可以聚合多个<code>ByteBuffer</code>对象，用户可以像操作一个<code>Buffer</code>那样方便的对组合Buffer进行操作，避免了传统通过内存拷贝的方式将几个小<code>Buffer</code>合并成一个大的<code>Buffer</code>。</p>
+<p><img src="2017_12_22_14_18_16.png" alt="CompositeByteBuf"></p>
+<p>3) <code>Netty</code>的文件传输采用了 <code>transferTo</code> 方法，它可以直接将文件缓冲区的数据发送到目标<code>Channel</code>，避免了传统通过循环<code>write</code>方式导致的<strong>内存拷贝问题</strong>。</p>
+<h4 id="内存池"><a href="#内存池" class="headerlink" title="内存池"></a>内存池</h4><p>随着<code>JVM</code>虚拟机和<code>JIT</code>即时编译技术的发展，对象的分配和回收是个非常轻量级的工作。但是对于缓冲区Buffer，情况却稍有不同，特别是<strong>对于堆外直接内存的分配和回收，是一件耗时的操作</strong>。为了尽量重用缓冲区，<code>Netty</code>提供了基于内存池的缓冲区重用机制。</p>
+<p><img src="2017_12_22_14_29_37.png" alt="PooledByteBufAllocator"><br><img src="2017_12_22_14_31_46.png" alt="PoolArena"></p>
+<p>我们重点分析<code>newByteBuf</code>的实现，它同样是个抽象方法，由子类<code>DirectArena</code>和<code>HeapArena</code>来实现不同类型的缓冲区分配。这两个实现类就在 <code>PoolArena.java</code> 文件里面。</p>
+<p><img src="2017_12_22_14_37_11.png" alt="PooledDirectByteBuf"></p>
+<p>通过<code>RECYCLER</code>的<code>get</code>方法循环使用<code>ByteBuf</code>对象，如果是非内存池实现，则直接创建一个新的<code>ByteBuf</code>对象。</p>
+<h4 id="高效的Reactor线程模型"><a href="#高效的Reactor线程模型" class="headerlink" title="高效的Reactor线程模型"></a>高效的Reactor线程模型</h4><p>常用的<code>Reactor</code>线程模型有三种，分别如下：</p>
+<p>1) <code>Reactor</code>单线程模型；</p>
+<p>指的是所有的IO操作都在<strong>同一个NIO线程</strong>上面完成，NIO线程的职责如下：</p>
+<ul>
+<li>作为NIO服务端，接收客户端的TCP连接；</li>
+<li>作为NIO客户端，向服务端发起TCP连接；</li>
+<li>读取通信对端的请求或者应答消息；</li>
+<li>向通信对端发送消息请求或者应答消息。</li>
+</ul>
+<p>由于<code>Reactor</code>模式使用的是异步非阻塞IO，所有的IO操作都不会导致阻塞，理论上一个线程可以独立处理所有IO相关的操作。从架构层面看，一个NIO线程确实可以完成其承担的职责。例如，通过<code>Acceptor</code>接收客户端的<code>TCP</code>连接请求消息，链路建立成功之后，通过<code>Dispatch</code>将对应的<code>ByteBuffer</code>派发到指定的<code>Handler</code>上进行消息解码。用户<code>Handler</code>可以通过<code>NIO</code>线程将消息发送给客户端。</p>
+<p><img src="https://res.infoq.com/articles/netty-high-performance/zh/resources/0808020.png" alt="single-thread-reactor"></p>
+<p>对于一些小容量应用场景，可以使用单线程模型。但是对于高负载、大并发的应用却不合适，主要原因如下：</p>
+<ul>
+<li>一个NIO线程同时处理成百上千的链路，性能上无法支撑，即便NIO线程的CPU负荷达到100%，也无法满足海量消息的编码、解码、读取和发送；</li>
+<li>当<strong>NIO线程负载过重之后，处理速度将变慢</strong>，这会导致大量客户端连接超时，超时之后往往会进行重发，这更加重了NIO线程的负载，最终会导致大量消息积压和处理超时，NIO线程会成为系统的性能瓶颈；</li>
+<li>可靠性问题：一旦NIO线程意外跑飞，或者进入死循环，会导致整个系统通信模块不可用，不能接收和处理外部消息，造成节点故障。</li>
+</ul>
+<p>2) <code>Reactor</code>多线程模型；</p>
+<p><code>Rector</code>多线程模型与单线程模型最大的区别就是有一组<code>NIO</code>线程处理<code>IO</code>操作，它的原理图如下：</p>
+<p><img src="https://res.infoq.com/articles/netty-high-performance/zh/resources/08080211.png" alt="multi-thread-reactor"></p>
+<p>Reactor多线程模型的特点：</p>
+<ul>
+<li>有专门一个<code>NIO</code>线程-Acceptor线程用于监听服务端，接收客户端的TCP连接请求；</li>
+<li>网络IO操作-读、写等由一个NIO线程池负责，线程池可以采用标准的JDK线程池实现，它包含一个任务队列和N个可用的线程，由这些NIO线程负责消息的读取、解码、编码和发送；</li>
+<li>1个NIO线程可以同时处理N条链路，但是1个链路只对应1个NIO线程，防止发生并发操作问题。</li>
+</ul>
+<p>在绝大多数场景下，<code>Reactor</code>多线程模型都可以满足性能需求；但是，在极特殊应用场景中，一个NIO线程负责监听和处理所有的客户端连接可能会存在性能问题。例如<strong>百万客户端并发连接</strong>，或者服务端需要对客户端的握手消息进行安全认证，认证本身非常损耗性能。在这类场景下，<strong>单独一个<code>Acceptor</code>线程可能会存在性能不足问题</strong>，为了解决性能问题，产生了第三种<code>Reactor</code>线程模型-主从Reactor多线程模型。</p>
+<p>3) 主从<code>Reactor</code>多线程模型</p>
+<p>主从<code>Reactor</code>线程模型的特点是：服务端用于接收客户端连接的不再是个1个单独的NIO线程，而是一个独立的NIO线程池。Acceptor接收到客户端TCP连接请求处理完成后（可能包含接入认证等），将新创建的<code>SocketChannel</code>注册到IO线程池（sub reactor线程池）的某个IO线程上，由它负责<code>SocketChannel</code>的读写和编解码工作。<code>Acceptor</code>线程池仅仅只用于客户端的登陆、握手和安全认证，一旦链路建立成功，就将链路注册到后端subReactor线程池的IO线程上，由IO线程负责后续的IO操作。</p>
+<p><img src="https://res.infoq.com/articles/netty-high-performance/zh/resources/08080221.png" alt="master-sub-reactor"></p>
+<p>利用主从<code>NIO</code>线程模型，可以解决1个服务端监听线程无法有效处理所有客户端连接的性能不足问题。因此，在Netty的官方demo中，推荐使用该线程模型。</p>
+<p>事实上，<strong><code>Netty</code>的线程模型并非固定不变</strong>，通过在启动辅助类中创建不同的<code>EventLoopGroup</code>实例并通过适当的参数配置，就可以支持上述三种<code>Reactor</code>线程模型。正是因为<code>Netty</code> 对<code>Reactor</code>线程模型的支持提供了灵活的定制能力，所以可以满足不同业务场景的性能诉求。</p>
+<h4 id="无锁化的串行设计理念"><a href="#无锁化的串行设计理念" class="headerlink" title="无锁化的串行设计理念"></a>无锁化的串行设计理念</h4><p>在大多数场景下，并行多线程处理可以提升系统的并发性能。但是，如果对于共享资源的并发访问处理不当，会带来严重的锁竞争，这最终会导致性能的下降。为了尽可能的避免锁竞争带来的性能损耗，可以通过串行化设计，即<strong>消息的处理尽可能在同一个线程内完成</strong>，期间不进行线程切换，这样就避免了多线程竞争和同步锁。</p>
+<p>为了尽可能提升性能，<code>Netty</code>采用了串行无锁化设计，在IO线程内部进行串行操作，避免多线程竞争导致的性能下降。表面上看，串行化设计似乎CPU利用率不高，并发程度不够。但是，通过调整NIO线程池的线程参数，可以同时启动多个串行化的线程并行运行，这种局部无锁化的串行线程设计相比一个队列-多个工作线程模型性能更优。</p>
+<p>Netty的串行化设计工作原理图如下：</p>
+<p><img src="https://res.infoq.com/articles/netty-high-performance/zh/resources/0529035.png" alt="Netty串行化工作原理图"></p>
+<p>Netty的<code>NioEventLoop</code>读取到消息之后，<strong>直接调用</strong><code>ChannelPipeline</code>的<code>fireChannelRead(Object msg)</code>，只要用户不主动切换线程，一直会由<code>NioEventLoop</code>调用到用户的<code>Handler</code>，期间不进行线程切换，这种串行化处理方式避免了多线程操作导致的锁的竞争，从性能角度看是最优的。</p>
+<h4 id="高效的并发编程"><a href="#高效的并发编程" class="headerlink" title="高效的并发编程"></a>高效的并发编程</h4><p><code>Netty</code>的高效并发编程主要体现在如下几点：</p>
+<p>1) <code>volatile</code> 的大量、正确使用;</p>
+<p>2) <code>CAS</code>和原子类的广泛使用；</p>
+<p>3) 线程安全容器的使用；</p>
+<p>4) 通过读写锁提升并发性能。</p>
+<h3 id="Netty-百万级推送服务设计"><a href="#Netty-百万级推送服务设计" class="headerlink" title="Netty 百万级推送服务设计"></a><code>Netty</code> 百万级推送服务设计</h3><h4 id="最大句柄数修改"><a href="#最大句柄数修改" class="headerlink" title="最大句柄数修改"></a>最大句柄数修改</h4><p>百万长连接接入，首先需要优化的就是<code>Linux</code>内核参数，其中<strong><code>Linux</code>最大文件句柄数是最重要的调优参数之一</strong>，默认单进程打开的最大句柄数是<code>1024</code>，通过<code>ulimit -a</code>可以查看相关参数。</p>
+<p><img src="2017_12_22_19_54_29.png" alt="最大句柄数"></p>
+<p>当单个推送服务接收到的链接超过上限后，就会报“too many open files”，所有新的客户端接入将失败。</p>
+<p>通过<code>vi /etc/security/limits.conf</code> 添加如下配置参数：修改之后保存，注销当前用户，重新登录，通过<code>ulimit -a</code> 查看修改的状态是否生效。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">*  soft　　nofile　　1000000</div><div class="line">*  hard　　nofile　　1000000</div></pre></td></tr></table></figure>
+<p>需要指出的是，尽管我们可以将<strong>单个进程打开的最大句柄数</strong>修改的非常大，但是当句柄数达到一定数量级之后，处理效率将出现明显下降，因此，<strong>需要根据服务器的硬件配置和处理能力进行合理设置</strong>。如果单个服务器性能不行也可以通过集群的方式实现。</p>
+<h4 id="当心-CLOSE-WAIT"><a href="#当心-CLOSE-WAIT" class="headerlink" title="当心 CLOSE_WAIT"></a>当心 <code>CLOSE_WAIT</code></h4><p>从事移动推送服务开发的同学可能都有体会，移动无线网络可靠性非常差，经常存在<strong>客户端重置连接，网络闪断</strong>等。</p>
+<p>在百万长连接的推送系统中，服务端需要能够正确处理这些网络异常，设计要点如下：</p>
+<ul>
+<li>客户端的<strong>重连间隔</strong>需要合理设置，防止连接过于频繁导致的连接失败（例如端口还没有被释放）；</li>
+<li>客户端<strong>重复登陆拒绝</strong>机制；</li>
+<li>服务端正确处理<code>I/O</code>异常和解码异常等，防止句柄泄露。</li>
+</ul>
+<p>最后特别需要注意的一点就是<code>close_wait</code> 过多问题，由于网络不稳定经常会导致客户端断连，如果服务端没有能够及时关闭<code>socket</code>，就会导致处于<code>close_wait</code>状态的链路过多。<strong><code>close_wait</code>状态的链路并不释放句柄和内存等资源</strong>，如果积压过多可能会导致系统句柄耗尽，发生“Too many open files”异常，新的客户端无法接入，涉及创建或者打开句柄的操作都将失败。</p>
+<p>下面对<code>close_wait</code>状态进行下简单介绍，被动关闭TCP连接状态迁移图如下所示：</p>
+<p><img src="https://res.infoq.com/articles/netty-million-level-push-service-design-points/zh/resources/1226001.png" alt="close_wait"></p>
+<p><code>close_wait</code>是<strong>被动关闭连接</strong>是形成的，根据<code>TCP</code>状态机，服务器端收到客户端发送的<code>FIN</code>，<code>TCP</code>协议栈会自动发送<code>ACK</code>，链接进入<code>close_wait</code>状态。但<strong>如果服务器端不执行<code>socket</code>的<code>close()</code>操作，状态就不能由<code>close_wait</code>迁移到<code>last_ack</code></strong>，则系统中会存在很多<code>close_wait</code>状态的连接。通常来说，一个<code>close_wait</code>会<strong>维持至少2个小时</strong>的时间（系统默认超时时间的是<code>7200</code>秒，也就是2小时）。如果服务端程序因某个原因导致系统造成一堆<code>close_wait</code>消耗资源，那么通常是等不到释放那一刻，系统就已崩溃。</p>
+<p>导致<code>close_wait</code>过多的可能原因如下：</p>
+<ul>
+<li>程序处理Bug，导致接收到对方的<code>fin</code>之后没有及时关闭<code>socket</code>，这可能是<code>Netty</code>的Bug，也可能是业务层Bug，需要具体问题具体分析；</li>
+<li><strong>关闭<code>socket</code>不及时</strong>：例如<code>I/O</code>线程被意外阻塞，或者<code>I/O</code>线程执行的用户自定义<code>Task</code>比例过高，导致<code>I/O</code>操作处理不及时，链路不能被及时释放。</li>
+</ul>
+<p>下面我们结合<code>Netty</code>的原理，对潜在的故障点进行分析。</p>
+<p>设计要点1：不要在<code>Netty</code>的I/O线程上处理业务（心跳发送和检测除外）。Why? 对于<code>Java</code>进程，线程不能无限增长，这就意味着<code>Netty</code>的<code>Reactor</code>线程数必须收敛。<code>Netty</code>的默认值是<code>CPU核数*2</code>，<strong>通常情况下，I/O密集型应用建议线程数尽量设置大些，但这主要是针对传统同步I/O而言</strong>，对于非阻塞I/O，线程数并不建议设置太大，尽管没有最优值，但是I/O线程数<strong>经验值是[CPU核数 + 1，CPU核数*2 ]之间</strong>。</p>
+<p>假如单个服务器支撑100万个长连接，服务器内核数为32，则单个I/O线程处理的链接数L = 100/(32 <em> 2) = 15625。 假如每5S有一次消息交互（新消息推送、心跳消息和其它管理消息），则平均CAPS = 15625 / 5 = 3125条/秒。这个数值相比于Netty的处理性能而言压力并不大，但是在实际业务处理中，经常会有一些额外的复杂逻辑处理，例如性能统计、记录接口日志等，这些业务操作性能开销也比较大，如果在I/O线程上直接做业务逻辑处理，可能会<em>*阻塞<code>I/O</code>线程</em></em>，影响对其它链路的读写操作，这就会导致被动关闭的链路不能及时关闭，造成<code>close_wait</code>堆积。</p>
+<p>设计要点2：在I/O线程上执行自定义Task要当心。Netty的I/O处理线程<code>NioEventLoop</code>支持两种自定义<code>Task</code>的执行：</p>
+<ul>
+<li>普通的<code>Runnable</code>: 通过调用<code>NioEventLoop</code>的<code>execute(Runnable task)</code>方法执行；</li>
+<li>定时任务<code>ScheduledFutureTask</code>:通过调用<code>NioEventLoop</code>的<code>schedule(Runnable command, long delay, TimeUnit unit)</code>系列接口执行。</li>
+</ul>
+<p>为什么<code>NioEventLoop</code>要支持用户自定义<code>Runnable</code>和<code>ScheduledFutureTask</code>的执行，并不是本文要讨论的重点，后续会有专题文章进行介绍。本文重点对它们的影响进行分析。</p>
+<p>在<code>NioEventLoop</code>中执行<code>Runnable</code>和<code>ScheduledFutureTask</code>，意味着允许用户在<code>NioEventLoop</code>中执行非I/O操作类的业务逻辑，这些业务逻辑通常用消息报文的处理和协议管理相关。<strong>它们的执行会抢占<code>NioEventLoop</code> I/O读写的CPU时间</strong>，如果用户自定义Task过多，或者单个Task执行周期过长，会<strong>导致<code>I/O</code>读写操作被阻塞</strong>，这样也间接导致<code>close_wait</code>堆积。</p>
+<p>所以，如果用户在代码中使用到了<code>Runnable</code>和<code>ScheduledFutureTask</code>，请合理设置<code>ioRatio</code>的比例，通过<code>NioEventLoop</code>的<code>setIoRatio(int ioRatio)</code>方法可以设置该值，默认值为<code>50</code>，即I/O操作和用户自定义任务的执行时间比为<code>1：1</code>。</p>
+<p>我的建议是当服务端处理海量客户端长连接的时候，不要在<code>NioEventLoop</code>中执行自定义<code>Task</code>，或者非心跳类的定时任务。</p>
+<p>设计要点3：<code>IdleStateHandler</code>使用要当心。很多用户会使用<code>IdleStateHandler</code>做心跳发送和检测，这种用法值得提倡。相比于自己启定时任务发送心跳，这种方式更高效。但是在实际开发中需要注意的是，在心跳的业务逻辑处理中，无论是正常还是异常场景，<strong>处理时延要可控</strong>，防止时延不可控导致的<code>NioEventLoop</code>被意外阻塞。例如，心跳超时或者发生I/O异常时，业务调用Email发送接口告警，由于Email服务端处理超时，导致邮件发送客户端被阻塞，级联引起<code>IdleStateHandler</code>的<code>AllIdleTimeoutTask</code>任务被阻塞，最终<code>NioEventLoop</code>多路复用器上其它的链路读写被阻塞。</p>
+<p>对于<code>ReadTimeoutHandler</code>和<code>WriteTimeoutHandler</code>，约束同样存在。</p>
+<h4 id="合理的心跳周期"><a href="#合理的心跳周期" class="headerlink" title="合理的心跳周期"></a>合理的心跳周期</h4><p>百万级的推送服务，意味着会存在百万个长连接，每个长连接都需要靠和App之间的心跳来维持链路。合理设置心跳周期是非常重要的工作，推送服务的心跳周期设置需要考虑移动无线网络的特点。</p>
+<p>当一台智能手机连上移动网络时，其实并没有真正连接上Internet，运营商分配给手机的IP其实是运营商的内网IP，手机终端要连接上Internet还必须通过运营商的网关进行IP地址的转换，这个网关简称为NAT(NetWork Address Translation)，简单来说就是手机终端连接Internet 其实就是移动内网IP，端口，外网IP之间相互映射。</p>
+<p>GGSN(GateWay GPRS Support Note)模块就实现了NAT功能，由于大部分的移动无线网络运营商<strong>为了减少网关<code>NAT</code>映射表的负荷</strong>，如果一个链路有一段时间没有通信时就会删除其对应表，造成链路中断，正是这种刻意缩短空闲连接的释放超时，原本是想节省信道资源的作用，没想到让互联网的应用不得以远高于正常频率发送心跳来维护推送的长连接。以中移动的2.5G网络为例，大约5分钟左右的基带空闲，连接就会被释放。</p>
+<p>由于移动无线网络的特点，推送服务的心跳周期并不能设置的太长，否则长连接会被释放，造成频繁的客户端重连，但是也不能设置太短，否则在当前缺乏统一心跳框架的机制下很容易导致信令风暴（例如微信心跳信令风暴问题）。具体的心跳周期并没有统一的标准，180S也许是个不错的选择，微信为300S。</p>
+<p>在<code>Netty</code>中，可以通过在<code>ChannelPipeline</code>中增加<code>IdleStateHandler</code>的方式实现心跳检测，在构造函数中<strong>指定链路空闲时间</strong>，然后实现空闲回调接口，实现心跳的发送和检测，代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">initChannel</span><span class="params">(Channel channel)</span> </span>&#123;</div><div class="line">    channel.pipeline().addLast(<span class="string">"idleStateHandler"</span>, <span class="keyword">new</span> IdleStateHandler(<span class="number">0</span>, <span class="number">0</span>, <span class="number">180</span>));</div><div class="line">    channel.pipeline().addLast(<span class="string">"myHandler"</span>, <span class="keyword">new</span> MyHandler());</div><div class="line">&#125;</div><div class="line"><span class="comment">// 拦截链路空闲事件并处理心跳：</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyHandler</span> <span class="keyword">extends</span> <span class="title">ChannelHandlerAdapter</span> </span>&#123;</div><div class="line">    </div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">userEventTriggered</span><span class="params">(ChannelHandlerContext ctx, Object evt)</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">        <span class="keyword">if</span> (evt <span class="keyword">instanceof</span> IdleStateEvent&#125; &#123;</div><div class="line">            <span class="comment">//心跳处理</span></div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h4 id="合理设置接收和发送缓冲区容量"><a href="#合理设置接收和发送缓冲区容量" class="headerlink" title="合理设置接收和发送缓冲区容量"></a>合理设置接收和发送缓冲区容量</h4><p>对于长链接，<strong>每个链路都需要维护自己的消息接收和发送缓冲区</strong>，<code>JDK</code>原生的<code>NIO</code>类库使用的是<code>java.nio.ByteBuffer</code>,它实际是一个长度固定的<code>Byte</code>数组，我们都知道数组无法动态扩容，<code>ByteBuffer</code>也有这个限制，相关代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">ByteBuffer</span></span></div><div class="line"><span class="class">    <span class="keyword">extends</span> <span class="title">Buffer</span></span></div><div class="line"><span class="class">    <span class="keyword">implements</span> <span class="title">Comparable</span> </span>&#123;</div><div class="line">    <span class="keyword">final</span> <span class="keyword">byte</span>[] hb; <span class="comment">// Non-null only for heap buffers</span></div><div class="line">    <span class="keyword">final</span> <span class="keyword">int</span> offset;</div><div class="line">    <span class="keyword">boolean</span> isReadOnly;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>容量无法动态扩展会给用户带来一些麻烦，例如由于无法预测每条消息报文的长度，可能需要预分配一个比较大的<code>ByteBuffer</code>，这通常也没有问题。但是在海量推送服务系统中，这会给服务端带来沉重的内存负担。假设单条推送消息最大上限为10K，消息平均大小为5K，为了满足10K消息的处理，<code>ByteBuffer</code>的容量被设置为10K，这样每条链路实际上多消耗了5K内存，如果长链接链路数为100万，每个链路都独立持有ByteBuffer接收缓冲区，则额外损耗的总内存 Total(M) = 1000000 * 5K = 4882M。内存消耗过大，不仅仅增加了硬件成本，而且大内存容易导致长时间的Full GC，对系统稳定性会造成比较大的冲击。</p>
+<p>实际上，最灵活的处理方式就是<strong>能够动态调整内存</strong>，即接收缓冲区可以根据以往接收的消息进行计算，动态调整内存，利用<code>CPU</code>资源来换内存资源，具体的策略如下：</p>
+<ul>
+<li><strong><code>ByteBuffer</code>支持容量的扩展和收缩</strong>，可以按需灵活调整，以节约内存；</li>
+<li>接收消息的时候，可以按照指定的算法<strong>对之前接收的消息大小进行分析，并预测未来的消息大小</strong>，按照预测值灵活调整缓冲区容量，以做到最小的资源损耗满足程序正常功能。</li>
+</ul>
+<p>幸运的是，<code>Netty</code>提供的<code>ByteBuf</code>支持容量动态调整，对于接收缓冲区的内存分配器，<code>Netty</code>提供了两种：</p>
+<ul>
+<li><code>FixedRecvByteBufAllocator</code>：固定长度的接收缓冲区分配器，由它分配的<code>ByteBuf</code>长度都是固定大小的，并不会根据实际数据报的大小动态收缩。但是，如果容量不足，支持动态扩展。<strong>动态扩展是<code>Netty ByteBuf</code>的一项基本功能</strong>，与<code>ByteBuf</code>分配器的实现没有关系；</li>
+<li><code>AdaptiveRecvByteBufAllocator</code>：容量动态调整的接收缓冲区分配器，它会根据之前<code>Channel</code>接收到的数据报大小进行计算，如果连续填充满接收缓冲区的可写空间，则动态扩展容量。如果连续2次接收到的数据报都小于指定值，则收缩当前的容量，以节约内存。</li>
+</ul>
+<p>相对于<code>FixedRecvByteBufAllocator</code>，使用<code>AdaptiveRecvByteBufAllocator</code>更为合理，可以在创建客户端或者服务端的时候指定<code>RecvByteBufAllocator</code>，代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">Bootstrap b = <span class="keyword">new</span> Bootstrap();</div><div class="line">            b.group(group)</div><div class="line">             .channel(NioSocketChannel.class)</div><div class="line">             .option(ChannelOption.TCP_NODELAY, <span class="keyword">true</span>)</div><div class="line">             .option(ChannelOption.RCVBUF_ALLOCATOR, AdaptiveRecvByteBufAllocator.DEFAULT)</div></pre></td></tr></table></figure>
+<p>如果默认没有设置，则使用<code>AdaptiveRecvByteBufAllocator</code>。</p>
+<p>另外值得注意的是，无论是接收缓冲区还是发送缓冲区，<strong>缓冲区的大小建议设置为消息的平均大小</strong>，不要设置成最大消息的上限，这会导致额外的内存浪费。通过如下方式可以设置接收缓冲区的<strong>初始大小</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="comment">/**</span></div><div class="line"><span class="comment"> * Creates a new predictor with the specified parameters.</span></div><div class="line"><span class="comment"> * </span></div><div class="line"><span class="comment"> * <span class="doctag">@param</span> minimum</span></div><div class="line"><span class="comment"> *            the inclusive lower bound of the expected buffer size</span></div><div class="line"><span class="comment"> * <span class="doctag">@param</span> initial</span></div><div class="line"><span class="comment"> *            the initial buffer size when no feed back was received</span></div><div class="line"><span class="comment"> * <span class="doctag">@param</span> maximum</span></div><div class="line"><span class="comment"> *            the inclusive upper bound of the expected buffer size</span></div><div class="line"><span class="comment"> */</span></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="title">AdaptiveRecvByteBufAllocator</span><span class="params">(<span class="keyword">int</span> minimum, <span class="keyword">int</span> initial, <span class="keyword">int</span> maximum)</span></span></div></pre></td></tr></table></figure>
+<p>对于消息发送，通常需要用户自己构造<code>ByteBuf</code>并编码，例如通过如下<strong>工具类</strong>创建消息发送缓冲区：</p>
+<p><img src="https://res.infoq.com/articles/netty-million-level-push-service-design-points/zh/resources/1226002.png" alt="Unpooled"></p>
+<h4 id="内存池-1"><a href="#内存池-1" class="headerlink" title="内存池"></a>内存池</h4><p>推送服务器承载了海量的长链接，每个长链接实际就是一个会话。<strong>如果每个会话都持有心跳数据、接收缓冲区、指令集等数据结构，而且这些实例随着消息的处理朝生夕灭，这就会给服务器带来沉重的<code>GC</code>压力，同时消耗大量的内存</strong>。</p>
+<p><strong>最有效的解决策略就是使用内存池</strong>，每个<code>NioEventLoop</code>线程处理N个链路，在线程内部，链路的处理时串行的。假如A链路首先被处理，它会创建接收缓冲区等对象，待解码完成之后，构造的<code>POJO</code>对象被封装成Task后投递到后台的线程池中执行，然后接收缓冲区会被释放，每条消息的接收和处理都会重复接收缓冲区的创建和释放。如果使用内存池，则当A链路接收到新的数据报之后，从<code>NioEventLoop</code>的内存池中申请空闲的<code>ByteBuf</code>，解码完成之后，调用<code>release</code>将<code>ByteBuf</code>释放到内存池中，供后续B链路继续使用。</p>
+<p>使用内存池优化之后，单个<code>NioEventLoop</code>的<code>ByteBuf</code>申请和<code>GC</code>次数从原来的N = 1000000/64 = 15625 次减少为最少0次（假设每次申请都有可用的内存）。</p>
+<p><code>Netty4</code>之前的版本问题如下：每当收到新信息或者用户发送信息到远程端，<strong><code>Netty 3</code>均会创建一个新的堆缓冲区</strong>。这意味着，对应每一个新的缓冲区，都会有一个<code>new byte[capacity]</code>。这些缓冲区会导致<code>GC</code>压力，并消耗内存带宽。为了安全起见，新的字节数组分配时会用零填充，这会消耗内存带宽。然而，用零填充的数组很可能会再次用实际的数据填充，这又会消耗同样的内存带宽。如果Java虚拟机（JVM）提供了创建新字节数组而又无需用零填充的方式，那么我们本来就可以将内存带宽消耗减少50%，但是目前没有那样一种方式。</p>
+<p>在<code>Netty 4</code>中实现了一个新的<code>ByteBuf</code>内存池，它是一个纯<code>Java</code>版本的 <a href="https://www.facebook.com/notes/facebook-engineering/scalable-memory-allocation-using-jemalloc/480222803919" target="_blank" rel="external"><code>jemalloc</code></a> （<code>Facebook</code>也在用）。现在，<code>Netty</code>不会再因为用零填充缓冲区而浪费内存带宽了。不过，由于它不依赖于<code>GC</code>，开发人员需要小心内存泄漏。如果忘记在处理程序中释放缓冲区，那么内存使用率会无限地增长。</p>
+<p><code>Netty</code>默认不使用内存池，需要在创建客户端或者服务端的时候进行指定，代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">Bootstrap b = <span class="keyword">new</span> Bootstrap();</div><div class="line">            b.group(group)</div><div class="line">             .channel(NioSocketChannel.class)</div><div class="line">             .option(ChannelOption.TCP_NODELAY, <span class="keyword">true</span>)</div><div class="line">             .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)</div></pre></td></tr></table></figure>
+<p>使用内存池之后，内存的申请和释放必须成对出现，即<code>retain()</code>和<code>release()</code>要<strong>成对出现</strong>，否则会导致内存泄露。</p>
+<p>值得注意的是，如果使用内存池，完成<code>ByteBuf</code>的<strong>解码</strong>工作之后必须显式的调用<code>ReferenceCountUtil.release(msg)</code>对接收缓冲区<code>ByteBuf</code>进行内存释放，否则它会被认为仍然在使用中，这样会导致内存泄露。</p>
+<h4 id="当心“日志隐形杀手”"><a href="#当心“日志隐形杀手”" class="headerlink" title="当心“日志隐形杀手”"></a>当心“日志隐形杀手”</h4><p>通常情况下，大家都知道不能在<code>Netty</code>的<code>I/O</code>线程上做执行时间不可控的操作，例如<strong>访问数据库、发送Email</strong>等。但是有个常用但是非常危险的操作却容易被忽略，那便是<strong>记录日志</strong>。</p>
+<p>通常，在生产环境中，需要实时打印接口日志，其它日志处于<code>ERROR</code>级别，当推送服务发生I/O异常之后，会记录异常日志。如果当前磁盘的<code>WIO</code>比较高，<strong>可能会发生写日志文件操作被同步阻塞</strong>，阻塞时间无法预测。这就会导致<code>Netty</code>的<code>NioEventLoop</code>线程被阻塞，<code>Socket</code>链路无法被及时关闭、其它的链路<strong>也无法进行读写操作</strong>等。</p>
+<p>以最常用的<code>log4j</code>为例，尽管它支持异步写日志（<code>AsyncAppender</code>），但是<strong>当日志队列满之后，它会同步阻塞业务线程，直到日志队列有空闲位置可用</strong>，相关代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">synchronized</span> (<span class="keyword">this</span>.buffer) &#123;</div><div class="line">      <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</div><div class="line">        <span class="keyword">int</span> previousSize = <span class="keyword">this</span>.buffer.size();</div><div class="line">        <span class="keyword">if</span> (previousSize &lt; <span class="keyword">this</span>.bufferSize) &#123;</div><div class="line">          <span class="keyword">this</span>.buffer.add(event);</div><div class="line">          <span class="keyword">if</span> (previousSize != <span class="number">0</span>) <span class="keyword">break</span>;</div><div class="line">          <span class="keyword">this</span>.buffer.notifyAll(); <span class="keyword">break</span>;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">boolean</span> discard = <span class="keyword">true</span>;</div><div class="line">        <span class="keyword">if</span> ((<span class="keyword">this</span>.blocking) &amp;&amp; (!Thread.interrupted()) &amp;&amp; (Thread.currentThread() != <span class="keyword">this</span>.dispatcher)) <span class="comment">//判断是业务线程</span></div><div class="line">        &#123;</div><div class="line">          <span class="keyword">try</span></div><div class="line">          &#123;</div><div class="line">            <span class="keyword">this</span>.buffer.wait();<span class="comment">//阻塞业务线程</span></div><div class="line">            discard = <span class="keyword">false</span>;</div><div class="line">          &#125;</div><div class="line">          <span class="keyword">catch</span> (InterruptedException e)</div><div class="line">          &#123;</div><div class="line">            Thread.currentThread().interrupt();</div><div class="line">          &#125;</div><div class="line"></div><div class="line">        &#125;</div></pre></td></tr></table></figure>
+<p>类似这类<code>BUG</code>具有极强的隐蔽性，往往<code>WIO</code>高的时间<strong>持续非常短</strong>，或者是<strong>偶现的</strong>，在<strong>测试环境中很难模拟此类故障</strong>，问题定位难度非常大。这就要求读者在平时写代码的时候一定要当心，注意那些<strong>隐性地雷</strong>。</p>
+<h4 id="TCP参数优化"><a href="#TCP参数优化" class="headerlink" title="TCP参数优化"></a><code>TCP</code>参数优化</h4><p>常用的<code>TCP</code>参数，例如<code>TCP</code>层面的接收和发送缓冲区大小设置，在<code>Netty</code>中分别对应<code>ChannelOption</code>的<code>SO_SNDBUF</code>和<code>SO_RCVBUF</code>，需要根据推送消息的大小，合理设置，对于海量长连接，通常<code>32K</code>是个不错的选择。</p>
+<p>另外一个比较常用的优化手段就是<strong>软中断</strong>，如图所示：如果所有的软中断都运行在<code>CPU0</code>相应网卡的硬件中断上，那么始终都是<code>cpu0</code>在处理软中断，而此时其它<code>CPU</code>资源就被浪费了，因为无法并行的执行多个软中断。</p>
+<p>大于等于2.6.35版本的<code>Linux kernel</code>内核，开启<code>RPS</code>，网络通信性能提升<code>20%</code>之上。<code>RPS</code>的基本原理：<strong>根据数据包的源地址，目的地址以及目的和源端口，计算出一个<code>hash</code>值，然后根据这个<code>hash</code>值来选择软中断运行的<code>cpu</code></strong>。从上层来看，也就是说将每个连接和<code>cpu</code>绑定，并通过这个<code>hash</code>值，来<strong>均衡软中断运行在多个<code>cpu</code>上，从而提升通信性能</strong>。</p>
+<h4 id="JVM参数"><a href="#JVM参数" class="headerlink" title="JVM参数"></a><code>JVM</code>参数</h4><p>最重要的参数调整有两个：</p>
+<ul>
+<li><code>Xmx</code>:<code>JVM</code>最大内存需要根据内存模型进行计算并得出相对合理的值；</li>
+<li><code>GC</code>相关的参数: 例如新生代和老生代、永久代的比例，GC的策略，新生代各区的比例等，需要<strong>根据具体的场景进行设置和测试，并不断的优化</strong>，尽量将<code>Full GC</code>的频率降到最低。</li>
+</ul>
+<h3 id="io-netty-channel-FileRegion"><a href="#io-netty-channel-FileRegion" class="headerlink" title="io.netty.channel.FileRegion"></a><code>io.netty.channel.FileRegion</code></h3><p><strong>A region of a file</strong> that is sent via a <code>Channel</code> which supports <code>zero-copy file transfer</code>.</p>
+<h3 id="io-netty-channel-Channel"><a href="#io-netty-channel-Channel" class="headerlink" title="io.netty.channel.Channel"></a><code>io.netty.channel.Channel</code></h3><h3 id="io-netty-util-AbstractReferenceCounted"><a href="#io-netty-util-AbstractReferenceCounted" class="headerlink" title="io.netty.util.AbstractReferenceCounted"></a><code>io.netty.util.AbstractReferenceCounted</code></h3><h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="http://www.infoq.com/cn/articles/netty-high-performance" target="_blank" rel="external">Netty系列之Netty高性能之道</a></li>
+<li><a href="http://www.infoq.com/cn/articles/netty-million-level-push-service-design-points" target="_blank" rel="external">Netty系列之Netty百万级服务设计要点</a></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/09/03/netty/" data-id="cjc5qrt2l004v5cemgdurvk99" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-ant" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/08/31/ant/" class="article-date">
+  <time datetime="2017-08-31T04:12:41.000Z" itemprop="datePublished">2017-08-31</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/开发者手册/">开发者手册</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/08/31/ant/">ant</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Ant"><a href="#Ant" class="headerlink" title="Ant"></a>Ant</h2><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sdk install ant</div><div class="line">ant -version</div></pre></td></tr></table></figure>
+<p>以前写的<a href="https://github.com/anxiaoyi/learn-programming/wiki/ant" target="_blank" rel="external">教程</a></p>
+<h3 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ant</div></pre></td></tr></table></figure>
+<h3 id="版本号"><a href="#版本号" class="headerlink" title="版本号"></a>版本号</h3><p>查看版本号，需要<strong>提前设置环境变量 <code>JAVA_HOME</code></strong></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/08/31/ant/" data-id="cjc5qrt0j002e5cem0v6wo3iw" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-the-cooking-skills" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/08/27/the-cooking-skills/" class="article-date">
+  <time datetime="2017-08-27T06:17:45.000Z" itemprop="datePublished">2017-08-27</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/生活/">生活</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/08/27/the-cooking-skills/">The Cooking Skills</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="The-Cooking-Skills"><a href="#The-Cooking-Skills" class="headerlink" title="The Cooking Skills"></a>The Cooking Skills</h2><p><strong>不要用钢丝球刷锅</strong>，因为有磨损，容易弄坏，建议用<strong>海绵</strong>来刷。</p>
+<hr>
+<p>网购牛排烹饪:</p>
+<ul>
+<li>1) 解冻: 直接放入冷水中解冻，无需开袋</li>
+<li>2) 时间: 煎到没有血水渗出，预计 4 ~ 6 分钟</li>
+</ul>
+<hr>
+<p>火锅，让勺子的<strong>凹面朝向锅壁</strong>那一侧。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/08/27/the-cooking-skills/" data-id="cjc5qrt2v005j5cemswpzdutn" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-keepalived" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/08/24/keepalived/" class="article-date">
+  <time datetime="2017-08-24T12:46:19.000Z" itemprop="datePublished">2017-08-24</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/开发者手册/">开发者手册</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/08/24/keepalived/">keepalived</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Keepalived"><a href="#Keepalived" class="headerlink" title="Keepalived"></a>Keepalived</h2><p><strong>全局定义</strong>:</p>
+<p><img src="17-08-24-20_49_04_918_244.png" alt=""></p>
+<hr>
+<p><strong>虚拟主机定义</strong>:</p>
+<p><img src="17-08-24-20_50_54_921_936.png" alt=""></p>
+<hr>
+<p><strong>VRRP 实例定义</strong>:</p>
+<p><img src="17-08-24-21_07_08_922_961.png" alt=""></p>
+<hr>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">keepalived --<span class="built_in">help</span></div></pre></td></tr></table></figure>
+<hr>
+<p>All the <strong>digest</strong> strings are generated with the <strong><code>genhash</code></strong> software.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">genhash --<span class="built_in">help</span></div></pre></td></tr></table></figure>
+<hr>
+<p><strong>运行</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/etc/init.d/keepalived start</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/08/24/keepalived/" data-id="cjc5qrt2b004c5cemd4drsdja" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+
+
+  <nav id="page-nav">
+    <a class="extend prev" rel="prev" href="/blog/page/6/">&laquo; Prev</a><a class="page-number" href="/blog/">1</a><span class="space">&hellip;</span><a class="page-number" href="/blog/page/5/">5</a><a class="page-number" href="/blog/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/blog/page/8/">8</a><a class="page-number" href="/blog/page/9/">9</a><span class="space">&hellip;</span><a class="page-number" href="/blog/page/23/">23</a><a class="extend next" rel="next" href="/blog/page/8/">Next&raquo;</a>
+  </nav>
+</section>
+           
+    <aside id="sidebar">
+  
+    
+
+  
+    
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title recent-posts">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/blog/2018/01/06/where-the-time-actually-gone/">时间都去哪儿了</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/05/dev-reflection/">开发反思</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/05/my-microblog/">我的微博</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/04/gcc-basic/">gcc-basic</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/04/java-internal/">Java Internal</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+
+  
+    
+  
+</aside>
+
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-left">
+      &copy; 2014 - 2018 赵坤&nbsp;|&nbsp;
+      Theme by <a href="https://github.com/giscafer/hexo-theme-cafe/" target="_blank">Cafe</a>
+    </div>
+     <div id="footer-right">
+      Contact&nbsp;|&nbsp;igozhaokun@163.com
+    </div>
+  </div>
+</footer>
+ <script src="/blog/jquery/jquery.min.js"></script>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/blog/" class="mobile-nav-link">首页</a>
+  
+    <a href="/blog/archives" class="mobile-nav-link">归档</a>
+  
+    <a href="/blog/about" class="mobile-nav-link">关于</a>
+  
+</nav>
+    <img class="back-to-top-btn" src="/blog/images/fly-to-top.png"/>
+<script>
+// Elevator script included on the page, already.
+window.onload = function() {
+  var elevator = new Elevator({
+    selector:'.back-to-top-btn',
+    element: document.querySelector('.back-to-top-btn'),
+    duration: 1000 // milliseconds
+  });
+}
+</script>
+
+      
+
+  
+
+  
+
+
+
+
+
+
+
+<!-- author:forvoid begin -->
+<!-- author:forvoid begin -->
+
+<!-- author:forvoid end -->
+
+<!-- author:forvoid end -->
+
+
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      })
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      })
+    </script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js"></script>
+  
+
+
+ <script src="/blog/js/is.js"></script>
+
+
+  <link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
+  <script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/blog/js/script.js"></script>
+<script src="/blog/js/elevator.js"></script>
+  </div>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</body>
+</html>

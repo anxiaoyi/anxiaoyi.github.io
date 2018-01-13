@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>代码人生</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="赵坤的个人网站">
+<meta property="og:type" content="website">
+<meta property="og:title" content="代码人生">
+<meta property="og:url" content="http://blog.kunzhao.org/page/6/index.html">
+<meta property="og:site_name" content="代码人生">
+<meta property="og:description" content="赵坤的个人网站">
+<meta property="og:locale" content="zh-cn">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="代码人生">
+<meta name="twitter:description" content="赵坤的个人网站">
+  
+    <link rel="alternate" href="/atom.xml" title="代码人生" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    
+  
+  <link rel="stylesheet" href="/blog/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    
+    <div id="header-inner" class="inner">
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://blog.kunzhao.org"></form>
+      </div>
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/blog/">首页</a>
+        
+          <a class="main-nav-link" href="/blog/archives">归档</a>
+        
+          <a class="main-nav-link" href="/blog/about">关于</a>
+        
+      </nav>
+      
+    </div>
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/blog/" id="logo">代码人生</a>
+      </h1>
+      
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-algo-heap" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/09/11/algo-heap/" class="article-date">
+  <time datetime="2017-09-11T07:28:00.000Z" itemprop="datePublished">2017-09-11</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/算法/">算法</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/09/11/algo-heap/">algo-heap</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="堆-优先队列"><a href="#堆-优先队列" class="headerlink" title="堆 (优先队列)"></a>堆 (优先队列)</h2><p><strong>基本堆操作</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">PriorityQueue</span>&lt;<span class="title">T</span>&gt; </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(T value)</span></span>;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isEmpty</span><span class="params">()</span></span>;</div><div class="line">    <span class="function"><span class="keyword">public</span> T <span class="title">peek</span><span class="params">()</span></span>;</div><div class="line">    <span class="function"><span class="keyword">public</span> T <span class="title">remove</span><span class="params">()</span></span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p>动画演示: <a href="https://visualgo.net/en/heap" target="_blank" rel="external">https://visualgo.net/en/heap</a></p>
+<hr>
+<p>我们没用 <code>array[0]</code> 元素。</p>
+<hr>
+<p><strong><code>add(T value)</code></strong>:</p>
+<p><img src="2017_09_11_16_25_54.png" alt=""></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">array[++size] = value;</div></pre></td></tr></table></figure>
+<p>然后在一步一步与父元素做对比向上冒泡:</p>
+<p><img src="2017_09_11_16_30_56.png" alt=""></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">bubbleUp</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">int</span> index = <span class="keyword">this</span>.size;</div><div class="line">        </div><div class="line">    <span class="keyword">while</span> (hasParent(index)</div><div class="line">           &amp;&amp; (parent(index).compareTo(array[index]) &gt; <span class="number">0</span>)) &#123;</div><div class="line">        <span class="comment">// parent/child are out of order; swap them</span></div><div class="line">        swap(index, parentIndex(index));</div><div class="line">        index = parentIndex(index);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>时间复杂度: <code>O(log N)</code></p>
+<hr>
+<p><strong><code>T remove()</code></strong>:</p>
+<p><img src="2017_09_11_16_35_54.png" alt=""></p>
+<p><img src="2017_09_11_16_38_50.png" alt=""></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">array[<span class="number">1</span>] = array[size];</div><div class="line">array[size] = <span class="keyword">null</span>;</div><div class="line">size--;</div></pre></td></tr></table></figure>
+<p>与孩子中值较大的做交换，下滤:</p>
+<p><img src="2017_09_11_16_39_50.png" alt=""></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">bubbleDown</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">int</span> index = <span class="number">1</span>;</div><div class="line">        </div><div class="line">    <span class="comment">// bubble down</span></div><div class="line">    <span class="keyword">while</span> (hasLeftChild(index)) &#123;</div><div class="line">        <span class="comment">// which of my children is smaller?</span></div><div class="line">        <span class="keyword">int</span> smallerChild = leftIndex(index);</div><div class="line">            </div><div class="line">        <span class="comment">// bubble with the smaller child, if I have a smaller child</span></div><div class="line">        <span class="keyword">if</span> (hasRightChild(index)</div><div class="line">            &amp;&amp; array[leftIndex(index)].compareTo(array[rightIndex(index)]) &gt; <span class="number">0</span>) &#123;</div><div class="line">            smallerChild = rightIndex(index);</div><div class="line">        &#125; </div><div class="line">            </div><div class="line">        <span class="keyword">if</span> (array[index].compareTo(array[smallerChild]) &gt; <span class="number">0</span>) &#123;</div><div class="line">            swap(index, smallerChild);</div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line">            <span class="comment">// otherwise, get outta here!</span></div><div class="line">            <span class="keyword">break</span>;</div><div class="line">        &#125;</div><div class="line">            </div><div class="line">        <span class="comment">// make sure to update loop counter/index of where last el is put</span></div><div class="line">        index = smallerChild;</div><div class="line">    &#125;    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/09/11/algo-heap/" data-id="cjc5qrszr00255cemp8n8z63x" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-algorithm-dp-and-backtracking" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/09/11/algorithm-dp-and-backtracking/" class="article-date">
+  <time datetime="2017-09-11T03:13:52.000Z" itemprop="datePublished">2017-09-11</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/算法/">算法</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/09/11/algorithm-dp-and-backtracking/">dp-and-backtracking</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="DP"><a href="#DP" class="headerlink" title="DP"></a>DP</h2><p>将递归算法重新写成非递归算法，让后者把那些子问题的答案系统地记录在一个表内。利用这种方法的一种技巧就叫做动态规划（dynamic programming）。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">Fib</span><span class="params">(<span class="keyword">int</span> N)</span> </span>&#123;</div><div class="line">    <span class="keyword">if</span> (N &lt;= <span class="number">1</span>) &#123;</div><div class="line">        <span class="keyword">return</span> <span class="number">1</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">return</span> Fib(n - <span class="number">1</span>) + Fib(N - <span class="number">2</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p>01 背包问题: 每件物品共有两种情况，<strong>挑选和不挑选</strong></p>
+<p>最朴素的解法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">rec</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">int</span> j)</span> </span>&#123;</div><div class="line">    <span class="keyword">int</span> res;</div><div class="line">    <span class="keyword">if</span> (i == n) &#123;</div><div class="line">        <span class="comment">// 已经没有剩余物品了</span></div><div class="line">        res = <span class="number">0</span>;</div><div class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (j &lt; w[i]) &#123;</div><div class="line">        <span class="comment">// 无法挑选这个物品</span></div><div class="line">        res = rec(i + <span class="number">1</span>, j);</div><div class="line">    &#125; <span class="keyword">else</span> &#123;</div><div class="line">        <span class="comment">// 挑选和不挑选两种情况</span></div><div class="line">        res = max(rec(i + <span class="number">1</span>, j), rec(i + <span class="number">1</span>, j - w[i]) + v[i]);</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    <span class="keyword">return</span> res;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">solve</span><span class="params">()</span> </span>&#123;</div><div class="line">    rec(<span class="number">0</span>, w);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>我们尝试把第一次计算时的结果记录下来:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> dp[MAX_N + <span class="number">1</span>][MAX_N + <span class="number">1</span>];</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">rec</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">int</span> j)</span> </span>&#123;</div><div class="line">    <span class="keyword">if</span> (dp[i][j] &gt;= <span class="number">0</span>) &#123;</div><div class="line">        <span class="comment">// 已经计算过的话直接使用之前的结果</span></div><div class="line">        <span class="keyword">return</span> dp[i][j];</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    <span class="keyword">int</span> res;</div><div class="line">    <span class="keyword">if</span> (i == n) &#123;</div><div class="line">        <span class="comment">// 已经没有剩余物品了</span></div><div class="line">        res = <span class="number">0</span>;</div><div class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (j &lt; w[i]) &#123;</div><div class="line">        <span class="comment">// 无法挑选这个物品</span></div><div class="line">        res = rec(i + <span class="number">1</span>, j);</div><div class="line">    &#125; <span class="keyword">else</span> &#123;</div><div class="line">        <span class="comment">// 挑选和不挑选两种情况</span></div><div class="line">        res = max(rec(i + <span class="number">1</span>, j), rec(i + <span class="number">1</span>, j - w[i]) + v[i]);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="comment">// 将结果记录在数组中</span></div><div class="line">    <span class="keyword">return</span> dp[i][j] = res;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">solve</span><span class="params">()</span> </span>&#123;</div><div class="line">    memset(dp, -<span class="number">1</span>, sizeof(dp));</div><div class="line">    rec(<span class="number">0</span>, w);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>其实，如果不用写递归函数，直接利用递归式将各项的值计算出来，简单地用二重循环也可以解决这一问题:</p>
+<p><img src="2017_09_24_22_52_40.png" alt=""></p>
+<p>代码:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">solve</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;n; i++) &#123;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;=w; j++) &#123;</div><div class="line">            <span class="comment">// 还允许拿 j 千克，这件物品重 w[i] 千克</span></div><div class="line">            <span class="keyword">if</span> (j &lt; w[i]) &#123;</div><div class="line">                dp[i + <span class="number">1</span>][j] = dp[i][j];</div><div class="line">            &#125; <span class="keyword">else</span> &#123;</div><div class="line">                dp[i + <span class="number">1</span>][j] = max(dp[i][j], dp[i][j - w[i]] + v[i]);</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p>类似背包问题的有:</p>
+<ul>
+<li><a href="https://leetcode.com/problems/partition-equal-subset-sum/" target="_blank" rel="external">LeetCode-416. Partition Equal Subset Sum</a></li>
+</ul>
+<p>对于，每一个数字，我们都可以选择 pick it or not. 假设:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">dp[i][j] := 和等于 j 的几个数字是否可以从前 i 个数得到</div></pre></td></tr></table></figure>
+<p>那么，就有如下定义:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">dp[i][j] = dp[i-1][j]; // dont&apos;t pick the number nums[i]</div><div class="line">dp[i][j] = dp[i-1][j-nums[i]] // we pick the number nums[i]</div></pre></td></tr></table></figure>
+<p>那么最后的方程为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">dp[0][0] = 0;</div><div class="line">dp[i][j] = dp[i-1][j] || dp[i-1][j-nums[i]];</div></pre></td></tr></table></figure>
+<hr>
+<p><font color="red"><strong>不限次数挑选</strong></font>:</p>
+<ul>
+<li><a href="https://leetcode.com/problems/combination-sum-iv/discuss/" target="_blank" rel="external">377. Combination Sum IV</a></li>
+</ul>
+<p>① 朴素解法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">combinationSum4</span><span class="params">(<span class="keyword">int</span>[] nums, <span class="keyword">int</span> target)</span> </span>&#123;</div><div class="line">    <span class="keyword">if</span> (target == <span class="number">0</span>) &#123;</div><div class="line">        <span class="keyword">return</span> <span class="number">1</span>;</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nums.length; i++) &#123;</div><div class="line">        <span class="keyword">if</span> (target &gt;= nums[i]) &#123;</div><div class="line">            res += combinationSum4(nums, target - nums[i]);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> res;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>② 记忆化搜索</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">private</span> <span class="keyword">int</span>[] dp;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">combinationSum4</span><span class="params">(<span class="keyword">int</span>[] nums, <span class="keyword">int</span> target)</span> </span>&#123;</div><div class="line">    dp = <span class="keyword">new</span> <span class="keyword">int</span>[target + <span class="number">1</span>];</div><div class="line">    </div><div class="line">    Arrays.fill(dp, -<span class="number">1</span>);</div><div class="line">    dp[<span class="number">0</span>] = <span class="number">1</span>;</div><div class="line">    </div><div class="line">    <span class="keyword">return</span> helper(nums, target);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">helper</span><span class="params">(<span class="keyword">int</span>[] nums, <span class="keyword">int</span> target)</span> </span>&#123;</div><div class="line">    <span class="keyword">if</span> (dp[target] != -<span class="number">1</span>) &#123;</div><div class="line">        <span class="keyword">return</span> dp[target];</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    <span class="keyword">int</span> res = <span class="number">0</span>;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nums.length; i++) &#123;</div><div class="line">        <span class="keyword">if</span> (target &gt;= nums[i]) &#123;</div><div class="line">            res += helper(nums, target - nums[i]);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    dp[target] = res;</div><div class="line">    <span class="keyword">return</span> res;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>③ 递推式:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">combinationSum4</span><span class="params">(<span class="keyword">int</span>[] nums, <span class="keyword">int</span> target)</span> </span>&#123;</div><div class="line">    <span class="keyword">int</span>[] comb = <span class="keyword">new</span> <span class="keyword">int</span>[target + <span class="number">1</span>];</div><div class="line">    comb[<span class="number">0</span>] = <span class="number">1</span>;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; comb.length; i++) &#123;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; nums.length; j++) &#123;</div><div class="line">            <span class="keyword">if</span> (i - nums[j] &gt;= <span class="number">0</span>) &#123;</div><div class="line">                comb[i] += comb[i - nums[j]];</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> comb[target];</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><font color="red"><strong>连续最大</strong></font>子数组问题:</p>
+<ul>
+<li><a href="https://leetcode.com/problems/maximum-subarray/description/" target="_blank" rel="external">53. Maximum Subarray</a></li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">L[i] = max(L[i-1] + A[i], A[i])</div></pre></td></tr></table></figure>
+<ul>
+<li><a href="https://leetcode.com/problems/maximum-product-subarray/description/" target="_blank" rel="external">152. Maximum Product Subarray</a></li>
+</ul>
+<p>从后向前做乘法会<strong>超时</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">maxProduct</span><span class="params">(<span class="keyword">int</span>[] nums)</span> </span>&#123;</div><div class="line">        <span class="keyword">if</span> (nums.length == <span class="number">0</span>) &#123;</div><div class="line">            <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (nums.length == <span class="number">1</span>) &#123;</div><div class="line">            <span class="keyword">return</span> nums[<span class="number">0</span>];</div><div class="line">        &#125;</div><div class="line">        </div><div class="line">        <span class="keyword">int</span>[] dp = <span class="keyword">new</span> <span class="keyword">int</span>[nums.length];</div><div class="line">        dp[<span class="number">0</span>] = nums[<span class="number">0</span>];</div><div class="line">        </div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;nums.length; i++) &#123;</div><div class="line">            <span class="keyword">if</span> (dp[i - <span class="number">1</span>] != <span class="number">0</span>) &#123;</div><div class="line">                dp[i] = dp[i - <span class="number">1</span>] * nums[i];</div><div class="line">            &#125; <span class="keyword">else</span> &#123;</div><div class="line">                dp[i] = nums[i];</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        </div><div class="line">        <span class="keyword">int</span> max = dp[<span class="number">0</span>];</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;nums.length; i++) &#123;</div><div class="line">            <span class="keyword">if</span> (dp[i] &gt; max) &#123;</div><div class="line">                max = dp[i];</div><div class="line">            &#125;</div><div class="line">            </div><div class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j=i - <span class="number">1</span>; j&gt;=<span class="number">0</span>; j--) &#123;</div><div class="line">                <span class="keyword">if</span> (dp[j] == <span class="number">0</span>) &#123;</div><div class="line">                    <span class="keyword">break</span>;</div><div class="line">                &#125;</div><div class="line">                </div><div class="line">                <span class="keyword">int</span> product = dp[i] / dp[j];</div><div class="line">                <span class="keyword">if</span> (product &gt; max) &#123;</div><div class="line">                    max = product;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">            </div><div class="line">        &#125;</div><div class="line">        </div><div class="line">        <span class="keyword">return</span> max;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>以下是<a href="https://discuss.leetcode.com/topic/4417/possibly-simplest-solution-with-o-n-time-complexity" target="_blank" rel="external">网友</a>给出的一个时间复杂度为 <code>O(n)</code> 的算法:</p>
+<p>整体的 <code>DP</code> 公式为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">imax = max(result, max(A[i], imax * A[i]));</div></pre></td></tr></table></figure>
+<p>代码如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">maxProduct</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> n)</span> </span>&#123;</div><div class="line">    <span class="comment">// store the result that is the max we have found so far</span></div><div class="line">    <span class="keyword">int</span> r = A[<span class="number">0</span>];</div><div class="line"></div><div class="line">    <span class="comment">// imax/imin stores the max/min product of</span></div><div class="line">    <span class="comment">// subarray that ends with the current number A[i]</span></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>, imax = r, imin = r; i &lt; n; i++) &#123;</div><div class="line">        <span class="comment">// multiplied by a negative makes big number smaller, small number bigger</span></div><div class="line">        <span class="comment">// so we redefine the extremums by swapping them</span></div><div class="line">        <span class="comment">// example:</span></div><div class="line">        <span class="comment">// min: 3, max: 6, nums[i]:-2</span></div><div class="line">        <span class="comment">// min: -12, max: -6</span></div><div class="line">        <span class="comment">//</span></div><div class="line">        <span class="comment">// min: -6, max: -3, nums[i]:-2</span></div><div class="line">        <span class="comment">// min: 6, max:12</span></div><div class="line">        <span class="comment">//</span></div><div class="line">        <span class="comment">// min:-3, max:6, nums[i]:-2</span></div><div class="line">        <span class="comment">// min:-12, max:6</span></div><div class="line">        <span class="comment">//</span></div><div class="line">        <span class="comment">// No matter which case, it always should swap the min and max</span></div><div class="line">        <span class="keyword">if</span> (A[i] &lt; <span class="number">0</span>)</div><div class="line">            swap(imax, imin);</div><div class="line"></div><div class="line">        <span class="comment">// max/min product for the current number is either the current number itself</span></div><div class="line">        <span class="comment">// or the max/min by the previous number times the current one</span></div><div class="line">        imax = max(A[i], imax * A[i]);</div><div class="line">        imin = min(A[i], imin * A[i]);</div><div class="line"></div><div class="line">        <span class="comment">// the newly computed max value is a candidate for our global result</span></div><div class="line">        r = max(r, imax);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> r;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<ul>
+<li><a href="https://leetcode.com/problems/house-robber-ii/description/" target="_blank" rel="external">213. House Robber II</a></li>
+</ul>
+<p>引入<strong>环</strong>之后如何解决问题，参考<a href="https://discuss.leetcode.com/topic/14375/simple-ac-solution-in-java-in-o-n-with-explanation" target="_blank" rel="external">网友</a>的答案我们可以<strong>打破环</strong>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">rob</span><span class="params">(<span class="keyword">int</span>[] nums)</span> </span>&#123;</div><div class="line">        <span class="comment">// 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5 -&gt; 1</span></div><div class="line">        <span class="comment">//</span></div><div class="line">        <span class="comment">// two cases can break the circle:</span></div><div class="line">        <span class="comment">//</span></div><div class="line">        <span class="comment">// 1 -&gt; 2 -&gt; 3 -&gt; 4</span></div><div class="line">        <span class="comment">//      2 -&gt; 3 -&gt; 4 -&gt; 5</span></div><div class="line">        <span class="comment">//</span></div><div class="line">        <span class="keyword">if</span> (nums == <span class="keyword">null</span> || nums.length == <span class="number">0</span>) &#123;</div><div class="line">            <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (nums.length == <span class="number">1</span>) &#123;</div><div class="line">            <span class="keyword">return</span> nums[<span class="number">0</span>];</div><div class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (nums.length == <span class="number">2</span>) &#123;</div><div class="line">            <span class="keyword">return</span> Math.max(nums[<span class="number">0</span>], nums[<span class="number">1</span>]);</div><div class="line">        &#125;</div><div class="line">        </div><div class="line">        <span class="keyword">return</span> Math.max(rob(nums, <span class="number">0</span>, nums.length - <span class="number">2</span>), rob(nums, <span class="number">1</span>, nums.length - <span class="number">1</span>));</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">rob</span><span class="params">(<span class="keyword">int</span>[] nums, <span class="keyword">int</span> left, <span class="keyword">int</span> right)</span> </span>&#123;</div><div class="line">        <span class="keyword">int</span> n = right - left + <span class="number">1</span>;</div><div class="line">        <span class="keyword">int</span>[] dp = <span class="keyword">new</span> <span class="keyword">int</span>[n];</div><div class="line">        </div><div class="line">        dp[<span class="number">0</span>] = nums[left];</div><div class="line">        dp[<span class="number">1</span>] = Math.max(nums[left], nums[left + <span class="number">1</span>]);</div><div class="line">        </div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">2</span>; i&lt;n; i++) &#123;</div><div class="line">            <span class="keyword">int</span> robMoney = dp[i - <span class="number">2</span>] + nums[left + i];</div><div class="line">            <span class="keyword">int</span> notRobMoney = dp[i - <span class="number">1</span>];</div><div class="line">            dp[i] = Math.max(robMoney, notRobMoney);</div><div class="line">        &#125;</div><div class="line">        </div><div class="line">        <span class="keyword">return</span> dp[n - <span class="number">1</span>];</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><strong>什么是 DP</strong>:</p>
+<p>Wikipedia definition: “method for solving complex problems by breaking them down into simpler subproblems”</p>
+<hr>
+<p><strong>步骤</strong>:</p>
+<ol>
+<li>Define subproblems</li>
+<li>Write down the recurrence that relates subproblems</li>
+<li>Recognize and solve the base cases</li>
+</ol>
+<hr>
+<p><strong>1-dimensional DP</strong>:</p>
+<p>Problem: given <code>n</code>, find the number of different ways to write <code>n</code> as the sum of 1, 3, 4.<br>Example: for <code>n = 5</code>, the answer is 6</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">5 = 1 + 1 + 1 + 1 + 1</div><div class="line">= 1 + 1 + 3</div><div class="line">= 1 + 3 + 1</div><div class="line">= 3 + 1 + 1</div><div class="line">= 1 + 4</div><div class="line">= 4 + 1</div></pre></td></tr></table></figure>
+<hr>
+<ul>
+<li>定义子问题: Let <code>Dn</code> be the number of ways to write <code>n</code> as the sum of 1, 3, 4</li>
+</ul>
+<hr>
+<ul>
+<li><a href="https://web.stanford.edu/class/cs97si/04-dynamic-programming.pdf" target="_blank" rel="external">参考</a></li>
+</ul>
+<h3 id="解决全排列问题的一类通用方法"><a href="#解决全排列问题的一类通用方法" class="headerlink" title="解决全排列问题的一类通用方法"></a>解决全排列问题的一类通用方法</h3><p>A general approach to backtracking questions in Java (Subsets, Permutations, Combination Sum, Palindrome Partioning)</p>
+<p>This structure might apply to many other backtracking questions, but here I am just going to demonstrate Subsets, Permutations, and Combination Sum.</p>
+<p><a href="https://leetcode.com/problems/subsets/" target="_blank" rel="external">Subsets</a> :</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> List&lt;List&lt;Integer&gt;&gt; subsets(<span class="keyword">int</span>[] nums) &#123;</div><div class="line">    List&lt;List&lt;Integer&gt;&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">    Arrays.sort(nums);</div><div class="line">    backtrack(list, <span class="keyword">new</span> ArrayList&lt;&gt;(), nums, <span class="number">0</span>);</div><div class="line">    <span class="keyword">return</span> list;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">backtrack</span><span class="params">(List&lt;List&lt;Integer&gt;&gt; list , List&lt;Integer&gt; tempList, <span class="keyword">int</span> [] nums, <span class="keyword">int</span> start)</span></span>&#123;</div><div class="line">    list.add(<span class="keyword">new</span> ArrayList&lt;&gt;(tempList));</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = start; i &lt; nums.length; i++) &#123;</div><div class="line">        tempList.add(nums[i]);</div><div class="line">        backtrack(list, tempList, nums, i + <span class="number">1</span>);</div><div class="line">        tempList.remove(tempList.size() - <span class="number">1</span>);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><a href="https://leetcode.com/problems/subsets-ii/" target="_blank" rel="external">Subsets II (contains duplicates)</a>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> List&lt;List&lt;Integer&gt;&gt; subsetsWithDup(<span class="keyword">int</span>[] nums) &#123;</div><div class="line">    List&lt;List&lt;Integer&gt;&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">    Arrays.sort(nums);</div><div class="line">    backtrack(list, <span class="keyword">new</span> ArrayList&lt;&gt;(), nums, <span class="number">0</span>);</div><div class="line">    <span class="keyword">return</span> list;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">backtrack</span><span class="params">(List&lt;List&lt;Integer&gt;&gt; list, List&lt;Integer&gt; tempList, <span class="keyword">int</span> [] nums, <span class="keyword">int</span> start)</span></span>&#123;</div><div class="line">    list.add(<span class="keyword">new</span> ArrayList&lt;&gt;(tempList));</div><div class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = start; i &lt; nums.length; i++)&#123;</div><div class="line">        <span class="keyword">if</span>(i &gt; start &amp;&amp; nums[i] == nums[i-<span class="number">1</span>]) <span class="keyword">continue</span>; <span class="comment">// skip duplicates</span></div><div class="line">        tempList.add(nums[i]);</div><div class="line">        backtrack(list, tempList, nums, i + <span class="number">1</span>);</div><div class="line">        tempList.remove(tempList.size() - <span class="number">1</span>);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><a href="https://leetcode.com/problems/permutations/" target="_blank" rel="external">Permutations (全排列)</a>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> List&lt;List&lt;Integer&gt;&gt; permute(<span class="keyword">int</span>[] nums) &#123;</div><div class="line">    List&lt;List&lt;Integer&gt;&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">    <span class="comment">// Arrays.sort(nums); // not necessary</span></div><div class="line">    backtrack(list, <span class="keyword">new</span> ArrayList&lt;&gt;(), nums);</div><div class="line">    <span class="keyword">return</span> list;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">backtrack</span><span class="params">(List&lt;List&lt;Integer&gt;&gt; list, List&lt;Integer&gt; tempList, <span class="keyword">int</span> [] nums)</span></span>&#123;</div><div class="line">    <span class="keyword">if</span> (tempList.size() == nums.length) &#123;</div><div class="line">        list.add(<span class="keyword">new</span> ArrayList&lt;&gt;(tempList));</div><div class="line">    &#125; <span class="keyword">else</span> &#123;</div><div class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nums.length; i++)&#123; </div><div class="line">            <span class="keyword">if</span>(tempList.contains(nums[i])) <span class="keyword">continue</span>; <span class="comment">// element already exists, skip</span></div><div class="line">            tempList.add(nums[i]);</div><div class="line">            backtrack(list, tempList, nums);</div><div class="line">            tempList.remove(tempList.size() - <span class="number">1</span>);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><a href="https://leetcode.com/problems/permutations-ii/" target="_blank" rel="external">Permutations II (contains duplicates)</a>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> List&lt;List&lt;Integer&gt;&gt; permuteUnique(<span class="keyword">int</span>[] nums) &#123;</div><div class="line">    List&lt;List&lt;Integer&gt;&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">    Arrays.sort(nums);</div><div class="line">    backtrack(list, <span class="keyword">new</span> ArrayList&lt;&gt;(), nums, <span class="keyword">new</span> <span class="keyword">boolean</span>[nums.length]);</div><div class="line">    <span class="keyword">return</span> list;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">backtrack</span><span class="params">(List&lt;List&lt;Integer&gt;&gt; list, List&lt;Integer&gt; tempList, <span class="keyword">int</span> [] nums, <span class="keyword">boolean</span> [] used)</span></span>&#123;</div><div class="line">    <span class="keyword">if</span>(tempList.size() == nums.length)&#123;</div><div class="line">        list.add(<span class="keyword">new</span> ArrayList&lt;&gt;(tempList));</div><div class="line">    &#125; <span class="keyword">else</span>&#123;</div><div class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nums.length; i++)&#123;</div><div class="line">            <span class="keyword">if</span>(used[i] || i &gt; <span class="number">0</span> &amp;&amp; nums[i] == nums[i-<span class="number">1</span>] &amp;&amp; !used[i - <span class="number">1</span>]) <span class="keyword">continue</span>;</div><div class="line">            used[i] = <span class="keyword">true</span>; </div><div class="line">            tempList.add(nums[i]);</div><div class="line">            backtrack(list, tempList, nums, used);</div><div class="line">            used[i] = <span class="keyword">false</span>; </div><div class="line">            tempList.remove(tempList.size() - <span class="number">1</span>);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><a href="https://leetcode.com/problems/combination-sum/" target="_blank" rel="external">Combination Sum</a>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> List&lt;List&lt;Integer&gt;&gt; combinationSum(<span class="keyword">int</span>[] nums, <span class="keyword">int</span> target) &#123;</div><div class="line">    List&lt;List&lt;Integer&gt;&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">    Arrays.sort(nums);</div><div class="line">    backtrack(list, <span class="keyword">new</span> ArrayList&lt;&gt;(), nums, target, <span class="number">0</span>);</div><div class="line">    <span class="keyword">return</span> list;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">backtrack</span><span class="params">(List&lt;List&lt;Integer&gt;&gt; list, List&lt;Integer&gt; tempList, <span class="keyword">int</span> [] nums, <span class="keyword">int</span> remain, <span class="keyword">int</span> start)</span></span>&#123;</div><div class="line">    <span class="keyword">if</span>(remain &lt; <span class="number">0</span>) <span class="keyword">return</span>;</div><div class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(remain == <span class="number">0</span>) list.add(<span class="keyword">new</span> ArrayList&lt;&gt;(tempList));</div><div class="line">    <span class="keyword">else</span>&#123; </div><div class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = start; i &lt; nums.length; i++)&#123;</div><div class="line">            tempList.add(nums[i]);</div><div class="line">            backtrack(list, tempList, nums, remain - nums[i], i); <span class="comment">// not i + 1 because we can reuse same elements</span></div><div class="line">            tempList.remove(tempList.size() - <span class="number">1</span>);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><a href="https://leetcode.com/problems/combination-sum-ii/" target="_blank" rel="external">Combination Sum II (can’t reuse same element)</a>: </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> List&lt;List&lt;Integer&gt;&gt; combinationSum2(<span class="keyword">int</span>[] nums, <span class="keyword">int</span> target) &#123;</div><div class="line">    List&lt;List&lt;Integer&gt;&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">    Arrays.sort(nums);</div><div class="line">    backtrack(list, <span class="keyword">new</span> ArrayList&lt;&gt;(), nums, target, <span class="number">0</span>);</div><div class="line">    <span class="keyword">return</span> list;</div><div class="line">    </div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">backtrack</span><span class="params">(List&lt;List&lt;Integer&gt;&gt; list, List&lt;Integer&gt; tempList, <span class="keyword">int</span> [] nums, <span class="keyword">int</span> remain, <span class="keyword">int</span> start)</span></span>&#123;</div><div class="line">    <span class="keyword">if</span>(remain &lt; <span class="number">0</span>) <span class="keyword">return</span>;</div><div class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(remain == <span class="number">0</span>) list.add(<span class="keyword">new</span> ArrayList&lt;&gt;(tempList));</div><div class="line">    <span class="keyword">else</span>&#123;</div><div class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = start; i &lt; nums.length; i++)&#123;</div><div class="line">            <span class="keyword">if</span>(i &gt; start &amp;&amp; nums[i] == nums[i-<span class="number">1</span>]) <span class="keyword">continue</span>; <span class="comment">// skip duplicates</span></div><div class="line">            tempList.add(nums[i]);</div><div class="line">            backtrack(list, tempList, nums, remain - nums[i], i + <span class="number">1</span>);</div><div class="line">            tempList.remove(tempList.size() - <span class="number">1</span>); </div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><a href="https://leetcode.com/problems/palindrome-partitioning/" target="_blank" rel="external">Palindrome Partitioning</a>: </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> List&lt;List&lt;String&gt;&gt; partition(String s) &#123;</div><div class="line">    List&lt;List&lt;String&gt;&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">    backtrack(list, <span class="keyword">new</span> ArrayList&lt;&gt;(), s, <span class="number">0</span>);</div><div class="line">    <span class="keyword">return</span> list;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">backtrack</span><span class="params">(List&lt;List&lt;String&gt;&gt; list, List&lt;String&gt; tempList, String s, <span class="keyword">int</span> start)</span></span>&#123;</div><div class="line">    <span class="keyword">if</span>(start == s.length())</div><div class="line">        list.add(<span class="keyword">new</span> ArrayList&lt;&gt;(tempList));</div><div class="line">    <span class="keyword">else</span>&#123;</div><div class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = start; i &lt; s.length(); i++)&#123;</div><div class="line">            <span class="keyword">if</span>(isPalindrome(s, start, i))&#123;</div><div class="line">                tempList.add(s.substring(start, i + <span class="number">1</span>));</div><div class="line">                backtrack(list, tempList, s, i + <span class="number">1</span>);</div><div class="line">                tempList.remove(tempList.size() - <span class="number">1</span>);</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isPalindrome</span><span class="params">(String s, <span class="keyword">int</span> low, <span class="keyword">int</span> high)</span></span>&#123;</div><div class="line">    <span class="keyword">while</span>(low &lt; high)</div><div class="line">        <span class="keyword">if</span>(s.charAt(low++) != s.charAt(high--)) <span class="keyword">return</span> <span class="keyword">false</span>;</div><div class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/09/11/algorithm-dp-and-backtracking/" data-id="cjc5qrt12002k5ceml1uhcoda" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-spider" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/09/11/spider/" class="article-date">
+  <time datetime="2017-09-11T00:50:19.000Z" itemprop="datePublished">2017-09-11</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/开发者手册/">开发者手册</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/09/11/spider/">spider</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Spider"><a href="#Spider" class="headerlink" title="Spider"></a>Spider</h2><h3 id="DNS"><a href="#DNS" class="headerlink" title="DNS"></a>DNS</h3><p>DNS 解析是一个网络爬虫性能瓶颈。由于域名服务器的分布式特点，DNS 可能需要多次请求转发，并在互联网上往返，需要几秒有时甚至更长时间解析出 IP 地址。一个补救措施是引入 <strong>DNS 缓存</strong>，这样最近完成 DNS 查询的网址可能会在 DNS 缓存中找到，避免了访问互联网上的 DNS 服务器。JDK 1.6 内部有个 30 秒的 DNS 缓存，通过 <code>sun.net.InetAddressCachePolicy.get()</code> 方法可以查看缓存时间设置。<code>Java</code> 要查找一个域名 IP 地址最方便的办法就是:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">List&lt;String&gt; ipList = <span class="keyword">new</span> ArrayList&lt;String&gt;();</div><div class="line">InetAddress[] addressList = InetAddress.getAllByName(host);</div><div class="line"><span class="keyword">for</span> (InetAddress address: addressList) &#123;</div><div class="line">    ipList.add(address.getHostAddress());</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p><code>HttpClient</code> 抓取每个 URL 时，JVM 都会自动缓存这个 URL 和对应的 IP，并且<strong>永远缓存</strong>，除非缓存的内容大于 JVM 的限制，如果将来这个 URL 更换了 IP，<code>HttpClient</code> 会首先去 <code>JVM</code> 的缓存里取，如果取到了直接根据这个 IP 去抓取。所以往往某个域名更换了 IP，抓取结果都是 604 错误。</p>
+<p>解决办法是在 Java 代码里添加如下所示的代码:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">java.security.Security.setProperty(<span class="string">"networkaddress.cache.ttl"</span>, <span class="string">"0"</span>);</div></pre></td></tr></table></figure>
+<h3 id="中文编码问题"><a href="#中文编码问题" class="headerlink" title="中文编码问题"></a>中文编码问题</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">URLEncoder.encode(<span class="string">"http://lietu.com/case/价格搜索.ppt"</span>, <span class="string">"UTF-8"</span>);</div></pre></td></tr></table></figure>
+<p><code>URLEncoder.encode</code> 方法<strong>处理空格</strong>有问题。空格符 (ASCII 码是 0x20) 经过 <code>java.net.URLEncoder</code> 类 <code>encode</code> 以后，会变成 <code>+</code> 号，而不是 <code>%20</code>，所以使用 <strong><code>java.net.URI</code></strong> 中的编码功能。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">String data = <span class="keyword">new</span> URI(<span class="keyword">null</span>, term, <span class="keyword">null</span>).toASCIIString();</div><div class="line">String input = <span class="string">"%E6%B5%B7%E6%8A5%A5%E7%BD%91"</span>;</div><div class="line">System.out.println(URLDecoder.decode(input, <span class="string">"utf-8"</span>));</div></pre></td></tr></table></figure>
+<h3 id="Referer-防止图片盗链"><a href="#Referer-防止图片盗链" class="headerlink" title="Referer 防止图片盗链"></a><code>Referer</code> 防止图片盗链</h3><p>爬虫有时候需要设置这个值:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Referer: http://www.w3.org/hypertext/DataSources/Overview.html</div></pre></td></tr></table></figure>
+<h3 id="压缩网页"><a href="#压缩网页" class="headerlink" title="压缩网页"></a>压缩网页</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">if</span> (header[i].getName().equalsIgnoreCase(<span class="string">"gzip"</span>)) &#123;</div><div class="line">    response.setEntity(<span class="keyword">new</span> GzipDecompressingEntity(response.getEntity()));</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">GzipDecompressingEntity</span> <span class="keyword">extends</span> <span class="title">HttpEntityWrapper</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">GzipDecompressingEntity</span><span class="params">(<span class="keyword">final</span> HttpEntity entity)</span> </span>&#123;</div><div class="line">        <span class="keyword">super</span>(entity);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> InputStream <span class="title">getContent</span><span class="params">()</span> <span class="keyword">throws</span> IOException, IllegalStateException </span>&#123;</div><div class="line">        InputStream wrappedIn = wrappedEntity.getContent();</div><div class="line">        <span class="keyword">return</span> <span class="keyword">new</span> GZIPInputStream(wrappedIn);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">getContentLength</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="comment">// 解压缩内容的长度未知</span></div><div class="line">        <span class="keyword">return</span> -<span class="number">1</span>;</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="套接字连接限制"><a href="#套接字连接限制" class="headerlink" title="套接字连接限制"></a>套接字连接限制</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">zk@zk-pc:~$ sysctl net.ipv4.ip_local_port_range</div><div class="line">net.ipv4.ip_local_port_range = 32768	60999</div><div class="line">zk@zk-pc:~$ sysctl net.ipv4.tcp_fin_timeout</div><div class="line">net.ipv4.tcp_fin_timeout = 60</div></pre></td></tr></table></figure>
+<p>这基本上意味着任何时候系统不能保证多于</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">(60999 - 32768) / 60 = 470 socket</div></pre></td></tr></table></figure>
+<p>可以增加 <code>port_range</code>，设置范围到 <code>15000 60999</code> 很常见。可以通过减少 <code>fin_timeout</code> 进一步增加可获得的连接，同时做到这两部，可以有多于 1500 个连接。</p>
+<p>使用 <code>sysctl</code> 能够改变正在运行的 Linux 系统接口:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">sysctl -w net.ipv4.tcp_fin_timeout = 30</div><div class="line">sysctl -w net.ipv4.ip_local_port_range = <span class="string">"15000 60999"</span></div></pre></td></tr></table></figure>
+<p>也可以编辑 <code>/etc/sysctl.conf</code> 文件来修改。</p>
+<h3 id="网页是否有更新"><a href="#网页是否有更新" class="headerlink" title="网页是否有更新"></a>网页是否有更新</h3><p>可以用 HTTP 的 <code>HEAD</code> 命令查看网页的<strong>最后修改时间</strong>。</p>
+<p><img src="2017_09_11_10_00_19.png" alt=""></p>
+<p>有些网页头信息没有包括更新时间，这时候也可以通过<strong>判断网页长度</strong>来检测网页是否有更新。当然也可能更新了，但是长度没变，实际上，这种可能性非常小。</p>
+<p>条件下载命令可以根据时间条件下载网页。再次请求已经抓取过的页面时，爬虫往 Web 服务器发送 <code>If-Modified-Since</code> 请求头，如果有修改，返回 200，未修改，返回 304。</p>
+<p>HTTP/1.1 还有一个 <code>Etag</code> 可以通过发送 <code>If-None-Match</code> 用来判断请求的文件是否被修改，可以把 <code>Etag</code> 看成网页的版本标志。<code>Etag</code> 主要为了解决 <code>Last-Modified</code> 无法解决的一些问题。</p>
+<ul>
+<li>一些文件的内容不修改，但是修改时间会发生变化。</li>
+<li><code>If-Modified-Since</code> 无法判断秒级的变化。</li>
+<li>不能精确地得到某些 Web 服务器文件的最后修改时间。</li>
+</ul>
+<hr>
+<p>可以用 <code>Range:bytes=0-500</code> 条件下载部分网页。</p>
+<p><img src="2017_09_11_10_17_28.png" alt=""></p>
+<p>服务器返回信息如下:</p>
+<p><img src="2017_09_11_10_34_40.png" alt=""></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">RandomAccess savedFile = <span class="keyword">new</span> RandomAccessFile(<span class="string">"down.zip"</span>, <span class="string">"rw"</span>);</div><div class="line"><span class="keyword">long</span> pos = <span class="number">2000070</span>;</div><div class="line">savedFile.seek(pos);</div><div class="line"></div><div class="line"><span class="keyword">byte</span>[] b = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">1024</span>];</div><div class="line"><span class="keyword">int</span> read;</div><div class="line"><span class="keyword">while</span> ((read = input.read(b, <span class="number">0</span>, <span class="number">1024</span>)) &gt; <span class="number">0</span>) &#123;</div><div class="line">    savedFile.write(b, <span class="number">0</span>, read);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="防止反爬虫"><a href="#防止反爬虫" class="headerlink" title="防止反爬虫"></a>防止反爬虫</h3><p>有些网站专门发布免费的代理列表 (HTTP free proxy list)，可以从这些网站抓到免费代理的 IP 地址以及端口号，然后建立有效代理列表。</p>
+<h3 id="相对-URL-转绝对-URL"><a href="#相对-URL-转绝对-URL" class="headerlink" title="相对 URL 转绝对 URL"></a>相对 URL 转绝对 URL</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">URL fromURL = <span class="keyword">new</span> URL(<span class="string">"http://www.lietu.com/news/"</span>);</div><div class="line">String url = <span class="string">"../index.html"</span>;</div><div class="line"><span class="comment">// http://www.lietu.com/index.html</span></div><div class="line">String newUrl = (<span class="keyword">new</span> URL(fromUrl, url)).toString();</div></pre></td></tr></table></figure>
+<hr>
+<p><code>org.apache.http.client.utils.URIUtils</code> 中有一个 <code>resolve</code> 方法可以用来根据 <code>URL</code> 地址生成绝对 <code>URL</code> 地址:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">URIUtils.resolve(<span class="keyword">this</span>.baseURI, <span class="string">"/g"</span>);</div></pre></td></tr></table></figure>
+<hr>
+<p>URL 地址中的 <code>#</code> 指向内部锚点，对于爬虫没有意义。</p>
+<hr>
+<p>归一化: 将这个 URL 唯一化。</p>
+<h3 id="动态网站"><a href="#动态网站" class="headerlink" title="动态网站"></a>动态网站</h3><p><code>Mozilla</code> 发布了纯 Java 语言编写的 <code>JavaScript</code> 脚本解释引擎 <a href="http://www.mozilla.org/rhino/" target="_blank" rel="external"><code>Rhino</code></a>。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/09/11/spider/" data-id="cjc5qrt2p00555cemvfdaa8sn" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-algorithm-sorting-and-searching" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/09/10/algorithm-sorting-and-searching/" class="article-date">
+  <time datetime="2017-09-10T03:10:32.000Z" itemprop="datePublished">2017-09-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/算法/">算法</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/09/10/algorithm-sorting-and-searching/">algorithm-sorting-and-searching</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Sorting-And-Searching"><a href="#Sorting-And-Searching" class="headerlink" title="Sorting And Searching"></a>Sorting And Searching</h2><h3 id="Group-Anagrams"><a href="#Group-Anagrams" class="headerlink" title="Group Anagrams"></a>Group Anagrams</h3><p>Write a method to sort an array ot strings so that all tne anagrnms are next to each other.</p>
+<p><strong>anagrams</strong> are words that have the <strong>相同的字符</strong> but in <strong>不同的顺序</strong>.</p>
+<hr>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">AnagramComparator</span> <span class="keyword">implements</span> <span class="title">Comparator</span>&lt;<span class="title">String</span>&gt; </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">sortChars</span><span class="params">(String s)</span> </span>&#123;</div><div class="line">        <span class="keyword">char</span>[] content = s.toCharArray();</div><div class="line">        Arrays.sort(content);</div><div class="line">        <span class="keyword">return</span> <span class="keyword">new</span> String(content);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">compare</span><span class="params">(String s1, String s2)</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> sortChars(s1).compareTo(sortChars(s2));</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">Arrays.sort(array, <span class="keyword">new</span> AnagramComparator());</div></pre></td></tr></table></figure>
+<p>This algorithm will take <code>O(n log(n))</code> time.</p>
+<h3 id="Sort-Big-File"><a href="#Sort-Big-File" class="headerlink" title="Sort Big File"></a>Sort Big File</h3><p>Imagine you have a 20 GB file with one string per line. Explain how you would sort the file.</p>
+<p>We’ll <strong>divide</strong> the file into chunks, which are x megabytes each, where x is the amount of memory we have available. Each chunk is sorted separately and then saved back to the file system.</p>
+<p>Once all the chunks are sorted, we <strong>merge</strong> the chunks, one by one. At the end, we have a fully sorted file. This algorithm is known as <strong>external sort</strong>.</p>
+<h3 id="Missing-Int"><a href="#Missing-Int" class="headerlink" title="Missing Int"></a>Missing Int</h3><p>Given an input file with four billion non-negative integers, provide an algorithm to generate an integer that is not contained in the file. Assume you have 1 GB of memory available for this task.</p>
+<p>FOLLOW UP</p>
+<p>What if you have only 10 MB of memory? Assume that all the values are distinct and we now have no more than one billion non-negative integers.</p>
+<ul>
+<li>使用 <code>BitVector</code></li>
+</ul>
+<h3 id="JDK-1-8-Arrays-sort"><a href="#JDK-1-8-Arrays-sort" class="headerlink" title="JDK 1.8 - Arrays.sort"></a>JDK 1.8 - <code>Arrays.sort</code></h3><ul>
+<li>当元素数量小于 <code>47</code> 个的时候,使用 <code>InsertionSort</code></li>
+<li>当元素数量小于 <code>286</code> 个的时候,使用 <code>DualPivotQuickSort</code></li>
+</ul>
+<h3 id="查找重复数字"><a href="#查找重复数字" class="headerlink" title="查找重复数字"></a>查找重复数字</h3><p>限制: 只有 <code>4KB</code> 内存,N 最大 <code>32000</code></p>
+<ul>
+<li><code>4KB</code> = <code>4 * 2^10 * 8</code> 个 <code>bit</code> 位 &gt; <code>32000</code></li>
+<li><code>new BitSet(32000)</code></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/09/10/algorithm-sorting-and-searching/" data-id="cjc5qrt0a002c5cem07uqblge" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-algorithm-bit" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/09/10/algorithm-bit/" class="article-date">
+  <time datetime="2017-09-10T02:29:23.000Z" itemprop="datePublished">2017-09-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/算法/">算法</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/09/10/algorithm-bit/">algorithm-bit</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Bit-Manipulation"><a href="#Bit-Manipulation" class="headerlink" title="Bit Manipulation"></a>Bit Manipulation</h2><h3 id="如何清除从右侧数索引-i-到索引-j-位的值-based-0"><a href="#如何清除从右侧数索引-i-到索引-j-位的值-based-0" class="headerlink" title="如何清除从右侧数索引 i 到索引 j 位的值 (based 0):"></a>如何清除从右侧数索引 <code>i</code> 到索引 <code>j</code> 位的值 (based 0):</h3><p>例如清除 <code>11111111</code> 索引 2 到 索引 4 的值: 变成 <code>11100011</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> allOnew = ~<span class="number">0</span>; <span class="comment">// equal sequence of all 1s</span></div><div class="line"><span class="keyword">int</span> left = allOnes &lt;&lt; (j + <span class="number">1</span>); <span class="comment">// 11111111 左移 5 位 11100000</span></div><div class="line"><span class="keyword">int</span> right = ((<span class="number">1</span> &lt;&lt; i) - <span class="number">1</span>); <span class="comment">// 00000001 左移 2 位 00000100，减 1: 00000011</span></div><div class="line"><span class="keyword">int</span> mask = left | right; <span class="comment">// 11100011</span></div></pre></td></tr></table></figure>
+<h3 id="determine-the-number-of-bits-you-would-need-to-flip-to-convert-interger-A-to-integer-B"><a href="#determine-the-number-of-bits-you-would-need-to-flip-to-convert-interger-A-to-integer-B" class="headerlink" title="determine the number of bits you would need to flip to convert interger A to integer B"></a>determine the number of bits you would need to flip to convert interger A to integer B</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Input: 29 (or: 11101), 15 (or: 01111)</div><div class="line">Output: 2</div></pre></td></tr></table></figure>
+<ul>
+<li>how you world figure out which bits in two numbers are different. Simple: with an <code>XOR</code>:</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">1 1 1 0 1</div><div class="line">0 1 1 1 1</div><div class="line">----------</div><div class="line">1 0 0 1 0</div></pre></td></tr></table></figure>
+<p>To check the number of bits that are different between A and B, we simple need to <strong>count</strong> the number of bits in <code>A^B</code> that are <strong>1</strong>.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">bitSwapRequired</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b)</span> </span>&#123;</div><div class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> c = a ^ b; c != <span class="number">0</span>; c = c &gt;&gt; <span class="number">1</span>) &#123;</div><div class="line">        count += c &amp; <span class="number">1</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> count;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>This code is good, but we can make it a bit better. Rather than simply shifting c repeatedly while checking the least significant bit, we can continuously flip the least significant bit and count how long it takes c to reach 0.The operation <code>c = c &amp; ( c - 1)</code> will <strong>clear</strong> the least significant bit in c.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">1 0 0 1 0</div><div class="line">1 0 0 0 1</div><div class="line">----------</div><div class="line">1 0 0 0 0 &lt;- 清楚掉最右侧的 1</div><div class="line">0 1 1 1 1</div><div class="line">----------</div><div class="line">0 0 0 0 0 &lt;- 清楚掉最右侧的 1</div></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">bitSwapRequired</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b)</span> </span>&#123;</div><div class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> c = a ^ b; c != <span class="number">0</span>; c = c &amp; (c - <span class="number">1</span>)) &#123;</div><div class="line">        count++;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> count;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="Maximum-Product-of-Word-Lengths"><a href="#Maximum-Product-of-Word-Lengths" class="headerlink" title="Maximum Product of Word Lengths"></a><a href="https://leetcode.com/problems/maximum-product-of-word-lengths/description/" target="_blank" rel="external">Maximum Product of Word Lengths</a></h3><p>the two words do not share <strong>common</strong> letters:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">maxProduct</span><span class="params">(String[] words)</span> </span>&#123;</div><div class="line">        <span class="keyword">if</span> (words == <span class="keyword">null</span> || words.length == <span class="number">0</span>)</div><div class="line">            <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">    </div><div class="line">        <span class="keyword">int</span> len = words.length;</div><div class="line">        <span class="keyword">int</span>[] value = <span class="keyword">new</span> <span class="keyword">int</span>[len];</div><div class="line"></div><div class="line">        <span class="comment">// 标记每个单词所拥有的字母</span></div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; len; i++) &#123;</div><div class="line">            String tmp = words[i];</div><div class="line">            value[i] = <span class="number">0</span>;</div><div class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; tmp.length(); j++) &#123;</div><div class="line">                <span class="comment">// 1 &lt;&lt; 0 =&gt; 0001</span></div><div class="line">                <span class="comment">// 1 &lt;&lt; 1 =&gt; 0010</span></div><div class="line">                <span class="comment">// 1 &lt;&lt; 2 =&gt; 0100</span></div><div class="line">                <span class="comment">// 1 &lt;&lt; 3 =&gt; 1000</span></div><div class="line">                <span class="comment">// ...</span></div><div class="line">                value[i] |= <span class="number">1</span> &lt;&lt; (tmp.charAt(j) - <span class="string">'a'</span>);</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    </div><div class="line">        <span class="keyword">int</span> maxProduct = <span class="number">0</span>;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; len; i++)</div><div class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; len; j++) &#123;</div><div class="line">                <span class="comment">// do not share common letters</span></div><div class="line">                <span class="keyword">if</span> ((value[i] &amp; value[j]) == <span class="number">0</span> &amp;&amp; (words[i].length() * words[j].length() &gt; maxProduct))</div><div class="line">                    maxProduct = words[i].length() * words[j].length();</div><div class="line">            &#125;</div><div class="line">    </div><div class="line">        <span class="keyword">return</span> maxProduct;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="Java-Int-gt-Bit’s-String"><a href="#Java-Int-gt-Bit’s-String" class="headerlink" title="Java Int -&gt; Bit’s String"></a>Java Int -&gt; Bit’s String</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Integer.toBinaryString(<span class="keyword">int</span> i)</div></pre></td></tr></table></figure>
+<hr>
+<p>无符右移和有符右移:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">// 00111111111111111111111111111110</div><div class="line">-5 &gt;&gt;&gt; 2</div><div class="line">// 11111111111111111111111111111110</div><div class="line">-5 &gt;&gt; 2</div><div class="line"></div><div class="line">// 10</div><div class="line">5 &gt;&gt; 1</div><div class="line">// 10</div><div class="line">5 &gt;&gt;&gt; 1</div></pre></td></tr></table></figure>
+<p>没有 <code>&lt;&lt;&lt;</code> 这个符号</p>
+<hr>
+<p>如何根据 <code>5 (0000 0101)</code> 创建一个 <code>1111 1000</code>:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> mask = ~<span class="number">0</span>; <span class="comment">// 1111 1111</span></div><div class="line"><span class="keyword">while</span> ((num &amp; mask) != <span class="number">0</span>) &#123;</div><div class="line">    mask &lt;&lt;= <span class="number">1</span>; <span class="comment">// bit left shift 1</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>过程:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">1111 1111 &lt;- Initial Mask</div><div class="line">0000 0101</div><div class="line">---------</div><div class="line">0000 0101</div><div class="line"></div><div class="line">1111 1110 &lt;- Mask Left Shift 1</div><div class="line">0000 0101</div><div class="line">---------</div><div class="line">0000 0100</div><div class="line"></div><div class="line">1111 1100 &lt;- Mask Left Shift 2</div><div class="line">0000 0101</div><div class="line">---------</div><div class="line">0000 0100</div><div class="line"></div><div class="line">1111 1000 &lt;- Mask Left Shift 3</div><div class="line">0000 0101</div><div class="line">---------</div><div class="line">0000 0000</div><div class="line"></div><div class="line">1111 1000 &lt;- Finally, You Got It</div></pre></td></tr></table></figure>
+<h3 id="476-Number-Complement"><a href="#476-Number-Complement" class="headerlink" title="476. Number Complement"></a><a href="https://leetcode.com/problems/number-complement/discuss/" target="_blank" rel="external">476. Number Complement</a></h3><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></div><div class="line"><span class="keyword">public</span>:</div><div class="line">    <span class="function"><span class="keyword">int</span> <span class="title">findComplement</span><span class="params">(<span class="keyword">int</span> num)</span> </span>&#123;</div><div class="line">        <span class="comment">// num: 5: 0000 0101</span></div><div class="line">        <span class="keyword">unsigned</span> mask = ~<span class="number">0</span>; <span class="comment">// 1111 1111</span></div><div class="line">        <span class="keyword">while</span> (num &amp; mask) mask &lt;&lt;= <span class="number">1</span>; <span class="comment">// mask: 1111 1000</span></div><div class="line">        <span class="comment">// ~mask: 0000 0111</span></div><div class="line">        <span class="comment">//  ~num: 1111 1010</span></div><div class="line">        <span class="comment">// ----------------</span></div><div class="line">        <span class="comment">//        0000 0010</span></div><div class="line">        <span class="keyword">return</span> ~mask &amp; ~num;</div><div class="line">    &#125;</div><div class="line">&#125;;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/09/10/algorithm-bit/" data-id="cjc5qrszl00235cempuhb3pso" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+
+
+  <nav id="page-nav">
+    <a class="extend prev" rel="prev" href="/blog/page/5/">&laquo; Prev</a><a class="page-number" href="/blog/">1</a><span class="space">&hellip;</span><a class="page-number" href="/blog/page/4/">4</a><a class="page-number" href="/blog/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/blog/page/7/">7</a><a class="page-number" href="/blog/page/8/">8</a><span class="space">&hellip;</span><a class="page-number" href="/blog/page/23/">23</a><a class="extend next" rel="next" href="/blog/page/7/">Next&raquo;</a>
+  </nav>
+</section>
+           
+    <aside id="sidebar">
+  
+    
+
+  
+    
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title recent-posts">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/blog/2018/01/06/where-the-time-actually-gone/">时间都去哪儿了</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/05/dev-reflection/">开发反思</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/05/my-microblog/">我的微博</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/04/gcc-basic/">gcc-basic</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/04/java-internal/">Java Internal</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+
+  
+    
+  
+</aside>
+
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-left">
+      &copy; 2014 - 2018 赵坤&nbsp;|&nbsp;
+      Theme by <a href="https://github.com/giscafer/hexo-theme-cafe/" target="_blank">Cafe</a>
+    </div>
+     <div id="footer-right">
+      Contact&nbsp;|&nbsp;igozhaokun@163.com
+    </div>
+  </div>
+</footer>
+ <script src="/blog/jquery/jquery.min.js"></script>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/blog/" class="mobile-nav-link">首页</a>
+  
+    <a href="/blog/archives" class="mobile-nav-link">归档</a>
+  
+    <a href="/blog/about" class="mobile-nav-link">关于</a>
+  
+</nav>
+    <img class="back-to-top-btn" src="/blog/images/fly-to-top.png"/>
+<script>
+// Elevator script included on the page, already.
+window.onload = function() {
+  var elevator = new Elevator({
+    selector:'.back-to-top-btn',
+    element: document.querySelector('.back-to-top-btn'),
+    duration: 1000 // milliseconds
+  });
+}
+</script>
+
+      
+
+  
+
+  
+
+
+
+
+
+
+
+<!-- author:forvoid begin -->
+<!-- author:forvoid begin -->
+
+<!-- author:forvoid end -->
+
+<!-- author:forvoid end -->
+
+
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      })
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      })
+    </script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js"></script>
+  
+
+
+ <script src="/blog/js/is.js"></script>
+
+
+  <link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
+  <script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/blog/js/script.js"></script>
+<script src="/blog/js/elevator.js"></script>
+  </div>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</body>
+</html>

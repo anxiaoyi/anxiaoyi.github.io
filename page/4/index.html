@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>代码人生</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="赵坤的个人网站">
+<meta property="og:type" content="website">
+<meta property="og:title" content="代码人生">
+<meta property="og:url" content="http://blog.kunzhao.org/page/4/index.html">
+<meta property="og:site_name" content="代码人生">
+<meta property="og:description" content="赵坤的个人网站">
+<meta property="og:locale" content="zh-cn">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="代码人生">
+<meta name="twitter:description" content="赵坤的个人网站">
+  
+    <link rel="alternate" href="/atom.xml" title="代码人生" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    
+  
+  <link rel="stylesheet" href="/blog/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    
+    <div id="header-inner" class="inner">
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://blog.kunzhao.org"></form>
+      </div>
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/blog/">首页</a>
+        
+          <a class="main-nav-link" href="/blog/archives">归档</a>
+        
+          <a class="main-nav-link" href="/blog/about">关于</a>
+        
+      </nav>
+      
+    </div>
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/blog/" id="logo">代码人生</a>
+      </h1>
+      
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-nginx" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/10/20/nginx/" class="article-date">
+  <time datetime="2017-10-20T05:10:24.000Z" itemprop="datePublished">2017-10-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/开发者手册/">开发者手册</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/10/20/nginx/">nginx</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Nginx"><a href="#Nginx" class="headerlink" title="Nginx"></a>Nginx</h2><h3 id="默认配置文件"><a href="#默认配置文件" class="headerlink" title="默认配置文件"></a>默认配置文件</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/etc/nginx/nginx.conf</div></pre></td></tr></table></figure>
+<h3 id="转发请求"><a href="#转发请求" class="headerlink" title="转发请求"></a>转发请求</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">    server &#123;</div><div class="line">        listen 80;</div><div class="line"></div><div class="line">        # 访问 / 的时候内部转发请求到 9001 端口</div><div class="line">        location / &#123;</div><div class="line">            proxy_pass http://localhost:9001/;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="server-block"><a href="#server-block" class="headerlink" title="server block"></a><code>server</code> block</h3><p>A server block is a subset of Nginx’s configuration that defines a virtual server used to handle requests of a defined type. Administrators often configure <strong>多个 <code>server</code> 块</strong> and decide which block should handle which connection based on the requested <strong>域名, 端口, IP 地址</strong>.</p>
+<p><code>server_name</code> 的匹配:</p>
+<ul>
+<li><code>Host</code> 头</li>
+<li>以 <code>*</code> 开头的字符匹配</li>
+<li>以 <code>*</code> 结尾的字符匹配</li>
+<li>以 <code>~</code> 开头的正则匹配</li>
+<li>选择默认的　<code>server block</code></li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">server &#123;</div><div class="line">    listen <span class="number">80</span>;</div><div class="line">    server_name example.com;</div><div class="line"></div><div class="line">    . . .</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line">server &#123;</div><div class="line">    listen <span class="number">80</span>;</div><div class="line">    server_name ~^(www|host1).*\.example\.com$;</div><div class="line"></div><div class="line">    . . .</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line">server &#123;</div><div class="line">    listen <span class="number">80</span>;</div><div class="line">    server_name ~^(subdomain|set|www|host1).*\.example\.com$;</div><div class="line"></div><div class="line">    . . .</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="location-block"><a href="#location-block" class="headerlink" title="location block"></a><code>location</code> block</h3><p>A location block lives within a server block and is used to define how Nginx should handle requests for <strong>different resources</strong> and URIs for the parent server. The URI space can be subdivided in whatever way the administrator likes using these blocks. It is an extremely flexible model.</p>
+<p><img src="2017_10_20_21_45_01.png" alt=""></p>
+<p><strong>前缀匹配</strong>:</p>
+<p><img src="2017_10_20_21_50_51.png" alt=""></p>
+<p><strong>正则敏感匹配</strong>:</p>
+<p><img src="2017_10_20_21_55_08.png" alt=""></p>
+<p><strong>阻止正则匹配</strong>:</p>
+<p><img src="2017_10_20_22_05_47.png" alt=""></p>
+<h3 id="nginx-是否启动"><a href="#nginx-是否启动" class="headerlink" title="nginx 是否启动"></a><code>nginx</code> 是否启动</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo systemctl status nginx</div></pre></td></tr></table></figure>
+<p>或者</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo service status nginx</div></pre></td></tr></table></figure>
+<h3 id="启动-nginx"><a href="#启动-nginx" class="headerlink" title="启动 nginx"></a>启动 <code>nginx</code></h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo service nginx start</div></pre></td></tr></table></figure>
+<h3 id="查看-nginx-有哪些命令"><a href="#查看-nginx-有哪些命令" class="headerlink" title="查看 nginx 有哪些命令"></a>查看 <code>nginx</code> 有哪些命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">zk@zk-Lenovo:~/Desktop$ sudo service nginx</div><div class="line">Usage: nginx &#123;start|stop|restart|reload|force-reload|status|configtest|rotate|upgrade&#125;</div></pre></td></tr></table></figure>
+<h3 id="nginx-实际上在使用哪个位置的配置文件"><a href="#nginx-实际上在使用哪个位置的配置文件" class="headerlink" title="nginx 实际上在使用哪个位置的配置文件"></a><code>nginx</code> 实际上在使用哪个位置的配置文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo nginx -t</div></pre></td></tr></table></figure>
+<p>或者</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">nginx -V</div></pre></td></tr></table></figure>
+<h3 id="待读文章"><a href="#待读文章" class="headerlink" title="待读文章"></a>待读文章</h3><p><a href="https://www.digitalocean.com/community/tutorials/understanding-nginx-server-and-location-block-selection-algorithms" target="_blank" rel="external">https://www.digitalocean.com/community/tutorials/understanding-nginx-server-and-location-block-selection-algorithms</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/10/20/nginx/" data-id="cjc5qrt2j004r5cemz4b818p7" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-probabilityStatistics" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/10/13/probabilityStatistics/" class="article-date">
+  <time datetime="2017-10-13T01:52:07.000Z" itemprop="datePublished">2017-10-13</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/开发者手册/">开发者手册</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/10/13/probabilityStatistics/">probabilityStatistics</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Probability-Statistics"><a href="#Probability-Statistics" class="headerlink" title="Probability Statistics"></a>Probability Statistics</h2><h3 id="一个黑色袋子中装有5个红球，5个蓝球，5个黄球，从中抽取三次，每次抽一个球，取完不放回，则每种颜色球各得一个的概率是（）"><a href="#一个黑色袋子中装有5个红球，5个蓝球，5个黄球，从中抽取三次，每次抽一个球，取完不放回，则每种颜色球各得一个的概率是（）" class="headerlink" title="一个黑色袋子中装有5个红球，5个蓝球，5个黄球，从中抽取三次，每次抽一个球，取完不放回，则每种颜色球各得一个的概率是（）"></a>一个黑色袋子中装有5个红球，5个蓝球，5个黄球，从中抽取三次，每次抽一个球，取完不放回，则每种颜色球各得一个的概率是（）</h3><p>最开始是 <code>0</code> 个球，第一次不管怎么选都会选一个和以前不同颜色的球，所以第一次选择颜色不同的球概率为 <code>1</code>；</p>
+<p>第一次选择之后，还剩 <code>14</code> 个球，其中被第一次选走的那个颜色只有 <code>4</code> 个，剩下的两种颜色的球个数不变，都为 <code>5</code>，<br>然后选一个与第一次颜色不同的球的概率是： <code>10/14</code>， 这是第二次选择</p>
+<p>第二次选择之后，还剩 <code>13</code> 个球，其中被第一次和第二次选中的球，各有4个，剩下的没选到颜色的球还是5个，这次选中<br>还没选到的这个颜色的球的概率是： <code>5/13</code></p>
+<p>所以选择三个不同颜色总的概率为： <code>1*（10/14）*（5/13） = 25/91</code>.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/10/13/probabilityStatistics/" data-id="cjc5qrt2k004t5cemusmyk8xs" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-datastructure" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/10/12/datastructure/" class="article-date">
+  <time datetime="2017-10-12T14:33:37.000Z" itemprop="datePublished">2017-10-12</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/开发者手册/">开发者手册</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/10/12/datastructure/">datastructure</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Data-Structure"><a href="#Data-Structure" class="headerlink" title="Data Structure"></a>Data Structure</h2><h3 id="n个数值选出最大m个数（3-lt-m-lt-n）的最小算法复杂度是"><a href="#n个数值选出最大m个数（3-lt-m-lt-n）的最小算法复杂度是" class="headerlink" title="n个数值选出最大m个数（3&lt;m&lt;n）的最小算法复杂度是"></a>n个数值选出最大m个数（3&lt;m&lt;n）的最小算法复杂度是</h3><ol>
+<li>最简单的方法：将 <code>n</code> 个数排序，排序后的前k个数就是最大的k个数，这种算法的复杂度是O（nlogn）</li>
+<li><code>O（n）</code> 的方法：利用快排的 <code>patition</code> 思想，基于数组的第k个数来调整，将比第k个数小的都位于数组的左边，比第k个数大的都调整到数组的右边，这样调整后，位于数组右边的k个数最大的k个数(这k个数不一定是排好序的）</li>
+<li><code>O(nlogk）</code> 的方法：先创建一个大小为k的最小堆，接下来我们每次从输入的n个整数中读入一个数，如果这个数比最小堆的堆顶元素还要大，那么替换这个最小堆的堆顶并调整。</li>
+</ol>
+<h3 id="由权值分别为1、12、13、4、8的叶子节点生成一颗哈夫曼树，它的带权路径长度为"><a href="#由权值分别为1、12、13、4、8的叶子节点生成一颗哈夫曼树，它的带权路径长度为" class="headerlink" title="由权值分别为1、12、13、4、8的叶子节点生成一颗哈夫曼树，它的带权路径长度为()"></a>由权值分别为1、12、13、4、8的叶子节点生成一颗哈夫曼树，它的带权路径长度为()</h3><p><img src="428302_1464865710267_072774B6B658B3603E1AA7198722775C.png" alt=""></p>
+<h3 id="二叉树先序、后序遍历"><a href="#二叉树先序、后序遍历" class="headerlink" title="二叉树先序、后序遍历"></a>二叉树先序、后序遍历</h3><p><img src="BinExamp.png" alt=""></p>
+<ul>
+<li>先序遍历</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">          右</div><div class="line">根         ↓</div><div class="line">↓     -----------</div><div class="line">A B D C E G F H I</div><div class="line">  ---</div><div class="line">   ↑</div><div class="line">  左</div></pre></td></tr></table></figure>
+<ul>
+<li>中序</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">    根</div><div class="line">    ↓</div><div class="line">B D A G E C H F I</div><div class="line">---   -----------</div><div class="line"> ↑        ↑</div><div class="line"> 左       右</div></pre></td></tr></table></figure>
+<ul>
+<li>后序</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">         右</div><div class="line">         ↓</div><div class="line">    -----------</div><div class="line">D B G E H I F C A</div><div class="line">---             ↑</div><div class="line"> ↑             根</div><div class="line"> 左</div></pre></td></tr></table></figure>
+<h3 id="Binary-Heap-调整"><a href="#Binary-Heap-调整" class="headerlink" title="Binary Heap 调整"></a>Binary Heap 调整</h3><p><img src="2017_10_13_10_11_00.png" alt=""></p>
+<h3 id="Quick-Sort-调整"><a href="#Quick-Sort-调整" class="headerlink" title="Quick Sort 调整"></a>Quick Sort 调整</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">12,15,1,18,2,35,30,11</div></pre></td></tr></table></figure>
+<p>以 <code>12</code> 为基准记录的一趟快速排序结束后的结果为:</p>
+<p>快速排序里的挖坑填补法：以 <code>12</code> 为标准值，<strong>从右</strong>开始找比12<strong>小</strong>的值，首先是 11，把 11 放在 12 的那个位置，把12放在11的位置，再<strong>从左</strong>找比12<strong>大</strong>的值15，把 15 放在 12 的新位置（原11的位置）之后变成 <code>11，12，1，18，2，35，30，15</code>. 在新的一轮开始，从右开始找12 小的数是2，把2放在12的位置，12放在2的位置，在从左找比12大的数18，把18放在12的新位置上（原2的位置）变成11，2，1，12，18，35，30，15.</p>
+<h3 id="多项式-P-X-a-bx-cx-2-dx-3-，对于任意-x-，计算-P-X-中最少需要用到乘法操作的次数是多少？"><a href="#多项式-P-X-a-bx-cx-2-dx-3-，对于任意-x-，计算-P-X-中最少需要用到乘法操作的次数是多少？" class="headerlink" title="多项式 P(X)=a+bx+cx^2+dx^3 ，对于任意 x ，计算 P(X) 中最少需要用到乘法操作的次数是多少？"></a>多项式 <code>P(X)=a+bx+cx^2+dx^3</code> ，对于任意 <code>x</code> ，计算 P(X) 中最少需要用到乘法操作的次数是多少？</h3><p>一般地， 一元 <code>n</code> 次多项式 的求值需要经过 <code>2n-1</code> 次乘法和 <code>n</code> 次加法，而 <strong>秦九韶算法</strong> 只需要 <code>n</code> 次乘法和 <code>n</code> 次加法 。<br>题目中P(X)是3次多项式，所以3次乘法。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/10/12/datastructure/" data-id="cjc5qrt1b002t5cemkd3fw07q" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-word" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/10/10/word/" class="article-date">
+  <time datetime="2017-10-10T15:04:49.000Z" itemprop="datePublished">2017-10-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/开发者手册/">开发者手册</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/10/10/word/">word</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <h2 id="Word"><a href="#Word" class="headerlink" title="Word"></a>Word</h2><ul>
+<li><a href="http://www.planetb.ca/syntax-highlight-word" target="_blank" rel="external">高亮 word 代码</a></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/10/10/word/" data-id="cjc5qrt32005x5cemrrgpvfyv" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+    <article id="post-cpp" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/2017/10/01/cpp/" class="article-date">
+  <time datetime="2017-10-01T07:32:14.000Z" itemprop="datePublished">2017-10-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/blog/categories/开发者手册/">开发者手册</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/blog/2017/10/01/cpp/">cpp</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <!-- Table of Contents -->
+        
+        <p>virtual function calls 一般而言是通过一个表格 （内含 virtual functions 地址) 的索引而决议得知。</p>
+<p><img src="2017_10_01_15_36_38.png" alt=""></p>
+<h3 id="C-类设计者的核查表"><a href="#C-类设计者的核查表" class="headerlink" title="C++ 类设计者的核查表"></a><code>C++</code> 类设计者的核查表</h3><ul>
+<li>你的数据成员是私有的吗</li>
+<li>你的类需要一个无参的构造函数</li>
+<li>是不是每个构造函数初始化所有的数据成员</li>
+<li>需要析构函数吗。<strong>应该问问自己的构造函数里是否有 <code>new</code> 这样的表达式</strong></li>
+<li>需要一个虚析构函数吗。<strong>绝不会用作基类的类是不需要虚析构函数的</strong>。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">struct</span> <span class="title">B</span> &#123;</span></div><div class="line">    String s;</div><div class="line">    Virtual ~B() &#123;&#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">B* bp = <span class="keyword">new</span> D;</div><div class="line"><span class="keyword">delete</span> bp;</div></pre></td></tr></table></figure>
+<ul>
+<li>需要复制构造函数吗。如果你的类在构造函数内分配资源，则可能需要一个显式的复制构造函数来管理资源。下面类可能需要一个复制构造函数:</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> &#123;</span></div><div class="line"> <span class="keyword">public</span>:</div><div class="line">    String();</div><div class="line">    Stirng(<span class="keyword">const</span> <span class="keyword">char</span>* s);</div><div class="line"> <span class="keyword">private</span>:</div><div class="line">    <span class="keyword">char</span>* data;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>你的类需要一个赋值操作符吗。如果需要复制构造函数，同理多半也会需要一个赋值操作符。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Thing&amp; <span class="keyword">operator</span>=(<span class="keyword">const</span> Thing&amp;);</div></pre></td></tr></table></figure>
+<ul>
+<li>你的赋值操作符能正确地将对象赋给对象本身吗。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// 正确实现方式1</span></div><div class="line">String&amp; String::<span class="keyword">operator</span>=(<span class="keyword">const</span> String&amp; s) &#123;</div><div class="line">    <span class="keyword">if</span> (&amp;s != <span class="keyword">this</span>) &#123;</div><div class="line">        <span class="keyword">delete</span>[] data;</div><div class="line">        data = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="built_in">strlen</span>(s.data) + <span class="number">1</span>];</div><div class="line">        <span class="built_in">strcpy</span>(data, s.data);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">return</span> *<span class="keyword">this</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// 正确实现方式2</span></div><div class="line">String&amp; String::<span class="keyword">operator</span>=(<span class="keyword">const</span> String&amp; s) &#123;</div><div class="line">    <span class="keyword">char</span>* newdata = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="built_in">strlen</span>(s.data) + <span class="number">1</span>];</div><div class="line">    <span class="built_in">strcpy</span>(newdata, s.data);</div><div class="line">    <span class="keyword">delete</span>[] data;</div><div class="line">    data = newdata;</div><div class="line">    <span class="keyword">return</span> *<span class="keyword">this</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>删除数组时你记住用 <code>delete[]</code> 吗。</li>
+</ul>
+<h3 id="C-的问题"><a href="#C-的问题" class="headerlink" title="C 的问题"></a><code>C</code> 的问题</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></div><div class="line"><span class="keyword">static</span> <span class="keyword">int</span> noisy = <span class="number">1</span>;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">trace</span><span class="params">(<span class="keyword">char</span> *s)</span> </span>&#123;</div><div class="line">    <span class="keyword">if</span> (noisy)</div><div class="line">        <span class="built_in">printf</span>(<span class="string">"%s\n"</span>, s);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">trace_on</span><span class="params">()</span> </span>&#123;</div><div class="line">    noisy = <span class="number">1</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">trace_off</span><span class="params">()</span> </span>&#123;</div><div class="line">    noisy = <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>函数 <code>trace</code> 不是内联的，即使当跟踪关闭的时候，它<strong>还保持着函数调用的开销</strong>。在很多 C 的实现中，这个额外负担是无法避免的。</p>
+<h3 id="类-Point-在机器中如何被表示"><a href="#类-Point-在机器中如何被表示" class="headerlink" title="类 Point 在机器中如何被表示"></a>类 <code>Point</code> 在机器中如何被表示</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Point</span> &#123;</span></div><div class="line"></div><div class="line"> <span class="keyword">public</span>:</div><div class="line">    Point(<span class="keyword">float</span> xval);</div><div class="line">    <span class="keyword">virtual</span> ~Point();</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">float</span> <span class="title">x</span><span class="params">()</span> <span class="keyword">const</span></span>;</div><div class="line">    <span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">PointCount</span><span class="params">()</span></span>;</div><div class="line"></div><div class="line"> <span class="keyword">protected</span>:</div><div class="line">    <span class="function"><span class="keyword">virtual</span> ostream&amp; <span class="title">print</span><span class="params">(ostream &amp;os)</span> <span class="keyword">const</span></span>;</div><div class="line"></div><div class="line">    <span class="keyword">float</span> _x;</div><div class="line">    <span class="keyword">static</span> <span class="keyword">int</span> _point_count;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><img src="2017_10_01_15_45_24.png" alt=""></p>
+<h3 id="什么时候使用-struct-什么时候用-class"><a href="#什么时候使用-struct-什么时候用-class" class="headerlink" title="什么时候使用 struct 什么时候用 class"></a>什么时候使用 <code>struct</code> 什么时候用 <code>class</code></h3><p><img src="2017_10_01_15_54_50.png" alt=""></p>
+<h3 id="哪些操作支持多态"><a href="#哪些操作支持多态" class="headerlink" title="哪些操作支持多态"></a>哪些操作支持多态</h3><ul>
+<li>隐含的转化:</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">shape *ps = <span class="keyword">new</span> circle();</div></pre></td></tr></table></figure>
+<ul>
+<li><strong><code>virtual function</code></strong> 机制:</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ps-&gt;rotate();</div></pre></td></tr></table></figure>
+<ul>
+<li>经过 <code>dynamic_cast</code> 和 <code>typeid</code> 运算符:</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">if</span> (circle *pc = <span class="keyword">dynamic_cast</span>&lt;circle *&gt;(ps)) &#123;&#125;</div></pre></td></tr></table></figure>
+<h3 id="一个-class-object-需要多少内存"><a href="#一个-class-object-需要多少内存" class="headerlink" title="一个 class object 需要多少内存"></a>一个 <code>class object</code> 需要多少内存</h3><ul>
+<li><code>nonstatic data members</code> 的总和大小</li>
+<li>加上任何由于 <code>alignment</code> 的需求而填补 (padding) 上去的空间</li>
+<li>加上为了支持 <code>virtual</code> 而由内部产生的任何额外负担 (overhead)</li>
+</ul>
+<h3 id="什么时候才会合成一个-default-constructor"><a href="#什么时候才会合成一个-default-constructor" class="headerlink" title="什么时候才会合成一个 default constructor"></a>什么时候才会合成一个 <code>default constructor</code></h3><p><img src="2017_10_01_16_14_59.png" alt=""><br><img src="2017_10_01_16_17_49.png" alt=""></p>
+<p>编译器只会在以下 4 种情况，并且 <code>class</code> 自身没有定义 <code>default constructor</code> 的情况下，帮忙合成 <code>default constructor</code>：</p>
+<ul>
+<li>带有 <strong><code>default constructor</code></strong> 的 <code>member class object</code>: 也就是说，虽然 <code>class A</code> 没有显示定义 <code>default constructor</code>, 但是 <code>A class</code> 内的成员变量 <code>B</code>, <code>B</code> 本身是提供<strong>显示</strong>的 <code>default constructor</code> 的，这种情况下会为 <code>A</code> 构造一个 <code>default constructor</code>。在该构造函数里会调用 <code>B</code> 的构造函数，当然只有在被调用的时候才会被合成出来。</li>
+<li>带有 <code>default constructor</code> 的 <code>base class</code>: 也就是说，虽然 <code>class A</code> 没有显示定义 <code>default constructor</code>,但是 <code>A class</code> 继承自 <code>B class</code>, <code>B</code> 本身是提供<strong>显示</strong>的 <code>default constructor</code> 的，这种情况下会为 <code>A</code> 构造一个 <code>default constructor</code>.</li>
+<li>带有一个 <code>virtual function</code> 的 <code>class</code>: 也就是说，虽然 <code>class A</code> 没有显示定义 <code>default constructor</code>,但是 <code>A class</code> 内<strong>有虚函数</strong>，既然有虚函数，那么在初始化对象的时候，需要初始化其中的指针 <code>vptr</code> 指向 <code>vtable</code>，所以这种情况下会为 <code>A</code> 构造一个 <code>default constructor</code>.</li>
+<li>带有一个 <code>virtual base class</code> 的 <code>class</code></li>
+</ul>
+<p>同时需要注意，只有再必要的时候编译器才会合成出来，如程序中都没建该 <code>class</code> 的对象，故编译器肯定也不用合成出来。</p>
+<p><img src="2017_10_01_16_28_09.png" alt=""><br><img src="2017_10_01_16_26_58.png" alt=""></p>
+<h3 id="合成-copy-constructor"><a href="#合成-copy-constructor" class="headerlink" title="合成 copy constructor"></a>合成 <code>copy constructor</code></h3><ul>
+<li>对一个 <code>object</code> 做明确的初始化操作:</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">X</span> &#123;</span>&#125;;</div><div class="line">X x;</div><div class="line"></div><div class="line"><span class="comment">// 以 x 的内容作为 xx 的初值</span></div><div class="line">X xx = x;</div></pre></td></tr></table></figure>
+<ul>
+<li>传递参数</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">(X x)</span></span>;</div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">bar</span><span class="params">()</span> </span>&#123;</div><div class="line">    X xx;</div><div class="line">    <span class="comment">// 作为参数传递</span></div><div class="line">    foo(xx);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>返回一个 <code>class object</code></li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="function">X <span class="title">foo_bar</span><span class="params">()</span> </span>&#123;</div><div class="line">    X xx;</div><div class="line">    <span class="comment">// 传回一个 class object</span></div><div class="line">    <span class="keyword">return</span> xx;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>假设 <code>class</code> 设计者明确定义了一个 <code>copy constructor</code>:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">X::X(<span class="keyword">const</span> X&amp; x);</div><div class="line">X::X(<span class="keyword">const</span> Y&amp; y, <span class="keyword">int</span> = <span class="number">0</span>);</div></pre></td></tr></table></figure>
+<p>那么在大部分情况下，当一个 <code>class object</code> 以另一个同类实体作为初值时，上述的 <code>constructor</code> 会被调用。</p>
+<hr>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="function">String <span class="title">noun</span><span class="params">(<span class="string">"book"</span>)</span></span>;</div><div class="line">String verb = noun;</div></pre></td></tr></table></figure>
+<p>其默认的 <code>copy constructor</code> 完成的操作如下:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">verb.str = noun.str;</div><div class="line">verb.len = noun.len;</div></pre></td></tr></table></figure>
+<h3 id="静态链接库和动态链接库"><a href="#静态链接库和动态链接库" class="headerlink" title="静态链接库和动态链接库"></a>静态链接库和动态链接库</h3><ul>
+<li>静态链接库的优点<br>(1) <strong>代码装载速度快</strong>，执行速度略比动态链接库快；<br>(2) 只需保证在开发者的计算机中有正确的.LIB文件，在以二进制形式发布程序时不需考虑在用户的计算机上.LIB文件是否存在及版本问题，可避免DLL地狱等问题。 </li>
+<li>动态链接库的优点<br>(1) <strong>更加节省内存并减少页面交换；</strong><br>(2) DLL文件与EXE文件独立，只要输出接口不变（即名称、参数、返回值类型和调用约定不变），更换DLL文件不会对EXE文件造成任何影响，因而极大地提高了可维护性和可扩展性；<br>(3) 不同编程语言编写的程序只要按照函数调用约定就可以调用同一个DLL函数；<br>(4) 适用于大规模的软件开发，使开发过程独立、耦合度小，便于不同开发者和开发组织之间进行开发和测试。</li>
+<li>不足之处<br>(1) 使用静态链接生成的可执行文件体积较大，包含相同的公共代码，造成浪费；<br>(2) 使用动态链接库的应用程序不是自完备的，它依赖的DLL模块也要存在，如果使用载入时动态链接，程序启动时发现DLL不存在，系统将终止程序并给出错误信息。而使用运行时动态链接，系统不会终止，但由于DLL中的导出函数不可用，程序会加载失败；速度比静态链接慢。当某个模块更新后，如果新模块与旧的模块不兼容，那么那些需要该模块才能运行的软件，统统撕掉。这在早期Windows中很常见。</li>
+</ul>
+<h3 id="sizeof"><a href="#sizeof" class="headerlink" title="sizeof"></a><code>sizeof</code></h3><p><img src="2017_10_12_22_57_23.png" alt=""></p>
+<p><strong>Size of union = size of the largest data type used</strong>:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">union</span> &#123;</div><div class="line">        <span class="keyword">char</span> all[<span class="number">13</span>]; <span class="comment">// 13</span></div><div class="line">        <span class="keyword">int</span> foo; <span class="comment">// 4</span></div><div class="line">    &#125; record; <span class="comment">// 16</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line"><span class="meta">#<span class="meta-keyword">pragma</span> pack(push, 1)</span></div><div class="line">    <span class="keyword">union</span> &#123;</div><div class="line">        <span class="keyword">char</span> all[<span class="number">13</span>]; <span class="comment">// 13</span></div><div class="line">        <span class="keyword">int</span> foo; <span class="comment">// 4</span></div><div class="line">    &#125; record; <span class="comment">// 13</span></div><div class="line"><span class="meta">#<span class="meta-keyword">pragma</span> pack(pop)</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Suppose you have this structure:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">struct</span>	&#123;</span></div><div class="line">    <span class="keyword">char</span> a[<span class="number">3</span>];</div><div class="line">    <span class="keyword">short</span> <span class="keyword">int</span> b;</div><div class="line">    <span class="keyword">long</span> <span class="keyword">int</span> c;</div><div class="line">    <span class="keyword">char</span> d[<span class="number">3</span>];</div><div class="line">&#125;;</div></pre></td></tr></table></figure>
+<p>Now, you might think that it ought to be possible to pack this structure into memory like this:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">+-------+-------+-------+-------+</div><div class="line">|           a           |   b   |</div><div class="line">+-------+-------+-------+-------+</div><div class="line">|   b   |           c           |</div><div class="line">+-------+-------+-------+-------+</div><div class="line">|   c   |           d           |</div><div class="line">+-------+-------+-------+-------+</div></pre></td></tr></table></figure>
+<p>But it’s much, much easier on the processor if the compiler arranges it like this:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">+-------+-------+-------+</div><div class="line">|           a           |</div><div class="line">+-------+-------+-------+</div><div class="line">|       b       |</div><div class="line">+-------+-------+-------+-------+</div><div class="line">|               c               |</div><div class="line">+-------+-------+-------+-------+</div><div class="line">|           d           |</div><div class="line">+-------+-------+-------+</div></pre></td></tr></table></figure>
+<p>In the <code>packed&#39;&#39; version, notice how it&#39;s at least a little bit hard for you and me to see how the b and c fields wrap around? In a nutshell, it&#39;s hard for the processor, too. Therefore, most compilers will</code>pad’’ the structure (as if with extra, invisible fields) like this:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">+-------+-------+-------+-------+</div><div class="line">|           a           | pad1  |</div><div class="line">+-------+-------+-------+-------+</div><div class="line">|       b       |     pad2      |</div><div class="line">+-------+-------+-------+-------+</div><div class="line">|               c               |</div><div class="line">+-------+-------+-------+-------+</div><div class="line">|           d           | pad3  |</div><div class="line">+-------+-------+-------+-------+</div></pre></td></tr></table></figure>
+<h3 id="指针"><a href="#指针" class="headerlink" title="指针"></a>指针</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span>* pint = <span class="number">0</span>; <span class="comment">// pint指针指向0地址处</span></div><div class="line">pint += <span class="number">6</span>; <span class="comment">// 每次加 1 相当于移动四个字节，值为 24</span></div><div class="line"><span class="built_in">cout</span> &lt;&lt; pint &lt;&lt; <span class="built_in">endl</span>; <span class="comment">// 0x18 == 24</span></div></pre></td></tr></table></figure>
+<h3 id="queue"><a href="#queue" class="headerlink" title="queue"></a><code>queue</code></h3><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;queue&gt;          // std::queue</span></span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="built_in">std</span>::<span class="built_in">queue</span>&lt;<span class="keyword">int</span>&gt; myqueue;</div><div class="line"></div><div class="line">    <span class="comment">// Inserts a new element at the end of the queue, after its current last element</span></div><div class="line">    myqueue.push(<span class="number">5</span>);</div><div class="line"></div><div class="line">    <span class="comment">// Returns a reference to the last element in the queue. This is the</span></div><div class="line">    <span class="comment">// newest element in the queue (the last element pushed into the queue)</span></div><div class="line">    myqueue.back();</div><div class="line"></div><div class="line">    <span class="comment">// Removes the next element in the queue, effectively reducing its size by one.</span></div><div class="line">    <span class="comment">// The element removed is the oldest element in the queue whose value can be retrieved by calling member queue::front</span></div><div class="line">    <span class="comment">// This calls the removed element's destructor</span></div><div class="line">    myqueue.pop();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="时间"><a href="#时间" class="headerlink" title="时间"></a>时间</h3><figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="comment">// time_t 这种类型就是用来存储从1970年到现在经过了多少秒</span></div><div class="line">    <span class="keyword">time_t</span> now = time(<span class="literal">NULL</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://item.jd.com/10062652.html" target="_blank" rel="external">《C++ 沉思录》</a></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.kunzhao.org/2017/10/01/cpp/" data-id="cjc5qrt19002p5cem3w4kmn5j" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+ 
+
+
+  
+
+
+  <nav id="page-nav">
+    <a class="extend prev" rel="prev" href="/blog/page/3/">&laquo; Prev</a><a class="page-number" href="/blog/">1</a><a class="page-number" href="/blog/page/2/">2</a><a class="page-number" href="/blog/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/blog/page/5/">5</a><a class="page-number" href="/blog/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/blog/page/23/">23</a><a class="extend next" rel="next" href="/blog/page/5/">Next&raquo;</a>
+  </nav>
+</section>
+           
+    <aside id="sidebar">
+  
+    
+
+  
+    
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title recent-posts">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/blog/2018/01/06/where-the-time-actually-gone/">时间都去哪儿了</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/05/dev-reflection/">开发反思</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/05/my-microblog/">我的微博</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/04/gcc-basic/">gcc-basic</a>
+          </li>
+        
+          <li>
+            <a href="/blog/2018/01/04/java-internal/">Java Internal</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+
+  
+    
+  
+</aside>
+
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-left">
+      &copy; 2014 - 2018 赵坤&nbsp;|&nbsp;
+      Theme by <a href="https://github.com/giscafer/hexo-theme-cafe/" target="_blank">Cafe</a>
+    </div>
+     <div id="footer-right">
+      Contact&nbsp;|&nbsp;igozhaokun@163.com
+    </div>
+  </div>
+</footer>
+ <script src="/blog/jquery/jquery.min.js"></script>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/blog/" class="mobile-nav-link">首页</a>
+  
+    <a href="/blog/archives" class="mobile-nav-link">归档</a>
+  
+    <a href="/blog/about" class="mobile-nav-link">关于</a>
+  
+</nav>
+    <img class="back-to-top-btn" src="/blog/images/fly-to-top.png"/>
+<script>
+// Elevator script included on the page, already.
+window.onload = function() {
+  var elevator = new Elevator({
+    selector:'.back-to-top-btn',
+    element: document.querySelector('.back-to-top-btn'),
+    duration: 1000 // milliseconds
+  });
+}
+</script>
+
+      
+
+  
+
+  
+
+
+
+
+
+
+
+<!-- author:forvoid begin -->
+<!-- author:forvoid begin -->
+
+<!-- author:forvoid end -->
+
+<!-- author:forvoid end -->
+
+
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      })
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      })
+    </script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js"></script>
+  
+
+
+ <script src="/blog/js/is.js"></script>
+
+
+  <link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
+  <script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/blog/js/script.js"></script>
+<script src="/blog/js/elevator.js"></script>
+  </div>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</body>
+</html>
