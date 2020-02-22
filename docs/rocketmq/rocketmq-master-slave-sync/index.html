@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
 
 
-<script defer src="/en.search.min.fdfbc51b980f4dfc9bfaa262b12f657aef29a6a5f7c07ba95b84e7b5881f0749.js" integrity="sha256-/fvFG5gPTfyb&#43;qJisS9leu8ppqX3wHupW4TntYgfB0k="></script>
+<script defer src="/en.search.min.4b3959800ce03dcf0ea81286ca1a1dbb129726a61cd5942c7c7bbd6e59f9815a.js" integrity="sha256-SzlZgAzgPc8OqBKGyhoduxKXJqYc1ZQsfHu9bln5gVo="></script>
 
 
   
@@ -235,9 +235,9 @@
         <li><a href="#2-消息同步传输">(2) 消息同步传输</a></li>
       </ul>
     </li>
-    <li><a href="#六主备消费">六、主备消费</a></li>
-    <li><a href="#七消费建议">七、消费建议</a></li>
-    <li><a href="#八异常处理">八、异常处理</a></li>
+    <li><a href="#五主备消费">五、主备消费</a></li>
+    <li><a href="#六消费建议">六、消费建议</a></li>
+    <li><a href="#七异常处理">七、异常处理</a></li>
   </ul>
 </nav>
 
@@ -478,11 +478,11 @@
 <span style="color:#f92672">}</span>
 </code></pre></div><p>下图是上图一个完整的消息<strong>唤醒链</strong>:</p>
 <p><img src="/images/docs/rocketmq/rocketmq-master-slave-sync/wait-notify-sync.png" alt="唤醒链"></p>
-<h2 id="六主备消费">六、主备消费</h2>
+<h2 id="五主备消费">五、主备消费</h2>
 <p>当消费者在消费的时候，如果 Master 突然宕机，那么消费者会自动切换到 Slave 机器上继续进行消费。</p>
-<h2 id="七消费建议">七、消费建议</h2>
+<h2 id="六消费建议">六、消费建议</h2>
 <p>RocketMQ 提供了自动从 Slave 读取老数据的功能。这个功能主要由 <code>slaveReadEnable</code> 这个参数控制。默认是关的（<code>slaveReadEnable = false</code>）。推荐把它打开，主从都要开。这个参数打开之后，在客户端消费数据时，会判断，当前读取消息的物理偏移量跟最新的位置的差值，是不是超过了内存容量的一个百分比（<code>accessMessageInMemoryMaxRatio = 40</code> by default）。如果超过了，就会告诉客户端去备机上消费数据。如果采用异步主从，也就是 <code>brokerRole</code> 等于 <code>ASYNC_AMSTER</code> 的时候，你的备机 IO 打爆，其实影响不太大。但是如果你采用同步主从，那还是有影响。所以这个时候，最好挂两个备机。因为 RocketMQ 的主从同步复制，只要一个备机响应了确认写入就可以了，一台 IO 打爆，问题不大。参考自<a href="http://jm.taobao.org/2018/11/06/%E6%BB%B4%E6%BB%B4%E5%87%BA%E8%A1%8C%E5%9F%BA%E4%BA%8ERocketMQ%E6%9E%84%E5%BB%BA%E4%BC%81%E4%B8%9A%E7%BA%A7%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E6%9C%8D%E5%8A%A1%E7%9A%84%E5%AE%9E%E8%B7%B5/">阿里中间件团队博客</a>。</p>
-<h2 id="八异常处理">八、异常处理</h2>
+<h2 id="七异常处理">七、异常处理</h2>
 <p>Q: Master(Slave) 读取来自 Slave(Master) 的消息异常 (IOException、 read() 返回 -1 等) 的时候怎么处理?
 A: 打印日志 + 关闭这条连接</p>
 <p>Q: Master(Slave) 长时间没有收到来自 Slave(Master) 的进度汇报怎么处理?
@@ -532,9 +532,9 @@ A: 无论 Maser 是主动关闭 Mater，还是 Master 因为异常而退出，Sl
         <li><a href="#2-消息同步传输">(2) 消息同步传输</a></li>
       </ul>
     </li>
-    <li><a href="#六主备消费">六、主备消费</a></li>
-    <li><a href="#七消费建议">七、消费建议</a></li>
-    <li><a href="#八异常处理">八、异常处理</a></li>
+    <li><a href="#五主备消费">五、主备消费</a></li>
+    <li><a href="#六消费建议">六、消费建议</a></li>
+    <li><a href="#七异常处理">七、异常处理</a></li>
   </ul>
 </nav>
 
