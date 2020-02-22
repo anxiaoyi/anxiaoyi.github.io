@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="RocketMQ 消息过滤流程"><meta property="og:title" content="RocketMQ 消息过滤流程" />
+<meta property="og:description" content="RocketMQ 消息过滤流程 讲述 RocketMQ 消息过滤流程
+一、消息过滤类型 Producer 在发送消息的时候可以指定消息的标签类型，还可以为每一个消息添加一个或者多个额外的属性:
+// 指定标签 Message msg = new Message(&#34;TopicTest&#34;, &#34;TagA&#34;, (&#34;Hello RocketMQ&#34;).getBytes(RemotingHelper.DEFAULT_CHARSET)); // 添加属性 a msg.putUserProperty(&#34;a&#34;, 5); 根据标签和属性的不同，RocketMQ 客户端在消费消息的时候有三种消息过滤类型:
+(1) 标签匹配 consumer.subscribe(&#34;TopicTest&#34;, &#34;TagA | TagB | TagC&#34;); (2) SQL 匹配 consumer.subscribe(&#34;TopicTest&#34;, MessageSelector.bySql( &#34;(TAGS is not null and TAGS in (&#39;TagA&#39;, &#39;TagB&#39;))&#34; &#43; &#34;and (a is not null and a between 0 3)&#34;)); (3) 自定义匹配 客户端实现 MessageFilter 类，自定义过滤逻辑:
+ClassLoader classLoader = Thread.currentThread().getContextClassLoader(); File classFile = new File(classLoader." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-message-filter-flow/" />
+
+<title>RocketMQ 消息过滤流程 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
+
+
+<script defer src="/en.search.min.fdfbc51b980f4dfc9bfaa262b12f657aef29a6a5f7c07ba95b84e7b5881f0749.js" integrity="sha256-/fvFG5gPTfyb&#43;qJisS9leu8ppqX3wHupW4TntYgfB0k="></script>
+
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-send-message-flow/" >
+      RocketMQ 消息发送流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-store-flow/" >
+      RocketMQ 消息存储流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-receive-flow/" >
+      RocketMQ 消息接受流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-filter-flow/"  class="active">
+      RocketMQ 消息过滤流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-indexing-flow/" >
+      RocketMQ 消息索引流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-timing-message-and-retry-message/" >
+      RocketMQ 定时消息和重试消息
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-master-slave-sync/" >
+      RocketMQ 主备同步
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>RocketMQ 消息过滤流程</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#一消息过滤类型">一、消息过滤类型</a>
+      <ul>
+        <li><a href="#1-标签匹配">(1) 标签匹配</a></li>
+        <li><a href="#2-sql-匹配">(2) SQL 匹配</a></li>
+        <li><a href="#3-自定义匹配">(3) 自定义匹配</a></li>
+      </ul>
+    </li>
+    <li><a href="#二标签匹配">二、标签匹配</a></li>
+    <li><a href="#三sql-匹配">三、SQL 匹配</a>
+      <ul>
+        <li><a href="#1-注册过滤信息">(1) 注册过滤信息</a></li>
+        <li><a href="#2-生成-bloomfilterdata">(2) 生成 BloomFilterData</a></li>
+        <li><a href="#3-编译-sql-语句">(3) 编译 SQL 语句</a></li>
+        <li><a href="#4-计算位映射">(4) 计算位映射</a></li>
+        <li><a href="#5-存储位映射">(5) 存储位映射</a></li>
+        <li><a href="#6-消息过滤">(6) 消息过滤</a></li>
+      </ul>
+    </li>
+    <li><a href="#四自定义匹配">四、自定义匹配</a>
+      <ul>
+        <li><a href="#1-过滤服务器">(1) 过滤服务器</a></li>
+        <li><a href="#2-过滤类">(2) 过滤类</a></li>
+        <li><a href="#3-过滤消息">(3) 过滤消息</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="rocketmq-消息过滤流程">RocketMQ 消息过滤流程</h1>
+<p>讲述 RocketMQ 消息过滤流程</p>
+<h2 id="一消息过滤类型">一、消息过滤类型</h2>
+<p>Producer 在发送消息的时候可以指定消息的标签类型，还可以为每一个消息添加一个或者多个额外的属性:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 指定标签
+</span><span style="color:#75715e"></span>Message msg <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Message<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;TopicTest&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;TagA&#34;</span><span style="color:#f92672">,</span> <span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Hello RocketMQ&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBytes</span><span style="color:#f92672">(</span>RemotingHelper<span style="color:#f92672">.</span><span style="color:#a6e22e">DEFAULT_CHARSET</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+<span style="color:#75715e">// 添加属性 a
+</span><span style="color:#75715e"></span>msg<span style="color:#f92672">.</span><span style="color:#a6e22e">putUserProperty</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;a&#34;</span><span style="color:#f92672">,</span> 5<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><p>根据标签和属性的不同，RocketMQ 客户端在消费消息的时候有三种消息过滤类型:</p>
+<h3 id="1-标签匹配">(1) 标签匹配</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">consumer<span style="color:#f92672">.</span><span style="color:#a6e22e">subscribe</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;TopicTest&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;TagA | TagB | TagC&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><h3 id="2-sql-匹配">(2) SQL 匹配</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">consumer<span style="color:#f92672">.</span><span style="color:#a6e22e">subscribe</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;TopicTest&#34;</span><span style="color:#f92672">,</span>
+                MessageSelector<span style="color:#f92672">.</span><span style="color:#a6e22e">bySql</span><span style="color:#f92672">(</span>
+                    <span style="color:#e6db74">&#34;(TAGS is not null and TAGS in (&#39;TagA&#39;, &#39;TagB&#39;))&#34;</span> <span style="color:#f92672">+</span> 
+                <span style="color:#e6db74">&#34;and (a is not null and a between 0  3)&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><h3 id="3-自定义匹配">(3) 自定义匹配</h3>
+<p>客户端实现 <code>MessageFilter</code> 类，自定义过滤逻辑:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">ClassLoader classLoader <span style="color:#f92672">=</span> Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getContextClassLoader</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+File classFile <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> File<span style="color:#f92672">(</span>classLoader<span style="color:#f92672">.</span><span style="color:#a6e22e">getResource</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;MessageFilterImpl.java&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getFile</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+String filterCode <span style="color:#f92672">=</span> MixAll<span style="color:#f92672">.</span><span style="color:#a6e22e">file2String</span><span style="color:#f92672">(</span>classFile<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+consumer<span style="color:#f92672">.</span><span style="color:#a6e22e">subscribe</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;TopicTest&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;org.apache.rocketmq.example.filter.MessageFilterImpl&#34;</span><span style="color:#f92672">,</span>filterCode<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><p>对于 <code>MessageFilter</code> 类实现 <code>match</code> 方法即可:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageFilterImpl</span> <span style="color:#66d9ef">implements</span> MessageFilter <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">match</span><span style="color:#f92672">(</span>MessageExt msg<span style="color:#f92672">,</span> FilterContext context<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        String property <span style="color:#f92672">=</span> msg<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;SequenceId&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>property <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">int</span> id <span style="color:#f92672">=</span> Integer<span style="color:#f92672">.</span><span style="color:#a6e22e">parseInt</span><span style="color:#f92672">(</span>property<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#f92672">(</span><span style="color:#f92672">(</span>id <span style="color:#f92672">%</span> 10<span style="color:#f92672">)</span> <span style="color:#f92672">=</span><span style="color:#f92672">=</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span>
+                <span style="color:#f92672">(</span>id <span style="color:#f92672">&gt;</span> 100<span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>下面我们一一讲解各自背后的机制与实现原理。</p>
+<h2 id="二标签匹配">二、标签匹配</h2>
+<p>当为消息指定消息标签类型的时候，实际上所指定的标签例如 <code>TagA</code> 是作为一个属性放入到了这条消息中的:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Message</span> <span style="color:#66d9ef">implements</span> Serializable <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setTags</span><span style="color:#f92672">(</span>String tags<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">putProperty</span><span style="color:#f92672">(</span>MessageConst<span style="color:#f92672">.</span><span style="color:#a6e22e">PROPERTY_TAGS</span><span style="color:#f92672">,</span> tags<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当这条消息到达 Broker 服务器端后，用户设置的标签会计算为标签码，默认的计算方式采用的标签字符串的 <code>hashCode()</code> 作为计算结果的:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> DispatchRequest <span style="color:#a6e22e">checkMessageAndReturnSize</span><span style="color:#f92672">(</span>java<span style="color:#f92672">.</span><span style="color:#a6e22e">nio</span><span style="color:#f92672">.</span><span style="color:#a6e22e">ByteBuffer</span> byteBuffer<span style="color:#f92672">,</span>
+                                                     <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> checkCRC<span style="color:#f92672">,</span>
+                                                     <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> readBody<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        String tags <span style="color:#f92672">=</span> propertiesMap<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>MessageConst<span style="color:#f92672">.</span><span style="color:#a6e22e">PROPERTY_TAGS</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>tags <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> tags<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            tagsCode <span style="color:#f92672">=</span> MessageExtBrokerInner
+                <span style="color:#f92672">.</span><span style="color:#a6e22e">tagsString2tagsCode</span><span style="color:#f92672">(</span>MessageExt<span style="color:#f92672">.</span><span style="color:#a6e22e">parseTopicFilterType</span><span style="color:#f92672">(</span>sysFlag<span style="color:#f92672">)</span><span style="color:#f92672">,</span> tags<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当计算出来标签码之后，这条消息的标签码会被存放至<strong>消费队列文件</strong>中，用来与消费者客户端消费队列的标签码进行匹配。消费者客户端订阅消费话题的时候，会指定想要匹配的标签类型:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">consumer<span style="color:#f92672">.</span><span style="color:#a6e22e">subscribe</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;TopicTest&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;TagA | TagB | TagC&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><p>这段代码在内部实现中利用 <code>FilterAPI</code> 构建了一个 <code>SubscriptionData</code> 对象:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQPushConsumerImpl</span> <span style="color:#66d9ef">implements</span> MQConsumerInner <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">subscribe</span><span style="color:#f92672">(</span>String topic<span style="color:#f92672">,</span> String subExpression<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> MQClientException <span style="color:#f92672">{</span>
+        SubscriptionData subscriptionData <span style="color:#f92672">=</span> FilterAPI
+            <span style="color:#f92672">.</span><span style="color:#a6e22e">buildSubscriptionData</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMQPushConsumer</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getConsumerGroup</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">,</span>
+                                   topic<span style="color:#f92672">,</span>
+                                   subExpression<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当用户未指定标签或者指定为星号标签的时候，则代表用户接受所有标签的消息。如果用户指定了一个或者多个标签，那么会将每一个标签取其 <code>hashCode()</code> 放入到 <code>codeSet</code> <code>中。SubscriptionData</code> 还有一个 <code>expressionType</code> 字段，在使用标签匹配的时候，其不会设置这个这个字段的值，因此其保留为 <code>null</code>。在这些信息设置好以后，当客户端发送心跳包的时候，会将这些话题的注册信息一并上传至 Broker 服务器端，方便在 Broker 端进行匹配。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SubscriptionData</span> <span style="color:#66d9ef">implements</span> Comparable<span style="color:#f92672">&lt;</span>SubscriptionData<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">static</span> String SUB_ALL <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;*&#34;</span><span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">private</span> Set<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;</span> tagsSet <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HashSet<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">private</span> Set<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> codeSet <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HashSet<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">private</span> String expressionType<span style="color:#f92672">;</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当 Broker 端服务器在取消息的时候，每取出来一条消息，都会执行两道过滤机制:</p>
+<ul>
+<li><code>ConsumeQueue</code> 文件匹配</li>
+<li><code>CommitLog</code> 文件匹配</li>
+</ul>
+<p>任一检查没有通过后，绝不会放行这条消息给客户端:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMessageStore</span> <span style="color:#66d9ef">implements</span> MessageStore <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> GetMessageResult <span style="color:#a6e22e">getMessage</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String group<span style="color:#f92672">,</span> <span style="color:#75715e">/** 其他参数 **/</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> bufferConsumeQueue<span style="color:#f92672">.</span><span style="color:#a6e22e">getSize</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> i <span style="color:#f92672">&lt;</span> maxFilterMessageCount<span style="color:#f92672">;</span> i <span style="color:#f92672">+</span><span style="color:#f92672">=</span> ConsumeQueue<span style="color:#f92672">.</span><span style="color:#a6e22e">CQ_STORE_UNIT_SIZE</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+            <span style="color:#75715e">// ConsumeQueue 文件匹配
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>messageFilter <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>
+                <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> <span style="color:#f92672">!</span>messageFilter<span style="color:#f92672">.</span><span style="color:#a6e22e">isMatchedByConsumeQueue</span><span style="color:#f92672">(</span>isTagsCodeLegal <span style="color:#f92672">?</span> tagsCode <span style="color:#f92672">:</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">,</span> extRet <span style="color:#f92672">?</span> cqExtUnit <span style="color:#f92672">:</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>getResult<span style="color:#f92672">.</span><span style="color:#a6e22e">getBufferTotalSize</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">=</span><span style="color:#f92672">=</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    status <span style="color:#f92672">=</span> GetMessageStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">NO_MATCHED_MESSAGE</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+
+                <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#75715e">// CommitLog 文件匹配
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>messageFilter <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>
+                <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> <span style="color:#f92672">!</span>messageFilter<span style="color:#f92672">.</span><span style="color:#a6e22e">isMatchedByCommitLog</span><span style="color:#f92672">(</span>selectResult<span style="color:#f92672">.</span><span style="color:#a6e22e">getByteBuffer</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">slice</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>getResult<span style="color:#f92672">.</span><span style="color:#a6e22e">getBufferTotalSize</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">=</span><span style="color:#f92672">=</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    status <span style="color:#f92672">=</span> GetMessageStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">NO_MATCHED_MESSAGE</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+                <span style="color:#75715e">// release...
+</span><span style="color:#75715e"></span>                selectResult<span style="color:#f92672">.</span><span style="color:#a6e22e">release</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+
+        <span style="color:#f92672">}</span>
+        
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>消息过滤器的默认实现是 <code>ExpressionMessageFilter</code> ，消息过滤的默认实现策略就是看这个话题的标签码集合中是否包括当前这条消息的标签码:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ExpressionMessageFilter</span> <span style="color:#66d9ef">implements</span> MessageFilter <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isMatchedByConsumeQueue</span><span style="color:#f92672">(</span>Long tagsCode<span style="color:#f92672">,</span> ConsumeQueueExt<span style="color:#f92672">.</span><span style="color:#a6e22e">CqExtUnit</span> cqExtUnit<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ExpressionType<span style="color:#f92672">.</span><span style="color:#a6e22e">isTagType</span><span style="color:#f92672">(</span>subscriptionData<span style="color:#f92672">.</span><span style="color:#a6e22e">getExpressionType</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>tagsCode <span style="color:#f92672">=</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>subscriptionData<span style="color:#f92672">.</span><span style="color:#a6e22e">getSubString</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>SubscriptionData<span style="color:#f92672">.</span><span style="color:#a6e22e">SUB_ALL</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#66d9ef">return</span> subscriptionData<span style="color:#f92672">.</span><span style="color:#a6e22e">getCodeSet</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span>tagsCode<span style="color:#f92672">.</span><span style="color:#a6e22e">intValue</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isMatchedByCommitLog</span><span style="color:#f92672">(</span>ByteBuffer msgBuffer<span style="color:#f92672">,</span> Map<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> String<span style="color:#f92672">&gt;</span> properties<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ExpressionType<span style="color:#f92672">.</span><span style="color:#a6e22e">isTagType</span><span style="color:#f92672">(</span>subscriptionData<span style="color:#f92672">.</span><span style="color:#a6e22e">getExpressionType</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>下图是一幅标签匹配的简要流程图:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/tag_match.png" alt="标签匹配流程图"></p>
+<h2 id="三sql-匹配">三、SQL 匹配</h2>
+<p>在发送消息的时候，可以为每一条消息附带一个或者多个属性值，SQL 匹配指的就是依据这些<strong>属性值</strong>和 <strong>TAG 标签</strong> 是否满足一定的 SQL 语句条件，来过滤消息。用户如果想要开启 SQL 匹配，那么需要在 Broker 启动的时候，启用如下几个配置信息:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">brokerConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setEnablePropertyFilter</span><span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+brokerConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setEnableCalcFilterBitMap</span><span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+messageStoreConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setEnableConsumeQueueExt</span><span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><h3 id="1-注册过滤信息">(1) 注册过滤信息</h3>
+<p>我们在消费者如何接受消息一文中提到过，消费者启动之后，会通过心跳包定时给 Broker 服务器汇报自己的信息。而 Broker 服务器在收到消费者的心跳包之后，会产生一个注册事件，如下所示:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumerManager</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">registerConsumer</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String group<span style="color:#f92672">,</span>
+                                    <span style="color:#75715e">/** 其他参数 **/</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">consumerIdsChangeListener</span><span style="color:#f92672">.</span><span style="color:#a6e22e">handle</span><span style="color:#f92672">(</span>ConsumerGroupEvent<span style="color:#f92672">.</span><span style="color:#a6e22e">REGISTER</span><span style="color:#f92672">,</span> group<span style="color:#f92672">,</span> subList<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>DefaultConsumerIdsChangeListener</code> 是默认的消费者列表注册事件通知器的实现类，其在收到注册事件以后，会将用户在消费者端订阅的话题信息注册到 <code>ConsumerFilterManager</code> 中:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultConsumerIdsChangeListener</span> <span style="color:#66d9ef">implements</span> ConsumerIdsChangeListener <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">handle</span><span style="color:#f92672">(</span>ConsumerGroupEvent event<span style="color:#f92672">,</span> String group<span style="color:#f92672">,</span> Object<span style="color:#f92672">.</span><span style="color:#f92672">.</span><span style="color:#f92672">.</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">switch</span> <span style="color:#f92672">(</span>event<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            
+        <span style="color:#66d9ef">case</span> REGISTER<span style="color:#f92672">:</span>
+            Collection<span style="color:#f92672">&lt;</span>SubscriptionData<span style="color:#f92672">&gt;</span> subscriptionDataList <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>Collection<span style="color:#f92672">&lt;</span>SubscriptionData<span style="color:#f92672">&gt;</span><span style="color:#f92672">)</span> args<span style="color:#f92672">[</span>0<span style="color:#f92672">]</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">brokerController</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getConsumerFilterManager</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">register</span><span style="color:#f92672">(</span>group<span style="color:#f92672">,</span> subscriptionDataList<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+            
+            <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/consumer_filter_manager.png" alt="消费者过滤器数据结构"></p>
+<p><code>ConsumerFilterData</code> 中包含了消费者客户端注册的 SQL 表达式，由上图我们可以看到对于每一个话题所对应的 <code>FilterDataMapByTopic</code> ，可以注册多个 SQL 表达式。但是这里需要注意的是，这多个 SQL 表达式是按照组来做区分的，就是说一个组只能有一个 SQL 表达式，客户端如果在一个组中注册了多个不同的 SQL 表达式，那么后注册的会覆盖掉前注册的。因此，如果想要对同一个组使用不同的 SQL 语句来过滤自己想要的信息，这些不同的 SQL 语句必须划分到不同的组里面才可行。</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/sql_in_consumer_group.png" alt="组与 SQL 表达式的对应关系"></p>
+<h3 id="2-生成-bloomfilterdata">(2) 生成 BloomFilterData</h3>
+<p>布隆过滤器 (BloomFilter) 是一种空间效率很高的数据结构，其可以用来判断某个元素是否<strong>可能存在于某个集合</strong>中。当判断结果返回 true 的时候，表示<strong>可能存在</strong>，当返回 false 的时候，表示这个元素<strong>一定不存在</strong>于这个集合中。</p>
+<p>它的原理是当一个元素被加入集合时，通过 <code>k</code> 个 Hash 函数将这个元素映射成一个长度为 <code>m</code> 位数组（Bit array）中的 <code>k</code> 个点，把它们置为 1。检索时，我们只要看看这些点是不是都是 1 就（大约）知道集合中有没有它了：</p>
+<ul>
+<li>如果这些点有任何一个 0，则被检索元素一定不在。</li>
+<li>如果都是 1， 则被检索元素很可能在。</li>
+</ul>
+<p>如下是一个采用位数组长度为 <code>m=18</code> 以及哈希函数个数为 <code>k=3</code> 实现的布隆过滤器，”x,y,z” 每一个字母都需要经过 3 次哈希函数的计算，然后映射到 3 个不同的槽中。由于字母 “w” 在经过 3 次哈希函数计算后，其中一次产生的哈希值并未命中已有的槽，因此可以确定的是 “w” 肯定不存在于这个集合中。</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/1298px-Bloom_filter.svg.png" alt="布隆过滤器"></p>
+<p>在 RocketMQ 的实现中，其有四个最关键的值:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BloomFilter</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#75715e">// 最大错误率
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> f<span style="color:#f92672">;</span>
+    <span style="color:#75715e">// 可能插入 n 个元素
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> n<span style="color:#f92672">;</span>
+    <span style="color:#75715e">// k 个哈希函数
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> k<span style="color:#f92672">;</span>
+    <span style="color:#75715e">// 数组总共 m 位
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> m<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>RocketMQ 实现的布隆过滤器是根据错误率 <code>f</code> 和可能插入的元素数量 <code>n</code> 计算出来的 <code>k</code> 和 <code>m</code>，在默认配置情况下，即如下 n = 32 和 f = 20，计算出来需要 k = 3 个哈希函数和 m = 112 位的数组。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BrokerConfig</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#75715e">// Expect num of consumers will use filter.
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> expectConsumerNumUseFilter <span style="color:#f92672">=</span> 32<span style="color:#f92672">;</span>
+    <span style="color:#75715e">// Error rate of bloom filter, 1~100.
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> maxErrorRateOfBloomFilter <span style="color:#f92672">=</span> 20<span style="color:#f92672">;</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>我们这里大致了解以下布隆过滤器的一个基本想法即可，具体算法比较复杂，也不在讨论范畴以内。当客户端注册过滤信息的时候，其会根据 “<strong>组#话题</strong>” 这个字符串计算出相应的<strong>位映射数据</strong>，也即这个字符串经过布隆过滤器中的若干个哈希函数得到的<strong>几个不同的哈希值</strong>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumerFilterManager</span> <span style="color:#66d9ef">extends</span> ConfigManager <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">register</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">,</span> <span style="color:#75715e">/** 其它参数 **/</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        BloomFilterData bloomFilterData <span style="color:#f92672">=</span>
+            bloomFilter<span style="color:#f92672">.</span><span style="color:#a6e22e">generate</span><span style="color:#f92672">(</span>consumerGroup <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;#&#34;</span> <span style="color:#f92672">+</span> topic<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>ConsumerFilterManager 中的话题过滤信息数据，<strong>每隔 10 秒</strong>进行一次磁盘持久化:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BrokerController</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">initialize</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> CloneNotSupportedException <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduledExecutorService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduleAtFixedRate</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Runnable<span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#a6e22e">@Override</span>
+                <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    BrokerController<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">consumerFilterManager</span><span style="color:#f92672">.</span><span style="color:#a6e22e">persist</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+            <span style="color:#f92672">}</span><span style="color:#f92672">,</span> 1000 <span style="color:#f92672">*</span> 10<span style="color:#f92672">,</span> 1000 <span style="color:#f92672">*</span> 10<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">MILLISECONDS</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>   
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>磁盘文件 <code>consumerFilter.json</code> 中保存的数据信息如下示例:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/2018_03_28_16_47_45.png" alt="过滤器文件数据结构格式"></p>
+<p>上述大致流程图如下所示：</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/heartbeat_consumer_filter_flow.png" alt="布隆过滤器过滤流程"></p>
+<h3 id="3-编译-sql-语句">(3) 编译 SQL 语句</h3>
+<p><a href="https://javacc.org/">JavaCC (Java Compiler Compiler)</a> 是一个能生成语法和词法分析器的生成程序，它通过阅读一个自定义的语法标准文件 (通常以 <code>jj</code> 为后缀名) ，然后就能生成能够解析该语法的扫描器和解析器的代码。</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/new-javacc-logo.png" alt="JavaCC"></p>
+<p>通过执行 <code>javacc SelectorParser.jj</code> 命令以后，其会生成如下七个 Java 文件，用以解析 SQL 语法:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/2018_03_28_17_39_01.png" alt="JavaCC 生成的文件"></p>
+<p>过滤器工厂 <code>FilterFactory</code> 在初次使用的时候，会注册一个 <code>SqlFilter</code> 类，这个类能够将消费者端指定的 SQL 语句编译解析为 <code>Expression</code> 表达式对象，方便后续消息的快速匹配与过滤。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SqlFilter</span> <span style="color:#66d9ef">implements</span> FilterSpi <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> Expression <span style="color:#a6e22e">compile</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String expr<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> MQFilterException <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> SelectorParser<span style="color:#f92672">.</span><span style="color:#a6e22e">parse</span><span style="color:#f92672">(</span>expr<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="4-计算位映射">(4) 计算位映射</h3>
+<p>当 Broker 服务器接收到新的消息到来之后，一直在后台运行的 <code>ReputMessageService</code> 会负责将这条消息封装为一个 <code>DispatchRequest</code> 分发请求，这个请求会传递给提前构建好的<strong>分发请求链</strong>。在 <code>DefaultMessageStore</code> 的构造函数中，我们看到依次添加了<strong>构建消费队列</strong>和<strong>构建索引</strong>的分发请求服务:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMessageStore</span> <span style="color:#66d9ef">implements</span> MessageStore <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">DefaultMessageStore</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> MessageStoreConfig messageStoreConfig<span style="color:#f92672">,</span> <span style="color:#75715e">/** 其它参数 **/</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> IOException <span style="color:#f92672">{</span>
+
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">dispatcherList</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> LinkedList<span style="color:#f92672">&lt;</span><span style="color:#f92672">&gt;</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">dispatcherList</span><span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> CommitLogDispatcherBuildConsumeQueue<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">dispatcherList</span><span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> CommitLogDispatcherBuildIndex<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>而在 Broker 初始化的时候，我们看到其又添加了<strong>计算位映射</strong>的分发请求服务，并且将此分发服务放在链表的第一个位置:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BrokerController</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">initialize</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> CloneNotSupportedException <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">messageStore</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getDispatcherList</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span>
+            <span style="color:#f92672">.</span><span style="color:#a6e22e">addFirst</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> CommitLogDispatcherCalcBitMap<span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">brokerConfig</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">consumerFilterManager</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>由此，在每次收到新的消息之后，分发请求的需要经过如下<strong>三个分发请求服务</strong>进行处理:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/dispatch_request_flow.png" alt="消息分发服务"></p>
+<p>我们在这部分只介绍计算位映射的服务类实现。如下，<code>dispatch</code> 方法用来分发请求里面的消息，对于这每一条消息，首先根据话题取得所有的<strong>消费过滤数据</strong>。这每一条数据代表的就是一条 SQL 过滤语句信息。我们在这个地方，需要<strong>一一遍历</strong>这些过滤信息，从而完成计算位服务的需求:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLogDispatcherCalcBitMap</span> <span style="color:#66d9ef">implements</span> CommitLogDispatcher <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">dispatch</span><span style="color:#f92672">(</span>DispatchRequest request<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        Collection<span style="color:#f92672">&lt;</span>ConsumerFilterData<span style="color:#f92672">&gt;</span> filterDatas <span style="color:#f92672">=</span> consumerFilterManager<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">getTopic</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        Iterator<span style="color:#f92672">&lt;</span>ConsumerFilterData<span style="color:#f92672">&gt;</span> iterator <span style="color:#f92672">=</span> filterDatas<span style="color:#f92672">.</span><span style="color:#a6e22e">iterator</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        
+        <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>iterator<span style="color:#f92672">.</span><span style="color:#a6e22e">hasNext</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            ConsumerFilterData filterData <span style="color:#f92672">=</span> iterator<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>在拿到 <code>ConsumerFilterData</code> 信息之后，其会根据这条信息内的 SQL 语句<strong>编译后的表达式</strong>来对这条消息进行检查匹配 (evaluate)，看这条消息是否满足 SQL 语句所设置的条件。如果满足，那么会将先前在客户端注册阶段计算好的 <code>BloomFilterData</code> 中的<strong>映射位</strong>信息设置到 <code>filterBitMap</code> 中，即将相应的位数组 <code>BitsArray</code> 中的<strong>相应位</strong>设置为 1 。在验证完所有的 SQL 语句之后，会将这些所有的字节数组放置到 <code>request</code> 请求之中，以便交由下一个请求分发服务进行使用:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">dispatch</span><span style="color:#f92672">(</span>DispatchRequest request<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    BitsArray filterBitMap <span style="color:#f92672">=</span> BitsArray<span style="color:#f92672">.</span><span style="color:#a6e22e">create</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">consumerFilterManager</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBloomFilter</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getM</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>iterator<span style="color:#f92672">.</span><span style="color:#a6e22e">hasNext</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        ConsumerFilterData filterData <span style="color:#f92672">=</span> iterator<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            
+        MessageEvaluationContext context <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> MessageEvaluationContext<span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">getPropertiesMap</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        Object ret <span style="color:#f92672">=</span> filterData<span style="color:#f92672">.</span><span style="color:#a6e22e">getCompiledExpression</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">evaluate</span><span style="color:#f92672">(</span>context<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+        <span style="color:#75715e">// eval true
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ret <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> ret <span style="color:#66d9ef">instanceof</span> Boolean <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> <span style="color:#f92672">(</span>Boolean<span style="color:#f92672">)</span> ret<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            consumerFilterManager
+                <span style="color:#f92672">.</span><span style="color:#a6e22e">getBloomFilter</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span>
+                <span style="color:#f92672">.</span><span style="color:#a6e22e">hashTo</span><span style="color:#f92672">(</span>filterData<span style="color:#f92672">.</span><span style="color:#a6e22e">getBloomFilterData</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">,</span>
+                        filterBitMap<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+    request<span style="color:#f92672">.</span><span style="color:#a6e22e">setBitMap</span><span style="color:#f92672">(</span>filterBitMap<span style="color:#f92672">.</span><span style="color:#a6e22e">bytes</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="5-存储位映射">(5) 存储位映射</h3>
+<p><code>MessageStore</code> 在开启<strong>扩展消费队列</strong>的配置之后，每一个消费队列在创建的时候，都会额外创建一个扩展消费队列。每一个扩展消费队列文件的大小默认为 48MB:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeQueue</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">ConsumeQueue</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">,</span> <span style="color:#75715e">/** 其它参数 **/</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>defaultMessageStore<span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageStoreConfig</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">isEnableConsumeQueueExt</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">consumeQueueExt</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ConsumeQueueExt<span style="color:#f92672">(</span>topic<span style="color:#f92672">,</span> <span style="color:#75715e">/** 其它参数 **/</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>在计算位映射一节中，计算好位字节数组之后，我们这里需要通过第二个分发请求服务 <code>CommitLogDispatcherBuildConsumeQueue</code> 来存储这些字节信息。通过如下代码，我们知道它将请求中的<strong>位映射信息</strong>、<strong>消息存储时间</strong>、<strong>标签码</strong>这三条信息封装为 <code>ConsumeQueueExt.CqExtUnit</code> ，然后放入到扩展消费队列文件中。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeQueue</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">putMessagePositionInfoWrapper</span><span style="color:#f92672">(</span>DispatchRequest request<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+        <span style="color:#66d9ef">long</span> tagsCode <span style="color:#f92672">=</span> request<span style="color:#f92672">.</span><span style="color:#a6e22e">getTagsCode</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>isExtWriteEnable<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            ConsumeQueueExt<span style="color:#f92672">.</span><span style="color:#a6e22e">CqExtUnit</span> cqExtUnit <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ConsumeQueueExt<span style="color:#f92672">.</span><span style="color:#a6e22e">CqExtUnit</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            cqExtUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">setFilterBitMap</span><span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">getBitMap</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            cqExtUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">setMsgStoreTime</span><span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">getStoreTimestamp</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            cqExtUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">setTagsCode</span><span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">getTagsCode</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+            <span style="color:#66d9ef">long</span> extAddr <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">consumeQueueExt</span><span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>cqExtUnit<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>isExtAddr<span style="color:#f92672">(</span>extAddr<span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                tagsCode <span style="color:#f92672">=</span> extAddr<span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>我们注意到在上述代码中，<code>put</code> 函数返回的是一个 long 类型的<strong>扩展地址</strong>，当这个数值满足 <code>isExtAddr</code> 要求后，其会将当前的标签码设置为刚才返回的扩展地址。那么这是为什么呢?</p>
+<p>我们首先来看 <code>ConsumeQueueExt</code> 文件在存放数据成功后是如何返回信息的:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeQueueExt</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> MAX_ADDR <span style="color:#f92672">=</span> Integer<span style="color:#f92672">.</span><span style="color:#a6e22e">MIN_VALUE</span> <span style="color:#f92672">-</span> 1L<span style="color:#f92672">;</span>
+    
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">put</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> CqExtUnit cqExtUnit<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>mappedFile<span style="color:#f92672">.</span><span style="color:#a6e22e">appendMessage</span><span style="color:#f92672">(</span>cqExtUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">write</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">tempContainer</span><span style="color:#f92672">)</span><span style="color:#f92672">,</span> 0<span style="color:#f92672">,</span> size<span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> decorate<span style="color:#f92672">(</span>wrotePosition <span style="color:#f92672">+</span> mappedFile<span style="color:#f92672">.</span><span style="color:#a6e22e">getFileFromOffset</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">return</span> 1<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">decorate</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> offset<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#f92672">!</span>isExtAddr<span style="color:#f92672">(</span>offset<span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> offset <span style="color:#f92672">+</span> Long<span style="color:#f92672">.</span><span style="color:#a6e22e">MIN_VALUE</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+        <span style="color:#66d9ef">return</span> offset<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isExtAddr</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> address<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> address <span style="color:#f92672">&lt;</span><span style="color:#f92672">=</span> MAX_ADDR<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>MAX_ADDR</code> 是一个很小很小的值，为 <code>-2147483649</code>， 即写入位置如果不小于这个值，那么我们就认定为它不是扩展地址。需要将修正后的 <strong>写入偏移量 + <code>Long.MIN_VALUE</code></strong> 确定为扩展地址。当读取信息的时候，其先读取 <code>ConsumeQueue</code> 文件中的最后的 Hash 标签码值，如果其通过 <code>isExtAddr()</code> 函数返回的是 true，那么我们就可以使用这个地址，再通过一个叫做 <code>unDecorate()</code> 函数将其修正为正确的 <code>ConsumeQueueExt</code> 文件的写入地址，从而接着读取想要的信息:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">unDecorate</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> address<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>isExtAddr<span style="color:#f92672">(</span>address<span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> address <span style="color:#f92672">-</span> Long<span style="color:#f92672">.</span><span style="color:#a6e22e">MIN_VALUE</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> address<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>这个地方，我们发现 <code>ConsumeQueue</code> 中的最后一个 long 型数值，可能存储的是标签 Hash 码，也可能存储的是扩展消费队列的写入地址，所以需要通过 <code>isExtAddr()</code> 来分情况判断。</p>
+<p>下图为 <code>ConsumeQueue</code> 文件和 <code>ConsumeQueueExt</code> 文件中存取信息的不同:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/ext_addr_vs_tags_code.png" alt="扩展消息存取方式"></p>
+<h3 id="6-消息过滤">(6) 消息过滤</h3>
+<p>在上小节我们提到了有关<strong>扩展消费队列地址</strong>和<strong>标签 Hash 码</strong>存储的不同，所以当在取消息的时候，先得从消费队列文件中取出 <code>tagsCode</code>，然后检查是否是扩展消费队列地址，如果是，那么就需要从扩展消费队列文件中读取正确的标签 Hash 码，如下代码所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMessageStore</span> <span style="color:#66d9ef">implements</span> MessageStore <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> GetMessageResult <span style="color:#a6e22e">getMessage</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String group<span style="color:#f92672">,</span> <span style="color:#75715e">/** 其它参数 **/</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        ConsumeQueueExt<span style="color:#f92672">.</span><span style="color:#a6e22e">CqExtUnit</span> cqExtUnit <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ConsumeQueueExt<span style="color:#f92672">.</span><span style="color:#a6e22e">CqExtUnit</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> bufferConsumeQueue<span style="color:#f92672">.</span><span style="color:#a6e22e">getSize</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> i <span style="color:#f92672">&lt;</span> maxFilterMessageCount<span style="color:#f92672">;</span> i <span style="color:#f92672">+</span><span style="color:#f92672">=</span> ConsumeQueue<span style="color:#f92672">.</span><span style="color:#a6e22e">CQ_STORE_UNIT_SIZE</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">long</span> tagsCode <span style="color:#f92672">=</span> bufferConsumeQueue<span style="color:#f92672">.</span><span style="color:#a6e22e">getByteBuffer</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getLong</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+            <span style="color:#66d9ef">boolean</span> extRet <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">,</span> isTagsCodeLegal <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>consumeQueue<span style="color:#f92672">.</span><span style="color:#a6e22e">isExtAddr</span><span style="color:#f92672">(</span>tagsCode<span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                extRet <span style="color:#f92672">=</span> consumeQueue<span style="color:#f92672">.</span><span style="color:#a6e22e">getExt</span><span style="color:#f92672">(</span>tagsCode<span style="color:#f92672">,</span> cqExtUnit<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>extRet<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    tagsCode <span style="color:#f92672">=</span> cqExtUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">getTagsCode</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+                    isTagsCodeLegal <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+            <span style="color:#f92672">}</span>
+
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当获取到这条消息在扩展消费队列文件中存取的信息后，就会和标签匹配一节所讲述的一致，会进行两道过滤机制。我们先来看第一道 <code>ConsumeQueue</code> 文件匹配:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ExpressionMessageFilter</span> <span style="color:#66d9ef">implements</span> MessageFilter <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isMatchedByConsumeQueue</span><span style="color:#f92672">(</span>Long tagsCode<span style="color:#f92672">,</span> ConsumeQueueExt<span style="color:#f92672">.</span><span style="color:#a6e22e">CqExtUnit</span> cqExtUnit<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">byte</span><span style="color:#f92672">[</span><span style="color:#f92672">]</span> filterBitMap <span style="color:#f92672">=</span> cqExtUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">getFilterBitMap</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        BloomFilter bloomFilter <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">consumerFilterManager</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBloomFilter</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        BitsArray bitsArray <span style="color:#f92672">=</span> BitsArray<span style="color:#f92672">.</span><span style="color:#a6e22e">create</span><span style="color:#f92672">(</span>filterBitMap<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">return</span> bloomFilter<span style="color:#f92672">.</span><span style="color:#a6e22e">isHit</span><span style="color:#f92672">(</span>consumerFilterData<span style="color:#f92672">.</span><span style="color:#a6e22e">getBloomFilterData</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">,</span> bitsArray<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>ExpressionMessageFilter</code> 依据 <code>CqExtUnit</code> 中存储的位数组重新创建了比特数组 <code>bitsArray</code>，这个数组信息中已经存储了不同 SQL 表达式是否匹配这条消息的结果。<code>isHit()</code> 函数会一一检查 <code>BloomFilterData</code> 中存储的位信息是否映射在 <code>BitsArray</code> 中。只要有任何一位没有映射，那么就可以立刻判断出这条消息肯定不符合 SQL 语句的条件。</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/bloomfilter_ishit.png" alt="命中布隆过滤器"></p>
+<p>因为布隆过滤器有一定的错误率，其只能精确的判断消息是否一定不在集合中，返回成功的只能确定为消息可能在集合中。因此通过布隆过滤器检查后还需要经过第二道过滤机制，即 SQL 编译后的表达式亲自验证是否匹配:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ExpressionMessageFilter</span> <span style="color:#66d9ef">implements</span> MessageFilter <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isMatchedByCommitLog</span><span style="color:#f92672">(</span>ByteBuffer msgBuffer<span style="color:#f92672">,</span> Map<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> String<span style="color:#f92672">&gt;</span> properties<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        MessageEvaluationContext context <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> MessageEvaluationContext<span style="color:#f92672">(</span>tempProperties<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        Object ret <span style="color:#f92672">=</span> realFilterData<span style="color:#f92672">.</span><span style="color:#a6e22e">getCompiledExpression</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">evaluate</span><span style="color:#f92672">(</span>context<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ret <span style="color:#f92672">=</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">|</span><span style="color:#f92672">|</span> <span style="color:#f92672">!</span><span style="color:#f92672">(</span>ret <span style="color:#66d9ef">instanceof</span> Boolean<span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">return</span> <span style="color:#f92672">(</span>Boolean<span style="color:#f92672">)</span> ret<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>通过在验证 SQL 表达式是否满足之前，提前验证是否命中布隆过滤器，可以有效的避免许多不必要的验证:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/sql_filter.png" alt="SQL 过滤"></p>
+<h2 id="四自定义匹配">四、自定义匹配</h2>
+<p>消息的自定义匹配需要开启过滤服务器、上传过滤类、过滤服务器委托过滤消息等步骤，下面我们一一进行说明。</p>
+<h3 id="1-过滤服务器">(1) 过滤服务器</h3>
+<p>在启动 Broker 服务器的时候，如果指定了下面一行设置:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">brokerConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setFilterServerNums</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> filterServerNums<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><p>即将<strong>过滤服务器</strong>的数量设定为大于 0，那么 Broker 服务器在启动的时候，将会启动 <code>filterServerNums</code> 个<strong>过滤服务器</strong>。过滤服务器是通过调用 <code>shell</code> 命令的方式，启用<strong>独立进程</strong>进行启动的。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FilterServerManager</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">createFilterServer</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">int</span> more <span style="color:#f92672">=</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">brokerController</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBrokerConfig</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getFilterServerNums</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">-</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">filterServerTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        String cmd <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">buildStartCommand</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> more<span style="color:#f92672">;</span> i<span style="color:#f92672">+</span><span style="color:#f92672">+</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            FilterServerUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">callShell</span><span style="color:#f92672">(</span>cmd<span style="color:#f92672">,</span> log<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>过滤服务器在初始化的时候，会启动<strong>定时器</strong>每隔 10 秒注册一次到 Broker 服务器:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FiltersrvController</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">initialize</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduledExecutorService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduleAtFixedRate</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Runnable<span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#a6e22e">@Override</span>
+                <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    FiltersrvController<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">registerFilterServerToBroker</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+            <span style="color:#f92672">}</span><span style="color:#f92672">,</span> 3<span style="color:#f92672">,</span> 10<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">SECONDS</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>Broker 服务器在收到来自过滤服务器的注册信息之后，会把过滤服务器的地址信息、注册时间等放到<strong>过滤服务器</strong>表中:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FilterServerManager</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> ConcurrentMap<span style="color:#f92672">&lt;</span>Channel<span style="color:#f92672">,</span> FilterServerInfo<span style="color:#f92672">&gt;</span> filterServerTable <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">new</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>Channel<span style="color:#f92672">,</span> FilterServerInfo<span style="color:#f92672">&gt;</span><span style="color:#f92672">(</span>16<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>同样，Broker 服务器也需要定时将<strong>过滤服务器地址信息</strong>同步给所有 <strong>Namesrv 命名服务器</strong>，上述整个流程如下图所示:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/filtersrv_startup_and_register.png" alt="过滤服务器启动和注册流程"></p>
+<h3 id="2-过滤类">(2) 过滤类</h3>
+<p>当消费者通过使用自定义匹配过滤消息的时候，这个时候会将存储订阅信息的 <code>SubscriptionData</code> 中的 <code>filterClassSource</code> 设置为 <code>true</code>，以表征这个客户端需要过滤类来进行消息的匹配和过滤。</p>
+<p>消费者客户端在启动过程中，还会<strong>定时</strong>地上传本地的<strong>过滤类源码</strong>到过滤服务器:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MQClientInstance</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">startScheduledTask</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduledExecutorService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduleAtFixedRate</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Runnable<span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#a6e22e">@Override</span>
+                <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    MQClientInstance<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">sendHeartbeatToAllBrokerWithLock</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+            <span style="color:#f92672">}</span><span style="color:#f92672">,</span> 1000<span style="color:#f92672">,</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">clientConfig</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getHeartbeatBrokerInterval</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">MILLISECONDS</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">sendHeartbeatToAllBrokerWithLock</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">uploadFilterClassSource</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>其中过滤服务器的地址列表是在从 Namesrv 服务器获取话题路由信息的时候取得的，话题路由信息不光存储了消息队列数据，还存储了各个 Broker 所关联的过滤服务器列表:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TopicRouteData</span> <span style="color:#66d9ef">extends</span> RemotingSerializable <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> HashMap<span style="color:#f92672">&lt;</span>String<span style="color:#75715e">/* brokerAddr */</span><span style="color:#f92672">,</span> List<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;</span><span style="color:#75715e">/* Filter Server */</span><span style="color:#f92672">&gt;</span> filterServerTable<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当过滤服务器接收到来自消费者客户端的源码之后，其会首先首先生成一个键为 <strong>话题@组</strong> 的字符串来查阅过滤类信息是否已经存在于内存里面的 <code>filterClassTable</code> 表中且文件通过 CRC 校验。如果没有存在或校验失败，那么就需要先编译并加载这个类:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DynaCode</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">compileAndLoadClass</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        String<span style="color:#f92672">[</span><span style="color:#f92672">]</span> sourceFiles <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">uploadSrcFile</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">compile</span><span style="color:#f92672">(</span>sourceFiles<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">loadClass</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">loadClass</span><span style="color:#f92672">.</span><span style="color:#a6e22e">keySet</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>默认情况下，编译后的类存放于 <code>$HOME/rocketmq_filter_class/$PID</code> 目录下，类的源文件和类的字节码文件名也会相应的加上当前时间戳来确定:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/2018_04_02_16_57_30.png" alt="过滤类存放位置"></p>
+<p>上述流程图如下:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/upload_filter_class_to_filtersrv.png" alt="上传过滤类"></p>
+<h3 id="3-过滤消息">(3) 过滤消息</h3>
+<p>当消费者客户端启用自定义匹配过滤消息后，发往服务器的数据中也包含了<strong>过滤标志位</strong>，这样每次拉取消息的服务器也由原来的 Broker 服务器变更为 <code>Filtersrv</code> 过滤服务器，其中过滤服务器地址的选择是随机确定的:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PullAPIWrapper</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> PullResult <span style="color:#a6e22e">pullKernelImpl</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> MessageQueue mq<span style="color:#f92672">,</span> <span style="color:#75715e">/** 其它参数 **/</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>findBrokerResult <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>PullSysFlag<span style="color:#f92672">.</span><span style="color:#a6e22e">hasClassFilterFlag</span><span style="color:#f92672">(</span>sysFlagInner<span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#75715e">// 从过滤服务器拉取消息
+</span><span style="color:#75715e"></span>                brokerAddr <span style="color:#f92672">=</span> computPullFromWhichFilterServer<span style="color:#f92672">(</span>mq<span style="color:#f92672">.</span><span style="color:#a6e22e">getTopic</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">,</span> brokerAddr<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>过滤服务器在启动的时候，内部还启动了一个 <code>PullConsumer</code> 客户端，用以从 Broker 服务器拉取消息:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FiltersrvController</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> DefaultMQPullConsumer defaultMQPullConsumer <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">new</span> DefaultMQPullConsumer<span style="color:#f92672">(</span>MixAll<span style="color:#f92672">.</span><span style="color:#a6e22e">FILTERSRV_CONSUMER_GROUP</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">start</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMQPullConsumer</span><span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当过滤服务器收到真正的消费者发来的消费消息的请求之后，其会委托内部的 <code>PullConsumer</code> 使用包含在请求体内的偏移量去 Broker 服务器拉取所有消息，此时这些消息是完全没有过滤的：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultRequestProcessor</span> <span style="color:#66d9ef">implements</span> NettyRequestProcessor <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> RemotingCommand <span style="color:#a6e22e">pullMessageForward</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> ChannelHandlerContext ctx<span style="color:#f92672">,</span>
+                                               <span style="color:#66d9ef">final</span> RemotingCommand request<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+
+        MessageQueue mq <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> MessageQueue<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        
+        mq<span style="color:#f92672">.</span><span style="color:#a6e22e">setTopic</span><span style="color:#f92672">(</span>requestHeader<span style="color:#f92672">.</span><span style="color:#a6e22e">getTopic</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        mq<span style="color:#f92672">.</span><span style="color:#a6e22e">setQueueId</span><span style="color:#f92672">(</span>requestHeader<span style="color:#f92672">.</span><span style="color:#a6e22e">getQueueId</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        mq<span style="color:#f92672">.</span><span style="color:#a6e22e">setBrokerName</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">filtersrvController</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBrokerName</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+        <span style="color:#75715e">// 设置偏移量和最大数量
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">long</span> offset <span style="color:#f92672">=</span> requestHeader<span style="color:#f92672">.</span><span style="color:#a6e22e">getQueueOffset</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">int</span> maxNums <span style="color:#f92672">=</span> requestHeader<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxMsgNums</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+        <span style="color:#75715e">// 委托内部消费者从 Broker 服务器拉取消息
+</span><span style="color:#75715e"></span>        pullConsumer<span style="color:#f92672">.</span><span style="color:#a6e22e">pullBlockIfNotFound</span><span style="color:#f92672">(</span>mq<span style="color:#f92672">,</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">,</span> offset<span style="color:#f92672">,</span> maxNums<span style="color:#f92672">,</span> pullCallback<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>过滤服务器从 Broker 服务器获取到完整的消息列表之后，会遍历消息列表，然后使用过滤类一一进行匹配，最终将匹配成功的消息列表返回给客户端:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultRequestProcessor</span> <span style="color:#66d9ef">implements</span> NettyRequestProcessor <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> RemotingCommand <span style="color:#a6e22e">pullMessageForward</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> ChannelHandlerContext ctx<span style="color:#f92672">,</span>
+                                               <span style="color:#66d9ef">final</span> RemotingCommand request<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">final</span> PullCallback pullCallback <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> PullCallback<span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+                <span style="color:#a6e22e">@Override</span>
+                <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">onSuccess</span><span style="color:#f92672">(</span>PullResult pullResult<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    <span style="color:#66d9ef">switch</span> <span style="color:#f92672">(</span>pullResult<span style="color:#f92672">.</span><span style="color:#a6e22e">getPullStatus</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    <span style="color:#66d9ef">case</span> FOUND<span style="color:#f92672">:</span>
+                        List<span style="color:#f92672">&lt;</span>MessageExt<span style="color:#f92672">&gt;</span> msgListOK <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ArrayList<span style="color:#f92672">&lt;</span>MessageExt<span style="color:#f92672">&gt;</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>MessageExt msg <span style="color:#f92672">:</span> pullResult<span style="color:#f92672">.</span><span style="color:#a6e22e">getMsgFoundList</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                            <span style="color:#75715e">// 使用过滤类过滤消息
+</span><span style="color:#75715e"></span>                            <span style="color:#66d9ef">boolean</span> match <span style="color:#f92672">=</span> findFilterClass<span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageFilter</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">match</span><span style="color:#f92672">(</span>msg<span style="color:#f92672">,</span> filterContext<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>match<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                                msgListOK<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>msg<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                            <span style="color:#f92672">}</span>
+                        <span style="color:#f92672">}</span>
+                        <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+                        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>                    <span style="color:#f92672">}</span>
+
+                <span style="color:#f92672">}</span>
+
+            <span style="color:#f92672">}</span><span style="color:#f92672">;</span>
+
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>上述流程如下图所示:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-message-filter-flow/filter_message_by_filtersrv.png" alt="过滤流程图"></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#一消息过滤类型">一、消息过滤类型</a>
+      <ul>
+        <li><a href="#1-标签匹配">(1) 标签匹配</a></li>
+        <li><a href="#2-sql-匹配">(2) SQL 匹配</a></li>
+        <li><a href="#3-自定义匹配">(3) 自定义匹配</a></li>
+      </ul>
+    </li>
+    <li><a href="#二标签匹配">二、标签匹配</a></li>
+    <li><a href="#三sql-匹配">三、SQL 匹配</a>
+      <ul>
+        <li><a href="#1-注册过滤信息">(1) 注册过滤信息</a></li>
+        <li><a href="#2-生成-bloomfilterdata">(2) 生成 BloomFilterData</a></li>
+        <li><a href="#3-编译-sql-语句">(3) 编译 SQL 语句</a></li>
+        <li><a href="#4-计算位映射">(4) 计算位映射</a></li>
+        <li><a href="#5-存储位映射">(5) 存储位映射</a></li>
+        <li><a href="#6-消息过滤">(6) 消息过滤</a></li>
+      </ul>
+    </li>
+    <li><a href="#四自定义匹配">四、自定义匹配</a>
+      <ul>
+        <li><a href="#1-过滤服务器">(1) 过滤服务器</a></li>
+        <li><a href="#2-过滤类">(2) 过滤类</a></li>
+        <li><a href="#3-过滤消息">(3) 过滤消息</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

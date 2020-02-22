@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="RocketMQ 定时消息和重试消息"><meta property="og:title" content="RocketMQ 定时消息和重试消息" />
+<meta property="og:description" content="RocketMQ 定时消息和重试消息 讲述 RocketMQ 定时消息和重试消息
+一、定时消息概述 RocketMQ 支持 Producer 端发送定时消息，即该消息被发送之后，到一段时间之后才能被 Consumer 消费者端消费。但是当前开源版本的 RocketMQ 所支持的定时时间是有限的、不同级别的精度的时间，并不是任意无限制的定时时间。因此在每条消息上设置定时时间的 API 叫做 setDelayTimeLevel，而非 setDelayTime 这样的命名:
+Message msg = new Message(&#34;TopicTest&#34; /* Topic */, &#34;TagA&#34; /* Tag */, (&#34;Hello RocketMQ &#34; &#43; i).getBytes(RemotingHelper.DEFAULT_CHARSET) /* Message body */); msg.setDelayTimeLevel(i &#43; 1); 默认 Broker 服务器端有 18 个定时级别:
+public class MessageStoreConfig { private String messageDelayLevel = &#34;1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h&#34;; } 这 18 个定时级别在服务器端启动的时候，会被解析并放置到表 delayLevelTable 中。解析的过程就是上述字符串按照空格拆分开，然后根据时间单位的不同再进一步进行计算，得到最终的毫秒时间。级别就是根据这些毫秒时间的顺序而确定的，例如上述 1s 延迟就是级别 1， 5s 延迟就是级别 2，以此类推:" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-timing-message-and-retry-message/" />
+
+<title>RocketMQ 定时消息和重试消息 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
+
+
+<script defer src="/en.search.min.fdfbc51b980f4dfc9bfaa262b12f657aef29a6a5f7c07ba95b84e7b5881f0749.js" integrity="sha256-/fvFG5gPTfyb&#43;qJisS9leu8ppqX3wHupW4TntYgfB0k="></script>
+
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-send-message-flow/" >
+      RocketMQ 消息发送流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-store-flow/" >
+      RocketMQ 消息存储流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-receive-flow/" >
+      RocketMQ 消息接受流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-filter-flow/" >
+      RocketMQ 消息过滤流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-indexing-flow/" >
+      RocketMQ 消息索引流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-timing-message-and-retry-message/"  class="active">
+      RocketMQ 定时消息和重试消息
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-master-slave-sync/" >
+      RocketMQ 主备同步
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>RocketMQ 定时消息和重试消息</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#一定时消息概述">一、定时消息概述</a></li>
+    <li><a href="#二定时消息预存储">二、定时消息预存储</a></li>
+    <li><a href="#三定时消息再存储">三、定时消息再存储</a></li>
+    <li><a href="#四消息重试概述">四、消息重试概述</a></li>
+    <li><a href="#五producer-消息发送重试">五、Producer 消息发送重试</a></li>
+    <li><a href="#六consumer-消息接受重试">六、Consumer 消息接受重试</a>
+      <ul>
+        <li><a href="#1-订阅重试话题">(1) 订阅重试话题</a></li>
+        <li><a href="#2-失败消息发往重试话题">(2) 失败消息发往重试话题</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="rocketmq-定时消息和重试消息">RocketMQ 定时消息和重试消息</h1>
+<p>讲述 RocketMQ 定时消息和重试消息</p>
+<h2 id="一定时消息概述">一、定时消息概述</h2>
+<p>RocketMQ 支持 Producer 端发送定时消息，即该消息被发送之后，到一段时间之后才能被 Consumer 消费者端消费。但是当前开源版本的 RocketMQ 所支持的定时时间是<strong>有限的、不同级别的精度</strong>的时间，并不是任意无限制的定时时间。因此在每条消息上设置定时时间的 API 叫做 <code>setDelayTimeLevel</code>，而非 <code>setDelayTime</code> 这样的命名:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Message msg <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">new</span> Message<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;TopicTest&#34;</span> <span style="color:#75715e">/* Topic */</span><span style="color:#f92672">,</span>
+                <span style="color:#e6db74">&#34;TagA&#34;</span> <span style="color:#75715e">/* Tag */</span><span style="color:#f92672">,</span>
+                <span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Hello RocketMQ &#34;</span> <span style="color:#f92672">+</span> i<span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBytes</span><span style="color:#f92672">(</span>RemotingHelper<span style="color:#f92672">.</span><span style="color:#a6e22e">DEFAULT_CHARSET</span><span style="color:#f92672">)</span> <span style="color:#75715e">/* Message body */</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+msg<span style="color:#f92672">.</span><span style="color:#a6e22e">setDelayTimeLevel</span><span style="color:#f92672">(</span>i <span style="color:#f92672">+</span> 1<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><p>默认 Broker 服务器端有 18 个定时级别:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageStoreConfig</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> String messageDelayLevel <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h&#34;</span><span style="color:#f92672">;</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>这 18 个定时级别在服务器端启动的时候，会被解析并放置到表 <code>delayLevelTable</code> 中。解析的过程就是上述字符串按照空格拆分开，然后根据时间单位的不同再进一步进行计算，得到最终的毫秒时间。级别就是根据这些毫秒时间的顺序而确定的，例如上述 1s 延迟就是级别 1， 5s 延迟就是级别 2，以此类推:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ScheduleMessageService</span> <span style="color:#66d9ef">extends</span> ConfigManager <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">parseDelayLevel</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> levelArray<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span> i<span style="color:#f92672">+</span><span style="color:#f92672">+</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>                
+            <span style="color:#66d9ef">int</span> level <span style="color:#f92672">=</span> i <span style="color:#f92672">+</span> 1<span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">long</span> delayTimeMillis <span style="color:#f92672">=</span> tu <span style="color:#f92672">*</span> num<span style="color:#f92672">;</span>
+
+            <span style="color:#75715e">// 级别:延迟时间
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">delayLevelTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>level<span style="color:#f92672">,</span> delayTimeMillis<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="二定时消息预存储">二、定时消息预存储</h2>
+<p>客户端在为某条消息设置上定时级别的时候，实际上级别这个字段会被作为<strong>附属属性</strong>放到消息中:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Message</span> <span style="color:#66d9ef">implements</span> Serializable <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setDelayTimeLevel</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> level<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">putProperty</span><span style="color:#f92672">(</span>MessageConst<span style="color:#f92672">.</span><span style="color:#a6e22e">PROPERTY_DELAY_TIME_LEVEL</span><span style="color:#f92672">,</span> String<span style="color:#f92672">.</span><span style="color:#a6e22e">valueOf</span><span style="color:#f92672">(</span>level<span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>我们<a href="/docs/rocketmq/rocketmq-message-store-flow/">先前的文章</a>提到过，发送到 Broker 服务器的消息会被存储到 <code>CommitLog</code> 消息文件中。那么在此处即使是定时消息也不例外，将定时消息存储下来是为了<strong>保证消息最大程度地不丢失</strong>。然而毕竟和普通消息不同，在遇到定时消息后，<code>CommitLog</code> 会将这条消息的话题和队列 ID <strong>替换</strong>成专门用于定时的话题和相应的级别对应的队列 ID。真实的话题和队列 ID 会作为属性放置到这条消息中。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> PutMessageResult <span style="color:#a6e22e">putMessage</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> MessageExtBrokerInner msg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+        <span style="color:#75715e">// Delay Delivery
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>msg<span style="color:#f92672">.</span><span style="color:#a6e22e">getDelayTimeLevel</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+            topic <span style="color:#f92672">=</span> ScheduleMessageService<span style="color:#f92672">.</span><span style="color:#a6e22e">SCHEDULE_TOPIC</span><span style="color:#f92672">;</span>
+            queueId <span style="color:#f92672">=</span> ScheduleMessageService<span style="color:#f92672">.</span><span style="color:#a6e22e">delayLevel2QueueId</span><span style="color:#f92672">(</span>msg<span style="color:#f92672">.</span><span style="color:#a6e22e">getDelayTimeLevel</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+            <span style="color:#75715e">// Backup real topic, queueId
+</span><span style="color:#75715e"></span>            MessageAccessor<span style="color:#f92672">.</span><span style="color:#a6e22e">putProperty</span><span style="color:#f92672">(</span>msg<span style="color:#f92672">,</span> MessageConst<span style="color:#f92672">.</span><span style="color:#a6e22e">PROPERTY_REAL_TOPIC</span><span style="color:#f92672">,</span> msg<span style="color:#f92672">.</span><span style="color:#a6e22e">getTopic</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            MessageAccessor<span style="color:#f92672">.</span><span style="color:#a6e22e">putProperty</span><span style="color:#f92672">(</span>msg<span style="color:#f92672">,</span> MessageConst<span style="color:#f92672">.</span><span style="color:#a6e22e">PROPERTY_REAL_QUEUE_ID</span><span style="color:#f92672">,</span> String<span style="color:#f92672">.</span><span style="color:#a6e22e">valueOf</span><span style="color:#f92672">(</span>msg<span style="color:#f92672">.</span><span style="color:#a6e22e">getQueueId</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            msg<span style="color:#f92672">.</span><span style="color:#a6e22e">setPropertiesString</span><span style="color:#f92672">(</span>MessageDecoder<span style="color:#f92672">.</span><span style="color:#a6e22e">messageProperties2String</span><span style="color:#f92672">(</span>msg<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperties</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+            <span style="color:#75715e">// 替换 Topic 和 QueueID
+</span><span style="color:#75715e"></span>            msg<span style="color:#f92672">.</span><span style="color:#a6e22e">setTopic</span><span style="color:#f92672">(</span>topic<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            msg<span style="color:#f92672">.</span><span style="color:#a6e22e">setQueueId</span><span style="color:#f92672">(</span>queueId<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+        
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>随后，这条消息会被存储在 <code>CommitLog</code> 消息文件中。而我们知道后台<strong>重放消息服务</strong> <code>ReputMessageService</code> 会一直监督 <code>CommitLog</code> 文件是否添加了新的消息。当有了新的消息后，重放消息服务会取出消息并封装为 <code>DispatchRequest</code> 请求，然后将其分发给不同的三个分发服务，<strong>建立消费队列文件服务</strong>就是这其中之一。而此处当取消息封装为 <code>DispatchRequest</code> 的时候，当遇到定时消息时，又多做了一些额外的事情。</p>
+<p>当遇见定时消息时，<code>CommitLog</code> <strong>计算 <code>tagsCode</code> 标签码与普通消息不同</strong>。对于定时消息，<code>tagsCode</code> 值设置的是这条消息的投递时间，即建立消费队列文件的时候，文件中的 <code>tagsCode</code> 存储的是这条消息未来在什么时候被投递:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> DispatchRequest <span style="color:#a6e22e">checkMessageAndReturnSize</span><span style="color:#f92672">(</span>java<span style="color:#f92672">.</span><span style="color:#a6e22e">nio</span><span style="color:#f92672">.</span><span style="color:#a6e22e">ByteBuffer</span> byteBuffer<span style="color:#f92672">,</span>
+                                                     <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> checkCRC<span style="color:#f92672">,</span>
+                                                     <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> readBody<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// Timing message processing
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">{</span>
+            String t <span style="color:#f92672">=</span> propertiesMap<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>MessageConst<span style="color:#f92672">.</span><span style="color:#a6e22e">PROPERTY_DELAY_TIME_LEVEL</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ScheduleMessageService<span style="color:#f92672">.</span><span style="color:#a6e22e">SCHEDULE_TOPIC</span><span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>topic<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> t <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">int</span> delayLevel <span style="color:#f92672">=</span> Integer<span style="color:#f92672">.</span><span style="color:#a6e22e">parseInt</span><span style="color:#f92672">(</span>t<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>delayLevel <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    tagsCode <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMessageStore</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getScheduleMessageService</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span>
+                        <span style="color:#f92672">.</span><span style="color:#a6e22e">computeDeliverTimestamp</span><span style="color:#f92672">(</span>delayLevel<span style="color:#f92672">,</span>storeTimestamp<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>如下是，发送了 10 条定时级别分别为 1-10 的消息以后，<code>$HOME/store/consumequeue</code> 文件下的<strong>消费队列文件</strong>的分布情况:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-timing-message-and-retry-message/2018_04_09_11_48_04.png" alt="消费队列的文件分布"></p>
+<p>不同的定时级别对应于不同的队列 ID，定时级别减 1 得到的就是队列 ID 的值。因此级别 1-10 对应的是 0-9 的队列 ID:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ScheduleMessageService</span> <span style="color:#66d9ef">extends</span> ConfigManager <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">delayLevel2QueueId</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> delayLevel<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> delayLevel <span style="color:#f92672">-</span> 1<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="三定时消息再存储">三、定时消息再存储</h2>
+<p>Broker 启动的时候，会开启一个<strong>调度消息服务</strong>，此服务会监控所有<strong>定时消息队列</strong>，每一个消息队列会创建一个专门的<strong>延时消息投递任务</strong>用以到达规定时间后投递此消息:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ScheduleMessageService</span> <span style="color:#66d9ef">extends</span> ConfigManager <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">start</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>Map<span style="color:#f92672">.</span><span style="color:#a6e22e">Entry</span><span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">,</span> Long<span style="color:#f92672">&gt;</span> entry <span style="color:#f92672">:</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">delayLevelTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">entrySet</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            Integer level <span style="color:#f92672">=</span> entry<span style="color:#f92672">.</span><span style="color:#a6e22e">getKey</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            Long timeDelay <span style="color:#f92672">=</span> entry<span style="color:#f92672">.</span><span style="color:#a6e22e">getValue</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            Long offset <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">offsetTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>level<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>timeDelay <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">timer</span><span style="color:#f92672">.</span><span style="color:#a6e22e">schedule</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> DeliverDelayedMessageTimerTask<span style="color:#f92672">(</span>level<span style="color:#f92672">,</span> offset<span style="color:#f92672">)</span><span style="color:#f92672">,</span> FIRST_DELAY_TIME<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>每个消息队里的消息投递任务，会检查自己跟踪的消息队列，并从此消息队列所对应的<strong>定时级别的偏移量</strong>中检查是否有新的定时消息到来。其中定时级别的偏移量是维护在内存中的偏移量表 <code>offsetTable</code> 中。每隔 10 秒钟，这个表会被持久化到磁盘上的 <code>delayOffset.json</code> 文件中一次:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ScheduleMessageService</span> <span style="color:#66d9ef">extends</span> ConfigManager <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> ConcurrentMap<span style="color:#f92672">&lt;</span>Integer <span style="color:#75715e">/* level */</span><span style="color:#f92672">,</span> Long<span style="color:#75715e">/* offset */</span><span style="color:#f92672">&gt;</span> offsetTable <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">new</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">,</span> Long<span style="color:#f92672">&gt;</span><span style="color:#f92672">(</span>32<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">start</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 每隔 10 秒钟持久化一次
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">timer</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduleAtFixedRate</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> TimerTask<span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#a6e22e">@Override</span>
+                <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    ScheduleMessageService<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">persist</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+            <span style="color:#f92672">}</span><span style="color:#f92672">,</span>
+            10000<span style="color:#f92672">,</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMessageStore</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageStoreConfig</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getFlushDelayOffsetInterval</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>delayOffset.json</code> 文件中存储的示例信息如下所示：</p>
+<p><img src="/images/docs/rocketmq/rocketmq-timing-message-and-retry-message/2018_04_09_17_49_36.png" alt="定时偏移量维护文件"></p>
+<p><code>DeliverDelayedMessageTimerTask</code> 任务会从消费任务队列文件中取出最新的定时消息的 <code>tagsCode</code> ，并计算出的当前是否已经到了这条消息投递的时间。如果到了，即 <code>countdown &lt; 0</code>，那么便会从 <code>CommitLog</code> 文件中取出消息，修正消息的话题和队列 ID 等信息，然后重新存储此条消息。如果还没有到，那么便会重新执行一个定时时间设置为 <code>countdown</code> 毫秒的定时任务。在完成之后，会更新当前的偏移量表，为下一次做准备:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DeliverDelayedMessageTimerTask</span> <span style="color:#66d9ef">extends</span> TimerTask <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">executeOnTimeup</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> bufferCQ<span style="color:#f92672">.</span><span style="color:#a6e22e">getSize</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span> i <span style="color:#f92672">+</span><span style="color:#f92672">=</span> ConsumeQueue<span style="color:#f92672">.</span><span style="color:#a6e22e">CQ_STORE_UNIT_SIZE</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// 是否到时间
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">long</span> countdown <span style="color:#f92672">=</span> deliverTimestamp <span style="color:#f92672">-</span> now<span style="color:#f92672">;</span>
+
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>countdown <span style="color:#f92672">&lt;</span><span style="color:#f92672">=</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#75715e">// 取出消息
+</span><span style="color:#75715e"></span>                MessageExt msgExt <span style="color:#f92672">=</span>
+                    ScheduleMessageService<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMessageStore</span><span style="color:#f92672">.</span><span style="color:#a6e22e">lookMessageByOffset</span><span style="color:#f92672">(</span>offsetPy<span style="color:#f92672">,</span> sizePy<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#75715e">// 修正消息，设置上正确的话题和队列 ID
+</span><span style="color:#75715e"></span>                MessageExtBrokerInner msgInner <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">messageTimeup</span><span style="color:#f92672">(</span>msgExt<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#75715e">// 重新存储消息
+</span><span style="color:#75715e"></span>                PutMessageResult putMessageResult <span style="color:#f92672">=</span>
+                    ScheduleMessageService<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMessageStore</span>
+                    <span style="color:#f92672">.</span><span style="color:#a6e22e">putMessage</span><span style="color:#f92672">(</span>msgInner<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+                <span style="color:#75715e">// countdown 后投递此消息
+</span><span style="color:#75715e"></span>                ScheduleMessageService<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span>
+                    <span style="color:#f92672">.</span><span style="color:#a6e22e">timer</span>
+                    <span style="color:#f92672">.</span><span style="color:#a6e22e">schedule</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> DeliverDelayedMessageTimerTask<span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">delayLevel</span><span style="color:#f92672">,</span> nextOffset<span style="color:#f92672">)</span><span style="color:#f92672">,</span> countdown<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#75715e">// 更新偏移量
+</span><span style="color:#75715e"></span>            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span> <span style="color:#75715e">// end of for
+</span><span style="color:#75715e"></span>
+        <span style="color:#75715e">// 更新偏移量
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="四消息重试概述">四、消息重试概述</h2>
+<p>消息重试分为<strong>消息发送重试</strong>和<strong>消息接受重试</strong>，消息发送重试是指消息从 Producer 端发送到 Broker 服务器的失败以后的重试情况，消息接受重试是指 Consumer 在消费消息的时候出现异常或者失败的重试情况。</p>
+<p>Producer 端通过配置如下这两个两个 API 可以分别配置在<strong>同步发送</strong>和<strong>异步发送</strong>消息失败的时候的重试次数:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">DefaultMQProducer producer <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">new</span> DefaultMQProducer<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;please_rename_unique_group_name&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+producer<span style="color:#f92672">.</span><span style="color:#a6e22e">setRetryTimesWhenSendAsyncFailed</span><span style="color:#f92672">(</span>3<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+producer<span style="color:#f92672">.</span><span style="color:#a6e22e">setRetryTimesWhenSendFailed</span><span style="color:#f92672">(</span>3<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><p>Consumer 端在消费的时候，如果接收消息的回调函数出现了以下几种情况:</p>
+<ul>
+<li>抛出异常</li>
+<li>返回 <code>NULL</code> 状态</li>
+<li>返回 <code>RECONSUME_LATER</code> 状态</li>
+<li>超时 15 分钟没有响应</li>
+</ul>
+<p>那么 Consumer 便会将消费失败的消息重新调度直到成功消费:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">consumer<span style="color:#f92672">.</span><span style="color:#a6e22e">registerMessageListener</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> MessageListenerConcurrently<span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+        <span style="color:#a6e22e">@Override</span>
+        <span style="color:#66d9ef">public</span> ConsumeConcurrentlyStatus <span style="color:#a6e22e">consumeMessage</span><span style="color:#f92672">(</span>List<span style="color:#f92672">&lt;</span>MessageExt<span style="color:#f92672">&gt;</span> msgs<span style="color:#f92672">,</span>
+                                                        ConsumeConcurrentlyContext context<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// 抛出异常
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// 返回 NULL 或者 RECONSUME_LATER 状态
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">return</span> ConsumeConcurrentlyStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">RECONSUME_LATER</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><h2 id="五producer-消息发送重试">五、Producer 消息发送重试</h2>
+<p>发送失败的重试方式，主要表现在发送消息的时候，会最多尝试 <code>getRetryTimesWhenSendFailed()</code> 次发送，当成功发送以后，会直接返回发送结果给调用者。当发送失败以后，会继续进行下一次发送尝试，核心代码如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQProducerImpl</span> <span style="color:#66d9ef">implements</span> MQProducerInner <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> SendResult <span style="color:#a6e22e">sendDefaultImpl</span><span style="color:#f92672">(</span>Message msg<span style="color:#f92672">,</span> <span style="color:#75715e">/** 其他参数 **/</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> MQClientException<span style="color:#f92672">,</span>
+                                                                             RemotingException<span style="color:#f92672">,</span>
+                                                                             MQBrokerException<span style="color:#f92672">,</span>
+                                                                             InterruptedException <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">int</span> timesTotal <span style="color:#f92672">=</span> communicationMode <span style="color:#f92672">=</span><span style="color:#f92672">=</span>
+            CommunicationMode<span style="color:#f92672">.</span><span style="color:#a6e22e">SYNC</span> <span style="color:#f92672">?</span>
+            1 <span style="color:#f92672">+</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMQProducer</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getRetryTimesWhenSendFailed</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">:</span>
+            1<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">int</span> times <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#f92672">;</span> times <span style="color:#f92672">&lt;</span> timesTotal<span style="color:#f92672">;</span> times<span style="color:#f92672">+</span><span style="color:#f92672">+</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// 尝试发送消息，发送成功 return，发送失败 continue
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span>
+        
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="六consumer-消息接受重试">六、Consumer 消息接受重试</h2>
+<h3 id="1-订阅重试话题">(1) 订阅重试话题</h3>
+<p>Consumer 在启动的时候，会执行一个函数 <code>copySubscription()</code> ，当用户注册的消息模型为<strong>集群模式</strong>的时候，会根据用户指定的<strong>组</strong>创建<strong>重试组话题</strong>并放入到注册信息中:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQPushConsumerImpl</span> <span style="color:#66d9ef">implements</span> MQConsumerInner <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">start</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> MQClientException <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">switch</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">serviceState</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">case</span> CREATE_JUST<span style="color:#f92672">:</span>
+            <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">copySubscription</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">serviceState</span> <span style="color:#f92672">=</span> ServiceState<span style="color:#f92672">.</span><span style="color:#a6e22e">RUNNING</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">copySubscription</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> MQClientException <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">switch</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMQPushConsumer</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageModel</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">case</span> BROADCASTING<span style="color:#f92672">:</span>
+            <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+            
+        <span style="color:#66d9ef">case</span> CLUSTERING<span style="color:#f92672">:</span>
+            <span style="color:#75715e">// 重试话题组
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">final</span> String retryTopic <span style="color:#f92672">=</span> MixAll<span style="color:#f92672">.</span><span style="color:#a6e22e">getRetryTopic</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMQPushConsumer</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getConsumerGroup</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            SubscriptionData subscriptionData <span style="color:#f92672">=</span> FilterAPI<span style="color:#f92672">.</span><span style="color:#a6e22e">buildSubscriptionData</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMQPushConsumer</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getConsumerGroup</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">,</span>
+                                                                                retryTopic<span style="color:#f92672">,</span> SubscriptionData<span style="color:#f92672">.</span><span style="color:#a6e22e">SUB_ALL</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">rebalanceImpl</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getSubscriptionInner</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>retryTopic<span style="color:#f92672">,</span> subscriptionData<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+            
+        <span style="color:#66d9ef">default</span><span style="color:#f92672">:</span>
+            <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>假设用户指定的组为 “ORDER”，那么重试话题则为 “%RETRY%ORDER”，即前面加上了 “%RETRY%” 这个字符串。</p>
+<p>Consumer 在一开始启动的时候，就为用户自动注册了订阅组的重试话题。即用户不单单只接受这个组的话题的消息，也接受这个组的重试话题的消息。这样一来，就为下文用户如何重试接受消息奠定了基础。</p>
+<p><img src="/images/docs/rocketmq/rocketmq-timing-message-and-retry-message/retry_consumer_group.png" alt="消费组重试信息"></p>
+<h3 id="2-失败消息发往重试话题">(2) 失败消息发往重试话题</h3>
+<p>当 Consumer 客户端在消费消息的时候，抛出了异常、返回了非正确消费的状态等错误的时候，这个时候 <code>ConsumeMessageConcurrentlyService</code> 会收集所有失败的消息，然后将每一条消息封装进 <code>CONSUMER_SEND_MSG_BACK</code> 的请求中，并将其发送到 Broker 服务器:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeMessageConcurrentlyService</span> <span style="color:#66d9ef">implements</span> ConsumeMessageService <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">processConsumeResult</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> ConsumeConcurrentlyStatus status<span style="color:#f92672">,</span>
+                                     <span style="color:#75715e">/** 其他参数 **/</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">switch</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMQPushConsumer</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageModel</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">case</span> BROADCASTING<span style="color:#f92672">:</span>
+            <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">case</span> CLUSTERING<span style="color:#f92672">:</span>
+            <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> ackIndex <span style="color:#f92672">+</span> 1<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> consumeRequest<span style="color:#f92672">.</span><span style="color:#a6e22e">getMsgs</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span> i<span style="color:#f92672">+</span><span style="color:#f92672">+</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                MessageExt msg <span style="color:#f92672">=</span> consumeRequest<span style="color:#f92672">.</span><span style="color:#a6e22e">getMsgs</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>i<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                <span style="color:#75715e">// 重新将消息发往 Broker 服务器
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">boolean</span> result <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">sendMessageBack</span><span style="color:#f92672">(</span>msg<span style="color:#f92672">,</span> context<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+            <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">default</span><span style="color:#f92672">:</span>
+            <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当消费失败的消息重新发送到服务器后，Broker 会为其指定新的话题<strong>重试话题</strong>，并根据当前这条消息的已有的重试次数来选择定时级别，即将这条消息变成定时消息投放到重试话题消息队列中。可见消息消费失败后并不是立即进行新的投递，而是有一定的延迟时间的。延迟时间随着重试次数的增加而增加，也即投递的时间的间隔也越来越长:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SendMessageProcessor</span>
+    <span style="color:#66d9ef">extends</span> AbstractSendMessageProcessor
+    <span style="color:#66d9ef">implements</span> NettyRequestProcessor <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> RemotingCommand <span style="color:#a6e22e">consumerSendMsgBack</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> ChannelHandlerContext ctx<span style="color:#f92672">,</span>
+                                                <span style="color:#66d9ef">final</span> RemotingCommand request<span style="color:#f92672">)</span>
+        <span style="color:#66d9ef">throws</span> RemotingCommandException <span style="color:#f92672">{</span>
+
+        <span style="color:#75715e">// 指定为重试话题
+</span><span style="color:#75715e"></span>        String newTopic <span style="color:#f92672">=</span> MixAll<span style="color:#f92672">.</span><span style="color:#a6e22e">getRetryTopic</span><span style="color:#f92672">(</span>requestHeader<span style="color:#f92672">.</span><span style="color:#a6e22e">getGroup</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">int</span> queueIdInt <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">abs</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">random</span><span style="color:#f92672">.</span><span style="color:#a6e22e">nextInt</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">%</span> 99999999<span style="color:#f92672">)</span> <span style="color:#f92672">%</span> subscriptionGroupConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">getRetryQueueNums</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+        <span style="color:#75715e">// 指定为延时信息，设定延时级别
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>0 <span style="color:#f92672">=</span><span style="color:#f92672">=</span> delayLevel<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            delayLevel <span style="color:#f92672">=</span> 3 <span style="color:#f92672">+</span> msgExt<span style="color:#f92672">.</span><span style="color:#a6e22e">getReconsumeTimes</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+        msgExt<span style="color:#f92672">.</span><span style="color:#a6e22e">setDelayTimeLevel</span><span style="color:#f92672">(</span>delayLevel<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+        <span style="color:#75715e">// 重试次数增加
+</span><span style="color:#75715e"></span>        msgInner<span style="color:#f92672">.</span><span style="color:#a6e22e">setReconsumeTimes</span><span style="color:#f92672">(</span>msgExt<span style="color:#f92672">.</span><span style="color:#a6e22e">getReconsumeTimes</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">+</span> 1<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+        <span style="color:#75715e">// 重新存储
+</span><span style="color:#75715e"></span>        PutMessageResult putMessageResult <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">brokerController</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageStore</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">putMessage</span><span style="color:#f92672">(</span>msgInner<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当然，消息如果一直消费不成功，那也不会一直无限次的尝试重新投递的。当重试次数大于最大重试次数 (默认为 16 次) 的时候，该消息将会被送往<strong>死信话题队列</strong>，认定这条话题投递无门:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SendMessageProcessor</span>
+    <span style="color:#66d9ef">extends</span> AbstractSendMessageProcessor
+    <span style="color:#66d9ef">implements</span> NettyRequestProcessor <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> RemotingCommand <span style="color:#a6e22e">consumerSendMsgBack</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> ChannelHandlerContext ctx<span style="color:#f92672">,</span>
+                                                <span style="color:#66d9ef">final</span> RemotingCommand request<span style="color:#f92672">)</span>
+        <span style="color:#66d9ef">throws</span> RemotingCommandException <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 重试次数大于最大重试次数
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>msgExt<span style="color:#f92672">.</span><span style="color:#a6e22e">getReconsumeTimes</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span><span style="color:#f92672">=</span> maxReconsumeTimes
+            <span style="color:#f92672">|</span><span style="color:#f92672">|</span> delayLevel <span style="color:#f92672">&lt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// 死信队列话题
+</span><span style="color:#75715e"></span>            newTopic <span style="color:#f92672">=</span> MixAll<span style="color:#f92672">.</span><span style="color:#a6e22e">getDLQTopic</span><span style="color:#f92672">(</span>requestHeader<span style="color:#f92672">.</span><span style="color:#a6e22e">getGroup</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            queueIdInt <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">abs</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">random</span><span style="color:#f92672">.</span><span style="color:#a6e22e">nextInt</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">%</span> 99999999<span style="color:#f92672">)</span> <span style="color:#f92672">%</span> DLQ_NUMS_PER_GROUP<span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-timing-message-and-retry-message/2018_04_12_16_29_46.png" alt="死信话题队列"></p>
+<p>上述客户端消费失败信息的流程图如下所示:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-timing-message-and-retry-message/consumer_retry_message_consume_flow.png" alt="消费失败信息完整流程图"></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#一定时消息概述">一、定时消息概述</a></li>
+    <li><a href="#二定时消息预存储">二、定时消息预存储</a></li>
+    <li><a href="#三定时消息再存储">三、定时消息再存储</a></li>
+    <li><a href="#四消息重试概述">四、消息重试概述</a></li>
+    <li><a href="#五producer-消息发送重试">五、Producer 消息发送重试</a></li>
+    <li><a href="#六consumer-消息接受重试">六、Consumer 消息接受重试</a>
+      <ul>
+        <li><a href="#1-订阅重试话题">(1) 订阅重试话题</a></li>
+        <li><a href="#2-失败消息发往重试话题">(2) 失败消息发往重试话题</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
