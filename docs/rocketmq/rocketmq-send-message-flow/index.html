@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="RocketMQ 消息发送流程"><meta property="og:title" content="RocketMQ 消息发送流程" />
+<meta property="og:description" content="RocketMQ 消息发送流程 本文讲述 RocketMQ 发送一条普通消息的流程。
+一、服务器启动 我们可以参考官方文档来启动服务:
+ 启动 Name 服务器:  sh bin/mqnamesrv  启动 Broker 服务器:  sh bin/mqbroker -n localhost:9876 二、构建消息体 一条消息体最少需要指定两个值:
+ 所属话题 消息内容  如下就是创建了一条话题为 “Test”，消息体为 “Hello World” 的消息:
+Message msg = new Message( &#34;Test&#34;, &#34;Hello World&#34;.getBytes() ); 三、启动 Producer 准备发送消息 如果我们想要发送消息呢，我们还需要再启动一个 DefaultProducer (生产者) 类来发消息:
+DefaultMQProducer producer = new DefaultMQProducer(); producer.start(); 现在我们所启动的服务如下所示:
+四、Name 服务器的均等性 注意我们上述开启的是单个服务，也即一个 Broker 和一个 Name 服务器，但是实际上使用消息队列的时候，我们可能需要搭建的是一个集群，如下所示:
+在 RocketMQ 的设计中，客户端需要首先询问 Name 服务器才能确定一个合适的 Broker 以进行消息的发送:" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-send-message-flow/" />
+
+<title>RocketMQ 消息发送流程 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
+
+
+<script defer src="/en.search.min.552ef024a82b980bbb9768009f5fecc8d03290a13924da2ca7f4ffb03c83b43d.js" integrity="sha256-VS7wJKgrmAu7l2gAn1/syNAykKE5JNosp/T/sDyDtD0="></script>
+
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-send-message-flow/"  class="active">
+      RocketMQ 消息发送流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-store-flow/" >
+      RocketMQ 消息存储流程
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>RocketMQ 消息发送流程</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#一服务器启动">一、服务器启动</a></li>
+    <li><a href="#二构建消息体">二、构建消息体</a></li>
+    <li><a href="#三启动-producer-准备发送消息">三、启动 Producer 准备发送消息</a></li>
+    <li><a href="#四name-服务器的均等性">四、Name 服务器的均等性</a></li>
+    <li><a href="#五选择-name-服务器">五、选择 Name 服务器</a></li>
+    <li><a href="#六寻找话题路由信息">六、寻找话题路由信息</a>
+      <ul>
+        <li><a href="#1-新建话题">(1) 新建话题</a></li>
+        <li><a href="#2-已存话题">(2) 已存话题</a></li>
+      </ul>
+    </li>
+    <li><a href="#七给-broker-发送消息">七、给 Broker 发送消息</a></li>
+    <li><a href="#八broker-检查话题信息">八、Broker 检查话题信息</a></li>
+    <li><a href="#九消息存储">九、消息存储</a></li>
+    <li><a href="#十整体流程">十、整体流程</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="rocketmq-消息发送流程">RocketMQ 消息发送流程</h1>
+<p>本文讲述 RocketMQ 发送一条<strong>普通消息</strong>的流程。</p>
+<h2 id="一服务器启动">一、服务器启动</h2>
+<p>我们可以参考<a href="https://rocketmq.apache.org/docs/quick-start/">官方文档</a>来启动服务:</p>
+<ul>
+<li>启动 Name 服务器:</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sh bin/mqnamesrv
+</code></pre></div><ul>
+<li>启动 Broker 服务器:</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sh bin/mqbroker -n localhost:9876
+</code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/nameserver_broker_startup.png" alt="启动服务器"></p>
+<h2 id="二构建消息体">二、构建消息体</h2>
+<p>一条消息体最少需要指定两个值:</p>
+<ul>
+<li>所属话题</li>
+<li>消息内容</li>
+</ul>
+<p>如下就是创建了一条话题为 “Test”，消息体为 “Hello World” 的消息:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Message msg <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Message<span style="color:#f92672">(</span> <span style="color:#e6db74">&#34;Test&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Hello World&#34;</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBytes</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><h2 id="三启动-producer-准备发送消息">三、启动 Producer 准备发送消息</h2>
+<p>如果我们想要发送消息呢，我们还需要再启动一个 DefaultProducer (生产者) 类来发消息:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">DefaultMQProducer producer <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> DefaultMQProducer<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+producer<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><p>现在我们所启动的服务如下所示:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/nameserver_broker_client_startup.png" alt="启动客户端"></p>
+<h2 id="四name-服务器的均等性">四、Name 服务器的均等性</h2>
+<p>注意我们上述开启的是单个服务，也即一个 Broker 和一个 Name 服务器，但是实际上使用消息队列的时候，我们可能需要搭建的是一个集群，如下所示:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/nameserver_broker_cluster.png" alt="RocketMQ 集群"></p>
+<p>在 RocketMQ 的设计中，客户端需要首先<strong>询问 Name 服务器</strong>才能确定一个合适的 Broker 以进行消息的发送:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/producer_find_broker_though_nameserver.png" alt="询问 Name 服务器"></p>
+<p>然而这么多 Name 服务器，客户端是如何选择一个合适的 Name 服务器呢?</p>
+<p>首先，我们要意识到很重要的一点，Name 服务器全部都是处于相同状态的，保存的都是相同的信息。在 Broker 启动的时候，其会将自己在本地存储的话题配置文件 (默认位于 <code>$HOME/store/config/topics.json</code> 目录) 中的所有话题加载到内存中去，然后会将这些所有的话题全部同步到所有的 Name 服务器中。与此同时，Broker 也会启动一个定时任务，默认每隔 30 秒来执行一次话题全同步:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/broker_sync_topics_to_namesrv.png" alt="同步话题"></p>
+<h2 id="五选择-name-服务器">五、选择 Name 服务器</h2>
+<p>由于 Name 服务器每台机器存储的数据都是一致的。因此我们客户端任意选择一台服务器进行沟通即可。</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/client_random_pickup_nameserver.png" alt=""></p>
+<p>其中客户端一开始选择 Name 服务器的源码如下所示:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">NettyRemotingClient</span> <span style="color:#66d9ef">extends</span> NettyRemotingAbstract <span style="color:#66d9ef">implements</span> RemotingClient <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> AtomicInteger namesrvIndex <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicInteger<span style="color:#f92672">(</span>initValueIndex<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">initValueIndex</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        Random r <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Random<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">return</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">abs</span><span style="color:#f92672">(</span>r<span style="color:#f92672">.</span><span style="color:#a6e22e">nextInt</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">%</span> 999<span style="color:#f92672">)</span> <span style="color:#f92672">%</span> 999<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">private</span> Channel <span style="color:#a6e22e">getAndCreateNameserverChannel</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> InterruptedException <span style="color:#f92672">{</span>
+
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> addrList<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span> i<span style="color:#f92672">+</span><span style="color:#f92672">+</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">int</span> index <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">namesrvIndex</span><span style="color:#f92672">.</span><span style="color:#a6e22e">incrementAndGet</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            index <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">abs</span><span style="color:#f92672">(</span>index<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            index <span style="color:#f92672">=</span> index <span style="color:#f92672">%</span> addrList<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            String newAddr <span style="color:#f92672">=</span> addrList<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>index<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">namesrvAddrChoosed</span><span style="color:#f92672">.</span><span style="color:#a6e22e">set</span><span style="color:#f92672">(</span>newAddr<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            Channel channelNew <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">createChannel</span><span style="color:#f92672">(</span>newAddr<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>channelNew <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span>
+                <span style="color:#66d9ef">return</span> channelNew<span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>以后，如果 <code>namesrvAddrChoosed</code> 选择的服务器如果一直处于连接状态，那么客户端就会一直与这台服务器进行沟通。否则的话，如上源代码所示，就会自动轮寻下一台可用服务器。</p>
+<h2 id="六寻找话题路由信息">六、寻找话题路由信息</h2>
+<p>当客户端发送消息的时候，其首先会尝试寻找话题路由信息。即这条消息应该被发送到哪个地方去。</p>
+<p>客户端在内存中维护了一份和话题相关的路由信息表 <code>topicPublishInfoTable</code>，当发送消息的时候，会首先尝试从此表中获取信息。如果此表不存在这条话题的话，那么便会从 Name 服务器获取路由消息。</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/get_test_topic_route_info.png" alt="获取话题路由信息"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQProducerImpl</span> <span style="color:#66d9ef">implements</span> MQProducerInner <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> TopicPublishInfo <span style="color:#a6e22e">tryToFindTopicPublishInfo</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        TopicPublishInfo topicPublishInfo <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">topicPublishInfoTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>topic<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">null</span> <span style="color:#f92672">=</span><span style="color:#f92672">=</span> topicPublishInfo <span style="color:#f92672">|</span><span style="color:#f92672">|</span> <span style="color:#f92672">!</span>topicPublishInfo<span style="color:#f92672">.</span><span style="color:#a6e22e">ok</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">topicPublishInfoTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">putIfAbsent</span><span style="color:#f92672">(</span>topic<span style="color:#f92672">,</span> <span style="color:#66d9ef">new</span> TopicPublishInfo<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">mQClientFactory</span><span style="color:#f92672">.</span><span style="color:#a6e22e">updateTopicRouteInfoFromNameServer</span><span style="color:#f92672">(</span>topic<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            topicPublishInfo <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">topicPublishInfoTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>topic<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当尝试从 Name 服务器获取路由信息的时候，其可能会返回两种情况:</p>
+<h3 id="1-新建话题">(1) 新建话题</h3>
+<p>这个话题是新创建的，Name 服务器不存在和此话题相关的信息：</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/nameserver_not_exist_topic.png" alt="NameServer 不存在话题"></p>
+<h3 id="2-已存话题">(2) 已存话题</h3>
+<p>话题之前创建过，Name 服务器存在此话题信息：</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/read_topic_info_from_nameserver.png" alt="NameServer 存在话题"></p>
+<p>服务器返回的话题路由信息包括以下内容:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/topic_route_data.png" alt="路由信息内容"></p>
+<p>“broker-1”、”broker-2” 分别为两个 Broker 服务器的名称，相同名称下可以有主从 Broker，因此每个 Broker 又都有 brokerId 。默认情况下，BrokerId 如果为 <code>MixAll.MASTER_ID</code> （值为 0） 的话，那么认为这个 Broker 为 MASTER 主机，其余的位于相同名称下的 Broker 为这台 MASTER 主机的 SLAVE 主机。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MQClientInstance</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> String <span style="color:#a6e22e">findBrokerAddressInPublish</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String brokerName<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        HashMap<span style="color:#f92672">&lt;</span>Long<span style="color:#75715e">/* brokerId */</span><span style="color:#f92672">,</span> String<span style="color:#75715e">/* address */</span><span style="color:#f92672">&gt;</span> map <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">brokerAddrTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>brokerName<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>map <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> <span style="color:#f92672">!</span>map<span style="color:#f92672">.</span><span style="color:#a6e22e">isEmpty</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> map<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>MixAll<span style="color:#f92672">.</span><span style="color:#a6e22e">MASTER_ID</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>每个 Broker 上面可以绑定多个可写消息队列和多个可读消息队列，客户端根据返回的所有 Broker 地址列表和每个 Broker 的可写消息队列列表会在内存中构建一份所有的消息队列列表。之后客户端每次发送消息，都会在消息队列列表上轮循选择队列 (我们假设返回了两个 Broker，每个 Broker 均有 4 个可写消息队列):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TopicPublishInfo</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> MessageQueue <span style="color:#a6e22e">selectOneMessageQueue</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">int</span> index <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">sendWhichQueue</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getAndIncrement</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">int</span> pos <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">abs</span><span style="color:#f92672">(</span>index<span style="color:#f92672">)</span> <span style="color:#f92672">%</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">messageQueueList</span><span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>pos <span style="color:#f92672">&lt;</span> 0<span style="color:#f92672">)</span>
+            pos <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">messageQueueList</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>pos<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/client_select_message_queue.png" alt="客户端轮询消息队列"></p>
+<h2 id="七给-broker-发送消息">七、给 Broker 发送消息</h2>
+<p>在确定了 Master Broker 地址和这个 Broker 的消息队列以后，客户端才开始真正地发送消息给这个 Broker，也是从这里客户端才开始与 Broker 进行交互:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/client_send_msg_to_broker.png" alt="发送消息"></p>
+<p>这里我们暂且先忽略消息体格式的具体编/解码过程，因为我们并不想一开始就卷入这些繁枝细节中，现在先从大体上了解一下整个消息的发送流程，后续会写专门的文章来说明。</p>
+<h2 id="八broker-检查话题信息">八、Broker 检查话题信息</h2>
+<p>刚才说到，如果话题信息在 Name 服务器不存在的话，那么会使用默认话题信息进行消息的发送。然而一旦这条消息到来之后，Broker 端还并没有这个话题。所以 Broker 需要检查话题的存在性:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AbstractSendMessageProcessor</span> <span style="color:#66d9ef">implements</span> NettyRequestProcessor <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">protected</span> RemotingCommand <span style="color:#a6e22e">msgCheck</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> ChannelHandlerContext ctx<span style="color:#f92672">,</span>
+                                       <span style="color:#66d9ef">final</span> SendMessageRequestHeader requestHeader<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> RemotingCommand response<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>
+        TopicConfig topicConfig <span style="color:#f92672">=</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">brokerController</span>
+                <span style="color:#f92672">.</span><span style="color:#a6e22e">getTopicConfigManager</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span>
+                <span style="color:#f92672">.</span><span style="color:#a6e22e">selectTopicConfig</span><span style="color:#f92672">(</span>requestHeader<span style="color:#f92672">.</span><span style="color:#a6e22e">getTopic</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">null</span> <span style="color:#f92672">=</span><span style="color:#f92672">=</span> topicConfig<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+            <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>
+            topicConfig <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">brokerController</span>
+                <span style="color:#f92672">.</span><span style="color:#a6e22e">getTopicConfigManager</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span>
+                <span style="color:#f92672">.</span><span style="color:#a6e22e">createTopicInSendMessageMethod</span><span style="color:#f92672">(</span> <span style="color:#f92672">.</span><span style="color:#f92672">.</span><span style="color:#f92672">.</span> <span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            
+        <span style="color:#f92672">}</span>
+        
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>如果话题不存在的话，那么便会创建一个话题信息存储到本地，并将所有话题再进行一次同步给所有的 Name 服务器:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TopicConfigManager</span> <span style="color:#66d9ef">extends</span> ConfigManager <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> TopicConfig <span style="color:#a6e22e">createTopicInSendMessageMethod</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">,</span> <span style="color:#75715e">/** params **/</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        topicConfig <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> TopicConfig<span style="color:#f92672">(</span>topic<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">topicConfigTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>topic<span style="color:#f92672">,</span> topicConfig<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">persist</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">brokerController</span><span style="color:#f92672">.</span><span style="color:#a6e22e">registerBrokerAll</span><span style="color:#f92672">(</span><span style="color:#66d9ef">false</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+        <span style="color:#66d9ef">return</span> topicConfig<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>话题检查的整体流程如下所示:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/broker_check_topic_and_sync_to_nameserver.png" alt="检查话题流程"></p>
+<h2 id="九消息存储">九、消息存储</h2>
+<p>当 Broker 对消息的一些字段做过一番必要的检查之后，便会存储到磁盘中去:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/broker_save_message.png" alt="消息存储"></p>
+<h2 id="十整体流程">十、整体流程</h2>
+<p>发送消息的整体流程:</p>
+<p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/send_message_full_flow.png" alt="发送消息流程"></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#一服务器启动">一、服务器启动</a></li>
+    <li><a href="#二构建消息体">二、构建消息体</a></li>
+    <li><a href="#三启动-producer-准备发送消息">三、启动 Producer 准备发送消息</a></li>
+    <li><a href="#四name-服务器的均等性">四、Name 服务器的均等性</a></li>
+    <li><a href="#五选择-name-服务器">五、选择 Name 服务器</a></li>
+    <li><a href="#六寻找话题路由信息">六、寻找话题路由信息</a>
+      <ul>
+        <li><a href="#1-新建话题">(1) 新建话题</a></li>
+        <li><a href="#2-已存话题">(2) 已存话题</a></li>
+      </ul>
+    </li>
+    <li><a href="#七给-broker-发送消息">七、给 Broker 发送消息</a></li>
+    <li><a href="#八broker-检查话题信息">八、Broker 检查话题信息</a></li>
+    <li><a href="#九消息存储">九、消息存储</a></li>
+    <li><a href="#十整体流程">十、整体流程</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
