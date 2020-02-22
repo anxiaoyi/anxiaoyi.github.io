@@ -41,5 +41,17 @@ DefaultMQProducer producer = new DefaultMQProducer(); producer.start(); 现在�
 public class MappedFileQueue { public MappedFile getLastMappedFile() { MappedFile mappedFileLast = null; while (!this.mappedFiles.isEmpty()) { try { mappedFileLast = this.mappedFiles.get(this.mappedFiles.size() - 1); break; } catch (IndexOutOfBoundsException e) { //continue;  } catch (Exception e) { log.</description>
     </item>
     
+    <item>
+      <title>RocketMQ 消息接受流程</title>
+      <link>https://kunzhao.org/docs/rocketmq/rocketmq-message-receive-flow/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/rocketmq/rocketmq-message-receive-flow/</guid>
+      <description>RocketMQ 消息接受流程 本篇讲述 RocketMQ 消息接受流程
+一、消费者注册 生产者负责往服务器 Broker 发送消息，消费者则从 Broker 获取消息。消费者获取消息采用的是订阅者模式，即消费者客户端可以任意订阅一个或者多个话题来消费消息:
+public class Consumer { public static void main(String[] args) throws InterruptedException, MQClientException { /* * 订阅一个或者多个话题 */ consumer.subscribe(&amp;#34;TopicTest&amp;#34;, &amp;#34;*&amp;#34;); } } 当消费者客户端启动以后，其会每隔 30 秒从命名服务器查询一次用户订阅的所有话题路由信息:
+public class MQClientInstance { private void startScheduledTask() { this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() { @Override public void run() { // 从命名服务器拉取话题信息  MQClientInstance.this.updateTopicRouteInfoFromNameServer(); } }, 10, this.clientConfig.getPollNameServerInterval(), TimeUnit.MILLISECONDS); } } 我们由 RocketMQ 消息发送流程 这篇文章知道 RocketMQ 在发送消息的时候，每条消息会以轮循的方式均衡地分发的不同 Broker 的不同队列中去。由此，消费者客户端从服务器命名服务器获取下来的便是话题的所有消息队列:</description>
+    </item>
+    
   </channel>
 </rss>
