@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Tomcat 主体架构"><meta property="og:title" content="Tomcat 主体架构" />
+<meta property="og:description" content="Tomcat 主体架构 本篇讲述 Tomcat 的主体架构，在描述架构之前，会首先向大家介绍 Servlet 是什么，以及 Servlet 容器又是什么等相关概念。
+Servlet 是什么 一句话：Servlet 是一个实现了 javax.servlet.Servlet 接口的类，该类由 Servlet 容器进行统一管理。在该接口中，其定义了所有 Servlet 实现类必须实现的几个方法：
+ init(ServletConfig config) service(ServletRequest request, ServletResponse response) destroy() getServletConfig() getServletInfo()  Servlet 是 Java 为 Web 开发者们所制定的一套标准，一个规范，其当前已经发展到了最新的 3.0 版本。从 Servlet 接口中，我们可以看出，service 方法提供了 request 对象和 response 对象，该方法是用来处理客户端逻辑的核心方法，客户端发送过来的请求信息会被封装到 request 对象中，开发者在该方法内，可以通过 response 对象，将想要输出给客户端的信息发送出去。
+Servlet 容器是什么 Servlet 容器是一个可以用来管理多个 Servlet 对象的可以处理用户请求的容器。其根据 Servlet 标准规范，来决定如何解析用户请求，何时调用某个 Servlet 的 init、service、destroy 等方法，以及如何支持 HTTP 协议等。更进一步，其通常需要设计和支持的功能至少包含如下几个点：
+ 管理每一个 Servlet 的生命周期 解析 HTTP 请求的头部、参数、请求路径、编码等 为 Servlet 提供访问资源、存取参数等信息、虚拟主机等方法 请求路径映射 为响应提供 Buffer、重定向、如何添加头等 登录校验、缓存校验、数据格式校验等请求过滤器 Session 信息管理 注解能力 分发请求、转发请求、错误处理等 事件监听等 安全校验  Tomcat 整体架构 如图一个 Tomcat 实例，内部包含一个 Server 示例，这个 Server 又可以添加多个 Service，每一个 Service 包含一组 Connector 和一个 Container。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tomcat/tomcat-architecture/" />
+
+<title>Tomcat 主体架构 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
+
+
+<script defer src="/en.search.min.d4dc26edf3c1787b39616053904a23f11b98b658718e0669d362e16895c7842e.js" integrity="sha256-1Nwm7fPBeHs5YWBTkEoj8RuYtlhxjgZp02LhaJXHhC4="></script>
+
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      <span>Tomcat 源码分析</span>
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tomcat/tomcat-architecture/"  class="active">
+      Tomcat 主体架构
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Tomcat 主体架构</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#servlet-是什么">Servlet 是什么</a></li>
+    <li><a href="#servlet-容器是什么">Servlet 容器是什么</a></li>
+    <li><a href="#tomcat-整体架构">Tomcat 整体架构</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="tomcat-主体架构">Tomcat 主体架构</h1>
+<p>本篇讲述 Tomcat 的主体架构，在描述架构之前，会首先向大家介绍 <code>Servlet</code> 是什么，以及 <strong><code>Servlet</code> 容器</strong>又是什么等相关概念。</p>
+<h2 id="servlet-是什么">Servlet 是什么</h2>
+<p>一句话：<code>Servlet</code> 是一个实现了 <code>javax.servlet.Servlet</code> 接口的<strong>类</strong>，该类由 <code>Servlet</code> 容器进行<strong>统一管理</strong>。在该接口中，其定义了所有 <code>Servlet</code> 实现类必须实现的几个方法：</p>
+<ul>
+<li><code>init(ServletConfig config)</code></li>
+<li><code>service(ServletRequest request, ServletResponse response)</code></li>
+<li><code>destroy()</code></li>
+<li><code>getServletConfig()</code></li>
+<li><code>getServletInfo()</code></li>
+</ul>
+<p><code>Servlet</code> 是 Java 为 Web 开发者们所制定的一套标准，一个规范，其当前已经发展到了最新的 <a href="https://www.oracle.com/technetwork/java/index-jsp-135475.html">3.0 版本</a>。从 <code>Servlet</code> 接口中，我们可以看出，<code>service</code> 方法提供了 <code>request</code> 对象和 <code>response</code> 对象，该方法是用来<strong>处理客户端逻辑</strong>的核心方法，客户端发送过来的请求信息会被封装到 <code>request</code> 对象中，开发者在该方法内，可以通过 <code>response</code> 对象，将想要输出给客户端的信息发送出去。</p>
+<h2 id="servlet-容器是什么">Servlet 容器是什么</h2>
+<p><code>Servlet</code> 容器是一个可以用来管理多个 <code>Servlet</code> 对象的可以处理用户请求的容器。其根据 <code>Servlet</code> 标准规范，来决定如何<strong>解析用户请求</strong>，何时调用某个 <code>Servlet</code> 的 <code>init</code>、<code>service</code>、<code>destroy</code> 等方法，以及如何支持 HTTP 协议等。更进一步，其通常需要设计和支持的功能至少包含如下几个点：</p>
+<ul>
+<li>管理每一个 <code>Servlet</code> 的生命周期</li>
+<li>解析 HTTP 请求的头部、参数、请求路径、编码等</li>
+<li>为 <code>Servlet</code> 提供访问资源、存取参数等信息、虚拟主机等方法</li>
+<li>请求路径映射</li>
+<li>为响应提供 <code>Buffer</code>、重定向、如何添加头等</li>
+<li>登录校验、缓存校验、数据格式校验等请求过滤器</li>
+<li><code>Session</code> 信息管理</li>
+<li>注解能力</li>
+<li>分发请求、转发请求、错误处理等</li>
+<li>事件监听等</li>
+<li>安全校验</li>
+</ul>
+<p><img src="/images/docs/tomcat/tomcat-architecture/servlet_container_request_response.png" alt="Servlet 容器"></p>
+<h2 id="tomcat-整体架构">Tomcat 整体架构</h2>
+<p><img src="/images/docs/tomcat/tomcat-architecture/tomcat_architecture.png" alt="Tomcat 整体架构"></p>
+<p>如图一个 <code>Tomcat</code> 实例，内部包含一个 <code>Server</code> 示例，这个 <code>Server</code> 又可以添加多个 <code>Service</code>，每一个 <code>Service</code> 包含一组 <code>Connector</code> 和一个 <code>Container</code>。</p>
+<p><code>Server</code> 是用来<strong>启动和关闭</strong>整个容器的，当其启动的时候，会默认添加一个 <code>Service</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#75715e">// org.apache.catalina.startup.Tomcat.java
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">server</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">StandardServer</span>();
+
+<span style="color:#a6e22e">Service</span> <span style="color:#a6e22e">service</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">StandardService</span>();
+<span style="color:#a6e22e">service</span>.<span style="color:#a6e22e">setName</span>(<span style="color:#e6db74">&#34;Tomcat&#34;</span>);
+<span style="color:#a6e22e">server</span>.<span style="color:#a6e22e">addService</span>(<span style="color:#a6e22e">service</span>);
+</code></pre></div><p><code>Service</code> 是用来维护 <code>Connector</code> 和 <code>Container</code> 的，你可以将其想象为一个名为 <code>XXXManager</code> 这样的类。</p>
+<p><code>Connector</code> 是用来<strong>解析 HTTP 协议请求</strong>的，不同的 HTTP 协议（如 HTTP 和 HTTPS）有不同的请求头，需要不同的解析方式。另外是使用 Java 中的 <code>NIO</code> 方式还是 <code>NIO2</code> 的方式去接受、建立、响应 <code>Socket</code> 连接，在速度和性能上这也是不同的。因此基于协议的不同和 Java IO 模型选择的不同，会有多种不同的 <code>Connector</code> 实现。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://download.oracle.com/otn-pub/jcp/servlet-3.0-fr-oth-JSpec/servlet-3_0-final-spec.pdf?AuthParam=1582518897_88e1dd68879a6ce835a03eec1dbd8e55">Java Servlet Specification 3.0</a></li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#servlet-是什么">Servlet 是什么</a></li>
+    <li><a href="#servlet-容器是什么">Servlet 容器是什么</a></li>
+    <li><a href="#tomcat-整体架构">Tomcat 整体架构</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+<footer style="width: 100%; position: fixed; bottom:0; height: 40px; padding-top: 10px; background-color:#fafafa; text-align: center">
+  <a style="color: #bbb; font-size: 12px;" href="http://www.beian.miit.gov.cn" target="_blank">京ICP备17006948号</href>
+</footer>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
