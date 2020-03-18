@@ -5,7 +5,19 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="VUE 面试题"><meta property="og:title" content="VUE 面试题" />
-<meta property="og:description" content="介绍一下 VUE 介绍一下 VUEX VUE 2.X 和 3.0 的区别 VUE 的生命周期 VUE 数据双向绑定原理 VUE 的路由机制  hash 和 history 区别  v-if 和 v-show 的区别 VUE 组件通信方式  引申：如果有多层的父子组件，用什么通信  VUE 的 v-for 中的 key 的作用 nextTick 原理与应用场景 VUE 的虚拟 DOM  VUE 是如何实现 VDOM 的 vue中keep-alive缓存的真实结点还是虚拟结点 vue改变组件的key值, 原来的组件会被销毁么 为什么要用虚拟结点 diff 原理  vue 从 data 改变到页面渲染的过程 参考  诚意满满的前端面试总结（回馈牛客）  " />
+<meta property="og:description" content="VUE 面试题 整理 VUE 相关的常见面试题
+介绍一下 VUE 介绍一下 VUEX VUE 2.X 和 3.0 的区别 （1）数据监听方式变化
+VUE 2.X 使用 ES5 的 Object.defineProperty() 的 get() 和 set(newValue) 实现，VUE 3.0 基于 Proxy 监听实现，同时更为强大：
+ 可以检测属性的新增和删除 可以检测数组索引的变化和 length 的变化 支持 Map、Set、WeakMap 和 WeakSet   优点：速度加倍，内存占用减半。
+ （2）体积更小
+支持 Tree Shaking，内置组件、内置指令按需引入。
+（3）速度更快
+参考：vue3.0和vue2.x的区别、Vue 3.0 和 Vue 2.0的对比以及Vue 2.0精讲以及Vue全家桶精讲
+VUE 的生命周期 VUE 数据双向绑定原理 VUE 采用发布者-订阅者模式的方式来实现双向绑定。
+（1）视图更新数据：
+input 标签监听 input 事件即可。
+（2）数据更新视图：
+Object.defineProperty() 监听数据变化，通过消息订阅器发布消息，订阅者收到消息执行相应的操纵 DOM 的函数，从而更新视图。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/front-end/vue/" />
 
@@ -16,7 +28,7 @@
 <link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
 
 
-<script defer src="/en.search.min.cc843fb53ecd5bfc8c23e63671488691825e4bdc99677abe016ebb67775c7db0.js" integrity="sha256-zIQ/tT7NW/yMI&#43;Y2cUiGkYJeS9yZZ3q&#43;AW67Z3dcfbA="></script>
+<script defer src="/en.search.min.df16697317706e5f2f909464bb32af5b90256d9e3036f12a194fb63a8e89d5a0.js" integrity="sha256-3xZpcxdwbl8vkJRkuzKvW5AlbZ4wNvEqGU&#43;2Oo6J1aA="></script>
 
 
   
@@ -295,22 +307,64 @@
       </header>
 
       
-<article class="markdown"><h2 id="介绍一下-vue">介绍一下 VUE</h2>
+<article class="markdown"><h1 id="vue-面试题">VUE 面试题</h1>
+<p>整理 VUE 相关的常见面试题</p>
+<h2 id="介绍一下-vue">介绍一下 VUE</h2>
 <h2 id="介绍一下-vuex">介绍一下 VUEX</h2>
 <h2 id="vue-2x-和-30-的区别">VUE 2.X 和 3.0 的区别</h2>
+<p>（1）<strong>数据监听方式变化</strong></p>
+<p>VUE 2.X 使用 ES5 的 <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty"><code>Object.defineProperty()</code></a> 的 <code>get()</code> 和 <code>set(newValue)</code> 实现，VUE 3.0 基于 <code>Proxy</code> 监听实现，同时更为强大：</p>
+<ul>
+<li>可以检测属性的新增和删除</li>
+<li>可以检测数组索引的变化和 length 的变化</li>
+<li>支持 Map、Set、WeakMap 和 WeakSet</li>
+</ul>
+<blockquote>
+<p>优点：速度加倍，内存占用减半。</p>
+</blockquote>
+<p>（2）<strong>体积更小</strong></p>
+<p>支持 <a href="https://webpack.js.org/guides/tree-shaking/"><code>Tree Shaking</code></a>，内置组件、内置指令<strong>按需引入</strong>。</p>
+<p>（3）<strong>速度更快</strong></p>
+<p>参考：<a href="https://blog.csdn.net/weixin_42080056/article/details/102903169">vue3.0和vue2.x的区别</a>、<a href="https://juejin.im/post/5d3bc7e7f265da1bc85470db">Vue 3.0 和 Vue 2.0的对比以及Vue 2.0精讲以及Vue全家桶精讲</a></p>
 <h2 id="vue-的生命周期">VUE 的生命周期</h2>
+<p><img src="/images/docs/programmer-interview/front-end/vue/lifecycle.png" alt="VUE 生命周期"></p>
 <h2 id="vue-数据双向绑定原理">VUE 数据双向绑定原理</h2>
+<p><img src="/images/docs/programmer-interview/front-end/vue/8525a8e9e7ae9d023a6ba07ca7b7350e.gif" alt="双向绑定"></p>
+<p>VUE 采用<strong>发布者-订阅者模式</strong>的方式来实现双向绑定。</p>
+<p>（1）<strong>视图更新数据</strong>：</p>
+<p><code>input</code> 标签监听 <code>input</code> 事件即可。</p>
+<p>（2）<strong>数据更新视图</strong>：</p>
+<p><code>Object.defineProperty()</code> 监听数据变化，通过消息订阅器发布消息，订阅者收到消息执行相应的操纵 DOM 的函数，从而更新视图。</p>
 <h2 id="vue-的路由机制">VUE 的路由机制</h2>
 <ul>
 <li>hash 和 history 区别</li>
 </ul>
 <h2 id="v-if-和-v-show-的区别">v-if 和 v-show 的区别</h2>
+<ul>
+<li><code>v-show</code>：无论值是 <code>true</code> 还是 <code>false</code>，元素都会存在于 HTML 代码中。</li>
+<li><code>v-if</code>：只有值为 <code>true</code> 的时候，元素才会存在于 HTML 代码中。</li>
+</ul>
 <h2 id="vue-组件通信方式">VUE 组件通信方式</h2>
 <ul>
 <li>引申：如果有多层的父子组件，用什么通信</li>
 </ul>
 <h2 id="vue-的-v-for-中的-key-的作用">VUE 的 v-for 中的 key 的作用</h2>
+<p>一句话回答：<strong>为了高效的更新虚拟 DOM</strong>。</p>
 <h2 id="nexttick-原理与应用场景">nextTick 原理与应用场景</h2>
+<p>Vue 在修改数据后，<strong>视图不会立刻更新</strong>，而是等同一事件循环中的所有数据变化完成之后，再统一进行视图更新。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#75715e">//改变数据
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">vm</span>.<span style="color:#a6e22e">message</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;changed&#39;</span>
+
+<span style="color:#75715e">//想要立即使用更新后的DOM。这样不行，因为设置message后DOM还没有更新
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#a6e22e">vm</span>.<span style="color:#a6e22e">$el</span>.<span style="color:#a6e22e">textContent</span>) <span style="color:#75715e">// 并不会得到&#39;changed&#39;
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">//这样可以，nextTick里面的代码会在DOM更新后执行
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">Vue</span>.<span style="color:#a6e22e">nextTick</span>(<span style="color:#66d9ef">function</span>(){
+    <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#a6e22e">vm</span>.<span style="color:#a6e22e">$el</span>.<span style="color:#a6e22e">textContent</span>) <span style="color:#75715e">//可以得到&#39;changed&#39;
+</span><span style="color:#75715e"></span>})
+</code></pre></div><p><img src="/images/docs/programmer-interview/front-end/vue/1596618069-5a5da8c8522c2_articlex.png" alt="更新数据"></p>
+<p><strong>应用场景</strong>：需要在 DOM 视图更新之后，<strong>基于新的 DOM 视图</strong>进行操作。</p>
+<p>参考：<a href="https://segmentfault.com/a/1190000012861862">Vue.nextTick 的原理和用途</a></p>
 <h2 id="vue-的虚拟-dom">VUE 的虚拟 DOM</h2>
 <ul>
 <li>VUE 是如何实现 VDOM 的</li>
