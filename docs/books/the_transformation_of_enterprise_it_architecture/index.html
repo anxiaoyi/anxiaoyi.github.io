@@ -39,7 +39,7 @@ BASE理论是对CAP理论的延伸，核心思想是即使无法做到强一致�
 <link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
 
 
-<script defer src="/en.search.min.69105856d7053cc159133efc18fdcb2279c7625d11948fcc905924e05582e794.js" integrity="sha256-aRBYVtcFPMFZEz78GP3LInnHYl0RlI/MkFkk4FWC55Q="></script>
+<script defer src="/en.search.min.9031a783a77b19fd37d399b7f56087cefe30d28f49851cfbc1af51ca19097617.js" integrity="sha256-kDGng6d7Gf0305m39WCHzv4w0o9JhRz7wa9RyhkJdhc="></script>
 
 
 <script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
@@ -307,6 +307,15 @@ BASE理论是对CAP理论的延伸，核心思想是即使无法做到强一致�
         <li><a href="#业务流程异步化">业务流程异步化</a></li>
         <li><a href="#数据库事务异步化">数据库事务异步化</a></li>
         <li><a href="#事务与柔性事务">事务与柔性事务</a></li>
+        <li><a href="#大促秒杀活动催生缓存技术的高度使用">大促秒杀活动催生缓存技术的高度使用</a></li>
+      </ul>
+    </li>
+    <li><a href="#打造数字化运营能力">打造数字化运营能力</a></li>
+    <li><a href="#打造平台稳定性能力">打造平台稳定性能力</a>
+      <ul>
+        <li><a href="#限流和降级">限流和降级</a></li>
+        <li><a href="#流量调度">流量调度</a></li>
+        <li><a href="#业务开关">业务开关</a></li>
       </ul>
     </li>
   </ul>
@@ -424,8 +433,45 @@ BASE理论是对CAP理论的延伸，核心思想是即使无法做到强一致�
 </ul>
 <p>（5）<strong>柔性事务在阿里巴巴内部的几种实现</strong></p>
 <ul>
-<li><strong>消息分布式事务</strong>。</li>
+<li><strong>消息分布式事务</strong></li>
 </ul>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/mq_transition.png" alt="分布式MQ事务消息"></p>
+<p>基于消息实现的分布式事务仅支持正向补偿，即不会像传统事务方式出现异常时依次进行回滚，会通过消息的<strong>不断重试</strong>或<strong>人工干预</strong>的方式让该事务链路继续朝前执行，而避免出现事务回滚。</p>
+<ul>
+<li><strong>支付宝XTS框架</strong></li>
+</ul>
+<p>XTS是TCC（Try/Confirm/Cancel）型事务，属于典型的补偿型事务。</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/tcc.png" alt="XTS 事务"></p>
+<ul>
+<li><strong>阿里巴巴AliWare TXC事务服务</strong></li>
+</ul>
+<p>标准模式下无需开发人员自行进行事务回滚或补偿的代码，平台支持自动按事务中事务操作的顺序依次回滚和补偿。关键原理：</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/xts_auto_redo.png" alt="XTS 自动回滚和补偿"></p>
+<h3 id="大促秒杀活动催生缓存技术的高度使用">大促秒杀活动催生缓存技术的高度使用</h3>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/product_miaosha.png" alt="秒杀架构图"></p>
+<p>首先一定要让负责秒杀场景的商品中心应用实例（图中“秒杀IC”）与满足普通商品正常访问的商品中心应用实例（图中IC）<strong>隔离部署</strong>，通过服务分组方式，保持两个运行环境的隔离，避免因为秒杀产生的过大访问流量造成整个商品中心的服务实例均受影响，产生太大范围的影响。</p>
+<p>因为秒杀在正式开始前，一定会有大量的用户停留在商品的详情页（图中Detail）等待着秒杀活动的开始，同时伴随有大量的页面刷新访问（心急或担心页面没有正常刷新的买家们），此时，如果每一次刷新都要从后端的商品数据库（图中ICDB）中获取商品相关信息，则一定会给数据库带来巨大的压力，在淘宝早期举办秒杀活动时就出现了秒杀活动还没开始，因为商品详情页访问太大，造成平台提前进入不可访问状态的情况。所以一定是通过缓存服务器（图中Tair），将商品的详细信息（包括库存信息）保存在缓存服务器上，商品详情页和购买页所有有关商品的信息均是通过缓存服务器获取，则无需访问后端数据库。</p>
+<p>如图中“本地缓存”所示，可通过给网页资源设置<code>Expires</code>和<code>Last-Modified</code>返回头信息进行有效控制，从而尽可能减少对后端服务端的访问次数。</p>
+<p><strong>避免商品出现超卖</strong>（即成功下单的订单中商品的库存数量大于商品现有的库存量，则称为商品超卖），核心技术是利用数据库的事务锁机制，即不允许同一商品的库存记录在同一时间被不同的两个数据库事务修改。在前柔性事务介绍中所提到的，用户在进行商品下单操作中，会进行一系列的业务逻辑判断和操作，对于商品库存信息这一访问热点数据，如果采用数据库的悲观锁（比如<code>select</code>语句带<code>for update</code>）模式，则会给订单处理带来很大的性能阻塞，所以会采用乐观锁的方式实现商品库存的操作。实现的方式也比较简单，也就是在最后执行库存扣减操作时，将<strong>事务开始前获取的库存数量</strong>带入到SQL语句中<strong>与目前数据库记录中的库存数量进行判断</strong>，如果数量相等，则该条更新库存的语句成功执行；如果不相等，则表示该商品的库存信息在当前事务执行过程中已经被其他事务修改，则会<strong>放弃</strong>该条<code>update</code>的执行，可以采用<strong>重试</strong>的机制重新执行该事务，避免商品超卖的发生，具体的SQL语句示意如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">update</span> auction_auctions <span style="color:#66d9ef">set</span> quantity <span style="color:#f92672">=</span> <span style="color:#f92672">#</span>inQuantity<span style="color:#f92672">#</span>, <span style="color:#66d9ef">where</span> auction_id <span style="color:#f92672">=</span> <span style="color:#f92672">#</span>itemId<span style="color:#f92672">#</span> <span style="color:#66d9ef">and</span> quantity <span style="color:#f92672">=</span> <span style="color:#f92672">#</span>dbQuantity<span style="color:#f92672">#</span>
+</code></pre></div><p>如果参与大促的商品拥有较大库存数量的时候，需要将之前仅仅作为商品信息浏览的缓存的作用，提升到为<strong>库存操作</strong>提供事务支持的角色。</p>
+<h2 id="打造数字化运营能力">打造数字化运营能力</h2>
+<p>每一个URL请求都会生成一个全局唯一的ID，鹰眼（类似于 <code>Twitter</code> 的 <code>Zipkin</code>）平台中称为<code>TraceID</code>，这个ID会出现在该请求中所有服务调用、数据库、缓存、消息服务访问时生成的所有日志中。因为上述所有的资源访问均是在分布式环境下进行的，如何将该<code>TraceID</code>平滑地传递到各个服务节点上呢？如果要求应用程序中实现服务链路日志的打印和<code>TraceID</code>的传递，则在程序中有大量的日志打印代码，而且需要将<code>TraceID</code>采用业务数据的方式传递给下一服务节点，这些都给应用带来了<strong>非常大的代码侵入</strong>。</p>
+<p>阿里巴巴在<strong>中间件</strong>层面上统一实现了鹰眼的上下文创建以及日志埋点功能，让调用上下文在中间件的网络请求中传递，同时将调用上下文信息保存在了本地<code>ThreadLocal</code>中，从而实现了鹰眼平台所需的调用上下文和日志信息对于应用开发人员完全透明。</p>
+<p>埋点日志一般包含：</p>
+<ul>
+<li>TraceID、RPCID、开始时间、调用类型、对端IP。</li>
+<li>处理耗时。</li>
+<li>处理结果（ResultCode）。</li>
+<li>数据传输量：请求大小/响应大小。</li>
+</ul>
+<h2 id="打造平台稳定性能力">打造平台稳定性能力</h2>
+<h3 id="限流和降级">限流和降级</h3>
+<p>淘宝技术团队开发的开源模块<code>nginx-http-sysguard</code>，主要用于当访问<strong>负载和内存</strong>达到一定的阀值之时，会执行相应的动作，比如直接返回503,504或者其他URL请求返回代码，一直等到内存或者负载回到阀值的范围内，站点恢复可用。</p>
+<h3 id="流量调度">流量调度</h3>
+<p>流量调度的核心是通过秒级获取服务器系统运行指标以及业务指标，通过<strong>流量调度平台设置的决策算法以及规则</strong>，当发现满足规则条件的指标状态发生时，对线上环境的服务器进行下线等操作，以屏蔽这些单点或局部出现故障的应用实例对整体平台产生扩展式的影响。</p>
+<h3 id="业务开关">业务开关</h3>
+<p><code>Switch</code> 平台本身所提供的功能比较简单，但对于业务场景和环境复杂的分布式架构，这个平台确实能大大提升应用适应各种不同场景的自动化能力，比如通过开关的方式将正常环境下的应用逻辑切换到适配秒杀场景；当发现升级后的应用出现问题时，只需通过开关切换的方式就能让升级后的应用秒级切换到升级前的业务代码中。最重要的是在平台处于大促秒杀、应用异常时，业务开关在服务降级中所起的作用，相当于平台的最后一道保护屏障。</p>
 </article>
  
 
@@ -468,6 +514,15 @@ BASE理论是对CAP理论的延伸，核心思想是即使无法做到强一致�
         <li><a href="#业务流程异步化">业务流程异步化</a></li>
         <li><a href="#数据库事务异步化">数据库事务异步化</a></li>
         <li><a href="#事务与柔性事务">事务与柔性事务</a></li>
+        <li><a href="#大促秒杀活动催生缓存技术的高度使用">大促秒杀活动催生缓存技术的高度使用</a></li>
+      </ul>
+    </li>
+    <li><a href="#打造数字化运营能力">打造数字化运营能力</a></li>
+    <li><a href="#打造平台稳定性能力">打造平台稳定性能力</a>
+      <ul>
+        <li><a href="#限流和降级">限流和降级</a></li>
+        <li><a href="#流量调度">流量调度</a></li>
+        <li><a href="#业务开关">业务开关</a></li>
       </ul>
     </li>
   </ul>
