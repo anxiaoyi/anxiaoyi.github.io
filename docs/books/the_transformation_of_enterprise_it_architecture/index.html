@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="企业 IT 架构转型之道"><meta property="og:title" content="企业 IT 架构转型之道" />
+<meta property="og:description" content="企业 IT 架构转型之道 共享服务体系搭建 SOA 的主要特性：
+ 面向服务的分布式计算。 服务间松散耦合。 支持服务的组装。 服务注册和自动发现。 以服务契约方式定义服务交互方式。  基于 “中心化” 的 ESB 服务调用方式  “去中心化” 服务架构调用方式   数据拆分实现数据库能力线性扩展 数据库的读写分离 读写分离基本原理是让主数据库处理事务性增、改、删（INSERT、UPDATE、DELETE）操作，而从数据库专门负责处理查询（SELECT）操作，在数据库的后台会把事务性操作导致的主数据库中的数据变更同步到集群中的从数据库。
+数据库分库分表 采用分库分表的方式将业务数据拆分后，如果每一条SQL语句中都能带有分库分表键，SQL语句的执行效率最高：
+但不是所有的业务场景在进行数据库访问时每次都能带分库分表键的。比如在买家中心的界面中，要显示买家test1过去三个月的订单列表信息。此时就出现了我们所说的全表扫描，一条SQL语句同时被推送到后端所有数据库中运行。如果是高并发情况下同时请求的话，为了数据库整体的扩展能力，则要考虑下面描述的异构索引手段来避免这样的情况发生。对于在内存中要进行大数据量聚合操作和计算的SQL请求，如果这类SQL的不是大量并发或频繁调用的话，平台本身的性能影响也不会太大，如果这类SQL请求有并发或频繁访问的要求，则要考虑采用其他的平台来满足这一类场景的要求，比如Hadoop这类做大数据量离线分析的产品，如果应用对请求的实时性要求比较高，则可采用如内存数据库或HBase这类平台。
+所谓“异构索引表”，就是采用异步机制将原表内的每一次创建或更新，都换另一个维度保存一份完整的数据表或索引表。本质上这是互联网公司很多时候都采用的一个解决思路：“拿空间换时间”。也就是应用在创建或更新一条按照订单ID为分库分表键的订单数据时，也会再保存一份按照买家ID为分库分表键的订单索引数据。
+基于订单索引表实现买家订单列表查看流程示意：
+实现对数据的异步索引创建有多种实现方式，其中一种就是从数据库层采用 binlog 数据复制的方式实现。
+采用数据异构索引的方式在实战中基本能解决和避免90%以上的跨join或全表扫描的情况，是在分布式数据场景下，提升数据库服务性能和处理吞吐能力的最有效技术手段。但在某些场景下，比如淘宝商品的搜索和高级搜索，因为商品搜索几乎是访问淘宝用户都会进行的操作，所以调用非常频繁，如果采用SQL语句的方式在商品数据库进行全表扫描的操作，则必然对数据库的整体性能和数据库连接资源带来巨大的压力。面对此类场景，我们不建议采用数据库的方式提供这样的搜索服务，而是采用专业的搜索引擎平台来行使这样的职能，如Lucene、Solr、ElasticSearch 等。
+异步化与缓存原则 业务流程异步化 以淘宝的交易订单为例，目前淘宝的订单创建流程需要调用超过200个服务，就算所有服务的调用时间都控制在20ms内返回结果，整个订单创建的时间也会超过4s：
+以异步化方式将上述交易创建过程中，对于有严格先后调用关系的服务保持顺序执行，对于能够同步执行的所有服务均采用异步化方式处理。阿里巴巴内部使用消息中间件的方式实现了业务异步化，提高了服务的并发处理，从而大大减少整个业务请求处理所花的时间。
+数据库事务异步化 扣款是一个要求事务一致性的典型场景，稍微数据不一致带来的后果都可能是成百上千（可能在某些借款项目中达到上百万的金额）的金额差异。所以在传统的实现方式中，整个扣款的逻辑代码都是在一个大的事务中，通过数据库的事务特性来实现这样一个稍显复杂的业务一致性。
+数据库事务的异步化：通俗来说，就是将大事务拆分成小事务，降低数据库的资源被长时间事务锁占用而造成的数据库瓶颈，就能大大提升平台的处理吞吐量和事务操作的响应时间。
+在实际的改造方案中，同样基于消息服务提供的异步机制，将整个还款流程进行异步化的处理：
+事务与柔性事务 不管是业务流程异步化，还是数据库事务异步化，其实都面临一个如何保证业务事务一致性的问题。面对这个问题目前并没有完美的解决方案，本节会介绍淘宝是如何对订单创建场景实现业务一致的实践，以及近一两年来我们在分布式事务上所作出的创新尝试，供各技术同行在解决此类问题时借鉴和参考。
+关于数据库事务，核心是体现数据库ACID（原子性、一致性、隔离性和持久性）属性，即作为一个事务中包含的所有逻辑处理操作在作用到数据库上时，只有这个事务中所有的操作都成功，对数据库的修改才会永久更新到数据库中，任何一个操作失败，对于数据库之前的修改都会失效。在分布式领域，基于CAP理论和在其基础上延伸出的BASE理论，有人提出了“柔性事务”的概念。
+（1）CAP理论
+一个分布式系统最多只能同时满足一致性（Consistency）、可用性（Availability）和分区容错性（Partition tolerance）这三项中的两项。“一致性”指更新操作成功并返回客户端完成后，所有节点在同一时间的数据完全一致。“可用性”指用户在访问数据时可以得到及时的响应。“分区容错性”指分布式系统在遇到某节点或网络分区故障的时候，仍然能够对外提供满足一致性和可用性的服务。
+CAP定理并不意味着所有系统的设计都必须抛弃三个要素之中的一个。CAP三者可以在一定程度上衡量，并不是非黑即白的，例如可用性从0%到100%有不同等级。
+（2）BASE理论
+BASE理论是对CAP理论的延伸，核心思想是即使无法做到强一致性（Strong Consistency, CAP的一致性就是强一致性），但应用可以采用适合的方式达到最终一致性（EventualConsitency）。BASE是指基本可用（Basically Available）、柔性状态（Soft State）、最终一致性（Eventual Consistency）。
+  “基本可用”是指分布式系统在出现故障的时候，允许损失部分可用性，即保证核心可用。电商大促时，为了应对访问量激增，部分用户可能会被引导到降级页面，服务层也可能只提供降级服务。这就是损失部分可用性的体现。
+  “柔性状态”是指允许系统存在中间状态，而该中间状态不会影响系统整体可用性。分布式存储中一般一份数据至少会有三个副本，允许不同节点间副本同步的延时就是柔性状态的体现。MySQLReplication的异步复制也是一种柔性状态体现。
+  “最终一致性”是指系统中的所有数据副本经过一定时间后，最终能够达到一致的状态。弱一致性和强一致性相反，最终一致性是弱一致性的一种特殊情况。
+  对于如何实现高可用，我们认为：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/books/the_transformation_of_enterprise_it_architecture/" />
+
+<title>企业 IT 架构转型之道 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
+
+
+<script defer src="/en.search.min.69105856d7053cc159133efc18fdcb2279c7625d11948fcc905924e05582e794.js" integrity="sha256-aRBYVtcFPMFZEz78GP3LInnHYl0RlI/MkFkk4FWC55Q="></script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/beauty_of_mathematics/" >
+      数学之美
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/history_of_quantum_physics/" >
+      上帝掷骰子吗
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/clean_code/" >
+      代码整洁之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the_transformation_of_enterprise_it_architecture/"  class="active">
+      企业 IT 架构转型之道
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>企业 IT 架构转型之道</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#共享服务体系搭建">共享服务体系搭建</a></li>
+    <li><a href="#数据拆分实现数据库能力线性扩展">数据拆分实现数据库能力线性扩展</a>
+      <ul>
+        <li><a href="#数据库的读写分离">数据库的读写分离</a></li>
+        <li><a href="#数据库分库分表">数据库分库分表</a></li>
+      </ul>
+    </li>
+    <li><a href="#异步化与缓存原则">异步化与缓存原则</a>
+      <ul>
+        <li><a href="#业务流程异步化">业务流程异步化</a></li>
+        <li><a href="#数据库事务异步化">数据库事务异步化</a></li>
+        <li><a href="#事务与柔性事务">事务与柔性事务</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="企业-it-架构转型之道">企业 IT 架构转型之道</h1>
+<h2 id="共享服务体系搭建">共享服务体系搭建</h2>
+<p>SOA 的主要特性：</p>
+<ul>
+<li>面向服务的分布式计算。</li>
+<li>服务间松散耦合。</li>
+<li>支持服务的组装。</li>
+<li>服务注册和自动发现。</li>
+<li>以服务契约方式定义服务交互方式。</li>
+</ul>
+<div class="book-columns flex flex-wrap">
+  
+  <div class="flex-even markdown-inner">
+    <h4 id="基于-中心化-的-esb-服务调用方式">基于 “中心化” 的 ESB 服务调用方式</h4>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/ESB.png" alt="中心化">
+  </div>
+  
+  <div class="flex-even markdown-inner">
+    <h4 id="去中心化-服务架构调用方式">“去中心化” 服务架构调用方式</h4>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/distributed_call.png" alt="去中心化">
+  </div>
+  
+</div>
+
+<h2 id="数据拆分实现数据库能力线性扩展">数据拆分实现数据库能力线性扩展</h2>
+<h3 id="数据库的读写分离">数据库的读写分离</h3>
+<p>读写分离基本原理是让主数据库处理事务性增、改、删（INSERT、UPDATE、DELETE）操作，而从数据库专门负责处理查询（SELECT）操作，在数据库的后台会把事务性操作导致的主数据库中的数据变更同步到集群中的从数据库。</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/read_and_write_db.png" alt="读写分离"></p>
+<h3 id="数据库分库分表">数据库分库分表</h3>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/multi_partition.png" alt="数据库分区"></p>
+<p>采用分库分表的方式将业务数据拆分后，如果每一条SQL语句中都能带有分库分表键，SQL语句的执行效率最高：</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/sql_with_partition_key.png" alt="数据库分区"></p>
+<p>但不是所有的业务场景在进行数据库访问时每次都能带分库分表键的。比如在买家中心的界面中，要显示买家test1过去三个月的订单列表信息。此时就出现了我们所说的<strong>全表扫描</strong>，一条SQL语句同时被推送到后端所有数据库中运行。如果是高并发情况下同时请求的话，为了数据库整体的扩展能力，则要考虑下面描述的<strong>异构索引手段</strong>来避免这样的情况发生。对于在内存中要进行大数据量聚合操作和计算的SQL请求，如果这类SQL的不是大量并发或频繁调用的话，平台本身的性能影响也不会太大，如果这类SQL请求有并发或频繁访问的要求，则要考虑采用其他的平台来满足这一类场景的要求，比如Hadoop这类做<strong>大数据量离线分析</strong>的产品，如果应用<strong>对请求的实时性要求比较高</strong>，则可采用如内存数据库或<strong>HBase</strong>这类平台。</p>
+<p>所谓“异构索引表”，就是采用异步机制将原表内的每一次创建或更新，都换<strong>另一个维度</strong>保存一份完整的数据表或索引表。本质上这是互联网公司很多时候都采用的一个解决思路：“拿空间换时间”。也就是应用在创建或更新一条按照订单ID为分库分表键的订单数据时，也会再保存一份按照买家ID为分库分表键的订单索引数据。</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/async_build_index.png" alt="数据库分区"></p>
+<p>基于订单索引表实现买家订单列表查看流程示意：</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/query_process.png" alt="查询操作"></p>
+<p>实现对数据的异步索引创建有多种实现方式，其中一种就是<strong>从数据库层采用 <code>binlog</code> 数据复制</strong>的方式实现。</p>
+<p>采用数据异构索引的方式在实战中基本能<strong>解决和避免90%以上的跨join或全表扫描</strong>的情况，是在分布式数据场景下，提升数据库服务性能和处理吞吐能力的最有效技术手段。但在某些场景下，比如淘宝商品的搜索和高级搜索，因为商品搜索几乎是访问淘宝用户都会进行的操作，所以调用非常频繁，如果采用SQL语句的方式在商品数据库进行全表扫描的操作，则必然对数据库的整体性能和数据库连接资源带来巨大的压力。面对此类场景，我们不建议采用数据库的方式提供这样的搜索服务，而是<strong>采用专业的搜索引擎平台</strong>来行使这样的职能，如<code>Lucene</code>、<code>Solr</code>、<code>ElasticSearch</code> 等。</p>
+<h2 id="异步化与缓存原则">异步化与缓存原则</h2>
+<h3 id="业务流程异步化">业务流程异步化</h3>
+<p>以淘宝的交易订单为例，目前淘宝的订单创建流程需要调用超过200个服务，就算所有服务的调用时间都控制在20ms内返回结果，整个订单创建的时间也会超过4s：</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/make_order.png" alt="交易订单"></p>
+<p>以异步化方式将上述交易创建过程中，对于有<strong>严格先后调用关系</strong>的服务保持顺序执行，对于<strong>能够同步执行</strong>的所有服务均采用异步化方式处理。阿里巴巴内部使用<strong>消息中间件</strong>的方式实现了业务异步化，提高了服务的并发处理，从而大大减少整个业务请求处理所花的时间。</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/async_make_order.png" alt="异步交易订单"></p>
+<h3 id="数据库事务异步化">数据库事务异步化</h3>
+<p>扣款是一个要求事务一致性的典型场景，稍微数据不一致带来的后果都可能是成百上千（可能在某些借款项目中达到上百万的金额）的金额差异。所以在传统的实现方式中，整个扣款的逻辑代码都是在一个大的事务中，通过<strong>数据库的事务特性</strong>来实现这样一个稍显复杂的业务一致性。</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/return_money.png" alt="扣款"></p>
+<p>数据库事务的异步化：通俗来说，就是将<strong>大事务拆分成小事务</strong>，降低数据库的资源被长时间事务锁占用而造成的数据库瓶颈，就能大大提升平台的处理吞吐量和事务操作的响应时间。</p>
+<p>在实际的改造方案中，同样基于消息服务提供的异步机制，将整个还款流程进行异步化的处理：</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/async_return_money.png" alt="异步扣款"></p>
+<h3 id="事务与柔性事务">事务与柔性事务</h3>
+<p>不管是业务流程异步化，还是数据库事务异步化，其实都面临一个如何保证业务事务一致性的问题。面对这个问题目前并<strong>没有完美的解决方案</strong>，本节会介绍淘宝是如何对订单创建场景实现业务一致的实践，以及近一两年来我们在分布式事务上所作出的创新尝试，供各技术同行在解决此类问题时借鉴和参考。</p>
+<p>关于数据库事务，核心是体现数据库ACID（原子性、一致性、隔离性和持久性）属性，即作为一个事务中包含的所有逻辑处理操作在作用到数据库上时，只有这个事务中所有的操作都成功，对数据库的修改才会永久更新到数据库中，任何一个操作失败，对于数据库之前的修改都会失效。在分布式领域，基于CAP理论和在其基础上延伸出的BASE理论，有人提出了“柔性事务”的概念。</p>
+<p>（1）<strong>CAP理论</strong></p>
+<p>一个分布式系统最多只能同时满足一致性（Consistency）、可用性（Availability）和分区容错性（Partition tolerance）这三项中的两项。“一致性”指更新操作成功并返回客户端完成后，所有节点在同一时间的数据完全一致。“可用性”指用户在访问数据时可以得到及时的响应。“分区容错性”指分布式系统在遇到某节点或网络分区故障的时候，仍然能够对外提供满足一致性和可用性的服务。</p>
+<p>CAP定理并不意味着所有系统的设计都必须抛弃三个要素之中的一个。CAP三者可以在一定程度上衡量，并不是非黑即白的，例如<strong>可用性从0%到100%有不同等级</strong>。</p>
+<p>（2）<strong>BASE理论</strong></p>
+<p>BASE理论是对CAP理论的延伸，核心思想是即使无法做到强一致性（Strong Consistency, CAP的一致性就是强一致性），但应用可以采用适合的方式达到最终一致性（EventualConsitency）。BASE是指基本可用（Basically Available）、柔性状态（Soft State）、最终一致性（Eventual Consistency）。</p>
+<ul>
+<li>
+<p>“基本可用”是指分布式系统在出现故障的时候，允许损失部分可用性，即保证核心可用。电商大促时，为了应对访问量激增，部分用户可能会被引导到降级页面，服务层也可能只提供降级服务。这就是损失部分可用性的体现。</p>
+</li>
+<li>
+<p>“柔性状态”是指允许系统存在中间状态，而该中间状态不会影响系统整体可用性。分布式存储中一般一份数据至少会有三个副本，允许不同节点间副本同步的延时就是柔性状态的体现。MySQLReplication的异步复制也是一种柔性状态体现。</p>
+</li>
+<li>
+<p>“最终一致性”是指系统中的所有数据副本经过一定时间后，最终能够达到一致的状态。弱一致性和强一致性相反，最终一致性是弱一致性的一种特殊情况。</p>
+</li>
+</ul>
+<p>对于如何实现高可用，我们认为：</p>
+<ul>
+<li>高可用=系统构建在多机分布式系统</li>
+<li>高性能=分布式系统的副产品</li>
+</ul>
+<p>分布式系统内通信和单机内通信最大的区别是：单机系统总线不会丢消息，而网络会。一台向另一台机器通信的结果可能是收到、未收到、不知道收到没收到。消息不可靠带来的副作用是：数据或者状态在多机之间同步的成本很高。大家都知道Paxos协议。在多机间通信不存在伪造或篡改的前提下，可以经由Paxos协议达成一致性。成本是发给Paxos系统的信息（数据）需要至少同步发送到一半以上多数（Quorum）的机器确认后，才能认为是成功。这样<strong>大幅增加了信息更新的延迟</strong>，因此分布式系统的首选不是这种强同步而是最终一致。</p>
+<p>（3）<strong>两阶段提交</strong></p>
+<p>数据在按照业务领域（用户中心、交易中心）的不同被拆分到不同的数据库后，在某些业务场景（比如订单创建）下，就必然会出现<strong>同一个事务上下文</strong>中，需要<strong>协调多个资源（数据库）以保证业务的事务一致性</strong>，对于这样的场景，业界早就有基于两阶段提交方式实现的分布式事务，两阶段提交协议包含了两个阶段：第一阶段（也称准备阶段）和第二阶段（也称提交阶段）。</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/two_phase_commit.png" alt="两阶段提交"></p>
+<p>X/Open组织为基于两阶段协议的分布式事务处理系统提出了<strong>标准的系统参考模型</strong>（X/Open事务模型）以及不同组件间与事务协调相关的接口，使不同厂商的产品能够互操作。X/Open事务模型如图所示。</p>
+<p><img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/x_open_model.png" alt="X/Open 模型"></p>
+<p>从图中可以看出，X/Open模型定义了两个标准接口：<strong>TX接口</strong>用于应用程序向事务管理器发起事务、提交事务和回滚事务（即确定事务的边界和结果）; <strong>XA接口</strong>形成了事务管理器和资源管理器之间的通信桥梁，用于事务管理器将资源管理器（如数据库、消息队列等）加入事务、并控制两阶段提交。</p>
+<p>事务管理器一般由专门的中间件提供，或者在应用服务器中作为一个重要的组件提供。资源管理器如数据库、消息队列等产品一般也会提供对XA接口的支持，通过使用符合X/Open标准的分布式事务处理，能够简化分布式事务类应用的开发。</p>
+<p>两阶段提交协议的关键在于“预备”操作。分布式事务协调者在第一阶段通过对所有的分布式事务参与者请求“预备”操作，达成关于分布式事务一致性的共识。分布式事务参与者在预备阶段必须完成所有的约束检查，并且确保后续提交或放弃时所需要的数据已持久化。在第二队段，分布式事务协调者根据之前达到的提交或放弃的共识，请求所有的分布式事务参与者完成相应的操作。很显然，在提交事务的过程中需要在多个资源节点之间进行协调，而各节点对锁资源的释放必须等到事务最终提交时，这样，比起一阶段提交，<strong>两阶段提交在执行同样的事务时会消耗更多时间</strong>。</p>
+<p>事务执行时间的延长意味着锁资源发生冲突的概率增加，当事务的并发量达到一定数量的时候，就会出现大量事务积压甚至出现死锁，系统性能和处理吞吐率就会严重下滑，也就是系统处理的吞吐率与资源上的时间消耗成反比（参考阿姆达尔定理）。这就是为什么今天在互联网应用场景中鲜有人会选择这样传统的分布式事务方式，而选择柔性事务处理业务事务的主要原因。</p>
+<p>（4）<strong>柔性事务如何解决分布式事务问题</strong></p>
+<ul>
+<li>
+<p><strong>引入日志和补偿机制</strong>。类似传统数据库，柔性事务的原子性主要由<strong>日志</strong>保证。事务日志记录事务的开始、结束状态，可能还包括事务参与者信息。参与者节点也需要根据重做或回滚需求记录REDO/UNDO日志。当事务重试、回滚时，可以根据这些日志最终将数据恢复到一致状态。为避免单点，<strong>事务日志是记录在分布式节点</strong>上的，数据REDO/UNDO日志一般记录在业务数据库上，可以保证日志与业务操作同时成功/失败。通常柔性事务能通过日志记录找回事务的当前执行状态，并根据状态决定是重试异常步骤（正向补偿），还是回滚前序步骤（反向补偿）。</p>
+</li>
+<li>
+<p><strong>可靠消息传递</strong>。根据“不知道成功还是失败”状态的处理，消息投递只有两种模式：1）<strong>消息仅投递一次</strong>，但是可能会没有收到；2）<strong>消息至少投递一次</strong>，但可能会投递多次。在业务一致性的高优先级下，第一种投递方式肯定是无法接受的，因此只能选择第二种投递方式。由于消息可能会重复投递，这就要求消息处理<strong>程序必须实现幂等</strong>（幂等=同一操作反复执行多次结果不变）。每种业务场景不同，实现幂等的方法也会有所不同，最简单的幂等实现方式是<strong>根据业务流水号写日志</strong>，阿里内部一般把这种日志叫做<strong>排重表</strong>。</p>
+</li>
+<li>
+<p><strong>实现无锁</strong>。如何很好地解决数据库锁问题是实现高性能的关键所在。所以选择<strong>放弃锁</strong>是一个解决问题的思路，但是放弃锁并不意味着放弃隔离性。实现事务隔离的方法有很多，在实际的业务场景中可灵活选择以下几种典型的实现方式。</p>
+<ul>
+<li><strong>避免事务进入回滚</strong>。如果事务在出现异常时，可以不回滚也能满足业务的要求，也就是要求业务不管出现任何情况，只能继续朝事务处理流程的顺向继续处理，这样中间状态即使对外可见，由于事务不会回滚，也不会导致脏读。</li>
+<li><strong>辅助业务变化明细表</strong>。比如对资金或商品库存进行增减处理时，可采用<strong>记录这些增减变化的明细表</strong>的方式，避免所有事务均对同一数据表进行更新操作，造成数据访问热点，同时使得不同事务中处理的数据互不干扰，实现对资金或库存信息处理的隔离。</li>
+<li><strong>乐观锁</strong>。数据库的悲观锁对数据访问具有极强的排他性，也是产生数据库处理瓶颈的重要原因，采用乐观锁则在一定程度上解决了这个问题。乐观锁大多是基于**数据版本（Version）**记录机制实现。例如通过在商品表中增加记录版本号的字段，在事务开始前获取到该商品记录的版本号，在事务处理最后对该商品数据进行数据更新时，可通过在执行最后的修改update语句时进行之前获取版本号的比对，如果版本号一致，则update更新数据成功，修改该数据到新的版本号；如果版本号不一致，则表示数据已经被其他事务修改了，则重试或放弃当前事务。
+<img src="/images/docs/books/the_transformation_of_enterprise_it_architecture/optimi_lock.png" alt="乐观锁"></li>
+</ul>
+</li>
+</ul>
+<p>（5）<strong>柔性事务在阿里巴巴内部的几种实现</strong></p>
+<ul>
+<li><strong>消息分布式事务</strong>。</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#共享服务体系搭建">共享服务体系搭建</a></li>
+    <li><a href="#数据拆分实现数据库能力线性扩展">数据拆分实现数据库能力线性扩展</a>
+      <ul>
+        <li><a href="#数据库的读写分离">数据库的读写分离</a></li>
+        <li><a href="#数据库分库分表">数据库分库分表</a></li>
+      </ul>
+    </li>
+    <li><a href="#异步化与缓存原则">异步化与缓存原则</a>
+      <ul>
+        <li><a href="#业务流程异步化">业务流程异步化</a></li>
+        <li><a href="#数据库事务异步化">数据库事务异步化</a></li>
+        <li><a href="#事务与柔性事务">事务与柔性事务</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+<footer style="width: 100%; position: fixed; bottom:0; height: 40px; padding-top: 10px; background-color:#fafafa; text-align: center">
+  <a style="color: #bbb; font-size: 12px;" href="http://www.beian.miit.gov.cn" target="_blank">京ICP备17006948号</href>
+</footer>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
