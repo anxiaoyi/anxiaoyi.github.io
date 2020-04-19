@@ -195,6 +195,19 @@ BASE理论是对CAP理论的延伸，核心思想是即使无法做到强一致�
     </item>
     
     <item>
+      <title>Redis 5 设计与源码分析</title>
+      <link>https://kunzhao.org/docs/books/redis_5_source_code/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/redis_5_source_code/</guid>
+      <description>Redis 5 设计与源码分析 Redis 5.0 新特性  新增Streams数据类型，这是 Redis 5.0 最重要的改进之一。可以把Streams当作消息队列。 新的模块API、定时器、集群及字典。 RDB中持久化存储LFU和LRU的信息。 将集群管理功能完全用C语言集成到redis-cli中，Redis 3.x 和 Redis4.x 的集群管理是通过Ruby脚本实现的。 有序集合新增命令ZPOPMIN/ZPOPMAX。 改进HyperLogLog的实现。 新增Client Unblock和Client ID。 新增LOLWUT命令。 Redis主从复制中的从不再称为Slave，改称Replicas。 Redis 5.0引入动态哈希，以平衡CPU的使用率和相应性能，可以通过配置文件进行配置。Redis 5.0默认使用动态哈希。 Redis核心代码进行了部分重构和优化。  简单动态字符串 （1） 长度小于 32 的短字符串
+struct __attribute__ ((__packed__))sdshdr5 { unsigned char flags; // 低 3 位存储类型，高 5 位存储长度  char buf[]; // 柔性数组 } 结构如下：
+（2） 长度大于 31 的字符串
+此处仅展示一个示例：
+struct __attribute__ ((__packed__))sdshdr8 { uint8_t len; // 已使用长度  uint8_t alloc; // 已分配的字节总长度  unsigned char flags; // 低 3 位存储类型  char buf[]; // 柔性数组 } SDS 读操作的复杂度多为O(1)，直接读取成员变量；涉及修改的写操作，则可能会触发扩容。</description>
+    </item>
+    
+    <item>
       <title>RocketMQ 消息索引流程</title>
       <link>https://kunzhao.org/docs/rocketmq/rocketmq-message-indexing-flow/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -220,6 +233,20 @@ MQAdminStartup.main(new String[] { &amp;#34;queryMsgById&amp;#34;, &amp;#34;-n&a
 一、定时消息概述 RocketMQ 支持 Producer 端发送定时消息，即该消息被发送之后，到一段时间之后才能被 Consumer 消费者端消费。但是当前开源版本的 RocketMQ 所支持的定时时间是有限的、不同级别的精度的时间，并不是任意无限制的定时时间。因此在每条消息上设置定时时间的 API 叫做 setDelayTimeLevel，而非 setDelayTime 这样的命名:
 Message msg = new Message(&amp;#34;TopicTest&amp;#34; /* Topic */, &amp;#34;TagA&amp;#34; /* Tag */, (&amp;#34;Hello RocketMQ &amp;#34; + i).getBytes(RemotingHelper.DEFAULT_CHARSET) /* Message body */); msg.setDelayTimeLevel(i + 1); 默认 Broker 服务器端有 18 个定时级别:
 public class MessageStoreConfig { private String messageDelayLevel = &amp;#34;1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h&amp;#34;; } 这 18 个定时级别在服务器端启动的时候，会被解析并放置到表 delayLevelTable 中。解析的过程就是上述字符串按照空格拆分开，然后根据时间单位的不同再进一步进行计算，得到最终的毫秒时间。级别就是根据这些毫秒时间的顺序而确定的，例如上述 1s 延迟就是级别 1， 5s 延迟就是级别 2，以此类推:</description>
+    </item>
+    
+    <item>
+      <title>深度剖析 Apache Dubbo 核心技术</title>
+      <link>https://kunzhao.org/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/</guid>
+      <description>深度剖析 Apache Dubbo 核心技术 SPI 扩展 Dubbo 支持扩展的核心接口上，都会通过类似 @SPI(&amp;quot;dubbo&amp;quot;) 这样的注解，来标识当前接口的默认实现。如果你想替换掉这个默认实现，那么需要两个步骤。第一，实现 Protocol 接口，然后在 META-INF/dubbo 目录下创建一个名字为 org.apache.dubbo.rpc.Protocol 的文本文件。这个 META-INF 目录如果使用的是 IDEA 开发，那么其应该放到 resources 目录下的顶层，这样打 jar 包的时候，其也会被复制到 jar 包的第一级目录。内容如下：
+myProtocol = com.zk.MyProtocol 第二，需要在 XML 配置文件中，声明使用这个扩展实现：
+&amp;lt;dubbo:protocol name=&amp;#34;myProtocol&amp;#34;&amp;gt; 其实 JDK 本身也提供了 SPI 扩展，Dubbo 之所以没有使用默认提供的实现，是因为：
+ JDK 标准的 SPI 一次性实例化扩展点的所有实现，如果有些没有使用到，那么会浪费资源。 扩展点加载失败的异常提示不是很好。 增强了 Ioc 和 AOP 的支持。  性能 Dubbo 会给每个服务提供者的实现类生产一个 Wrapper 类，这个 Wrapper 类里面最终调用服务提供者的接口实现类，Wrapper 类的存在是为了减少反射的调用。当服务提供方收到消费方发来的请求后，需要根据消费者传递过来的方法名和参数反射调用服务提供者的实现类，而反射本身是有性能开销的，Dubbo 把每个服务提供者的实现类通过 JavaAssist 包装为一个 Wrapper 类以减少反射调用开销。
+其实就是由反射改为了比较方法名称，然后调用，伪代码如下：
+GreetingServiceImpl impl = (GreetingServiceImpl) object; if (&amp;#34;sayHello&amp;#34;.</description>
     </item>
     
     <item>

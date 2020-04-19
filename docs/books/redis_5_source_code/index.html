@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Redis 5 设计与源码分析"><meta property="og:title" content="Redis 5 设计与源码分析" />
+<meta property="og:description" content="Redis 5 设计与源码分析 Redis 5.0 新特性  新增Streams数据类型，这是 Redis 5.0 最重要的改进之一。可以把Streams当作消息队列。 新的模块API、定时器、集群及字典。 RDB中持久化存储LFU和LRU的信息。 将集群管理功能完全用C语言集成到redis-cli中，Redis 3.x 和 Redis4.x 的集群管理是通过Ruby脚本实现的。 有序集合新增命令ZPOPMIN/ZPOPMAX。 改进HyperLogLog的实现。 新增Client Unblock和Client ID。 新增LOLWUT命令。 Redis主从复制中的从不再称为Slave，改称Replicas。 Redis 5.0引入动态哈希，以平衡CPU的使用率和相应性能，可以通过配置文件进行配置。Redis 5.0默认使用动态哈希。 Redis核心代码进行了部分重构和优化。  简单动态字符串 （1） 长度小于 32 的短字符串
+struct __attribute__ ((__packed__))sdshdr5 { unsigned char flags; // 低 3 位存储类型，高 5 位存储长度  char buf[]; // 柔性数组 } 结构如下：
+（2） 长度大于 31 的字符串
+此处仅展示一个示例：
+struct __attribute__ ((__packed__))sdshdr8 { uint8_t len; // 已使用长度  uint8_t alloc; // 已分配的字节总长度  unsigned char flags; // 低 3 位存储类型  char buf[]; // 柔性数组 } SDS 读操作的复杂度多为O(1)，直接读取成员变量；涉及修改的写操作，则可能会触发扩容。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/books/redis_5_source_code/" />
+
+<title>Redis 5 设计与源码分析 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
+
+
+<script defer src="/en.search.min.8e136f8ca9c3bd6ef6a136cd56565048ebd0ddb6fbfecc6c87049b9857efbfc8.js" integrity="sha256-jhNvjKnDvW72oTbNVlZQSOvQ3bb7/sxshwSbmFfvv8g="></script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/beauty_of_mathematics/" >
+      数学之美
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/history_of_quantum_physics/" >
+      上帝掷骰子吗
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/clean_code/" >
+      代码整洁之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the_transformation_of_enterprise_it_architecture/" >
+      企业 IT 架构转型之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/redis_5_source_code/"  class="active">
+      Redis 5 设计与源码分析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/" >
+      深度剖析 Apache Dubbo 核心技术
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Redis 5 设计与源码分析</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#redis-50-新特性">Redis 5.0 新特性</a></li>
+    <li><a href="#简单动态字符串">简单动态字符串</a></li>
+    <li><a href="#跳跃表">跳跃表</a></li>
+    <li><a href="#压缩列表">压缩列表</a></li>
+    <li><a href="#字典">字典</a></li>
+    <li><a href="#整数集合">整数集合</a></li>
+    <li><a href="#quicklist的实现">quicklist的实现</a></li>
+    <li><a href="#stream">Stream</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="redis-5-设计与源码分析">Redis 5 设计与源码分析</h1>
+<h2 id="redis-50-新特性">Redis 5.0 新特性</h2>
+<ul>
+<li>新增Streams数据类型，这是 <code>Redis 5.0</code> <strong>最重要的改进</strong>之一。可以把Streams当作消息队列。</li>
+<li>新的模块API、定时器、集群及字典。</li>
+<li>RDB中持久化存储LFU和LRU的信息。</li>
+<li>将集群管理功能完全用C语言集成到redis-cli中，Redis 3.x 和 Redis4.x 的集群管理是通过Ruby脚本实现的。</li>
+<li>有序集合新增命令<code>ZPOPMIN</code>/<code>ZPOPMAX</code>。</li>
+<li>改进<code>HyperLogLog</code>的实现。</li>
+<li>新增Client Unblock和Client ID。</li>
+<li>新增<code>LOLWUT</code>命令。</li>
+<li>Redis主从复制中的从不再称为<code>Slave</code>，改称<code>Replicas</code>。</li>
+<li>Redis 5.0引入动态哈希，以平衡CPU的使用率和相应性能，可以通过配置文件进行配置。Redis 5.0默认使用动态哈希。</li>
+<li>Redis核心代码进行了部分重构和优化。</li>
+</ul>
+<h2 id="简单动态字符串">简单动态字符串</h2>
+<p>（1） 长度小于 32 的短字符串</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">__attribute__</span> ((__packed__))sdshdr5 {
+    <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">char</span> flags; <span style="color:#75715e">// 低 3 位存储类型，高 5 位存储长度
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">char</span> buf[]; <span style="color:#75715e">// 柔性数组
+</span><span style="color:#75715e"></span>}
+</code></pre></div><p>结构如下：</p>
+<p><img src="/images/docs/books/redis_5_source_code/sdshdr5_structure.png" alt="sdshdr5"></p>
+<p>（2） 长度大于 31 的字符串</p>
+<p>此处仅展示一个示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">__attribute__</span> ((__packed__))sdshdr8 {
+    uint8_t len; <span style="color:#75715e">// 已使用长度
+</span><span style="color:#75715e"></span>    uint8_t alloc; <span style="color:#75715e">// 已分配的字节总长度
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">char</span> flags; <span style="color:#75715e">// 低 3 位存储类型
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">char</span> buf[]; <span style="color:#75715e">// 柔性数组
+</span><span style="color:#75715e"></span>}
+</code></pre></div><p><code>SDS</code> 读操作的复杂度多为O(1)，直接读取成员变量；涉及修改的写操作，则可能会<strong>触发扩容</strong>。</p>
+<h2 id="跳跃表">跳跃表</h2>
+<p>对于<strong>有序集合</strong>的底层实现，我们可以使用数组、链表、平衡树等结构。数组不便于元素的插入和删除；链表的查询效率低，需要遍历所有元素；平衡树或者红黑树等结构虽然效率高但实现复杂。Redis采用了一种新型的数据结构——跳跃表。跳跃表的效率堪比红黑树，然而其实现却远比红黑树简单。</p>
+<p><img src="/images/docs/books/redis_5_source_code/implement_skiplist.png" alt="实现跳跃表"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> zskiplistNode {
+    sds ele;
+    <span style="color:#66d9ef">double</span> score;
+    <span style="color:#66d9ef">struct</span> zskiplistNode <span style="color:#f92672">*</span>backward;
+    <span style="color:#66d9ef">struct</span> zskiplistLevel {
+        <span style="color:#66d9ef">struct</span> zskiplistNode <span style="color:#f92672">*</span>forward;
+        <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> span;
+    } level[];
+} zskiplistNode;
+
+<span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> zskiplist {
+    <span style="color:#66d9ef">struct</span> zskiplistNode <span style="color:#f92672">*</span>header, <span style="color:#f92672">*</span>tail;
+    <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">long</span> length;
+    <span style="color:#66d9ef">int</span> level;
+} zkiplist;
+</code></pre></div><p>在Redis中，跳跃表主要应用于<strong>有序集合</strong>的底层实现（有序集合的另一种实现方式为压缩列表）。<code>zset</code>插入<strong>第一个元素</strong>时，会判断下面两种条件：</p>
+<ul>
+<li><code>zset-max-ziplist-entries</code>的值是否等于0；</li>
+<li><code>zset-max-ziplist-value</code>小于要插入元素的字符串长度。</li>
+</ul>
+<p>满足任一条件Redis就会采用跳跃表作为底层实现，否则采用压缩列表作为底层实现方式。一般情况下，不会将<code>zset-max-ziplist-entries</code>配置成0，元素的字符串长度也不会太长，所以在创建有序集合时，<strong>默认使用压缩列表</strong>的底层实现。</p>
+<p><code>zset</code>新插入元素时，会判断以下两种条件：</p>
+<ul>
+<li><code>zset</code>中元素个数大于<code>zset_max_ziplist_entries</code>；</li>
+<li>插入元素的字符串长度大于<code>zset_max_ziplist_value</code>。</li>
+</ul>
+<p>当满足任一条件时，Redis便会将<code>zset</code>的底层实现由<strong>压缩列表转为跳跃表</strong>。值得注意的是，<code>zset</code>在转为跳跃表之后，即使元素被逐渐删除，也不会重新转为压缩列表。</p>
+<p>跳跃表的原理简单，其查询、插入、删除的平均复杂度都为<strong>O(logN)</strong>。</p>
+<h2 id="压缩列表">压缩列表</h2>
+<p>压缩列表<code>ziplist</code>本质上就是一个<strong>字节数组</strong>，是Redis为了<strong>节约内存</strong>而设计的一种线性数据结构，可以包含多个元素，每个元素可以是一个字节数组或一个整数。</p>
+<p>Redis的<strong>有序集合、散列和列表</strong>都直接或者间接使用了压缩列表。当有序集合或散列表的元素个数比较少，且元素都是短字符串时，Redis便使用压缩列表作为其底层数据存储结构。</p>
+<p><img src="/images/docs/books/redis_5_source_code/ziplist_structure.png" alt="压缩列表"></p>
+<p>元素的结构示意图：</p>
+<p><img src="/images/docs/books/redis_5_source_code/ziplist_entry_structure.png" alt="压缩列表单个元素"></p>
+<h2 id="字典">字典</h2>
+<p>Redis自带客户端就是使用<code>times 33</code>散列函数来计算字符串的Hash值，Redis服务端的Hash函数使用的是<code>siphash</code>算法，主要功能与客户端Hash函数类似，其优点是针对有规律的键计算出来的Hash值也具有强随机分布性，但算法较为复杂。</p>
+<p><img src="/images/docs/books/redis_5_source_code/redis_dict.png" alt="字典结构"></p>
+<h2 id="整数集合">整数集合</h2>
+<p>整数集合（<code>intset</code>）是一个<strong>有序的、存储整型数据</strong>的结构。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">127.0.0.1:6379&gt; sadd testset <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">6</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">4</span>
+127.0.0.1:6379&gt; object encoding testset
+<span style="color:#e6db74">&#34;intset&#34;</span>
+</code></pre></div><p><img src="/images/docs/books/redis_5_source_code/intset.png" alt="intset"></p>
+<p><code>intset</code>是按从小到大有序排列的，所以通过防御性判断之后使用<strong>二分法</strong>进行元素的查找。</p>
+<h2 id="quicklist的实现">quicklist的实现</h2>
+<p><code>quicklist</code>是Redis底层最重要的数据结构之一，它是Redis对外提供的6种基本数据结构中<code>List</code>的底层实现，在Redis 3.2版本中引入，能够在<strong>时间效率和空间效率</strong>间实现较好的折中。<code>quicklist</code>由<code>List</code>和<code>ziplist</code>结合而成。<code>quicklist</code>是一个双向链表，链表中的每个节点是一个<code>ziplist</code>结构。<code>quicklist</code>可以看成是用双向链表将若干小型的<code>ziplist</code>连接到一起组成的一种数据结构。</p>
+<p><img src="/images/docs/books/redis_5_source_code/quicklist.png" alt="intset"></p>
+<h2 id="stream">Stream</h2>
+<p>Redis <code>Stream</code>的结构如图所示，它主要由消息、生产者、消费者、消费组4部分组成。</p>
+<p><img src="/images/docs/books/redis_5_source_code/redis_stream.png" alt="Stream"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">xadd mystream1 * name zk age <span style="color:#ae81ff">20</span>
+</code></pre></div><p><code>mystream1</code>为Stream的名称；*代表由Redis自行生成消息ID;name、age为该消息的field; zk、20则为对应的field的值。</p>
+<p>每个消息都由以下两部分组成。</p>
+<ul>
+<li>每个消息有唯一的消息ID，<strong>消息ID严格递增</strong>。</li>
+<li>消息内容由多个field-value对组成。</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#redis-50-新特性">Redis 5.0 新特性</a></li>
+    <li><a href="#简单动态字符串">简单动态字符串</a></li>
+    <li><a href="#跳跃表">跳跃表</a></li>
+    <li><a href="#压缩列表">压缩列表</a></li>
+    <li><a href="#字典">字典</a></li>
+    <li><a href="#整数集合">整数集合</a></li>
+    <li><a href="#quicklist的实现">quicklist的实现</a></li>
+    <li><a href="#stream">Stream</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+<footer style="width: 100%; position: fixed; bottom:0; height: 40px; padding-top: 10px; background-color:#fafafa; text-align: center">
+  <a style="color: #bbb; font-size: 12px;" href="http://www.beian.miit.gov.cn" target="_blank">京ICP备17006948号</href>
+</footer>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
