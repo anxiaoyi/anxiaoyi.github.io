@@ -11,6 +11,24 @@
     
     
     <item>
+      <title>B站高可用架构实践</title>
+      <link>https://kunzhao.org/docs/cloud-plus-bbs/bilibili-high-availability/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/cloud-plus-bbs/bilibili-high-availability/</guid>
+      <description>B站高可用架构实践 流量洪峰下要做好高服务质量的架构是一件具备挑战的事情，从Google SRE的系统方法论以及实际业务的应对过程中出发，分享一些体系化的可用性设计。对我们了解系统的全貌上下游的联防有更进一步的了解。
+负载均衡 BFE 就是指边缘节点，BFE 选择下游 IDC 的逻辑权衡：
+ 离 BFE 节点比较近的 基于带宽的调度策略 某个 IDC 的流量已经过载，选择另外一个 IDC  当流量走到某个 IDC 时，这个流量应该如何进行负载均衡？
+问题：RPC 定时发送的 ping-pong，也即 healthcheck，占用资源也非常多。服务 A 需要与账号服务维持长连接发送 ping-pong，服务 B 也需要维持长连接发送 ping-pong。这个服务越底层，一般依赖和引用这个服务的资源就越多，一旦有任何抖动，那么产生的这个故障面是很大的。那么应该如何解决？
+解决：以前是一个 client 跟所有的 backend 建立连接，做负载均衡。现在引入一个新的算法，子集选择算法，一个 client 跟一小部分的 backend 建立连接。图片中示例的算法，是从《Site Reliability Engineering》这本书里看的。
+如何规避单集群抖动带来的问题？多集群。
+如上述图片所示，如果采用的是 JSQ 负载均衡算法，那么对于 LBA 它一定是选择 Server Y 这个节点。但如果站在全局的视角来看，就肯定不会选择 Server Y 了，因此这个算法缺乏一个全局的视角。
+如果微服务采用的是 Java 语言开发，当它处于 GC 或者 FullGC 的时候，这个时候发一个请求过去，那么它的 latency 肯定会变得非常高，可能会产生过载。
+新启动的节点，JVM 会做 JIT，每次新启动都会抖动一波，那么就需要考虑如何对这个节点做预热？
+如上图所示，采用 &amp;ldquo;the choice-of-2&amp;rdquo; 算法后，各个机器的 CPU 负载趋向于收敛，即各个机器的 CPU 负载都差不多。Client 如何拿到后台的 Backend 的各项负载？是采用 Middleware 从 Rpc 的 Response 里面获取的，有很多 RPC 也支持获取元数据信息等。</description>
+    </item>
+    
+    <item>
       <title>RocketMQ 消息发送流程</title>
       <link>https://kunzhao.org/docs/rocketmq/rocketmq-send-message-flow/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -260,6 +278,18 @@ GreetingServiceImpl impl = (GreetingServiceImpl) object; if (&amp;#34;sayHello&a
  Master 磁盘坏掉，Slave 依然保存了一份 Master 宕机，不影响消费者继续消费  二、搭建环境 我们在一台机器上搭建一个 Master 一个 Slave 的环境:
 为了能够将 Master 和 Slave 搭建在同一台计算机上，我们除了需要将 Broker 的角色设置为 SLAVE ，还需要为其指定单独的 brokerId、 storePathRootDir、 storePathCommitLog。
 // SLAVE 角色 messageStoreConfig.setBrokerRole(BrokerRole.SLAVE); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 store 根目录必须不同 messageStoreConfig.setStorePathRootDir(storePathRootDir); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 storePathCommitLog 根目录必须不同 messageStoreConfig.setStorePathCommitLog(storePathCommitLog); // 设置 Slave 的 Master HA 地址 messageStoreConfig.setHaMasterAddress(&amp;#34;localhost:10912&amp;#34;); // SLAVE 角色的 brokerId 必须大于 0 brokerConfig.setBrokerId(1); 注意 Slave 和 Master 的 brokerName 必须一致，即它们必须处于同一个 BrokerData 数据结构里面。实际上在做了如上的修改之后， Slave 和 Master 依旧不能同时运行在同一台机器上，因为 Slave 本身也可以称为 Master，接受来自其他 Slave 的请求，因此当运行 Slave 的时候，需要将 HAService 里面的启动 AcceptSocketService 运行的相关方法注释掉。</description>
+    </item>
+    
+    <item>
+      <title>人人都是架构师 (一)</title>
+      <link>https://kunzhao.org/docs/books/everyone-is-architect/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/everyone-is-architect/</guid>
+      <description>人人都是架构师 - 分布式系统架构落地与瓶颈突破 分布式系统应对高并发、大流量的常用手段：
+ 扩容 动静分离 缓存 服务降级 限流  限流 常见算法：
+ 令牌桶，Nginx 限流模块用的是这个：限制的是流量的平均流入速率，允许一定程度上的突发流量。 漏桶：限制的是流出速率，并且这个速率还是保持不变的，不允许突发流量。  Nginx 限流 http { # 每个 IP 的 session 空间大小 limit_zone one $binary_remote_addr 20m; # 每个 IP 每秒允许发起的请求数 limit_req_zone $binary_remote_addr zone=req_one:20m rate=10r/s; # 每个 IP 能够发起的并发连接数 limit_conn one 10; # 缓存还没有来得及处理的请求 limit_req zone=req_one burst=100; } 消峰  活动分时段 答题验证  高并发读 &amp;ldquo;马某出轨王某&amp;rdquo;、&amp;ldquo;iPhone SE 2020 发布&amp;rdquo; 等这种热点新闻的 key 会始终落在同一个缓存节点上，分布式缓存一定会出现单点瓶颈，其资源连接容易瞬间耗尽。有如下两种方案解决这个问题：
+ 基于 Redis 的集群多写多读方案。  多写如何保持一致性：将 Key 配置在 ZooKeeper，客户端监听 ZNode，一旦变化，全量更新本地持有的 Key   LocalCache 结合 Redis 集群的多级 Cache 方案。  LocalCache 拉取下来的商品数量有 5 个，但是实际上只有 4 个了，怎么解决？对于这种读场景，允许接受一定程度上的数据脏读，最终扣减库存的时候再提示商品已经售罄即可。    实时热点自动发现 交易系统产生的相关数据、上游系统中埋点上报的数据这两个，异步写入日志，对日志进行次数统计和热点分析</description>
     </item>
     
   </channel>
