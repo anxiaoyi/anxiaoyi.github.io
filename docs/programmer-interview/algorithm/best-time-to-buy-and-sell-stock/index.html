@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Best Time to Buy and Sell Stock"><meta property="og:title" content="Best Time to Buy and Sell Stock" />
+<meta property="og:description" content="Best Time to Buy and Sell Stock 题目 LeetCode 地址：Best Time to Buy and Sell Stock
+有一个数组，第 i 个元素的值代表第 i 天的股票价格，如果你最多只能进行一次交易（某天买入一支股票，然后过几天卖掉），请问你能收获的最大利润是多少？
+分析 这道题有两个简单做法：状态机和动态规划。
+使用状态机的做法的好处是，这种思路可以延续到其它几个买卖股票的问题上。关键是要想清楚，某一天有几种状态，在这道题是三种：
+ 状态 s0: 不买也不卖，无操作。s0 的值只能有一个来源，就是和昨天保持一致，不买也不卖 状态 s1: 买入了股票。s1 的值有两个来源：1. 与昨天一致，即已经买入了，且只能买一次，所以不能再买了，s1 = s1；2. 买入今天的股票，花了 price[i] 钱，s1 = s0 - price[i] 状态 s2: 卖出了股票。s2 的值有两个来源：1. 之前已经卖出了，所以维持卖出状态，不能再次卖了，s2 = s1；2. 卖出之前买入的股票，挣 price[i] 钱，s2 = s1 &#43; price[i]  所以，我们可以得到如下状态转移关系：
+ s0 = s0 s1 = s1 s1 = s0 - price[i] s2 = s2 s2 = s1 &#43; price[i]  在这整个过程中，我们都要保证每一天的 s0、s1、s2 都是 max 状态，s2 是最终卖完后的收益，所以返回这个结果就行。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock/" />
+
+<title>Best Time to Buy and Sell Stock | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
+
+
+<script defer src="/en.search.min.c8043ba49a54a71e17954f8f52b45731c650893805f7262130a2fca6eb0e55b7.js" integrity="sha256-yAQ7pJpUpx4XlU&#43;PUrRXMcZQiTgF9yYhMKL8pusOVbc="></script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock/"  class="active">
+      Best Time to Buy and Sell Stock
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Best Time to Buy and Sell Stock</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#题目">题目</a></li>
+    <li><a href="#分析">分析</a></li>
+    <li><a href="#答案">答案</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="best-time-to-buy-and-sell-stock">Best Time to Buy and Sell Stock</h1>
+<h2 id="题目">题目</h2>
+<p>LeetCode 地址：<a href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock">Best Time to Buy and Sell Stock</a></p>
+<p>有一个数组，第 i 个元素的值代表第 i 天的股票价格，如果你最多只能进行一次交易（某天买入一支股票，然后过几天卖掉），请问你能收获的最大利润是多少？</p>
+<h2 id="分析">分析</h2>
+<p>这道题有两个简单做法：<strong>状态机</strong>和<strong>动态规划</strong>。</p>
+<p>使用<strong>状态机</strong>的做法的好处是，这种思路可以延续到其它几个买卖股票的问题上。关键是要想清楚，某一天有几种状态，在这道题是三种：</p>
+<ul>
+<li>状态 <code>s0</code>: 不买也不卖，无操作。<code>s0</code> 的值只能有一个来源，就是和昨天保持一致，不买也不卖</li>
+<li>状态 <code>s1</code>: 买入了股票。<code>s1</code> 的值有两个来源：1. 与昨天一致，即已经买入了，且只能买一次，所以不能再买了，<code>s1 = s1</code>；2. 买入今天的股票，花了 <code>price[i]</code> 钱，<code>s1 = s0 - price[i]</code></li>
+<li>状态 <code>s2</code>: 卖出了股票。<code>s2</code> 的值有两个来源：1. 之前已经卖出了，所以维持卖出状态，不能再次卖了，<code>s2 = s1</code>；2. 卖出之前买入的股票，挣 <code>price[i]</code> 钱，<code>s2 = s1 + price[i]</code></li>
+</ul>
+<p>所以，我们可以得到如下状态转移关系：</p>
+<ul>
+<li><code>s0 = s0</code></li>
+<li><code>s1 = s1</code></li>
+<li><code>s1 = s0 - price[i]</code></li>
+<li><code>s2 = s2</code></li>
+<li><code>s2 = s1 + price[i]</code></li>
+</ul>
+<p>在这整个过程中，我们都要保证每一天的 <code>s0</code>、<code>s1</code>、<code>s2</code> 都是 <code>max</code> 状态，<code>s2</code> 是最终卖完后的收益，所以返回这个结果就行。</p>
+<hr>
+<p><strong>动态规划</strong>的想法：</p>
+<p>我们不要考虑每一天的价格，我们考虑今天与昨天的价格之差：<code>diff[i]</code>。最终的收益是从这个 <code>diff</code> 数组中取出连续的一段，这一段累加起来的和最大。</p>
+<p>对于股票这道题而言，如果累加起来的最大值为负数，那么我们还不如全程不买卖股票，这样收益至少不是负值，也就是0。所以当 <code>currMax</code> 的值变为负数的时候，我们就废弃掉之前的结果，从此刻开始进行新的累加。</p>
+<h2 id="答案">答案</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// MaximumSubarray
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BestTimetoBuyandSellStock</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#75715e">// 状态机 State Machine 做法
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">maxProfit</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">[</span><span style="color:#f92672">]</span> prices<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>prices <span style="color:#f92672">=</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">|</span><span style="color:#f92672">|</span> prices<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span> <span style="color:#f92672">&lt;</span><span style="color:#f92672">=</span> 1<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> 0<span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#75715e">// 
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">//     Buy      Sell
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">// s0 ----&gt; s1 ------&gt; s2 (end)
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">//  ↑__|    ↑___|
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">//
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">int</span> s0 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> <span style="color:#75715e">// 初始状态
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">int</span> s1 <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>prices<span style="color:#f92672">[</span>0<span style="color:#f92672">]</span><span style="color:#f92672">;</span> <span style="color:#75715e">// 买入这支股票，花费 prices[i] 钱
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">int</span> s2 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> <span style="color:#75715e">// 一开始也是 0
+</span><span style="color:#75715e"></span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> prices<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span> i<span style="color:#f92672">+</span><span style="color:#f92672">+</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// ====================
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// s0: 自始至终从未有过买卖
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// ====================
+</span><span style="color:#75715e"></span>            s0 <span style="color:#f92672">=</span> s0<span style="color:#f92672">;</span> <span style="color:#75715e">/** 维持自身 */</span>
+
+            <span style="color:#75715e">// ====================
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// s1: 买入某支股票。我们只能买一次，然后一直维持。而每一次买都让我们花费了 prices[i] 元
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// ====================
+</span><span style="color:#75715e"></span>            s1 <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>s1 <span style="color:#75715e">/** 维持自身 */</span><span style="color:#f92672">,</span> s0 <span style="color:#f92672">-</span> prices<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#75715e">/** 花费 prices[i] 买入这支股票 */</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+            <span style="color:#75715e">// ====================
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// s2: 卖出某支股票。我们只能卖一次，然后一直维持。而每一次卖都让我们盈利 s1 + prices[i] 元
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// ====================
+</span><span style="color:#75715e"></span>            s2 <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>s2 <span style="color:#75715e">/** 维持自身 */</span><span style="color:#f92672">,</span> s1 <span style="color:#f92672">+</span> prices<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#75715e">/** 卖掉这支股票，赚取 prices[i] */</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">return</span> s2<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">maxProfit0</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">[</span><span style="color:#f92672">]</span> prices<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>prices <span style="color:#f92672">=</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">|</span><span style="color:#f92672">|</span> prices<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span> <span style="color:#f92672">=</span><span style="color:#f92672">=</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> 0<span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">int</span> max <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">int</span> currMax <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+
+        <span style="color:#75715e">// 股票每天都在降低的话，那么最大利润为 0
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">// 也就是说这个地方每一次都可以不买
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">//
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">// 但是 MaximumSubarray 这道题，每次都必须选择一个，所以这个 MaximumSubarray 可以是负数
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> prices<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span> i<span style="color:#f92672">+</span><span style="color:#f92672">+</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            currMax <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>currMax <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>prices<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#f92672">-</span> prices<span style="color:#f92672">[</span>i <span style="color:#f92672">-</span> 1<span style="color:#f92672">]</span><span style="color:#f92672">)</span> <span style="color:#75715e">/** 当前累加的总收益 */</span><span style="color:#f92672">,</span> 0<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            max <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>currMax<span style="color:#f92672">,</span> max<span style="color:#f92672">)</span><span style="color:#f92672">;</span> <span style="color:#75715e">/** 在这个中间过程中，记录最大的值 */</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">return</span> max<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>扫描下面二维码，在手机上阅读这篇文章：</p>
+<p><img src="/images/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#题目">题目</a></li>
+    <li><a href="#分析">分析</a></li>
+    <li><a href="#答案">答案</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+<footer style="width: 100%; position: fixed; bottom:0; height: 40px; padding-top: 10px; background-color:#fafafa; text-align: center">
+  <a style="color: #bbb; font-size: 12px;" href="http://www.beian.miit.gov.cn" target="_blank">京ICP备17006948号</href>
+</footer>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
