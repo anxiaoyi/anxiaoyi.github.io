@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="如何改进 NGINX 配置文件节省带宽？"><meta property="og:title" content="如何改进 NGINX 配置文件节省带宽？" />
+<meta property="og:description" content="2014年，Admiral William H. McRaven 在得克萨斯大学发表了著名的演讲，他说，如果你想改变世界，就从整理床铺开始。有时候小事情会有很大的影响——不管是在早上整理床铺，还是对网站的HTTP服务器配置做一些更改。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/posts/help-the-world-by-healing-your-nginx-configuration/" />
+<meta property="article:published_time" content="2020-05-24T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-05-24T00:00:00+00:00" />
+<title>如何改进 NGINX 配置文件节省带宽？ | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
+
+
+<script defer src="/en.search.min.e4ee0952970dbc6220c49e4f3b7cb2c5baa19dbb3fba73b22770e1dd3d38dbb3.js" integrity="sha256-5O4JUpcNvGIgxJ5PO3yyxbqhnbs/unOyJ3Dh3T0427M="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>如何改进 NGINX 配置文件节省带宽？</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#你可以通过优化你的网站来提供帮助">你可以通过优化你的网站来提供帮助</a></li>
+    <li><a href="#为htmlcss和javascript文件启用gzip压缩">为HTML、CSS和JavaScript文件启用Gzip压缩</a></li>
+    <li><a href="#设置缓存头">设置缓存头</a></li>
+    <li><a href="#启用-http2-协议支持">启用 HTTP/2 协议支持</a></li>
+    <li><a href="#优化日志记录">优化日志记录</a></li>
+    <li><a href="#限制特定url的带宽">限制特定URL的带宽</a></li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#译文来源">译文来源</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  <h1>
+    <a href="/posts/help-the-world-by-healing-your-nginx-configuration/">如何改进 NGINX 配置文件节省带宽？</a>
+  </h1>
+  
+
+<div>
+
+  <h5>May 24, 2020</h5>
+
+
+
+  
+  <div>
+    
+  </div>
+  
+
+  
+  <div>
+    
+        <a href="/tags/nginx/">Nginx</a>
+  </div>
+  
+
+
+</div>
+
+
+  <p><p>2014年，Admiral William H. McRaven 在得克萨斯大学发表了著名的演讲，他说，如果你想改变世界，就从整理床铺开始。有时候小事情会有很大的影响——不管是在早上整理床铺，还是对网站的HTTP服务器配置做一些更改。</p>
+<p>这是不是有点言过其实了？2020年的头几个月，我们对世界上正常和合理的事物的所有定义都付之东流。由于COVID-19大流行，地球上几乎一半的人口被锁在家里，互联网已经成为他们唯一的交流、娱乐、购买食物、工作和教育方式。每周互联网的网络流量和服务器负载都比以往任何时候都要高。根据BroadbandNow在3月25日发表的一份报告，“在我们分析的200个城市中，有88个（44%）在过去一周内，相比之前的十周，经历了某种程度的网络退化”。</p>
+<p>为了保护网络链接，Netflix 和 YouTube 等主要媒体平台正在限制其传输质量，为人们工作、与家人交流或在学校上虚拟课程提供更多带宽。但这仍然不够，因为网络质量逐渐恶化，许多服务器变得过载。</p>
+<h2 id="你可以通过优化你的网站来提供帮助">你可以通过优化你的网站来提供帮助</h2>
+<p>如果您拥有一个网站并可以管理其HTTP服务器配置，则可以提供帮助。一些小的更改可以减少用户生成的网络带宽和服务器上的负载。这是一个双赢的局面：如果你的网站目前负载很重，你可以减少它，使你能够为更多的用户服务，并可能降低你的成本。如果不是在高负载下，更快的加载可以改善用户的体验（有时会对你在谷歌搜索结果中的位置产生积极影响）。</p>
+<p>如果你有一个每月拥有数百万用户的应用程序，或者一个有烤菜谱的小博客，那就没什么关系了——每千字节的网络流量，你就消除了那些迫切需要在线检查医疗检测结果或创建包裹标签以向亲属发送重要信息的人的空闲容量。</p>
+<p>在这个博客中，我们提供了一些简单但强大的更改，您可以对您的 <code>NGINX</code> 配置。作为一个真实世界的例子，我们使用了 <a href="https://rogalove.com/">Rogalove</a> 的朋友的电子商务网站，Rogalove 是一家位于波兰的生态化妆品制造商。该网站是一个相当标准的 woomerce 安装，运行 <code>NGINX 1.15.9</code> 作为其web服务器。为了便于我们的计算，我们假设网站每天有100个独立用户，30%的用户是经常访问的，每个用户在会话期间平均访问4个页面。</p>
+<p>这些技巧是您可以立即采取的简单步骤，以提高性能和减少网络带宽。如果要处理大量流量，可能需要实现更复杂的更改以产生重大影响，例如调整操作系统和 <code>NGINX</code>、提供正确的硬件容量，以及（最重要的）启用和调整缓存。查看以下博客文章了解详细信息：</p>
+<ul>
+<li><a href="https://www.nginx.com/blog/tuning-nginx/">调整 <code>NGINX</code> 的性能</a></li>
+<li><a href="https://www.nginx.com/blog/performance-tuning-tips-tricks/">性能调整-提示和技巧</a></li>
+<li><a href="https://www.nginx.com/blog/10-tips-for-10x-application-performance/">10倍应用程序性能的10个技巧</a></li>
+<li><a href="https://www.nginx.com/resources/datasheets/nginx-plus-sizing-guide/">在裸机服务器上部署 <code>NGINX Plus</code> 的大小调整指南</a></li>
+<li><a href="https://www.nginx.com/blog/nginx-caching-guide/"><code>NGINX</code> 和 <code>NGINX Plus</code> 缓存指南</a></li>
+<li><a href="https://www.nginx.com/blog/benefits-of-microcaching-nginx/"><code>NGINX</code> 微缓存的优点</a></li>
+</ul>
+<h2 id="为htmlcss和javascript文件启用gzip压缩">为HTML、CSS和JavaScript文件启用Gzip压缩</h2>
+<p>如您所知，用于在现代网站上构建页面的HTML、CSS和JavaScript文件可能非常庞大。在大多数情况下，web服务器可以动态压缩这些和其他文本文件，以节省网络带宽。</p>
+<p>查看web服务器是否正在压缩文件的一种方法是使用浏览器的开发工具。对于许多浏览器，可以使用F12键访问工具，相关信息位于“<strong>网络</strong>”选项卡上。下面是一个例子：</p>
+<p><img src="/images/posts/help-the-world-by-healing-your-nginx-configuration/rogalove-devtools-no-gzip.png" alt=""></p>
+<p>正如您在左下角看到的，没有压缩：文本文件的大小为1.15 MB，并且传输了这么多数据。</p>
+<p>默认情况下，<a href="https://nginx.org/en/docs/http/ngx_http_gzip_module.html?&amp;_ga=2.122294152.2021468437.1590291424-1912910519.1590291424#gzip"><code>NGINX</code> 中禁用压缩</a>，但根据安装或Linux发行版的不同，可以在默认的 <code>nginx.conf</code> 文件中启用某些设置。在这里，我们在 <code>NGINX</code> 配置文件中启用 <code>gzip</code> 压缩：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">gzip on;
+gzip_types application/xml application/json text/css text/javascript application/javascript;
+gzip_vary on;
+gzip_comp_level 6;
+gzip_min_length 500;
+</code></pre></div><p>正如您在下面的屏幕截图中看到的，通过压缩，数据传输仅下降到260kb，降幅约为80%！对于页面上的每个新用户，您可以节省大约917KB的数据传输。对于我们的 Woocomerce 安装，每天62MB，每月1860MB。</p>
+<p><img src="/images/posts/help-the-world-by-healing-your-nginx-configuration/rogalove-devtools-gzip.png" alt=""></p>
+<h2 id="设置缓存头">设置缓存头</h2>
+<p>当浏览器检索网页的文件时，它会将副本保存在本地磁盘缓存中，这样当您再次访问该网页时，它就不必从服务器重新提取该文件。每个浏览器都使用自己的逻辑来决定何时使用文件的本地副本，以及在服务器上发生更改时何时再次获取该文件。但是作为网站所有者，您可以在发送的HTTP响应中设置缓存控制和过期头，以使浏览器的缓存行为更加高效。从长远来看，不必要的HTTP请求要少得多。</p>
+<p>一个好的开始，您可以为字体和图像设置一个<a href="https://nginx.org/en/docs/http/ngx_http_headers_module.html?&amp;_ga=2.219261850.2021468437.1590291424-1912910519.1590291424#expires">很长的缓存过期时间</a>，这些字体和图像可能不会经常更改（即使更改，它们通常也会得到一个新的文件名）。在下面的示例中，我们指示客户端浏览器将字体和图像保存在本地缓存中一个月：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location ~* <span style="color:#ae81ff">\.</span><span style="color:#f92672">(</span>?:jpg|jpeg|gif|png|ico|woff2<span style="color:#f92672">)</span>$ <span style="color:#f92672">{</span>
+    expires 1M;
+    add_header Cache-Control <span style="color:#e6db74">&#34;public&#34;</span>;
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="启用-http2-协议支持">启用 <code>HTTP/2</code> 协议支持</h2>
+<p><code>HTTP/2</code> 是下一代网页服务协议，旨在提高网络和主机服务器的利用率。根据<a href="https://developers.google.com/web/fundamentals/performance/http2">Google文档</a>，它可以更快地加载页面：</p>
+<blockquote>
+<p>由此产生的协议对网络更友好，因为与HTTP/1.x相比，使用的TCP连接更少。这意味着与其他流和存活时间更久的连接的竞争更少，进而导致可用网络容量的更好利用。</p>
+</blockquote>
+<p><code>NGINX 1.9.5</code> 及更高版本（以及 <code>NGINX Plus R7</code> 及更高版本）支持 <code>HTTP/2</code> 协议，您只需启用它😀. 为此，请在 <code>NGINX</code> 配置文件的 <code>listen</code> 指令中包含 <code>http2</code> 参数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">listen <span style="color:#ae81ff">443</span> ssl http2;
+</code></pre></div><p>注意，在大多数情况下，还需要启用 <code>TLS</code> 以使用HTTP/2。</p>
+<p>您可以使用 <a href="https://http2.pro/">HTTP2.Pro</a> 服务验证您的（或任何）站点是否支持HTTP/2：</p>
+<p><img src="/images/posts/help-the-world-by-healing-your-nginx-configuration/rogalove-http2-pro.png" alt=""></p>
+<h2 id="优化日志记录">优化日志记录</h2>
+<p>给自己准备一杯你最喜欢的饮料，舒舒服服地坐着，想想：你最后一次查看访问日志文件是什么时候？上周，上个月，从来没有？即使您将它用于站点的日常监视，您可能只关注错误（<strong>400</strong> 和 <strong>500</strong> 状态代码，等等），而不是成功的请求。</p>
+<p>通过减少或消除不必要的日志记录，可以节省服务器上的磁盘存储、CPU和I/O操作。这不仅使您的服务器更快—如果您部署在云环境中，释放的I/O吞吐量和CPU周期可以更好地服务驻留在同一物理机上的另一个虚拟机或应用程序。</p>
+<p>有几种不同的方法可以减少和优化日志记录。在这里我们强调三点。</p>
+<p>方法1:禁用页面资源请求的日志记录</p>
+<p>如果不需要记录检索普通页面资源（如图像、JavaScript文件和CSS文件）的请求，这是一个快速而简单的解决方案。您只需创建一个与这些文件类型匹配的新位置块，并禁用其中的日志记录。（您也可以将此访问日志指令添加到上面设置缓存控制头的位置块中。）</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location ~* <span style="color:#ae81ff">\.</span><span style="color:#f92672">(</span>?:jpg|jpeg|gif|png|ico|woff2|js|css<span style="color:#f92672">)</span>$ <span style="color:#f92672">{</span>
+    access_log off;
+<span style="color:#f92672">}</span>
+</code></pre></div><p>方法2:禁用成功请求的日志记录</p>
+<p>这是一个更强大的方法，因为它放弃了带有<strong>2xx</strong>或<strong>3xx</strong>响应代码的查询，只记录错误。它比方法1稍微复杂一些，因为它取决于<code>NGINX</code>日志的配置方式。在我们的例子中，我们使用包含在Ubuntu服务器发行版中的标准<code>nginx.conf</code>文件，因此不管虚拟主机是什么，所有请求都会记录到<code>/var/log/nginx/access.log</code>.</p>
+<p>使用<a href="https://nginx.org/en/docs/http/ngx_http_log_module.html?&amp;_ga=2.232009244.2021468437.1590291424-1912910519.1590291424#access_log">官方<code>NGINX</code>文档</a>中的一个示例，我们打开条件日志记录。创建一个变量<code>$loggable</code>，对于带有<code>2xx</code>和<code>3xx</code>响应代码的请求，将其设置为<code>0</code>，否则设置为<code>1</code>。然后在<code>access_log</code>指令中将此变量作为条件引用。</p>
+<p>下面是位于 <code>/etc/nginx/nginx.conf</code> 文件中的 <code>http</code> 上下文的的原始指令：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">access_log /var/log/nginx/access.log;
+</code></pre></div><p>添加一个映射块并从 <code>access_log</code> 指令中引用它：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">map $status $loggable <span style="color:#f92672">{</span>
+    ~^<span style="color:#f92672">[</span>23<span style="color:#f92672">]</span> 0;
+    default 1;
+<span style="color:#f92672">}</span>
+
+access_log /var/log/nginx/access.log combined <span style="color:#66d9ef">if</span><span style="color:#f92672">=</span>$loggable;
+</code></pre></div><p>注意，尽管 <code>combined</code> 是默认的日志格式，但是在包含 <code>if</code> 参数时需要显式地指定它。</p>
+<p>方法3：使用缓冲以减少I/O操作</p>
+<p>即使要记录所有请求，也可以通过打开访问日志缓冲来减少I/O操作。使用此指令，<code>NGINX</code> 将暂时不将日志数据写入磁盘，直到512KB缓冲区被填满或自上次刷新以来已过1分钟（以先发生者为准）。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">access_log /var/log/nginx/access.log combined buffer<span style="color:#f92672">=</span>512k flush<span style="color:#f92672">=</span>1m;
+</code></pre></div><h2 id="限制特定url的带宽">限制特定URL的带宽</h2>
+<p>如果您的服务器提供了较大的文件（或较小但非常流行的文件，如表单或报表），则设置客户端下载这些文件的最大速度可能会很有用。如果您的站点已经处于高网络负载，限制下载速度会留下更多带宽，以保持应用程序的关键部分响应。这是硬件制造商使用的一个非常流行的解决方案-虽然有成千上万的其他人同时下载，您仍然可以获得您的下载，只是您可能需要等待更长的时间才能为打印机下载3GB驱动程序。😉</p>
+<p>使用 <code>limit_rate</code> 指令来限制特定URL的带宽。在这里，我们将每个文件在<code>/download</code> 下的传输速率限制为每秒50kb。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location /download/ <span style="color:#f92672">{</span>
+    limit_rate 50k;
+<span style="color:#f92672">}</span>
+</code></pre></div><p>您可能还希望只对较大的文件进行速率限制，可以使用 <code>limit-rate-after</code> 指令执行此操作。在本例中，每个文件（从任何目录）的前500kb传输没有速度限制，之后的所有文件都限制在50kb/s。这样可以加快网站关键部分的传输速度，同时减慢其他部分的传输速度。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location / <span style="color:#f92672">{</span>
+    limit_rate_after 500k;
+    limit_rate 50k;
+<span style="color:#f92672">}</span>
+</code></pre></div><p>请注意，速率限制适用于浏览器和 <code>NGINX</code> 之间的各个HTTP连接，因此不要阻止用户使用下载管理器绕过速率限制。</p>
+<p>最后，还可以限制到服务器的并发连接数或请求速率。有关详细信息，请参阅我们的<a href="https://docs.nginx.com/nginx/admin-guide/security-controls/controlling-access-proxied-http/?_ga=2.189884200.2021468437.1590291424-1912910519.1590291424">文档</a>。</p>
+<h2 id="总结">总结</h2>
+<p>我们希望这五个技巧有助于优化您的网站的性能。速度和带宽增益因网站而异。即使优化 <code>NGINX</code> 配置似乎并没有显著地释放带宽或提高速度，数千个网站单独调整 <code>NGINX</code> 配置的总体影响也会增加。我们的全球网络使用效率更高，这意味着在需要时提供最关键的服务。</p>
+<p>如果您在您的网站上对 <code>NGINX</code> 有任何问题，我们将提供帮助！在COVID-19大流行期间，<code>NGINX</code> 员工和社区正在监视 Stackoverflow 网站上的 Nginx 板块，并尽快响应问题和请求。</p>
+<p>如果您在流行病前线的组织工作，并且有高级需求，那么您可以获得最多5个免费的NGINX Plus许可证以及更高级别的F5 DNS负载平衡器云服务。有关详细信息，请参阅<a href="https://www.nginx.com/blog/free-resources-for-websites-impacted-by-covid-19/#For-More-Advanced-Needs">受COVID-19影响的网站的免费资源</a>。</p>
+<p>还可以查看上述链接，了解其他简单的方法，使用NGINX和F5的免费资源来提高网站性能。</p>
+<h2 id="译文来源">译文来源</h2>
+<ul>
+<li><a href="https://www.nginx.com/blog/help-the-world-by-healing-your-nginx-configuration/">Help the World by Healing Your NGINX Configuration</a></li>
+</ul></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#你可以通过优化你的网站来提供帮助">你可以通过优化你的网站来提供帮助</a></li>
+    <li><a href="#为htmlcss和javascript文件启用gzip压缩">为HTML、CSS和JavaScript文件启用Gzip压缩</a></li>
+    <li><a href="#设置缓存头">设置缓存头</a></li>
+    <li><a href="#启用-http2-协议支持">启用 HTTP/2 协议支持</a></li>
+    <li><a href="#优化日志记录">优化日志记录</a></li>
+    <li><a href="#限制特定url的带宽">限制特定URL的带宽</a></li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#译文来源">译文来源</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+<footer style="width: 100%; position: fixed; bottom:0; height: 40px; padding-top: 10px; background-color:#fafafa; text-align: center">
+  <a style="color: #bbb; font-size: 12px;" href="http://www.beian.miit.gov.cn" target="_blank">京ICP备17006948号</href>
+</footer>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
