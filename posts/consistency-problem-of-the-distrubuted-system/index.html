@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="分布式系统一致性问题"><meta property="og:title" content="分布式系统一致性问题" />
+<meta property="og:description" content="描述解决分布式系统一致性问题的典型思路!" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/posts/consistency-problem-of-the-distrubuted-system/" />
+<meta property="article:published_time" content="2018-06-22T00:00:00+00:00" />
+<meta property="article:modified_time" content="2018-06-22T00:00:00+00:00" />
+<title>分布式系统一致性问题 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.edc993575be58655f3e49634e3ca6db09cc38ac9aa03ecdbe81d941636e35273.css" integrity="sha256-7cmTV1vlhlXz5JY048ptsJzDismqA&#43;zb6B2UFjbjUnM=">
+
+
+<script defer src="/en.search.min.179d4fbb67714ad5003e6ea866b43663b910f696f79252c17a539a2397003742.js" integrity="sha256-F51Pu2dxStUAPm6oZrQ2Y7kQ9pb3klLBelOaI5cAN0I="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>分布式系统一致性问题</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#一致性问题">一致性问题</a></li>
+    <li><a href="#酸碱平衡理论">酸碱平衡理论</a>
+      <ul>
+        <li><a href="#acid">ACID</a></li>
+        <li><a href="#cap-分布式系统设计理论">CAP 分布式系统设计理论</a></li>
+        <li><a href="#base---cap-理论中-ap-方案的延伸">BASE - CAP 理论中 AP 方案的延伸</a></li>
+      </ul>
+    </li>
+    <li><a href="#cap-理论实践">CAP 理论实践</a>
+      <ul>
+        <li><a href="#cap-关注的粒度是数据而不是整个系统">CAP 关注的粒度是数据，而不是整个系统</a></li>
+        <li><a href="#cap-是忽略网络延迟的">CAP 是忽略网络延迟的</a></li>
+        <li><a href="#正常运行情况下不存在-cp-和-ap-的选择可以同时满足-ca">正常运行情况下，不存在 CP 和 AP 的选择，可以同时满足 CA</a></li>
+        <li><a href="#放弃并不等于什么都不做需要为分区恢复后做准备">放弃并不等于什么都不做，需要为分区恢复后做准备</a></li>
+      </ul>
+    </li>
+    <li><a href="#分布式一致性协议">分布式一致性协议</a>
+      <ul>
+        <li><a href="#两阶段提交协议">两阶段提交协议</a></li>
+        <li><a href="#三阶段提交协议">三阶段提交协议</a></li>
+        <li><a href="#tcc-协议">TCC 协议</a></li>
+      </ul>
+    </li>
+    <li><a href="#保证最终一致性的模式">保证最终一致性的模式</a>
+      <ul>
+        <li><a href="#查询模式">查询模式</a></li>
+        <li><a href="#补偿模式">补偿模式</a></li>
+        <li><a href="#定期校对模式">定期校对模式</a></li>
+      </ul>
+    </li>
+    <li><a href="#超时处理模式">超时处理模式</a>
+      <ul>
+        <li><a href="#超时补偿原则">超时补偿原则</a></li>
+      </ul>
+    </li>
+    <li><a href="#解决">解决</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  <h1>
+    <a href="/posts/consistency-problem-of-the-distrubuted-system/">分布式系统一致性问题</a>
+  </h1>
+  
+
+<div>
+
+  <h5>June 22, 2018</h5>
+
+
+
+  
+  <div>
+    
+  </div>
+  
+
+  
+  <div>
+    
+  </div>
+  
+
+
+</div>
+
+
+  <p><p>描述解决分布式系统一致性问题的典型思路!</p>
+<h2 id="一致性问题">一致性问题</h2>
+<p>思考下面几个分布式系统中可能存在的一致性问题:</p>
+<ul>
+<li>(1) 先下订单还是先扣库存?下订单成功扣库存失败则<strong>超卖</strong>;下订单失败扣库存成功则<strong>多卖</strong>。</li>
+<li>(2) 系统 A 同步调用系统 B 服务<strong>超时</strong>后，这个时候系统 A 应该做什么?</li>
+<li>(3) 系统 B 异步回调系统 A 超时后，系统 A <strong>迟迟没有收到回调结果</strong>怎么办?</li>
+<li>(4) 某个订单在系统 A 中能查询到，但是系统 B 中不存在。</li>
+<li>(5) 系统间都存在请求，只是<strong>状态</strong>不一致。</li>
+<li>(6) <strong>交易</strong>系统依赖于数据库的 ACID，缓存和数据库之间如何保持一致性?强一致性还是弱一致性?</li>
+<li>(7) 多个节点上缓存的内容不一致怎么办?请求恰好在这个时间窗口进来了。</li>
+<li>(8) 缓存数据结构不一致。某个数据由多个数据元素组成，如果其中某个子数据依赖于从其它服务中获取数据，假设这部分数据获取失败，那么就会导致<strong>数据不完整</strong>，可能会出现 <code>NullPointerException</code> 等。</li>
+</ul>
+<h2 id="酸碱平衡理论">酸碱平衡理论</h2>
+<h3 id="acid">ACID</h3>
+<p>具有 ACID 特性的数据库支持强一致性。这意味着每个事务都是原子的，或者成功或者失败，事物间是隔离的，互相完全不受影响，而且最终状态是持久落盘的。Oracle、MySQL、DB2 都能保证强一致性。一般而言，强一致性通常是通过<a href="https://en.wikipedia.org/wiki/Multiversion_concurrency_control">多版本控制协议 (MVCC) </a>来实现的。</p>
+<p>交易系统只考虑: 关系型数据库 + 强悍硬件。
+NoSQL完全不适合交易场景，一般用来作数据分析、ETL、报表、数据挖掘、推荐、日志处理、调用链分析等非核心交易场景。
+ACID 是数据库事务完整性的理论。</p>
+<h3 id="cap-分布式系统设计理论">CAP 分布式系统设计理论</h3>
+<ul>
+<li>C (Consistency): A read is guaranteed to return the most recent write for a given client. 读操作保证能够返回最新的写操作结果。</li>
+<li>A (Availability): A non-failing node will return a reasonable response within a reasonable amount of time (no error or no timeout). 合理时间返回合理响应。</li>
+<li>P (Partition Tolerance): The system will continue to function when network partitions occur. 当出现网络分区后，系统能够继续“履行职责”。
+虽然 CAP 理论定义是三个要素中只能取两个，但放到分布式环境下来思考，我们会发现必须选择 P（分区容忍）要素，因为网络本身无法做到 100% 可靠，有可能出故障，所以分区是一个必然的现象。如果我们选择了 CA 而放弃了 P，那么当发生分区现象时，为了保证 C，系统需要禁止写入，当有写入请求时，系统返回 error（例如，当前系统不允许写入），这又和 A 冲突了，因为 A 要求返回 no error 和 no timeout。因此，分布式系统理论上不可能选择 CA 架构，只能选择 CP 或者 AP 架构。</li>
+</ul>
+<p>1.CP - Consistency/Partition Tolerance</p>
+<p>如下图所示，为了保证一致性，当发生分区现象后，N1 节点上的数据已经更新到 y，但由于 N1 和 N2 之间的复制通道中断，数据 y 无法同步到 N2，N2 节点上的数据还是 x。这时客户端 C 访问 N2 时，N2 需要返回 Error，提示客户端 C“系统现在发生了错误”，这种处理方式违背了可用性（Availability）的要求，因此 CAP 三者只能满足 CP。</p>
+<p><img src="/images/posts/consistency-problem-of-the-distrubuted-system/CP_state.jpg" alt=""></p>
+<p>2.AP - Availability/Partition Tolerance</p>
+<p>如下图所示，为了保证可用性，当发生分区现象后，N1 节点上的数据已经更新到 y，但由于 N1 和 N2 之间的复制通道中断，数据 y 无法同步到 N2，N2 节点上的数据还是 x。这时客户端 C 访问 N2 时，N2 将当前自己拥有的数据 x 返回给客户端 C 了，而实际上当前最新的数据已经是 y 了，这就不满足一致性（Consistency）的要求了，因此 CAP 三者只能满足 AP。注意：这里 N2 节点返回 x，虽然不是一个“正确”的结果，但是一个“合理”的结果，因为 x 是旧的数据，并不是一个错乱的值，只是不是最新的数据而已。</p>
+<p><img src="/images/posts/consistency-problem-of-the-distrubuted-system/AP_state.jpg" alt=""></p>
+<h3 id="base---cap-理论中-ap-方案的延伸">BASE - CAP 理论中 AP 方案的延伸</h3>
+<ul>
+<li>BA (Basically Available): 出现故障时，允许损失部分可用性，保证核心可用，例如登录功能大于注册功能。</li>
+<li>S (Soft State): 允许存在中间状态，中间状态不会影响系统整体可用性。</li>
+<li>E (Eventual Consistency): 所有数据副本经过一段时间后，最终能够达到一致的状态。</li>
+</ul>
+<p>牺牲强一致性而获得可用性，一般应用于服务化系统的应用层或者大数据处理系统中，通过达到最终一致性来尽量满足业务的绝大多数需求。由于不保证强一致性，因此系统在处理请求的过程中可以存在短暂的不一致，在这个时间窗口内，请求的每一步操作，都需要记录下来，以便在出现故障的时候可以从这些中间状态恢复过来。</p>
+<p><img src="/images/posts/consistency-problem-of-the-distrubuted-system/record_durability.png" alt=""></p>
+<p>下面是解决一致性问题的三条实践经验:</p>
+<p><img src="/images/posts/consistency-problem-of-the-distrubuted-system/three_consistency_practices.png" alt=""></p>
+<ul>
+<li>单个数据库能够保证强一致性</li>
+<li>将数据库进行水平伸缩和分片，相关数据分到数据库的同一个片上</li>
+<li>记录每一步操作</li>
+</ul>
+<h2 id="cap-理论实践">CAP 理论实践</h2>
+<h3 id="cap-关注的粒度是数据而不是整个系统">CAP 关注的粒度是数据，而不是整个系统</h3>
+<p>在实际设计过程中，每个系统不可能只处理一种数据，而是包含多种类型的数据，有的数据必须选择 CP，有的数据必须选择 AP。而如果我们做设计时，从整个系统的角度去选择 CP 还是 AP，就会发现顾此失彼，无论怎么做都是有问题的。</p>
+<p>以一个最简单的用户管理系统为例，用户管理系统包含用户账号数据（用户 ID、密码）、用户信息数据（昵称、兴趣、爱好、性别、自我介绍等）。通常情况下，用户账号数据会选择 CP，而用户信息数据会选择 AP，如果限定整个系统为 CP，则不符合用户信息数据的应用场景；如果限定整个系统为 AP，则又不符合用户账号数据的应用场景。</p>
+<p>所以在 CAP 理论落地实践时，我们需要将系统内的数据按照不同的应用场景和要求进行分类，每类数据选择不同的策略（CP 还是 AP），而不是直接限定整个系统所有数据都是同一策略。</p>
+<h3 id="cap-是忽略网络延迟的">CAP 是忽略网络延迟的</h3>
+<p>这是一个非常隐含的假设，布鲁尔在定义一致性时，并没有将延迟考虑进去。也就是说，当事务提交时，数据能够瞬间复制到所有节点。但实际情况下，从节点 A 复制数据到节点 B，总是需要花费一定时间的。如果是相同机房，耗费时间可能是几毫秒；如果是跨地域的机房，例如北京机房同步到广州机房，耗费的时间就可能是几十毫秒。这就意味着，CAP 理论中的 C 在实践中是不可能完美实现的，在数据复制的过程中，节点 A 和节点 B 的数据并不一致。</p>
+<p>不要小看了这几毫秒或者几十毫秒的不一致，对于某些严苛的业务场景，例如和金钱相关的用户余额，或者和抢购相关的商品库存，技术上是无法做到分布式场景下完美的一致性的。而业务上必须要求一致性，因此单个用户的余额、单个商品的库存，理论上要求选择 CP 而实际上 CP 都做不到，只能选择 CA。也就是说，只能单点写入，其他节点做备份，无法做到分布式情况下多点写入。</p>
+<p>需要注意的是，这并不意味着这类系统无法应用分布式架构，只是说“单个用户余额、单个商品库存”无法做分布式，但系统整体还是可以应用分布式架构的。例如，下面的架构图是常见的将用户分区的分布式架构:</p>
+<p><img src="/images/posts/consistency-problem-of-the-distrubuted-system/distributed_by_user_id.jpg" alt=""></p>
+<p>我们可以将用户 id 为 0 ~ 100 的数据存储在 Node 1，将用户 id 为 101 ~ 200 的数据存储在 Node 2，Client 根据用户 id 来决定访问哪个 Node。对于单个用户来说，读写操作都只能在某个节点上进行；对所有用户来说，有一部分用户的读写操作在 Node 1 上，有一部分用户的读写操作在 Node 2 上。</p>
+<p>这样的设计有一个很明显的问题就是某个节点故障时，这个节点上的用户就无法进行读写操作了，但站在整体上来看，这种设计可以降低节点故障时受影响的用户的数量和范围，毕竟只影响 20% 的用户肯定要比影响所有用户要好。这也是为什么挖掘机挖断光缆后，支付宝只有一部分用户会出现业务异常，而不是所有用户业务异常的原因。</p>
+<h3 id="正常运行情况下不存在-cp-和-ap-的选择可以同时满足-ca">正常运行情况下，不存在 CP 和 AP 的选择，可以同时满足 CA</h3>
+<p>CAP 理论告诉我们分布式系统只能选择 CP 或者 AP，但其实这里的前提是系统发生了“分区”现象。如果系统没有发生分区现象，也就是说 P 不存在的时候（节点间的网络连接一切正常），我们没有必要放弃 C 或者 A，应该 C 和 A 都可以保证，这就要求架构设计的时候既要考虑分区发生时选择 CP 还是 AP，也要考虑分区没有发生时如何保证 CA。</p>
+<p>同样以用户管理系统为例，即使是实现 CA，不同的数据实现方式也可能不一样：用户账号数据可以采用“消息队列”的方式来实现 CA，因为消息队列可以比较好地控制实时性，但实现起来就复杂一些；而用户信息数据可以采用“数据库同步”的方式来实现 CA，因为数据库的方式虽然在某些场景下可能延迟较高，但使用起来简单。</p>
+<h3 id="放弃并不等于什么都不做需要为分区恢复后做准备">放弃并不等于什么都不做，需要为分区恢复后做准备</h3>
+<p>我们可以在分区期间进行一些操作，从而让分区故障解决后，系统能够重新达到 CA 的状态。</p>
+<p>最典型的就是在分区期间记录一些日志，当分区故障解决后，系统根据日志进行数据恢复，使得重新达到 CA 状态。同样以用户管理系统为例，对于用户账号数据，假设我们选择了 CP，则分区发生后，节点 1 可以继续注册新用户，节点 2 无法注册新用户（这里就是不符合 A 的原因，因为节点 2 收到注册请求后会返回 error），此时节点 1 可以将新注册但未同步到节点 2 的用户记录到日志中。当分区恢复后，节点 1 读取日志中的记录，同步给节点 2，当同步完成后，节点 1 和节点 2 就达到了同时满足 CA 的状态。</p>
+<p><img src="/images/posts/consistency-problem-of-the-distrubuted-system/cp_system_recover_mechnism.png" alt=""></p>
+<p>而对于用户信息数据，假设我们选择了 AP，则分区发生后，节点 1 和节点 2 都可以修改用户信息，但两边可能修改不一样。例如，用户在节点 1 中将爱好改为“旅游、美食、跑步”，然后用户在节点 2 中将爱好改为“美食、游戏”，节点 1 和节点 2 都记录了未同步的爱好数据，当分区恢复后，系统按照某个规则来合并数据。例如，按照“最后修改优先规则”将用户爱好修改为“美食、游戏”，按照“字数最多优先规则”则将用户爱好修改为“旅游，美食、跑步”，也可以完全将数据冲突报告出来，由人工来选择具体应该采用哪一条。</p>
+<p><img src="/images/posts/consistency-problem-of-the-distrubuted-system/ap_system_recover_mechnism.png" alt=""></p>
+<h2 id="分布式一致性协议">分布式一致性协议</h2>
+<h3 id="两阶段提交协议">两阶段提交协议</h3>
+<p>二阶段提交的算法思路可以概括为：协调者询问参与者是否准备好了提交，并根据所有参与者的反馈情况决定向所有参与者发送 commit 或者 rollback 指令（协调者向所有参与者发送相同的指令）。</p>
+<p><img src="/images/posts/consistency-problem-of-the-distrubuted-system/two_phase_commit_protocol.jpg" alt=""></p>
+<h3 id="三阶段提交协议">三阶段提交协议</h3>
+<p>三阶段提交协议是两阶段提交协议的改进版本。它通过超时机制解决了阻塞的问题，并且把两个阶段增加为三个阶段。</p>
+<p>不同点:</p>
+<ul>
+<li>增加询问阶段:尽可能早地发现无法执行操作而需要中止的行为。</li>
+<li>准备阶段以后，协调者和参与者执行任务中都增加了超时，一旦超时，则协调者和参与者都会继续提交事务，默认为成功，这也是根据概率统计超时后默认为成功的正确性最大。</li>
+</ul>
+<p>存在问题:</p>
+<ul>
+<li>在 doCommit 阶段，如果参与者没有及时接收到来自协调者的 doCommit 或者 rebort 请求时，会在等待超时之后，会继续进行事务的提交。所以，由于网络原因，协调者发送的 abort 响应没有及时被参与者接收到，那么参与者在等待超时之后执行了 commit 操作。这样就和其他接到 abort 命令并执行回滚的参与者之间存在数据不一致的情况。</li>
+</ul>
+<h3 id="tcc-协议">TCC 协议</h3>
+<p>上述两个协议实现复杂，操作步骤多，性能也是一个很大问题，因此在互联网高并发系统中，鲜有使用两阶段提交和三阶段提交协议的场景。</p>
+<p>TCC 协议将一个任务拆分为 Try、Confirm、Cancel 三个步骤，没有单独的准备阶段， Try 操作兼备资源操作与准备能力，另外 Confirm 操作和 Cancel 操作要满足幂等性。虽然没有解决极端情况下不一致和脑裂的问题，然而 TCC 通过自动化补偿，将需要人工处理的不一致情况降低到最少，也是一种非常有用的解决方案。</p>
+<p>TCC 协议相比其它两个协议更简单且更容易实现。</p>
+<h2 id="保证最终一致性的模式">保证最终一致性的模式</h2>
+<p>一致性在现实系统实践中，仅仅需要达到最终一致性，并不需要专业的、复杂的一致性协议。实现最终一致性有一些有效、简单的模式如下:</p>
+<h3 id="查询模式">查询模式</h3>
+<p>通过查询模式，我们可以清楚地知道某个任务或者操作处于一个什么样的状态，是执行成功还是失败，还是正在执行，这样也方便其他系统依据当前返回的状态进行下一步操作。为了能够实现查询，每个服务操作都需要唯一的流水号标识，例如请求流水号、订单号等。</p>
+<p><img src="/images/posts/consistency-problem-of-the-distrubuted-system/consistency_query_pattern.jpg" alt=""></p>
+<h3 id="补偿模式">补偿模式</h3>
+<p>我们修正系统以让其达到最终一致状态的过程，称之为补偿。而支持补偿模式，那么这个服务针对特定任务需要提供重试操作和取消操作:</p>
+<p><img src="/images/posts/consistency-problem-of-the-distrubuted-system/consistency_compensate_pattern.jpg" alt=""></p>
+<h3 id="定期校对模式">定期校对模式</h3>
+<p>在分布式系统中构建了唯一 ID、调用链等基础设施后，我们很容易对系统间的不一致进行核对，发现不一致，则利用补偿来修复即可。定期校对模式多用于金融系统中，涉及资金安全的，需要保证准确性。</p>
+<h2 id="超时处理模式">超时处理模式</h2>
+<h3 id="超时补偿原则">超时补偿原则</h3>
+<p>超时补偿原则确定的是调用方和被调用方谁应该负责重试或补偿的问题。</p>
+<p>被调用方补偿:</p>
+<p>如果服务 2 告诉服务 1 消息已经接受，那么服务 1 任务就已经结束了，如果服务 2 处理失败，那么服务 2 应该负责重试或者补偿。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">service2</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>i <span style="color:#f92672">&lt;</span> tryTimes<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+        <span style="color:#75715e">// 任务没有执行成功，则自己补偿
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#f92672">!</span>doTask<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            i<span style="color:#f92672">+</span><span style="color:#f92672">+</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>调用方补偿:</p>
+<p>如果服务 2 无明确接受响应，那么服务 1 应该持续进行重试，直到服务 2 明确表示已经接受消息:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">service1</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+            scheduleTaskToService2<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span> <span style="color:#75715e">// 保证幂等性
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>TimeOutException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span> <span style="color:#75715e">// 无明确接受响应，调用方负责重试
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span>
+
+       <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="解决">解决</h2>
+<p>(1) 扣库存问题</p>
+<p>数据量小，可以利用关系数据库的强一致性解决，也就是把订单和库存表放到一个关系型数据库中。单机难以满足的话，就分片，尽量保证订单和库存放入同一个数据库分片中。</p>
+<p>(2) 超时无结果</p>
+<p>需要依据操作 ID 来主动查询任务的当前状态，以便决定下一步做什么。</p>
+<p>(3) 回调无结果</p>
+<p>需要依据操作 ID 来主动查询任务的当前状态，以便决定下一步做什么。</p>
+<p>(4) 订单不存在</p>
+<p>查询处理情况，定期校对，补偿修复。</p>
+<p>(5) 状态不一致</p>
+<p>查询处理情况，定期校对，补偿修复。</p>
+<p>(6) 缓存一致性</p>
+<p>为了提高性能，数据库与缓存只需要保持弱一致性，而不需要保持强一致性，否则违背了使用缓存的初衷。</p>
+<p>(7) 缓存时间窗口</p>
+<p>如果性能要求不是非常高，则尽量使用分布式缓存，而不要使用本地缓存。另外读的顺序是先读缓存，再读数据库；写的顺序是先写数据库，再写缓存。</p>
+<p>(8) 数据完整性</p>
+<p>写缓存时数据一定要完整，如果缓存数据的一部分有效，另一部分无效，则能可在需要时回源数据库，也不要把部分数据放入缓存中。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">cacheData</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    Object o1 <span style="color:#f92672">=</span> readFromDB1<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    Object o2 <span style="color:#f92672">=</span> readFromDB2<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+    <span style="color:#75715e">// 确保缓存数据完整性，不要缓存一部分数据
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>o1 <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> o2 <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> cacheData<span style="color:#f92672">(</span>o1<span style="color:#f92672">,</span> o2<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://book.douban.com/subject/27091029/">《分布式服务架构：原理、设计与实战》</a></li>
+<li><a href="https://time.geekbang.org/column/intro/81">极客时间订阅:从0开始学架构</a></li>
+</ul></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#一致性问题">一致性问题</a></li>
+    <li><a href="#酸碱平衡理论">酸碱平衡理论</a>
+      <ul>
+        <li><a href="#acid">ACID</a></li>
+        <li><a href="#cap-分布式系统设计理论">CAP 分布式系统设计理论</a></li>
+        <li><a href="#base---cap-理论中-ap-方案的延伸">BASE - CAP 理论中 AP 方案的延伸</a></li>
+      </ul>
+    </li>
+    <li><a href="#cap-理论实践">CAP 理论实践</a>
+      <ul>
+        <li><a href="#cap-关注的粒度是数据而不是整个系统">CAP 关注的粒度是数据，而不是整个系统</a></li>
+        <li><a href="#cap-是忽略网络延迟的">CAP 是忽略网络延迟的</a></li>
+        <li><a href="#正常运行情况下不存在-cp-和-ap-的选择可以同时满足-ca">正常运行情况下，不存在 CP 和 AP 的选择，可以同时满足 CA</a></li>
+        <li><a href="#放弃并不等于什么都不做需要为分区恢复后做准备">放弃并不等于什么都不做，需要为分区恢复后做准备</a></li>
+      </ul>
+    </li>
+    <li><a href="#分布式一致性协议">分布式一致性协议</a>
+      <ul>
+        <li><a href="#两阶段提交协议">两阶段提交协议</a></li>
+        <li><a href="#三阶段提交协议">三阶段提交协议</a></li>
+        <li><a href="#tcc-协议">TCC 协议</a></li>
+      </ul>
+    </li>
+    <li><a href="#保证最终一致性的模式">保证最终一致性的模式</a>
+      <ul>
+        <li><a href="#查询模式">查询模式</a></li>
+        <li><a href="#补偿模式">补偿模式</a></li>
+        <li><a href="#定期校对模式">定期校对模式</a></li>
+      </ul>
+    </li>
+    <li><a href="#超时处理模式">超时处理模式</a>
+      <ul>
+        <li><a href="#超时补偿原则">超时补偿原则</a></li>
+      </ul>
+    </li>
+    <li><a href="#解决">解决</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
