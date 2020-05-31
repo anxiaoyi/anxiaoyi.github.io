@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="图片优化"><meta property="og:title" content="图片优化" />
+<meta property="og:description" content="图片优化 图片在网页数据的传输中占据了非常大的流量，如何优化图片，对于前端页面加载的性能极其重要。本文讲述了比较常见的几种优化图片的技巧。
+图片格式介绍 （1）JPEG
+JPEG 是 Joint Photographic Experts Group 的缩写，不支持透明度，常用于网站的 Banner 图。JPEG 使用的是一种有损图像质量的压缩算法，压缩的越狠，图片的质量损失也就越大，图片的尺寸也就越小。根据你网站所能忍受的图片质量，来相应的选择压缩比：
+（2）PNG
+支持透明度，支持无损压缩，一般图片的尺寸都比较大。
+（3）GIF
+适合放动画图片。
+（4）WebP
+🔥Google 2010 年提出的新的图像压缩格式算法，在 2013 年又推出 Animated WebP，即支持动画的 Webp。优点：更优的图像数据压缩算法、拥有肉眼识别无差异的图像质量、具备了无损和有损的压缩模式、Alpha 透明以及动画的特性。
+PNG、JPG、WebP 压缩对比：
+GIF 和 WebP 对比：
+不同网络环境，加载不同尺寸图片 如下是京东网站首页占据 C 位的宣传图：
+它的 URL 地址如下，你任意改变这张图片的 URL 里面的宽、高，放到浏览器里面重新进行请求，就可以得到相应大小的图片：
+响应式图片 不同平台设备加载不同大小、甚至不同内容的图片！
+CSS 媒体查询 @media all and (max-width: 600px) { img { width: 300px; } } @media all and (min-width: 600px) and (max-width: 1200px) { img { width: 900px; } } srcset、sizes、picture 和 source （1）srcset 属性" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/front-end-optimization-guide/image-optimization/" />
+
+<title>图片优化 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.09108fc191f262e6cbe71f4b5feb9f4c3563e85dbbec655d53f1915ccb7d4556.js" integrity="sha256-CRCPwZHyYubL5x9LX&#43;ufTDVj6F277GVdU/GRXMt9RVY="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/front-end-optimization-guide/image-optimization/"  class="active">
+      图片优化
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>图片优化</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#图片格式介绍">图片格式介绍</a></li>
+    <li><a href="#不同网络环境加载不同尺寸图片">不同网络环境，加载不同尺寸图片</a></li>
+    <li><a href="#响应式图片">响应式图片</a>
+      <ul>
+        <li><a href="#css-媒体查询">CSS 媒体查询</a></li>
+        <li><a href="#srcsetsizespicture-和-source">srcset、sizes、picture 和 source</a></li>
+      </ul>
+    </li>
+    <li><a href="#懒加载">懒加载</a>
+      <ul>
+        <li><a href="#lqip">LQIP</a></li>
+        <li><a href="#sqip">SQIP</a></li>
+      </ul>
+    </li>
+    <li><a href="#换一种方式来表达图片">换一种方式来表达图片</a>
+      <ul>
+        <li><a href="#data-url">Data URL</a></li>
+        <li><a href="#image-sprites-雪碧图">Image sprites (雪碧图)</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="图片优化">图片优化</h1>
+<p>图片在网页数据的传输中占据了非常大的流量，如何优化图片，对于前端页面加载的性能极其重要。本文讲述了比较常见的几种优化图片的技巧。</p>
+<h2 id="图片格式介绍">图片格式介绍</h2>
+<p>（1）JPEG</p>
+<p>JPEG 是 Joint Photographic Experts Group 的缩写，<strong>不支持透明度</strong>，常用于网站的 Banner 图。JPEG 使用的是一种有损图像质量的压缩算法，压缩的越狠，图片的质量损失也就越大，图片的尺寸也就越小。根据你网站所能忍受的图片质量，来相应的选择压缩比：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/Modern-Image5-large.jpg" alt=""></p>
+<p>（2）PNG</p>
+<p>支持透明度，支持无损压缩，一般图片的<strong>尺寸都比较大</strong>。</p>
+<p>（3）GIF</p>
+<p>适合放<strong>动画</strong>图片。</p>
+<p>（4）WebP</p>
+<p>🔥Google 2010 年提出的新的图像压缩格式算法，在 2013 年又推出 Animated WebP，即支持动画的 Webp。优点：更优的图像数据压缩算法、拥有肉眼识别无差异的图像质量、具备了无损和有损的压缩模式、Alpha 透明以及动画的特性。</p>
+<p>PNG、JPG、WebP 压缩对比：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/webp_compression.png" alt=""></p>
+<p>GIF 和 WebP 对比：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/animated_webp_compression.png" alt=""></p>
+<h2 id="不同网络环境加载不同尺寸图片">不同网络环境，加载不同尺寸图片</h2>
+<p>如下是京东网站首页占据 C 位的宣传图：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/jd_banner.webp" alt=""></p>
+<p>它的 URL 地址如下，你任意改变这张图片的 <a href="https://img30.360buyimg.com/pop/s1180x940_jfs/t1/132645/35/653/92669/5ecf8b35Edaa8ba5c/3a7257f23e3b1e86.jpg.webp">URL</a> 里面的宽、高，放到浏览器里面重新进行请求，就可以得到相应大小的图片：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/jd_banner_link.png" alt=""></p>
+<h2 id="响应式图片">响应式图片</h2>
+<p>不同平台设备加载不同大小、甚至不同内容的图片！</p>
+<h3 id="css-媒体查询">CSS 媒体查询</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-css" data-lang="css">@<span style="color:#66d9ef">media</span> <span style="color:#f92672">all</span> <span style="color:#f92672">and</span> <span style="color:#f92672">(</span><span style="color:#f92672">max-width</span><span style="color:#f92672">:</span> <span style="color:#f92672">600px</span><span style="color:#f92672">)</span> {
+    <span style="color:#f92672">img</span> {
+        <span style="color:#66d9ef">width</span>: <span style="color:#ae81ff">300</span><span style="color:#66d9ef">px</span>;
+    }
+}
+
+@<span style="color:#66d9ef">media</span> <span style="color:#f92672">all</span> <span style="color:#f92672">and</span> <span style="color:#f92672">(</span><span style="color:#f92672">min-width</span><span style="color:#f92672">:</span> <span style="color:#f92672">600px</span><span style="color:#f92672">)</span> <span style="color:#f92672">and</span> <span style="color:#f92672">(</span><span style="color:#f92672">max-width</span><span style="color:#f92672">:</span> <span style="color:#f92672">1200px</span><span style="color:#f92672">)</span> {
+    <span style="color:#f92672">img</span> {
+        <span style="color:#66d9ef">width</span>: <span style="color:#ae81ff">900</span><span style="color:#66d9ef">px</span>;
+    }
+}
+</code></pre></div><h3 id="srcsetsizespicture-和-source">srcset、sizes、picture 和 source</h3>
+<p>（1）<code>srcset</code> 属性</p>
+<p><code>img</code> 标签的 <code>srcset</code> 属性定义了我们允许浏览器选择的图像集，以及每个图像的大小：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">srcset</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;images/team-photo.jpg 1x, 
+</span><span style="color:#e6db74">             images/team-photo-retina.jpg 2x, 
+</span><span style="color:#e6db74">             images/team-photo-full.jpg 2048w,
+</span><span style="color:#e6db74">             images/team-photo-default.jpg&#34;</span> 
+     <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;team-photo.jpg&#34;</span>&gt;
+</code></pre></div><p>上述代码，<code>srcset</code> 属性给出了四个图像的 URL。<code>1x</code> 或 <code>2x</code> 这个 <code>x</code> 代表 <code>pixel density descriptor</code>，代表当当前设备的像素密度是标准像素密度的 1 倍或 2 倍时，去加载对应的图片，这个值可以是<strong>浮点数</strong>。<code>2048w</code> 的 <code>w</code> 代表 <code>width descriptor</code>，也就是图片的以像素为单位的宽度，当浏览器的渲染器需要去渲染宽度为 2048 像素的图片的时候，就会使用这张图片，这个值必须是<strong>正整数</strong>。</p>
+<p>最后一个图像 URL <code>images/team-photo-default.jpg</code> 没有带 <code>x</code> 或者 <code>w</code>，这表示这张图片是一张<strong>候选图片</strong>，当 <code>srcset</code> 其它图片都没有匹配上的时候，那么就会使用这种图片。当然，候选图片是可选的，如果不提供，就会选择使用 <code>src</code> 图片作为默认图片。</p>
+<p>（2）<code>sizes</code> 属性</p>
+<p><code>srcset</code> 提供了一个图片的候选集，但是选择哪个图片是浏览器决定的，我们无法灵活控制。如果想要自己根据<strong>屏幕的大小</strong>，来告诉渲染器去渲染<strong>多大尺寸</strong>的图片，可以引入 <code>sizes</code> 属性。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/files/16870/new-york-skyline-wide.jpg&#34;</span>
+       <span style="color:#a6e22e">srcset</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/files/16870/new-york-skyline-wide.jpg 3724w,
+</span><span style="color:#e6db74">               /files/16869/new-york-skyline-4by3.jpg 1961w,
+</span><span style="color:#e6db74">               /files/16871/new-york-skyline-tall.jpg 1060w&#34;</span>
+       <span style="color:#a6e22e">sizes</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;((min-width: 50em) and (max-width: 60em)) 50em,
+</span><span style="color:#e6db74">              ((min-width: 30em) and (max-width: 50em)) 30em,
+</span><span style="color:#e6db74">              (max-width: 30em) 20em&#34;</span>&gt;
+</code></pre></div><p><code>sizes</code> 的格式：<code>媒体查询条件 目标值</code>。</p>
+<p>上述的 <code>sizes</code> 属性表示，当屏幕宽度位于 50em ~ 60em 的时候，渲染所需图片宽度为 50em，当屏幕宽度位于 30em ~ 50em 的时候，渲染所需图片宽度为 30em，当屏幕宽度小于 30em，渲染所需图片宽度为 20em。当渲染器所需渲染的图片宽度确定的时候，再去 <code>srcset</code> 中去匹配最接近该宽度的图片 URL 即可。</p>
+<p>目标值的单位可以是：</p>
+<ul>
+<li>相对字体大小的单位：<code>em</code> 或 <code>ex</code></li>
+<li>绝对单位：<code>px</code> 或 <code>cm</code></li>
+<li>Viewport(窗口) 百分比单位：<code>vw</code></li>
+</ul>
+<p>（3）<code>picture</code> 和 <code>source</code></p>
+<p><code>srcset</code> 和 <code>sizes</code> 可以让网站根据屏幕大小来加载**内容相同的（虽然也可以不同，但不应该这样用）**不同大小的图片，如果还想根据不同的屏幕，显示不同内容的图片，例如电脑上显示如下比较宽的图：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/picture-element-wide.webp" alt=""></p>
+<p>而手机上为了突出人物，显示比较瘦的图：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/picture-element-narrow.webp" alt=""></p>
+<p>可以使用 <code>&lt;picture&gt;</code> 和 <code>&lt;source&gt;</code> 标签来解决这个问题：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">picture</span>&gt;
+  &lt;<span style="color:#f92672">source</span> <span style="color:#a6e22e">media</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;(max-width: 799px)&#34;</span> <span style="color:#a6e22e">srcset</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;elva-480w-close-portrait.jpg&#34;</span>&gt;
+  &lt;<span style="color:#f92672">source</span> <span style="color:#a6e22e">media</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;(min-width: 800px)&#34;</span> <span style="color:#a6e22e">srcset</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;elva-800w.jpg&#34;</span>&gt;
+  &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;elva-800w.jpg&#34;</span> <span style="color:#a6e22e">alt</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Chris standing up holding his daughter Elva&#34;</span>&gt;
+&lt;/<span style="color:#f92672">picture</span>&gt;
+</code></pre></div><p>上述代码的 <code>&lt;img&gt;</code> 标签是必须提供，否则不会显示任何图片，当 <code>&lt;source&gt;</code> 的媒体查询条件都不满足的时候，<code>&lt;img&gt;</code> 将会显示 <code>src</code> 所指向的 URL 图片。</p>
+<p>除此之外，<code>&lt;picture&gt;</code> 标签还可以根据浏览器所能渲染的图片格式来选择不同的图片：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">picture</span>&gt;
+  &lt;<span style="color:#f92672">source</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;image/svg+xml&#34;</span> <span style="color:#a6e22e">srcset</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;pyramid.svg&#34;</span>&gt;
+  &lt;<span style="color:#f92672">source</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;image/webp&#34;</span> <span style="color:#a6e22e">srcset</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;pyramid.webp&#34;</span>&gt; 
+  &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;pyramid.png&#34;</span> <span style="color:#a6e22e">alt</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;regular pyramid built from four equilateral triangles&#34;</span>&gt;
+&lt;/<span style="color:#f92672">picture</span>&gt;
+</code></pre></div><p>当浏览器按照 <code>&lt;source&gt;</code> 出现的顺序，依次探测是否满足条件，如果满足，就加载相应图片。</p>
+<h2 id="懒加载">懒加载</h2>
+<p>有很多库可以实现懒加载图片，例如 <a href="https://github.com/aFarkas/lazysizes">lazysizes</a>。对于每一张图片，需要确定在其原图内容还未被浏览器渲染出来之前，这张图应该显示什么占位符，目前有两个库可以生成图像的占位符。当然，如果对于所有图片，都像是用一个统一的图片作为占位符，也未尝不可。</p>
+<h3 id="lqip">LQIP</h3>
+<p><a href="https://github.com/zouhir/lqip-loader">LQIP</a> 就是 Low Quality Image Placeholders (低质量图像占位符) 的缩写。</p>
+<h3 id="sqip">SQIP</h3>
+<p>上述 LQIP 是基于像素的解决方案，而 <a href="https://github.com/axe312ger/sqip">SQIP</a> 是 SVG-based LQIP (基于 SVG 的低质量图像占位符) 的缩写，其实基于 SVG 的，在任何设备上都看起来很清晰。</p>
+<p>下图展示的是一个效果图：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/sqip_example.webp" alt=""></p>
+<h2 id="换一种方式来表达图片">换一种方式来表达图片</h2>
+<h3 id="data-url">Data URL</h3>
+<p>对于一些较小的图片，可以将内容直接内嵌在 URL 中，常见格式如下：</p>
+<pre><code>data:[&lt;mediatype&gt;][;base64],&lt;data&gt;
+</code></pre><p><code>mediatype</code> 标识图片的格式，例如 <code>image/jpeg</code> 等。</p>
+<h3 id="image-sprites-雪碧图">Image sprites (雪碧图)</h3>
+<p>对于 HTTP 1.X 协议，雪碧图（即多张小图片合成一张大图）的加载方式，是很多网站都会采用的技巧，这种方式的缺点是，如果某个应用图标需要更新，那么整张大图都需要替换。</p>
+<p>然而对于 HTTP 2.0 协议的到来，加载多张小图是比较推荐的做法，因为多张图片本身的下载都会复用同一个连接。</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/i2_2ec824b0_1-large.jpg" alt=""></p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/zh-CN/docs/Web/API/HTMLImageElement/srcset">HTMLImageElement.srcset</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Multimedia_and_embedding/Responsive_images">Responsive images</a></li>
+<li><a href="https://images.guide/">Essential Image Optimization</a></li>
+</ul>
+<p>扫描下面二维码，在手机端阅读：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#图片格式介绍">图片格式介绍</a></li>
+    <li><a href="#不同网络环境加载不同尺寸图片">不同网络环境，加载不同尺寸图片</a></li>
+    <li><a href="#响应式图片">响应式图片</a>
+      <ul>
+        <li><a href="#css-媒体查询">CSS 媒体查询</a></li>
+        <li><a href="#srcsetsizespicture-和-source">srcset、sizes、picture 和 source</a></li>
+      </ul>
+    </li>
+    <li><a href="#懒加载">懒加载</a>
+      <ul>
+        <li><a href="#lqip">LQIP</a></li>
+        <li><a href="#sqip">SQIP</a></li>
+      </ul>
+    </li>
+    <li><a href="#换一种方式来表达图片">换一种方式来表达图片</a>
+      <ul>
+        <li><a href="#data-url">Data URL</a></li>
+        <li><a href="#image-sprites-雪碧图">Image sprites (雪碧图)</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
