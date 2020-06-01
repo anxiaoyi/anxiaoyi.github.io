@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="HTML 优化"><meta property="og:title" content="HTML 优化" />
+<meta property="og:description" content="HTML 优化 本文通过一些案例讲述了常见的优化 HTML 的几种小技巧：减少 DOM 树、精简 HTML 文件大小等。
+优化 DOM 节点树 去除页面除首屏外的对于用户不可见的信息区块，可以让页面的 DOM 节点数更少，DOM 树结构更简单，然后再使用懒加载异步化请求，去动态加载这些不可见的信息区块。
+在《大型网站性能优化实战》这本书中，作者为了优化搜索页面的渲染瓶颈问题，将首屏以下的 33 各搜索结果对应的 HTML 代码放到 &lt;textarea&gt; 节点中，当该区域处于可见状态时，再从 TextArea 中取出 HTML 代码，恢复到 DOM 树中进行渲染。这样一来，页面首次渲染的 DOM 树所包含的节点数大幅度减少，从而有效提高了首次渲染速度。
+多个空格合并为一个空格 通过将多个空格合并为一个空格，可以减少 HTML 的大小，从而缩短传输 HTML 文件所需的时间。通常在编写 HTML 文件的时候，总是倾向于格式化它，以方便我们人类阅读，所以这个文件中填充了许多空格，但这些空格对于浏览器来说是用不到的。在替换空格的时候，需要保留 &lt;pre&gt;、&lt;textarea&gt;、&lt;script&gt;、&lt;style&gt; 中的空格。
+不过，如果你的网页中使用了 white-space: pre 这个 CSS 属性就要小心了，这个属性可以避免让多个空格压缩为一个，在实际开发网站的时候，其实也很少用到这个属性。如果确实需要，那么就放弃把 HTML 的多个空格合并为一个空格吧。
+&lt;html&gt; &lt;head&gt; &lt;title&gt;Hello, world! &lt;/title&gt; &lt;script&gt; var x = &#39;Hello, world!&#39;;&lt;/script&gt; &lt;/head&gt; &lt;body&gt; Hello, World! &lt;pre&gt; Hello, World! &lt;/pre&gt; &lt;/body&gt; &lt;/html&gt; 转为：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/front-end-optimization-guide/html-optimization/" />
+
+<title>HTML 优化 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.c71f7a411af655f4cb4a2b292c37918d040b6988b896d57c82b4efa392d1bfd8.js" integrity="sha256-xx96QRr2VfTLSispLDeRjQQLaYi4ltV8grTvo5LRv9g="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/front-end-optimization-guide/image-optimization/" >
+      图片优化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/front-end-optimization-guide/html-optimization/"  class="active">
+      HTML 优化
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>HTML 优化</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#优化-dom-节点树">优化 DOM 节点树</a></li>
+    <li><a href="#多个空格合并为一个空格">多个空格合并为一个空格</a></li>
+    <li><a href="#精简属性">精简属性</a></li>
+    <li><a href="#移除注释">移除注释</a></li>
+    <li><a href="#移除引号">移除引号</a></li>
+    <li><a href="#精简-url-链接">精简 URL 链接</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="html-优化">HTML 优化</h1>
+<p>本文通过一些案例讲述了常见的优化 HTML 的几种小技巧：减少 DOM 树、<a href="https://htmlcompressor.com/">精简 HTML 文件大小</a>等。</p>
+<h2 id="优化-dom-节点树">优化 DOM 节点树</h2>
+<p>去除页面除首屏外的对于用户<strong>不可见的信息区块</strong>，可以让页面的 DOM 节点数更少，DOM 树结构更简单，然后再使用懒加载异步化请求，去动态加载这些不可见的信息区块。</p>
+<p>在《大型网站性能优化实战》这本书中，作者为了优化搜索页面的渲染瓶颈问题，将首屏以下的 33 各搜索结果对应的 HTML 代码放到 <code>&lt;textarea&gt;</code> 节点中，当该区域处于可见状态时，再从 TextArea 中取出 HTML 代码，恢复到 DOM 树中进行渲染。这样一来，页面首次渲染的 DOM 树所包含的节点数大幅度减少，从而有效提高了首次渲染速度。</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/html-optimization/html-render.png" alt=""></p>
+<h2 id="多个空格合并为一个空格">多个空格合并为一个空格</h2>
+<p>通过将多个空格合并为一个空格，可以减少 HTML 的大小，从而缩短传输 HTML 文件所需的时间。通常在编写 HTML 文件的时候，总是倾向于格式化它，以方便我们人类阅读，所以这个文件中填充了许多空格，但这些空格对于浏览器来说是用不到的。在替换空格的时候，需要保留 <code>&lt;pre&gt;</code>、<code>&lt;textarea&gt;</code>、<code>&lt;script&gt;</code>、<code>&lt;style&gt;</code> 中的空格。</p>
+<p>不过，如果你的网页中使用了 <code>white-space: pre</code> 这个 CSS 属性就要小心了，这个属性可以避免让多个空格压缩为一个，在实际开发网站的时候，其实也很少用到这个属性。如果确实需要，那么就<strong>放弃</strong>把 HTML 的多个空格合并为一个空格吧。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">html</span>&gt;
+
+  &lt;<span style="color:#f92672">head</span>&gt;
+    &lt;<span style="color:#f92672">title</span>&gt;Hello,   world!   &lt;/<span style="color:#f92672">title</span>&gt;
+    &lt;<span style="color:#f92672">script</span>&gt; <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">x</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Hello,   world!&#39;</span>;&lt;/<span style="color:#f92672">script</span>&gt;
+  &lt;/<span style="color:#f92672">head</span>&gt;
+
+  &lt;<span style="color:#f92672">body</span>&gt;
+    Hello, World!
+    &lt;<span style="color:#f92672">pre</span>&gt;
+      Hello,
+        World!
+    &lt;/<span style="color:#f92672">pre</span>&gt;
+  &lt;/<span style="color:#f92672">body</span>&gt;
+
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><p>转为：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">html</span>&gt;
+&lt;<span style="color:#f92672">head</span>&gt;
+&lt;<span style="color:#f92672">title</span>&gt;Hello, world!&lt;/<span style="color:#f92672">title</span>&gt;
+&lt;<span style="color:#f92672">script</span>&gt; <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">x</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Hello,   world!&#39;</span>;&lt;/<span style="color:#f92672">script</span>&gt;
+&lt;/<span style="color:#f92672">head</span>&gt;
+&lt;<span style="color:#f92672">body</span>&gt;
+Hello, World!
+&lt;<span style="color:#f92672">pre</span>&gt;
+      Hello,
+        World!
+&lt;/<span style="color:#f92672">pre</span>&gt;
+&lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><h2 id="精简属性">精简属性</h2>
+<p><code>&lt;button&gt;</code> 按钮的 <code>disabled</code> 属性：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">button</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ok&#34;</span> <span style="color:#a6e22e">disabled</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;disabled&#34;</span>&gt;
+</code></pre></div><p>可以写为</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">button</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ok&#34;</span> <span style="color:#a6e22e">disabled</span>&gt;
+</code></pre></div><p>而 <code>&lt;form&gt;</code> 表单：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">form</span> <span style="color:#a6e22e">method</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;get&#34;</span>&gt;
+</code></pre></div><p>可以写为：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">form</span>&gt;
+</code></pre></div><p>即许多 HTML 节点的属性都有默认值，如果指定的属性值等于默认属性的值，那么就可以移除掉。</p>
+<h2 id="移除注释">移除注释</h2>
+<p>如下的 HTML 片段带有注释，去除注释，可以减少 HTML 文件的体积：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">i</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;service_ico&#34;</span>&gt;
+    <span style="color:#75715e">&lt;!--</span><span style="color:#75715e"> 常态 icon </span><span style="color:#75715e">--&gt;</span>
+    &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;service_ico_img&#34;</span>
+            <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;service_ico_img.png&#34;</span>/&gt;
+    <span style="color:#75715e">&lt;!--</span><span style="color:#75715e"> hover 态 icon </span><span style="color:#75715e">--&gt;</span>
+    &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;service_ico_img_hover&#34;</span>
+            <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;service_ico_img_hover.png&#34;</span>/&gt;
+&lt;/<span style="color:#f92672">i</span>&gt;
+</code></pre></div><h2 id="移除引号">移除引号</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">html</span>&gt;
+  &lt;<span style="color:#f92672">head</span>&gt;
+  &lt;/<span style="color:#f92672">head</span>&gt;
+  &lt;<span style="color:#f92672">body</span>&gt;
+    &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;BikeCrashIcn.png&#34;</span> <span style="color:#a6e22e">align</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;left&#39;</span> <span style="color:#a6e22e">alt</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span> <span style="color:#a6e22e">border</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;0&#34;</span> <span style="color:#a6e22e">width</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;70&#39;</span> <span style="color:#a6e22e">height</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;30&#39;</span> &gt;
+  &lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><p>转变为</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">html</span>&gt;
+  &lt;<span style="color:#f92672">head</span>&gt;
+  &lt;/<span style="color:#f92672">head</span>&gt;
+  &lt;<span style="color:#f92672">body</span>&gt;
+    &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">BikeCrashIcn.png</span> <span style="color:#a6e22e">align</span><span style="color:#f92672">=</span><span style="color:#e6db74">left</span> <span style="color:#a6e22e">alt</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span> <span style="color:#a6e22e">border</span><span style="color:#f92672">=</span><span style="color:#e6db74">0</span> <span style="color:#a6e22e">width</span><span style="color:#f92672">=</span><span style="color:#e6db74">70</span> <span style="color:#a6e22e">height</span><span style="color:#f92672">=</span><span style="color:#e6db74">30</span> &gt;
+  &lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><p>一方面去除了无关的引用，另外一方面也有利于 <code>Gzip</code> 算法的压缩。</p>
+<h2 id="精简-url-链接">精简 URL 链接</h2>
+<p>如果 URL 的协议头与当前页面的协议头一致，那么可以删除协议头；在表达 URL 路径的时候，如果 HOST 与本网页一致，那么此 URL 也没必要使用绝对 URL 路径，使用相对 URL 路径即可。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">html</span>&gt;
+  &lt;<span style="color:#f92672">head</span>&gt;
+  &lt;<span style="color:#f92672">base</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;http://www.example.com/&#34;</span>&gt;
+  &lt;/<span style="color:#f92672">head</span>&gt;
+  &lt;<span style="color:#f92672">body</span>&gt;
+    &lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;http://www.example.com/bar&#34;</span>&gt;Link with long URL&lt;/<span style="color:#f92672">a</span> &gt;
+    &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;http://www.othersite.example.org/image.jpg&#34;</span>&gt;
+  &lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><p>转变为：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">html</span>&gt;
+  &lt;<span style="color:#f92672">head</span>&gt;
+  &lt;<span style="color:#f92672">base</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;http://www.example.com/&#34;</span>&gt;
+  &lt;/<span style="color:#f92672">head</span>&gt;
+  &lt;<span style="color:#f92672">body</span>&gt;
+    &lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;bar&#34;</span>&gt;Link with long URL&lt;/<span style="color:#f92672">a</span> &gt;
+    &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;//www.othersite.example.org/image.jpg&#34;</span>&gt;
+  &lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://developers.google.com/speed/pagespeed/service/OptimizeHtml">OptimizeHtml</a></li>
+<li><a href="https://book.douban.com/subject/30437260/">《大型网站性能优化实战》</a></li>
+</ul>
+<p>扫描下面二维码，在手机端阅读本文：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/html-optimization/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#优化-dom-节点树">优化 DOM 节点树</a></li>
+    <li><a href="#多个空格合并为一个空格">多个空格合并为一个空格</a></li>
+    <li><a href="#精简属性">精简属性</a></li>
+    <li><a href="#移除注释">移除注释</a></li>
+    <li><a href="#移除引号">移除引号</a></li>
+    <li><a href="#精简-url-链接">精简 URL 链接</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
