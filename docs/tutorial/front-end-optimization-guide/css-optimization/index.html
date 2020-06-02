@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="CSS 优化"><meta property="og:title" content="CSS 优化" />
+<meta property="og:description" content="CSS 优化 本文讲述在实际工作中如何优化 CSS，提升页面加载的性能！
+避免使用 @import @import url(&#34;base.css&#34;); @import url(&#34;layout.css&#34;); @import url(&#34;carousel.css&#34;); 由于 @import 属性允许相互之间嵌套引入，因此浏览器必须串行的去下载每一个 @import 引入的文件，因此会增加下载 CSS 文件的时间，而使用 &lt;link&gt; 就可以并行下载 CSS 文件，可有效提升 CSS 加载的性能：
+&lt;link rel=&#34;stylesheet&#34; href=&#34;base.css&#34;&gt; &lt;link rel=&#34;stylesheet&#34; href=&#34;layout.css&#34;&gt; &lt;link rel=&#34;stylesheet&#34; href=&#34;carousel.css&#34;&gt; 简化 CSS 选择器 浏览器是从右向左逐步解析选择器表达式的，例如 #id .class &gt; ul a 。首先找到页面上所有匹配 a 的节点，然后找到所有 ul 元素，并且将 a 元素恰好是 ul 元素子节点的元素过滤出来，直至解析到最左侧的选择器 #id 。
+如下是在网站上针对 50000 个元素使用不同 CSS 选择器选择元素的时间对比：
+   选择器 查询时间(ms)     div 4.8740   ." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/front-end-optimization-guide/css-optimization/" />
+
+<title>CSS 优化 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.9e0a2ee16b9f836ec6c63565017aa780fcada228c8ea6892c39a786861077308.js" integrity="sha256-ngou4Wufg27GxjVlAXqngPytoijI6miSw5p4aGEHcwg="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/front-end-optimization-guide/image-optimization/" >
+      图片优化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/front-end-optimization-guide/html-optimization/" >
+      HTML 优化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/front-end-optimization-guide/css-optimization/"  class="active">
+      CSS 优化
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>CSS 优化</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#避免使用-import">避免使用 @import</a></li>
+    <li><a href="#简化-css-选择器">简化 CSS 选择器</a></li>
+    <li><a href="#避免使用-css-表达式">避免使用 CSS 表达式</a></li>
+    <li><a href="#避免使用-expensive-的属性">避免使用 expensive 的属性</a></li>
+    <li><a href="#精简-css-代码">精简 CSS 代码</a></li>
+    <li><a href="#优化-css-动画">优化 CSS 动画</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="css-优化">CSS 优化</h1>
+<p>本文讲述在实际工作中如何优化 CSS，提升页面加载的性能！</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/css-optimization/coding-1853305__480.webp" alt=""></p>
+<h2 id="避免使用-import">避免使用 @import</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-css" data-lang="css">@<span style="color:#66d9ef">import</span> <span style="color:#f92672">url</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;base.css&#34;</span><span style="color:#f92672">)</span>;
+@<span style="color:#66d9ef">import</span> <span style="color:#f92672">url</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;layout.css&#34;</span><span style="color:#f92672">)</span>;
+@<span style="color:#66d9ef">import</span> <span style="color:#f92672">url</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;carousel.css&#34;</span><span style="color:#f92672">)</span>;
+</code></pre></div><p>由于 <code>@import</code> 属性允许相互之间嵌套引入，因此浏览器必须串行的去下载每一个 <code>@import</code> 引入的文件，因此会增加下载 CSS 文件的时间，而使用 <code>&lt;link&gt;</code> 就可以并行下载 CSS 文件，可有效提升 CSS 加载的性能：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">link</span> <span style="color:#a6e22e">rel</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;stylesheet&#34;</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;base.css&#34;</span>&gt;
+&lt;<span style="color:#f92672">link</span> <span style="color:#a6e22e">rel</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;stylesheet&#34;</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;layout.css&#34;</span>&gt;
+&lt;<span style="color:#f92672">link</span> <span style="color:#a6e22e">rel</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;stylesheet&#34;</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;carousel.css&#34;</span>&gt;
+</code></pre></div><h2 id="简化-css-选择器">简化 CSS 选择器</h2>
+<p>浏览器是<strong>从右向左逐步解析</strong>选择器表达式的，例如 <code>#id .class &gt; ul a</code> 。首先找到页面上所有匹配 <code>a</code> 的节点，然后找到所有 <code>ul</code> 元素，并且将 <code>a</code> 元素恰好是 <code>ul</code> 元素子节点的元素过滤出来，直至解析到最左侧的选择器 <code>#id</code> 。</p>
+<p>如下是在<a href="https://codepen.io/ivancuric/pen/ZaWxqV">网站</a>上针对 50000 个元素使用不同 CSS 选择器选择元素的时间对比：</p>
+<table>
+<thead>
+<tr>
+<th>选择器</th>
+<th>查询时间(ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>div</code></td>
+<td>4.8740</td>
+</tr>
+<tr>
+<td><code>.box</code></td>
+<td>3.625</td>
+</tr>
+<tr>
+<td><code>.box &gt; .title</code></td>
+<td>4.4587</td>
+</tr>
+<tr>
+<td><code>.box .title</code></td>
+<td>4.5161</td>
+</tr>
+<tr>
+<td><code>.box ~ .box</code></td>
+<td>4.7082</td>
+</tr>
+<tr>
+<td><code>.box + .box</code></td>
+<td>4.6611</td>
+</tr>
+<tr>
+<td><code>.box:last-of-type</code></td>
+<td>3.944</td>
+</tr>
+<tr>
+<td><code>.box:nth-of-type(2n - 1)</code></td>
+<td>16.8491</td>
+</tr>
+<tr>
+<td><code>.box:not(:last-of-type)</code></td>
+<td>5.8947</td>
+</tr>
+<tr>
+<td><code>.box:not(:empty):last-of-type .title</code></td>
+<td>8.0202</td>
+</tr>
+<tr>
+<td><code>.box:nth-last-child(n+6) ~ div</code></td>
+<td>20.8710</td>
+</tr>
+</tbody>
+</table>
+<p>最慢的选择器接近 <code>20ms</code>，而最快的仅需 <code>3.5ms</code> 左右，由此可见 CSS 选择器越短，解析速度越快！</p>
+<h2 id="避免使用-css-表达式">避免使用 CSS 表达式</h2>
+<p>IE5 引入了 CSS 表达式，或者称之为 &ldquo;动态属性&rdquo;，这样可以让开发人员以更为紧凑的方式在 CSS 中就可以完成高级样式处理。然而，CSS 表达式带来的性能损失是相当大的，因为每当触发任何事件（如窗口大小调整、鼠标移动等）时，浏览器都会重新运行每个表达式，这也是它在 IE8 被弃用的原因之一。如果在页面中使用了 CSS 表达式，则应尽一切努力删除它们，并使用其他方法来实现相同的功能。</p>
+<h2 id="避免使用-expensive-的属性">避免使用 expensive 的属性</h2>
+<p>有些属性生来渲染速度就慢于其它属性，下面这些属性在绘制之前可能会导致其它计算，因此尽量避免使用！</p>
+<ul>
+<li><code>border-radius</code></li>
+<li><code>box-shadow</code></li>
+<li><code>opacity</code></li>
+<li><code>transform</code></li>
+<li><code>filter</code></li>
+<li><code>position: fixed</code></li>
+</ul>
+<h2 id="精简-css-代码">精简 CSS 代码</h2>
+<p>精简 CSS 代码意味着对 CSS 源文件，采取移除无关的空白字符、换行符、注释、去除不必要的单位、去除不必要的零等方法。其可以有效压缩 CSS 文件的大小，减少浏览器下载和执行文件所需的时间。</p>
+<p>通过使用近几年来出现的新的页面布局方式，例如 <code>Flexbox</code> 和 <code>Grid</code> 布局，可以有效减少达到之前使用 <code>float</code> 属性进行的相同布局所需要的代码量，以前自己需要做的事情，现在浏览器在底层可以更快的帮你完成。</p>
+<p>在引入 CSS 库的时候，也要去仔细对比，在满足要求的条件下，应该尽量选择 <code>size</code> 比较小的库。</p>
+<h2 id="优化-css-动画">优化 CSS 动画</h2>
+<ul>
+<li>同时进行多个 CSS 动画可能不会工作地很好，极有可能导致延迟出现，适当地给一些动画增加 <code>transition-delay</code> 属性以避免同时运行多个动画。</li>
+<li>浏览器加载网页地时候非常忙，因此尽可能地将所有动画延迟到初始加载事件之后的几百毫秒，可以有效提升页面的整体性能。</li>
+<li>SVG 非常适合动画，因为它们可以在不降低分辨率的情况下进行缩放。</li>
+<li>只在最后才考虑使用 <code>will-change</code> 属性，毕竟它也消耗资源！</li>
+</ul>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://www.sitepoint.com/optimizing-css-performance/">20 Tips for Optimizing CSS Performance</a></li>
+<li><a href="https://www.keycdn.com/blog/animation-performance">Tips for Improving CSS and JS Animation Performance</a></li>
+<li><a href="https://gtmetrix.com/avoid-css-expressions-pagespeed.html">PageSpeed: Avoid CSS expressions (deprecated)</a></li>
+</ul>
+<p>扫描下面二维码，在手机端阅读本文：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/css-optimization/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#避免使用-import">避免使用 @import</a></li>
+    <li><a href="#简化-css-选择器">简化 CSS 选择器</a></li>
+    <li><a href="#避免使用-css-表达式">避免使用 CSS 表达式</a></li>
+    <li><a href="#避免使用-expensive-的属性">避免使用 expensive 的属性</a></li>
+    <li><a href="#精简-css-代码">精简 CSS 代码</a></li>
+    <li><a href="#优化-css-动画">优化 CSS 动画</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
