@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="JVM 性能调优"><meta property="og:title" content="JVM 性能调优" />
+<meta property="og:description" content="JVM 如何进行性能调优？" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/posts/jvm-optimization/" />
+<meta property="article:published_time" content="2017-05-02T00:00:00+00:00" />
+<meta property="article:modified_time" content="2017-05-02T00:00:00+00:00" />
+<title>JVM 性能调优 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.718ad459417e7d6513fde41e2ebea6f4f8f82a9d5499e0a8b399fea78bdfab88.js" integrity="sha256-cYrUWUF&#43;fWUT/eQeLr6m9Pj4Kp1UmeCos5n&#43;p4vfq4g="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      🔥IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>JVM 性能调优</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#java-虚拟机内存模型">Java 虚拟机内存模型</a></li>
+    <li><a href="#pc-register">pc register</a></li>
+    <li><a href="#stack">stack</a></li>
+    <li><a href="#native-method-stack">native method stack</a></li>
+    <li><a href="#heap">HEAP</a>
+      <ul>
+        <li><a href="#逃逸分析">逃逸分析</a></li>
+      </ul>
+    </li>
+    <li><a href="#method-area">method area</a></li>
+    <li><a href="#直接内存">直接内存</a></li>
+    <li><a href="#区域比例">区域比例</a></li>
+    <li><a href="#垃圾回收算法">垃圾回收算法</a></li>
+    <li><a href="#谁才是真正的垃圾">谁才是真正的垃圾</a></li>
+    <li><a href="#垃圾回收器">垃圾回收器</a>
+      <ul>
+        <li><a href="#串行回收器">串行回收器</a></li>
+        <li><a href="#并行回收器">并行回收器</a></li>
+        <li><a href="#g1-garbage-first-垃圾收集器">G1 (Garbage-First) 垃圾收集器</a></li>
+        <li><a href="#g1-垃圾收集器-vs-cms-垃圾收集器">G1 垃圾收集器 VS CMS 垃圾收集器</a></li>
+      </ul>
+    </li>
+    <li><a href="#实用-jvm-参数">实用 JVM 参数</a></li>
+    <li><a href="#minor-gcmajor-gc-和-full-gc">Minor GC、Major GC 和 Full GC</a></li>
+    <li><a href="#java-各版本默认垃圾收集器">Java 各版本默认垃圾收集器</a></li>
+    <li><a href="#jvm-的工作模式">JVM 的工作模式</a></li>
+    <li><a href="#heap-memory-最佳实践">Heap Memory 最佳实践</a></li>
+    <li><a href="#java-monitoring-常用工具">Java Monitoring 常用工具</a>
+      <ul>
+        <li><a href="#jstack">jstack</a></li>
+        <li><a href="#jinfo">jinfo</a></li>
+        <li><a href="#jstat">jstat</a></li>
+        <li><a href="#jmap-memory-map">jmap (Memory Map)</a></li>
+      </ul>
+    </li>
+    <li><a href="#堆内存使用最佳实践">堆内存使用最佳实践</a>
+      <ul>
+        <li><a href="#堆分析">堆分析</a></li>
+        <li><a href="#使用更少的内存">使用更少的内存</a></li>
+        <li><a href="#对象生命周期管理">对象生命周期管理</a></li>
+      </ul>
+    </li>
+    <li><a href="#jit">JIT</a>
+      <ul>
+        <li><a href="#1-编译还是解释">(1) 编译还是解释</a></li>
+        <li><a href="#2-hotspot-名字的含义">(2) HotSpot 名字的含义</a></li>
+        <li><a href="#3-寄存器和内存">(3) 寄存器和内存</a></li>
+        <li><a href="#4-选择-java-编译器">(4) 选择 Java 编译器</a></li>
+        <li><a href="#5-更多考虑因素">(5) 更多考虑因素</a></li>
+        <li><a href="#6-deoptimization">(6) Deoptimization</a></li>
+      </ul>
+    </li>
+    <li><a href="#todo">TODO</a></li>
+    <li><a href="#远程-jvisualvm">远程 JVisualVM</a></li>
+    <li><a href="#gc-日志分析工具">GC 日志分析工具</a></li>
+    <li><a href="#dump-什么">DUMP 什么</a></li>
+    <li><a href="#实际运用中如何清晰明了地观察-jvm-的运行过程">实际运用中如何清晰明了地观察 JVM 的运行过程?</a></li>
+    <li><a href="#jvm-如何进阶">JVM 如何进阶</a></li>
+    <li><a href="#垃圾回收器怎么选择">垃圾回收器怎么选择</a></li>
+    <li><a href="#内存泄漏代码示例">内存泄漏代码示例</a></li>
+    <li><a href="#interned-strings">Interned Strings</a></li>
+    <li><a href="#mat">MAT</a></li>
+    <li><a href="#jvm-诊断示例httpsplumbreublogmemory-leaksmemory-leaks-fallacies-and-misconceptions">JVM 诊断示例</a></li>
+    <li><a href="#jvisualvm">JVisualVM</a></li>
+    <li><a href="#todo-1">TODO</a></li>
+    <li><a href="#如何在生产环境使用-btrace-进行调试httpwwwimportnewcom23614html">如何在生产环境使用 Btrace 进行调试</a>
+      <ul>
+        <li><a href="#btrace-可以做什么">Btrace 可以做什么？</a></li>
+        <li><a href="#参数说明">参数说明</a></li>
+        <li><a href="#如何使用-btrace-定位问题">如何使用 Btrace 定位问题</a></li>
+        <li><a href="#总结">总结</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  <h1>
+    <a href="/posts/jvm-optimization/">JVM 性能调优</a>
+  </h1>
+  
+
+<div>
+
+  <h5>May 2, 2017</h5>
+
+
+
+  
+  <div>
+    
+  </div>
+  
+
+  
+  <div>
+    
+        <a href="/tags/java/">Java</a>
+  </div>
+  
+
+
+</div>
+
+
+  <p><p>JVM 如何进行性能调优？</p>
+<h2 id="java-虚拟机内存模型">Java 虚拟机内存模型</h2>
+<p>JVM 虚拟机将内存数据分为如下这几部分：</p>
+<p><img src="/images/posts/jvm-optimization/jvm_memory_overview.jpg" alt=""></p>
+<h2 id="pc-register">pc register</h2>
+<ul>
+<li><strong>pc register (program counter)</strong>： 一个包含当前时刻指令的地址的<strong>寄存器</strong></li>
+</ul>
+<p>程序寄存器区域是<strong>唯一一个</strong>在 Java 虚拟机规范中没有规定任何 <code>OutOfMemoryError</code> 情况的区域</p>
+<h2 id="stack">stack</h2>
+<p>栈会抛出两种异常：<code>StackOverflowError</code> 和 <code>OutOfMemoryError</code>，在 HotSpot 虚拟机栈中，可以使用参数 <code>-Xss1M</code> 来设置栈的大小为 <strong>1MB</strong>。随着<strong>调用函数参数的增加和局部变量的增加</strong>，单次函数调用对栈空间的需求也会增加，因此栈的最大递归次数不是一成不变的。函数嵌套调用的次数由栈的大小决定：栈越大，函数嵌套调用次数越多；对一个函数而言，它的参数越多，内部局部变量越多，它的栈帧就越大，其嵌套调用次数就会越少。</p>
+<p><img src="/images/posts/jvm-optimization/3558cf63-bac7-42b3-9f3b-bcdebffa40a6.png" alt=""></p>
+<ul>
+<li><code>Xss1M</code>: 设置栈的大小</li>
+</ul>
+<h2 id="native-method-stack">native method stack</h2>
+<p>与 <strong>stack</strong> 一样，同样抛出两种异常：<code>StackOverflowError</code> 和 <code>OutOfMemoryError</code>。在 sun 的 HOT SPOT 虚拟机中，不区分本地方法栈和虚拟机栈</p>
+<h2 id="heap">HEAP</h2>
+<p><img src="/images/posts/jvm-optimization/Java-Memory-Model.png" alt=""></p>
+<ul>
+<li><code>-Xmx</code>: 设置<!-- raw HTML omitted --><strong>堆的最大值</strong><!-- raw HTML omitted --></li>
+<li><code>-Xms</code>: 设置堆的最小值，即 JVM 启动时，所占据的操作系统内存大小。JVM 会试图将系统内存尽可能地限制在 <code>-Xms</code> 中，因此当内存使用量触及 <code>-Xms</code> 指定的大小时，会触发 <strong>Full GC</strong>。因此<strong>把 <code>-Xms</code> 值设置为 <code>-Xmx</code> 时</strong>，可以在系统运行初期减少 <strong>GC</strong> 的次数和耗时。</li>
+<li><code>Xmn</code>: 设置新生代大小。等于把 <code>-XX:NewSize</code> 和 <code>-XX:MaxNewSize</code> 设置成了相同的大小。这两个如果设置成不同的值，会导致内存震荡，产生不必要的开销。
+<ul>
+<li><code>-XX:NewSize</code>: 设置新生代的初始大小</li>
+<li><code>-XX:MaxNewSize</code>: 设置新生代的最大值</li>
+</ul>
+</li>
+</ul>
+<p>错误的把 <code>Xmx</code> 参数设置为了 <code>Xmn</code> 参数以后:</p>
+<p><img src="/images/posts/jvm-optimization/TIM%E5%9B%BE%E7%89%8720170814035500.png" alt=""></p>
+<p>获取当前内存/最大可用内存/最大可用堆:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">freeMemory</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">/</span> 1024 <span style="color:#f92672">/</span> 1024
+Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">totalMemory</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">/</span> 1024 <span style="color:#f92672">/</span> 1024
+Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">maxMemory</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">/</span> 1000 <span style="color:#f92672">/</span> 1000
+</code></pre></div><h3 id="逃逸分析">逃逸分析</h3>
+<p>Java 7 开始支持<strong>对象的栈分配和逃逸分析机制</strong>，这样的机制能够将<strong>堆分配对象变成栈分配对象</strong>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">myMethod</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    V v <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> V<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#75715e">// use v
+</span><span style="color:#75715e"></span>    v <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><ul>
+<li><strong><code>-server</code></strong>: <code>server</code> 模式下，才可以启用逃逸分析</li>
+<li><strong><code>-XX:DoEscapeAnalysis</code></strong>: 启用逃逸分析</li>
+</ul>
+<h2 id="method-area">method area</h2>
+<p>方法区主要保存的是<strong>类的元数据</strong>：类型、常量池、字段、方法。在 Hot Spot 虚拟机中，<strong>方法区也称为永久区</strong>，同样也可以被 GC 回收。<strong>持久代的大小直接决定了系统可以支持多少个类定义和多少常量</strong>。对于使用 CGLIB 或者 Javassist 等动态字节码生成工具的应用程序而言，设置合理的持久代有利于维持系统稳定。</p>
+<p><strong>方法区的大小直接决定了系统可以保存多少个类</strong>，如果系统使用了一些动态代理，那么有可能会在运行时生成大量的类，如果这样，就需要设置一个合理的永久区大小，确保不发生永久区内存溢出。</p>
+<ul>
+<li><code>-XX:MaxPermSize=4M</code>: 设置持久代的最大值</li>
+<li><code>-XX:PermSize=4M</code>: 设置持久代的初始大小</li>
+</ul>
+<p>在 JDK 1.8 中，永久区已经被彻底移除，取而代之的是<strong>元数据区 (Metaspace)，元数据区是一块堆外的直接内存</strong>，如果不指定元数据区大小的话，默认情况下，虚拟机会耗尽所有的可用系统内存。</p>
+<ul>
+<li><code>-XX:MaxMetaspaceSize</code>: 指定元数据区大小</li>
+</ul>
+<h2 id="直接内存">直接内存</h2>
+<p>使用 <strong>NIO</strong> 之后，直接内存的使用变得非常普遍，直接内存跳过了 Java 堆，可以直接访问原生堆空间。<strong>直接内存适合申请次数少、访问较为频繁的场合。如果需要频繁申请，则并不适合使用直接内存</strong>。</p>
+<ul>
+<li><code>-XX:MaxDirectMemorySize</code>: 最大可用直接内存，默认为 <code>-Xmx</code></li>
+</ul>
+<h2 id="区域比例">区域比例</h2>
+<p><img src="/images/posts/jvm-optimization/gc_s.png" alt=""></p>
+<ul>
+<li><code>-XX:SurvivorRatio=8</code>: 设置新生代中 <strong>eden 空间</strong> 和 <strong>S0 空间</strong> 的比例关系</li>
+<li><code>-XX:NewRatio=2</code>: 设置老生代和新生代的比例</li>
+</ul>
+<h2 id="垃圾回收算法">垃圾回收算法</h2>
+<ul>
+<li><strong>引用计数法</strong>: 无法解决循环引用问题</li>
+<li>标记-清除算法 (Mark-Sweep):
+<ol>
+<li>标记从根节点开始的可达对象</li>
+<li>清除所有未被标记的对象</li>
+<li><strong>最大缺点: 回收后的空间是不连续的</strong></li>
+</ol>
+</li>
+<li>复制算法 (<strong>新生代</strong>):
+<ol>
+<li>内存空间分为两块，每次只用一块</li>
+<li><strong>存活对象复制到未使用的内存块中</strong></li>
+<li>清除正在使用的内存块中的所有对象</li>
+<li>交换两个内存的角色</li>
+<li><strong>适合于新生代: 垃圾对象通常多于存活对象</strong></li>
+</ol>
+</li>
+<li>标记-压缩算法:
+<ol>
+<li>标记从根节点开始的可达对象</li>
+<li>将所有存活对象 (未标记的对象) 压缩到内存的一端</li>
+<li>清理边界外 (标记和未标记对象的边界) 的对象</li>
+</ol>
+</li>
+</ul>
+<p><img src="/images/posts/jvm-optimization/gc-algorithms-37-638.jpg" alt=""></p>
+<ul>
+<li>分代 (Generational Collecting):
+<ol>
+<li>根据每块内存空间特点的不同，使用不同的回收算法。如新生代 (存活对象少，垃圾对象多) 使用复制算法，老年代 (大部分对象是存活对象) 使用标记-压缩算法</li>
+</ol>
+</li>
+</ul>
+<p>为了支持高频率的新生代回收，虚拟机可能使用一种叫做<strong>卡表 (Card Table)</strong> 的数据结构。卡表为一个比特位集合，每一个比特位可以用来表示老年代的某一区域中的所有对象是否持有新生代对象的引用。这样在新生代 GC 时，只需先扫描卡表，就能快速知道用不用扫描特定的老年代对象，而卡表为 0 的所在区域一定不含有新生代对象的引用。</p>
+<h2 id="谁才是真正的垃圾">谁才是真正的垃圾</h2>
+<ul>
+<li><strong>可触及性</strong>: 根节点可到达</li>
+<li><strong>可复活</strong>: <code>finalize()</code> 中复活</li>
+<li><strong>不可触及</strong>: <code>finalize()</code> 中未复活</li>
+</ul>
+<p><code>finalize()</code> 方法只会被调用一次</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">finalize</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Throwable <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">super</span><span style="color:#f92672">.</span><span style="color:#a6e22e">finalize</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    obj <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><hr>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">StringBuffer str <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StringBuffer<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Hello world&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><p>假设以上代码是在函数体内运行的，那么:</p>
+<p><img src="/images/posts/jvm-optimization/17-06-13-17:10:03_775_199.png" alt=""></p>
+<hr>
+<p><strong>软引用</strong>: <code>java.lang.ref.SoftReference</code> 可被回收的引用</p>
+<hr>
+<p><strong>弱引用</strong>: 发现即回收。由于垃圾回收器的线程通常优先级很大，因此并不一定很快地发现持有弱引用的对象。</p>
+<hr>
+<p><strong>虚引用</strong>: 跟踪垃圾回收过程</p>
+<h2 id="垃圾回收器">垃圾回收器</h2>
+<h3 id="串行回收器">串行回收器</h3>
+<ul>
+<li>新生代垃圾串行收集器，使用 <code>-XX:+UseSerialGC</code> 来指定新生代和老年代都是用串行收集器。这个收集器虽然古老，但却久经考验。使用单线程进行垃圾回收。虚拟机在 <code>Client</code> 模式下运行，它是默认的垃圾收集器。<strong>独占式回收</strong>。</li>
+</ul>
+<p><img src="/images/posts/jvm-optimization/17-06-13-17:38:50_1259_97.png" alt=""></p>
+<ul>
+<li>老年代串行收集器，使用的是<strong>标记-压缩</strong>算法。
+<ul>
+<li><code>-XX:+UseSerialGC</code>: 新生代、老生代都使用串行回收器</li>
+<li><code>-XX:+UseParNewGC</code></li>
+<li><code>-XX:+UseParallelGC</code></li>
+</ul>
+</li>
+</ul>
+<p><img src="/images/posts/jvm-optimization/17-06-13-17:39:16_1257_130.png" alt=""></p>
+<hr>
+<h3 id="并行回收器">并行回收器</h3>
+<p><strong>新生代 ParNew 回收器</strong>:</p>
+<ul>
+<li><code>-XX:+UseParNewGC</code></li>
+<li><code>-XX:+UseConcMarkSweepGC</code></li>
+</ul>
+<p>回收器工作时的线程数量可以使用 <code>-XX:ParallelGCThreads</code> 参数指。一般最好与 CPU 数量相当，避免过多的线程数。默认算法</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">getGCThreadsCount</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span> countOfCPU <span style="color:#f92672">&lt;</span> 8 <span style="color:#f92672">)</span>
+        <span style="color:#66d9ef">return</span> countOfCPU<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">else</span>
+        <span style="color:#66d9ef">return</span> 3 <span style="color:#f92672">+</span> <span style="color:#f92672">(</span> <span style="color:#f92672">(</span> 5 <span style="color:#f92672">*</span> countOfCPU <span style="color:#f92672">)</span> <span style="color:#f92672">/</span> 8 <span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><img src="/images/posts/jvm-optimization/17-06-13-17:45:54_1260_94.png" alt=""></p>
+<hr>
+<p><strong>新生代 ParallelGC 回收器</strong>: 关注系统吞吐量</p>
+<ul>
+<li><code>-XX:+UseParallelGC</code></li>
+<li><code>-XX:+UseParallelOldGC</code></li>
+</ul>
+<p>两个重要参数控制系统吞吐量:</p>
+<ul>
+<li><strong><code>-XX:MaxGCPauseMillis</code></strong>: 设置最大垃圾收集停顿时间</li>
+<li><strong><code>-XX:GCTimeRatio</code></strong>: 设置吞吐量大小</li>
+<li><strong><code>-XX:+UseAdaptiveSizePolicy</code></strong>: 打开自适应 GC 策略</li>
+</ul>
+<p><img src="/images/posts/jvm-optimization/17-06-13-17:49:11_1247_81.png" alt=""></p>
+<hr>
+<p><strong>老年代 ParallelOldGC</strong>: 标记压缩算法</p>
+<p><img src="/images/posts/jvm-optimization/17-06-13-17:50:34_1253_127.png" alt=""></p>
+<hr>
+<ul>
+<li>并行收集器，将串行回收器多线程化。并行回收器工作时的线程数量可以使用 <code>-XX:ParallelGCThreads</code> 参数指定，一般最好与 CPU 数量相当，避免过多的线程数，影响垃圾收集性能。
+<ul>
+<li><code>-XX:+UseParNewGC</code>: 新生代使用并行回收收集器 (<code>ParNew</code>)，老年代使用串行收集器</li>
+<li><code>-XX:+UseConcMarkSweepGC</code>: 新生代使用并行收集器 (<code>ParNew</code>)，老年代使用 CMS</li>
+</ul>
+</li>
+<li>新生代并行回收收集器，使用复制算法
+<ul>
+<li><code>-XX:+UseParallelGC</code>: 新生代使用并行回收收集器 (<code>ParallelGC</code>)，老年代使用串行收集器</li>
+</ul>
+</li>
+<li>老年代并行回收收集器，使用<strong>标记-压缩</strong>算法
+<ul>
+<li>使用 <code>-XX:+UseParallelOldGC</code>: 新生代使用 <code>ParallelGC</code> ，老年代使用 <code>ParallelOldGC</code></li>
+</ul>
+</li>
+</ul>
+<hr>
+<p><strong>CMS (Concurrent Mark Sweep)</strong>: 关注系统停顿时间，非独占式</p>
+<ul>
+<li><strong>-XX:+UseConcMarkSweepGC</strong></li>
+<li><strong>-XX:CMSInitiatingOccupancyFraction</strong>: 当老年代的空间使用率达到 68% (默认) 时进行一次 CMS 垃圾回收</li>
+<li><strong>-XX:+UseCMSCompactAtFullCollection</strong>: 在垃圾收集完成之后，进行一次内存碎片整理</li>
+<li>CMS 收集器，这是一个关注停顿的垃圾收集器</li>
+</ul>
+<p><img src="/images/posts/jvm-optimization/17-06-13-18:03:12_1240_884.png" alt=""></p>
+<hr>
+<ul>
+<li>G1 收集器: JDK 1.7 正式启用</li>
+</ul>
+<p>新生代串行收集器和老年代串行收集器都是<strong>串行的、独占式的</strong>垃圾收集器。不要求整个 eden 区、年轻代或者老年代都连续</p>
+<hr>
+<p>使用 <code>-XX:+UseSerialGC</code> 打印出的 GC 信息:</p>
+<pre><code>[GC (Allocation Failure) 
+[DefNew: 18954K-&gt;897K(28864K), 0.0020543 secs]
+18954K-&gt;897K(93056K), 0.0020917 secs]
+[Times: user=0.00 sys=0.00, real=0.00 secs] 
+</code></pre><p>使用 <code>-XX:+UseParNewGC</code> 打印出的 GC 信息:</p>
+<pre><code>[GC (Allocation Failure) 
+[ParNew: 19468K-&gt;880K(28864K), 0.0033698 secs]
+19468K-&gt;880K(93056K), 0.0034037 secs]
+[Times: user=0.00 sys=0.00, real=0.00 secs] 
+</code></pre><p>使用 <code>-XX:+UseParallelOldGC</code> (默认) 打印出的 GC 信息:</p>
+<pre><code>[GC (Allocation Failure) 
+[PSYoungGen: 24485K-&gt;448K(28160K)]
+368549K-&gt;344520K(379904K), 0.0039329 secs]
+[Times: user=0.02 sys=0.00, real=0.01 secs] 
+</code></pre><h3 id="g1-garbage-first-垃圾收集器">G1 (Garbage-First) 垃圾收集器</h3>
+<p>以前的垃圾收集器 (serial, parallel, CMS) 将堆分为固定大小的三个区域: 年轻代、老年代和永久代:</p>
+<p><img src="/images/posts/jvm-optimization/HeapStructure.png" alt=""></p>
+<p>但是，G1 采取了一种不同的方法:</p>
+<p><img src="/images/posts/jvm-optimization/g1_heap_allocation.PNG" alt=""></p>
+<p>堆被分成了一系列相同大小的区域，并且相同角色的区域的大小不再是固定的，这样在内存使用上能够提供<strong>更大的灵活性</strong>。当垃圾收集开始的时候，G1 和 CMS 执行的操作其实是一样的:</p>
+<ol>
+<li>并发全局扫描标记检查存活的对象</li>
+<li>哪些区域垃圾对象最多，G1 就先收集哪些区域，这也是它为什么称为 <strong>Garbage-First</strong> 的原因</li>
+</ol>
+<hr>
+<p>其他垃圾收集器使用 jvm 内置线程回收，而 G1 采用应用线程承担回收工作。</p>
+<h3 id="g1-垃圾收集器-vs-cms-垃圾收集器">G1 垃圾收集器 VS CMS 垃圾收集器</h3>
+<p>G1 就是计划取代 Concurrent Mark-Sweep Collector (CMS). 与 CMS 相比，G1:</p>
+<ul>
+<li>G1 是一个 <strong>compacting collector</strong>. G1 compacts sufficiently to completely avoid the use of fine-grained free lists for allocation, and instead relies on regions. This considerably simplifies parts of the collector, and mostly eliminates potential fragmentation issues.</li>
+<li>G1 提供了更多的可预测的垃圾收集停顿，允许用户指定停顿时间</li>
+</ul>
+<h2 id="实用-jvm-参数">实用 JVM 参数</h2>
+<ul>
+<li>获取堆快照。</li>
+</ul>
+<p>发生 <code>OutOfMemoryError</code> 时，可以使用 <code>-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=C:\m.hprof</code> 来保存当前的堆快照到文件中。也可以加上参数 <code>-XX:OnOutOfMemoryError=c:\reset.bat</code> 来运行一段脚本。</p>
+<p>当发生 <code>OutOfMemoryError</code> (在一个 <code>Windows 32</code> 系统上就发生过) 的时候，<strong>应该尝试使用增大可用堆</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">java <span style="color:#f92672">-</span>Xmn1024M <span style="color:#f92672">-</span>jar xxx<span style="color:#f92672">.</span><span style="color:#a6e22e">jar</span>
+</code></pre></div><p><strong>TODO: 思考: 如果知晓程序究竟需要多大内存？</strong></p>
+<ul>
+<li>获取 GC 信息</li>
+</ul>
+<p>使用参数 <code>-verbose:gc</code> 或者 <code>-XX:+PrintGC</code> 来获取简要的 GC 信息，也可以使用 <code>-XX:+PrintGCDetails</code> 来获取更加详细的信息。如果需要在 GC 发生的时刻打印 GC 发生的时间，则可以追加 <code>-XX:+PrintGCTimeStamps</code> 选项以查看<strong>相对时间</strong>或者 <code>-XX:+PrintGCDateStamps</code> 以查看<strong>绝对时间</strong>。如果许雅查看新生对象晋升到老年代的实际阈值，可以使用参数 <code>-XX:+PrintTenuringDistribution -XX:MaxTenuringThreshold=18</code> 来运行程序。如果需要在 GC 时，打印详细的堆信息，则可以打开 <code>-XX:+PrintHeapAtGC</code> 开关。</p>
+<ul>
+<li>控制 GC</li>
+</ul>
+<p><code>-XX:+PrintExplicitGC</code> 选项用于禁止显式的 GC 操作，即禁止在程序中使用 <code>System.gc()</code> 触发的 <code>Full GC</code>。另一个有用的 GC 控制参数是 <code>-Xincgc</code>，一旦启用这个参数，系统便会进行增量式的 GC。</p>
+<p><strong>JVM 调优的主要过程有</strong>: 确定堆内存大小 (<code>-Xmx、-Xms</code>)、合理分配新生代和老年代 (<code>-XX:NewRatio、-Xmn、-XX:SurvivorRatio</code>)、确定永久区大小 (<code>-XX:Permsize、-XX:MaxPermSize</code>)、选择垃圾收集器、对垃圾收集器进行合理的设置。除此之外，禁用显式 GC (<code>-XX:+DisableExplicitGC</code>)、禁用类元数据回收 (<code>+Xnoclassgc</code>)、禁用类验证 (<code>-Xverify:none</code>) 等设置，对提升系统性能也有一定的帮助。</p>
+<ul>
+<li>GC 日志示例</li>
+</ul>
+<p>使用 <code>-XX:+PrintGC</code> 获取的 GC 日志:</p>
+<pre><code>[GC (Allocation Failure)  GC前堆使用量20M-&gt;GC后堆使用量(当前可用堆大小90M), 本次GC花费 0.0028389 秒]
+[GC (Allocation Failure)  20409K-&gt;432K(92672K), 0.0028389 secs]
+</code></pre><p>同样的代码使用 <code>-X:+PrintGCDetails</code> 获取的 GC 日志:</p>
+<pre><code>[GC (Allocation Failure) [新生代: 从20M-&gt;降为0.4M(可用28M)] 整个堆从20M-&gt;将为0.4M(可用90M), 0.0151333 secs] [Times: 用户态时间耗时，系统态时间耗时，GC 实际经历的时间]
+    新生代 总大小 28M, 已用 13M [下界，当前上界，上界]
+[GC (Allocation Failure) [PSYoungGen: 20409K-&gt;448K(28160K)] 20409K-&gt;456K(92672K), 0.0151333 secs] [Times: user=0.00 sys=0.00, real=0.02 secs] 
+Heap
+ PSYoungGen      total 28160K, used 13461K [0x00000000e1380000, 0x00000000e4a80000, 0x0000000100000000)
+  eden space 24576K, 52% used [0x00000000e1380000,0x00000000e20356d0,0x00000000e2b80000)
+  from space 3584K, 12% used [0x00000000e2b80000,0x00000000e2bf0020,0x00000000e2f00000)
+  to   space 3584K, 0% used [0x00000000e4700000,0x00000000e4700000,0x00000000e4a80000)
+ ParOldGen       total 64512K, used 8K [0x00000000a3a00000, 0x00000000a7900000, 0x00000000e1380000)
+  object space 64512K, 0% used [0x00000000a3a00000,0x00000000a3a02000,0x00000000a7900000)
+ Metaspace       used 3264K, capacity 4494K, committed 4864K, reserved 1056768K
+  class space    used 363K, capacity 386K, committed 512K, reserved 1048576K
+</code></pre><p>如果需要更为全面的堆信息，还可以使用参数 <code>-XX:+PrintHeapAtGC</code>，它会在每次 GC 前后分别打印堆的信息</p>
+<pre><code>{Heap before GC invocations=1 (full 0):
+    ...
+Heap after GC invocations=1 (full 0):
+    ...
+}
+</code></pre><p>如果需要分析 GC 发生的时间，还可以使用 <code>-XX:+PrintGCTimeStamps</code> 参数，该输出时间为虚拟机启动后的时间偏移量:</p>
+<pre><code>0.174: [GC (Allocation Failure)  20409K-&gt;504K(92672K), 0.0016586 secs]
+0.179: [GC (Allocation Failure)  19415K-&gt;464K(92672K), 0.0031200 secs]
+0.186: [GC (Allocation Failure)  19812K-&gt;432K(92672K), 0.0009531 secs]
+</code></pre><p>由于 GC 还会引起应用程序停顿，使用参数 <code>-XX:+PrintGCApplicationConcurrentTime</code> 可以打印应用程序的执行时间，使用参数 <code>-XX:+PrintGCApplicationStoppedTime</code> 可以打印应用程序由于 GC 而产生的停顿时间:</p>
+<pre><code>Application time: 0.0084849 seconds
+[GC (Allocation Failure)  20409K-&gt;520K(92672K), 0.0044274 secs]
+Total time for which application threads were stopped: 0.0045452 seconds, Stopping threads took: 0.0000210 seconds
+Application time: 0.0033066 seconds
+[GC (Allocation Failure)  19431K-&gt;440K(117248K), 0.0020202 secs]
+Total time for which application threads were stopped: 0.0021438 seconds, Stopping threads took: 0.0000258 seconds
+Application time: 0.0082455 seconds
+</code></pre><p>如果想跟踪系统内的软引用、弱引用、虚引用和 <code>Finalize</code> 队列，则可以使用打开 <code>-XX:+PrintReferenceGC</code> 开关. 使用参数 <code>-Xloggc:log/gc.log</code> 启动虚拟机，将 GC 日志输出到 <code>gc.log</code> 文件中</p>
+<pre><code>Java HotSpot(TM) 64-Bit Server VM (25.111-b14) for linux-amd64 JRE (1.8.0_111-b14), built on Sep 22 2016 16:14:03 by &quot;java_re&quot; with gcc 4.3.0 20080428 (Red Hat 4.3.0-8)
+Memory: 4k page, physical 6052560k(316636k free), swap 6233084k(4248464k free)
+CommandLine flags: -XX:InitialHeapSize=96840960 -XX:MaxHeapSize=1549455360 -XX:+PrintGC -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCTimeStamps -XX:+UseCompressedClassPointers -XX:+UseCompressedOops -XX:+UseParallelGC 
+0.183: Application time: 0.0107645 seconds
+0.183: [GC (Allocation Failure)  20409K-&gt;432K(92672K), 0.0033748 secs]
+0.187: Total time for which application threads were stopped: 0.0035825 seconds, Stopping threads took: 0.0000191 seconds
+0.192: Application time: 0.0054269 seconds
+0.193: [GC (Allocation Failure)  19343K-&gt;496K(117248K), 0.0108382 secs]
+0.204: Total time for which application threads were stopped: 0.0116746 seconds, Stopping threads took: 0.0000766 seconds
+0.212: Application time: 0.0084699 seconds
+</code></pre><p><img src="/images/posts/jvm-optimization/17-06-13-17:16:55_1236_518.png" alt=""></p>
+<p><!-- raw HTML omitted --><strong>系统参数查看</strong><!-- raw HTML omitted -->:</p>
+<ul>
+<li><strong>-XX:+PrintVMOptions</strong>: 打印虚拟机接受的命令行<strong>显示</strong>参数</li>
+<li><strong>-XX:+PrintCommandLineFlags</strong>: 打印虚拟机的<strong>显示和隐式</strong>参数</li>
+<li><strong>-XX:+PrintFlagsFinal</strong>: 打印所有的系统参数的值</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 打印出系统的堆大小</span>
+java -XX:+PrintFlagsFinal -version | grep -iE <span style="color:#e6db74">&#39;HeapSize|PermSize|ThreadStackSize&#39;</span>
+</code></pre></div><h2 id="minor-gcmajor-gc-和-full-gc">Minor GC、Major GC 和 Full GC</h2>
+<p><img src="/images/posts/jvm-optimization/minor-gc-major-gc-full-gc.jpg" alt=""></p>
+<ul>
+<li><strong>Minor GC</strong>: 从年轻代回收垃圾，当 <strong>JVM</strong> 无法分配新对象的时候会触发 <strong>Minor GC</strong>，也就是说 <strong>Eden</strong> 区域已经满了</li>
+<li><strong>Major GC</strong>: 清除 <strong>Tenured</strong> 区域</li>
+<li><strong>Full GC</strong>: 清除整个堆，包括 <strong>Yound 和 Tenured</strong> 区域</li>
+</ul>
+<h2 id="java-各版本默认垃圾收集器">Java 各版本默认垃圾收集器</h2>
+<p>参考 <a href="http://download.oracle.com/javase/6/docs/technotes/guides/vm/gc-ergonomics.html">1</a> 说:</p>
+<p>On <strong>server-class machines</strong> running the server VM, the garbage collector (GC) has changed from the previous serial collector [&hellip;] to a parallel collector</p>
+<p>Reference <a href="http://download.oracle.com/javase/6/docs/technotes/guides/vm/server-class.html">2</a> says:</p>
+<p>Starting with J2SE 5.0, when an application starts up, the launcher can attempt to detect whether the application is running on a &ldquo;server-class&rdquo; machine and, if so, use the Java HotSpot Server Virtual Machine (server VM) instead of the Java HotSpot Client Virtual Machine (client VM).</p>
+<p>Also, reference <a href="http://download.oracle.com/javase/6/docs/technotes/guides/vm/server-class.html">2</a> says:</p>
+<p>注意: 对于 Java SE 6, the definition of <strong>a server-class machine is one with at least 2 CPUs and at least 2GB of physical memory</strong>.</p>
+<p>Java 7 和 Java 8 使用的都是 Parallel GC，Java 9 使用的是 G1 垃圾收集器</p>
+<h2 id="jvm-的工作模式">JVM 的工作模式</h2>
+<ul>
+<li><strong><code>java -version</code></strong>: 查看 <code>Server VM</code></li>
+<li><strong><code>java -client -version</code></strong>: 查看 <code>Client VM</code></li>
+</ul>
+<p><code>Client</code> 和 <code>Server</code> 模式下的各种参数可能会有很大不同</p>
+<h2 id="heap-memory-最佳实践">Heap Memory 最佳实践</h2>
+<ul>
+<li>是否分配了过多实例: 使用 <code>jcmd 8998 GC.class_histogram</code> 来查看各实例有多少个，也可以使用 <code>jmap -histo 8998</code> 来获得相同的结果</li>
+<li>分析堆快照: 使用 <strong>jhat、jvisualvm、mat</strong> 等工具来分析 <strong>hprof</strong> 文件
+<ul>
+<li><code>jcmd 8998 GC.heap_dump /path/to/heap_dump.hprof</code></li>
+<li><code>jmap -dump:live,file=/path/to/heap_dump.hprof 8998</code>: 引入 <code>live</code> 强制 <strong>full GC</strong></li>
+</ul>
+</li>
+</ul>
+<h2 id="java-monitoring-常用工具">Java Monitoring 常用工具</h2>
+<h3 id="jstack">jstack</h3>
+<p>Jstack: Dumps the stacks of a Java 进程</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstack $PID &gt; $DATE_DIR/jstack-$PID.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+</code></pre></div><h3 id="jinfo">jinfo</h3>
+<p>Jinfo: Provides visibility into the system properties of the JVM, and allows some system properties to be set dynamically.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jinfo <span style="color:#ae81ff">18772</span>
+Attaching to process ID 18772, please wait...
+Debugger attached successfully.
+Server compiler detected.
+JVM version is 25.144-b01
+Java System Properties:
+
+com.sun.management.jmxremote.authenticate <span style="color:#f92672">=</span> false
+java.runtime.name <span style="color:#f92672">=</span> Java<span style="color:#f92672">(</span>TM<span style="color:#f92672">)</span> SE Runtime Environment
+java.vm.version <span style="color:#f92672">=</span> 25.144-b01
+...<span style="color:#f92672">(</span>省略好多<span style="color:#f92672">)</span>
+
+VM Flags:
+Non-default VM flags: -XX:CICompilerCount<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span> -XX:InitialHeapSize<span style="color:#f92672">=</span><span style="color:#ae81ff">98566144</span> -XX:+ManagementServer -XX:MaxHeapSize<span style="color:#f92672">=</span><span style="color:#ae81ff">1549795328</span> -XX:MaxNewSize<span style="color:#f92672">=</span><span style="color:#ae81ff">516423680</span> -XX:MinHeapDeltaBytes<span style="color:#f92672">=</span><span style="color:#ae81ff">524288</span> -XX:NewSize<span style="color:#f92672">=</span><span style="color:#ae81ff">32505856</span> -XX:OldSize<span style="color:#f92672">=</span><span style="color:#ae81ff">66060288</span> -XX:+UseCompressedClassPointers -XX:+UseCompressedOops -XX:+UseFastUnorderedTimeStamps -XX:+UseParallelGC 
+Command line:  -Dcom.sun.management.jmxremote.port<span style="color:#f92672">=</span><span style="color:#ae81ff">5780</span> -Dcom.sun.management.jmxremote.authenticate<span style="color:#f92672">=</span>false -Dcom.sun.management.jmxremote.ssl<span style="color:#f92672">=</span>false -javaagent:/usr/lib/intellij_idea/idea-IC-172.3968.16/lib/idea_rt.jar<span style="color:#f92672">=</span>35487:/usr/lib/intellij_idea/idea-IC-172.3968.16/bin -Dfile.encoding<span style="color:#f92672">=</span>UTF-8
+</code></pre></div><h3 id="jstat">jstat</h3>
+<p>jstat: 提供有关 GC 和类加载活动的相关信息</p>
+<p>显示可用的九个 options:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -options
+</code></pre></div><p>One useful option is <code>-gcutil</code>, which displays the <strong>time spent in GC</strong> as well as the <strong>percentage of each GC area that is currently filled</strong>. Other options to <code>jstat</code> will display the <strong>GC sizes in terms of KB</strong>.</p>
+<p>Remember that <code>jstat</code> takes an optional argument—<strong>the number of milliseconds to repeat the command</strong>—so it can monitor over time the effect of GC in an application.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -gcutil process_id <span style="color:#ae81ff">1000</span>
+</code></pre></div><p>打印出的是:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jstat -gcutil <span style="color:#ae81ff">18772</span>
+  S0     S1     E      O      M     CCS    YGC     YGCT    FGC    FGCT     GCT   
+  0.00  71.53  97.93  34.02  96.70  93.37     <span style="color:#ae81ff">29</span>    0.133     <span style="color:#ae81ff">1</span>    0.040    0.172
+</code></pre></div><hr>
+<p><code>gccapacity</code> 可以显示 VM 内存中三代（young,old,perm）对象的使用和占用大小</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -gccapacity process_id
+</code></pre></div><p>打印出的是:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jstat -gccapacity <span style="color:#ae81ff">18772</span>
+ NGCMN    NGCMX     NGC     S0C   S1C       EC      OGCMN      OGCMX       OGC         OC       MCMN     MCMX      MC     CCSMN    CCSMX     CCSC    YGC    FGC 
+ 31744.0 504320.0  30720.0 4608.0 4608.0  21504.0    64512.0  1009152.0    44032.0    44032.0      0.0 1069056.0  22272.0      0.0 1048576.0   2560.0     <span style="color:#ae81ff">32</span>     <span style="color:#ae81ff">1</span>
+</code></pre></div><h3 id="jmap-memory-map">jmap (Memory Map)</h3>
+<p>jmap: Provides heap dumps and other information about JVM memory usage.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jmap $PID
+</code></pre></div><p>打印的是一堆这种东西:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jmap <span style="color:#ae81ff">18772</span>
+Attaching to process ID 18772, please wait...
+Debugger attached successfully.
+Server compiler detected.
+JVM version is 25.144-b01
+0x0000000000400000	7K	/usr/lib/jvm/oracle_jdk8/jdk1.8.0_144/bin/java
+0x00007f7072978000	98K	/lib/x86_64-linux-gnu/libresolv-2.23.so
+0x00007f7072b93000	26K	/lib/x86_64-linux-gnu/libnss_dns-2.23.so
+0x00007f7072d9a000	10K	/lib/x86_64-linux-gnu/libnss_mdns4_minimal.so.2
+0x00007f70737a1000	87K	/lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007f70739b7000	251K	/usr/lib/jvm/oracle_jdk8/jdk1.8.0_144/jre/lib/amd64/libsunec.so
+...<span style="color:#f92672">(</span>省略好多<span style="color:#f92672">)</span>
+</code></pre></div><hr>
+<p><strong>Print histogram(直方图；柱状图) of java object heap</strong>; if the &ldquo;live&rdquo; suboption is specified, only count live objects:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jmap -histo $PID
+jmap -histo:live $PID
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jmap -F -histo <span style="color:#ae81ff">18772</span>
+Object Histogram:
+
+num 	  <span style="color:#75715e">#instances	#bytes	Class description</span>
+--------------------------------------------------------------------------
+1:		65711	10183976	char<span style="color:#f92672">[</span><span style="color:#f92672">]</span>
+2:		13523	8919400	byte<span style="color:#f92672">[</span><span style="color:#f92672">]</span>
+3:		54732	2159368	java.lang.Object<span style="color:#f92672">[</span><span style="color:#f92672">]</span>
+4:		7341	1451792	int<span style="color:#f92672">[</span><span style="color:#f92672">]</span>
+5:		56423	1354152	java.lang.String
+6:		15476	619040	java.util.TreeMap$Entry
+7:		16562	529984	java.io.ObjectStreamClass$WeakClassKey
+8:		11915	476600	java.util.LinkedHashMap$Entry
+9:		9716	466368	java.util.HashMap
+10:		3993	453312	java.lang.Class
+11:		11568	370176	java.util.concurrent.ConcurrentHashMap$Node
+12:		6160	306952	java.util.HashMap$Node<span style="color:#f92672">[</span><span style="color:#f92672">]</span>
+13:		4210	279856	java.util.Hashtable$Entry<span style="color:#f92672">[</span><span style="color:#f92672">]</span>
+14:		8320	266240	java.util.Vector
+15:		8070	258240	java.util.HashMap$Node
+16:		10495	251880	org.jsoup.nodes.Attribute
+17:		4181	200688	java.util.Hashtable
+...<span style="color:#f92672">(</span>省略好多<span style="color:#f92672">)</span>
+</code></pre></div><hr>
+<p><strong>Print java heap summary</strong>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jmap -heap $PID
+</code></pre></div><p>打印出的是一堆这种东西:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jmap -heap <span style="color:#ae81ff">18772</span>
+Attaching to process ID 18772, please wait...
+Debugger attached successfully.
+Server compiler detected.
+JVM version is 25.144-b01
+
+using thread-local object allocation.
+Parallel GC with <span style="color:#ae81ff">4</span> thread<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span>
+
+Heap Configuration:
+   MinHeapFreeRatio         <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+   MaxHeapFreeRatio         <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>
+   MaxHeapSize              <span style="color:#f92672">=</span> <span style="color:#ae81ff">1549795328</span> <span style="color:#f92672">(</span>1478.0MB<span style="color:#f92672">)</span>
+   NewSize                  <span style="color:#f92672">=</span> <span style="color:#ae81ff">32505856</span> <span style="color:#f92672">(</span>31.0MB<span style="color:#f92672">)</span>
+   MaxNewSize               <span style="color:#f92672">=</span> <span style="color:#ae81ff">516423680</span> <span style="color:#f92672">(</span>492.5MB<span style="color:#f92672">)</span>
+   OldSize                  <span style="color:#f92672">=</span> <span style="color:#ae81ff">66060288</span> <span style="color:#f92672">(</span>63.0MB<span style="color:#f92672">)</span>
+   NewRatio                 <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
+   SurvivorRatio            <span style="color:#f92672">=</span> <span style="color:#ae81ff">8</span>
+   MetaspaceSize            <span style="color:#f92672">=</span> <span style="color:#ae81ff">21807104</span> <span style="color:#f92672">(</span>20.796875MB<span style="color:#f92672">)</span>
+   CompressedClassSpaceSize <span style="color:#f92672">=</span> <span style="color:#ae81ff">1073741824</span> <span style="color:#f92672">(</span>1024.0MB<span style="color:#f92672">)</span>
+   MaxMetaspaceSize         <span style="color:#f92672">=</span> <span style="color:#ae81ff">17592186044415</span> MB
+   G1HeapRegionSize         <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">(</span>0.0MB<span style="color:#f92672">)</span>
+
+Heap Usage:
+PS Young Generation
+Eden Space:
+   capacity <span style="color:#f92672">=</span> <span style="color:#ae81ff">23068672</span> <span style="color:#f92672">(</span>22.0MB<span style="color:#f92672">)</span>
+   used     <span style="color:#f92672">=</span> <span style="color:#ae81ff">11772712</span> <span style="color:#f92672">(</span>11.227333068847656MB<span style="color:#f92672">)</span>
+   free     <span style="color:#f92672">=</span> <span style="color:#ae81ff">11295960</span> <span style="color:#f92672">(</span>10.772666931152344MB<span style="color:#f92672">)</span>
+   51.03333213112571% used
+From Space:
+   capacity <span style="color:#f92672">=</span> <span style="color:#ae81ff">11010048</span> <span style="color:#f92672">(</span>10.5MB<span style="color:#f92672">)</span>
+   used     <span style="color:#f92672">=</span> <span style="color:#ae81ff">2035424</span> <span style="color:#f92672">(</span>1.941131591796875MB<span style="color:#f92672">)</span>
+   free     <span style="color:#f92672">=</span> <span style="color:#ae81ff">8974624</span> <span style="color:#f92672">(</span>8.558868408203125MB<span style="color:#f92672">)</span>
+   18.48696754092262% used
+To Space:
+   capacity <span style="color:#f92672">=</span> <span style="color:#ae81ff">11534336</span> <span style="color:#f92672">(</span>11.0MB<span style="color:#f92672">)</span>
+   used     <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">(</span>0.0MB<span style="color:#f92672">)</span>
+   free     <span style="color:#f92672">=</span> <span style="color:#ae81ff">11534336</span> <span style="color:#f92672">(</span>11.0MB<span style="color:#f92672">)</span>
+   0.0% used
+PS Old Generation
+   capacity <span style="color:#f92672">=</span> <span style="color:#ae81ff">45088768</span> <span style="color:#f92672">(</span>43.0MB<span style="color:#f92672">)</span>
+   used     <span style="color:#f92672">=</span> <span style="color:#ae81ff">13718432</span> <span style="color:#f92672">(</span>13.082916259765625MB<span style="color:#f92672">)</span>
+   free     <span style="color:#f92672">=</span> <span style="color:#ae81ff">31370336</span> <span style="color:#f92672">(</span>29.917083740234375MB<span style="color:#f92672">)</span>
+   30.42538665061773% used
+
+<span style="color:#ae81ff">8999</span> interned Strings occupying <span style="color:#ae81ff">836656</span> bytes.
+</code></pre></div><h2 id="堆内存使用最佳实践">堆内存使用最佳实践</h2>
+<h3 id="堆分析">堆分析</h3>
+<p>(1) 查看直方图</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">// jcmd 命令默认就会进行 full GC
+jcmd <span style="color:#ae81ff">6808</span> GC.class_histogram
+jmap -histo <span style="color:#ae81ff">6808</span>
+// 如果指明 live: 选项，将会强制进行一个 full GC
+jmap -histo:live <span style="color:#ae81ff">6808</span>
+</code></pre></div><pre><code> num     #instances         #bytes  class name
+----------------------------------------------
+   1:         12227        1303424  [C
+   2:          1003         627856  [B
+   3:          1917         461864  [I
+   4:          3828         421768  java.lang.Class
+   5:         11665         279960  java.lang.String
+   6:          6065         194080  java.util.concurrent.ConcurrentHashMap$Node
+   7:          2794         173144  [Ljava.lang.Object;
+   8:          3072         122880  org.apache.lucene.index.FreqProxTermsWriter$PostingList
+   9:          2760         110400  java.util.LinkedHashMap$Entry
+  10:          1097         101144  [Ljava.util.HashMap$Node;
+  11:          5440          87040  java.lang.Object
+  12:          2680          85760  java.util.HashMap$Node
+  13:           520          45760  java.lang.reflect.Method
+  14:            44          44064  [Ljava.util.concurrent.ConcurrentHashMap$Node;
+  15:           781          43736  java.util.LinkedHashMap
+  16:            96          41088  [Lorg.apache.lucene.index.RawPostingList;
+...
+</code></pre><p>(2) Dump 堆</p>
+<pre><code>// 指明 live，强制进行 full GC
+jmap -dump:live,file=/tmp/heap_dump.hprof 6808
+// 或者
+jmap -F -dump:format=b,file=filename.hprof 20961
+// 或者简单点
+jmap -F -dump:file=filename.hprof 20961
+</code></pre><blockquote>
+<p>注意: 路径一定要显示指明，否则不知道默认保存到哪里去了</p>
+</blockquote>
+<p>通常有三种工具能够分析 <code>.hprof</code> 文件：</p>
+<ul>
+<li><code>jhat</code></li>
+<li><code>jvisualvm</code></li>
+<li><code>mat</code></li>
+</ul>
+<p>(3) 内存溢出</p>
+<p>内存溢出通常发生在:</p>
+<ul>
+<li>Native 内存用光了</li>
+<li>permgen(Java 7) 或者 metaspace(Java 8) 内存用光了</li>
+<li>Java 堆内存用光了</li>
+<li>JVM 进行 GC 的时间太长了</li>
+</ul>
+<h3 id="使用更少的内存">使用更少的内存</h3>
+<p>(1) 减少对象大小</p>
+<p><img src="/images/posts/jvm-optimization/17-07-04-11:00:08_851_488.png" alt=""></p>
+<p>(2) 延迟初始化
+(3) 不可变对象
+(4) String Interning</p>
+<h3 id="对象生命周期管理">对象生命周期管理</h3>
+<h2 id="jit">JIT</h2>
+<h3 id="1-编译还是解释">(1) 编译还是解释</h3>
+<p>Languages like C++ and Fortran are called <strong>compiled languages</strong> because their programs are delivered as binary (compiled) code: the program is written, and then a static compiler produces a binary. The assembly code in that binary is targeted to a particular CPU. Complementary CPUs can execute the same binary: for example, AMD and Intel CPUs share a basic, common set of assembly language instructions, and later versions of CPUs almost always can execute the same set of instructions as previous versions of that CPU.</p>
+<p>Languages like PHP and Perl, on the other hand, <strong>are interpreted</strong>. The same program source code can be run on any CPU as long as the machine has the correct interpreter (that is, the program called <code>php</code> or <code>perl</code>). <strong>The interpreter translates each line of the program into binary code as that line is executed</strong>.</p>
+<p>Java attempts to find a middle ground here. Java applications are compiled—but instead of being compiled into a specific binary for a specific CPU, <strong>they are compiled into an idealized assembly language</strong>. This assembly language (know as Java bytecodes) is then run by the <code>java</code> binary (in the same way <strong>that an interpreted</strong> PHP script is run by the php binary). This gives Java the platform independence of an interpreted language. Because it is executing an idealized binary code, <strong>the java program is able to compile the code into the platform binary as the code executes</strong>. This compilation occurs as the program is executed: it happens “just in time.</p>
+<h3 id="2-hotspot-名字的含义">(2) HotSpot 名字的含义</h3>
+<p>In a typical program, <strong>only a small subset of code is executed frequently, and the performance of an application depends primarily on how fast those sections of code are executed</strong>. These critical sections are known as the hot spots of the application; <strong>the more the section of code is executed, the hotter that section is said to be</strong>.</p>
+<p>Hence, when the JVM executes code, <strong>it does not begin compiling the code immediately</strong>. There are two basic reasons for this. First, if the code is going to be executed only once, then compiling it is essentially a wasted effort; it will be faster to interpret the Java bytecodes than to compile them and execute (only once) the compiled code.</p>
+<p>the more times that the JVM executes a particular method or loop, the more information it has about that code. This allows the JVM to make a number of optimizations when it compiles the code.</p>
+<h3 id="3-寄存器和内存">(3) 寄存器和内存</h3>
+<p><img src="/images/posts/jvm-optimization/17-08-01-11:07:53_611_306.png" alt=""></p>
+<p>If the value of sum were to be retrieved from (and stored back to) main memory on every iteration of this loop, performance would be dismal. Instead, the compiler will <strong>load a register with the initial value of sum</strong>, perform the loop using that value in the register, and then (at an indeterminate point in time) store the final result from the register back to main memory.</p>
+<p><strong>Register usage</strong> is a general optimization of the compiler, and when <strong>escape analysis</strong> is enabled (see the end of this chapter), register use is quite aggressive.</p>
+<h3 id="4-选择-java-编译器">(4) 选择 Java 编译器</h3>
+<ul>
+<li>A 32-bit client version (<code>-client</code>)</li>
+<li>A 32-bit server version (<code>-server</code>)</li>
+<li>A 64-bit server version (<code>-d64</code>)</li>
+</ul>
+<p>For the sake of compatibility, the argument specifying which compiler to use is not rigorously followed. If you have a 64-bit JVM and specify <code>-client</code>, the application will use the 64-bit server compiler anyway. If you have a 32 bit JVM and you specify <code>-d64</code>, you will get an error that the given instance does not support a 64-bit JVM.</p>
+<p><strong>The client compiler begins compiling sooner than the server compiler does. code produced by the server compiler will be faster than that produced by the client compiler.</strong> couldn’t the JVM start with the client compiler, and then use the server compiler as code gets hotter? That technique is known as <strong>tiered compilation</strong>. With tiered compilation, code is first compiled by the client compiler; as it becomes hot, it is recompiled by the server compiler.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># Java 7 需要打开, Java 8 默认开启</span>
+-server -XX:+TieredCompilation
+</code></pre></div><ul>
+<li>For <strong>GUI programs</strong>, uses the client compiler by default. Performance is often all about perception: <strong>if the initial startup seems faster, and everything else seems fine, users will tend to view the program that has started faster as being faster overall</strong>.</li>
+<li>For <strong>long-running applications</strong>, always choose the server compiler, preferably in conjunction with tiered compilation.</li>
+</ul>
+<p>查看默认编译器:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">java -version
+</code></pre></div><h3 id="5-更多考虑因素">(5) 更多考虑因素</h3>
+<p><strong>Code Cache</strong>: When the JVM compiles code, it holds the set of assembly-language instructions in the code cache. <strong>Code Cache 有固定大小</strong>, and once it has filled up, the JVM is not able to compile any additional code.</p>
+<p><img src="/images/posts/jvm-optimization/17-08-01-11:39:30_662_364.png" alt=""></p>
+<hr>
+<p><strong>编译阈值</strong>: The major factor involved here is <strong>多频繁</strong> the code is executed; once it is executed a certain number of times, its compilation threshold is reached, and the compiler deems that it has enough information to compile the code.</p>
+<p>Compilation is based on two counters in the JVM: <strong>方法调用次数</strong>, and <strong>方法内循环的实际次数</strong>. When the JVM executes a Java method, it checks the sum of those two counters and decides whether or not the method is eligible for compilation.  This kind of compilation has no official name but is often called <strong>standard compilation (标准编译)</strong>.</p>
+<p>But what if the method has a really long loop—or one that never exits and provides all the logic of the program? In that case, the JVM needs to compile the loop without waiting for a method invocation. So every time the loop completes an execution, the branching counter is incremented and inspected. If the branching counter has exceeded its individual threshold, then the loop (and not the entire method) becomes eligible for compilation.</p>
+<p>This kind of compilation is called <strong>on-stack replacement (OSR)</strong>, because even if the loop is compiled, that isn’t sufficient: the JVM has to have the ability to start executing the compiled version of the loop while the loop is still running. When the code for the has finished compiling, the JVM replaces the code (on-stack), and the next iteration of the loop will execute the much-faster compiled version of the code (<strong>下一次循环就是编译版本了</strong>).</p>
+<p>Standard compilation is triggered by the value of the <code>-XX:CompileThreshold=N</code> flag. The default value of N for the client compiler is <code>1,500</code>; for the server compiler it is <code>10,000</code>.</p>
+<hr>
+<p><strong>查看编译过程</strong>: <code>-XX:+PrintCompilation</code>.</p>
+<p><code>jstat</code> has two options to provide information about the compiler. The <code>-compiler</code> option supplies summary information about <strong>多少方法被编译了</strong> (here 5003 is the process ID of the program to be inspected):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -compiler <span style="color:#ae81ff">5003</span>
+</code></pre></div><p>lternately, you can use the <code>-printcompilation</code> option to get information about the <strong>最后一个方法</strong> that is compiled. In this example, <code>jstat</code> repeats the information for process ID 5003 every second (1,000 ms):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -printcompilation <span style="color:#ae81ff">5003</span> <span style="color:#ae81ff">1000</span>
+</code></pre></div><hr>
+<p><strong>编译线程个数</strong>:</p>
+<p><img src="/images/posts/jvm-optimization/17-08-01-14:38:57_660_434.png" alt=""></p>
+<hr>
+<p><strong>内联</strong>:</p>
+<p>One of the most important optimizations the compiler makes is to <strong>inline methods</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Point</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> x<span style="color:#f92672">,</span> y<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">getX</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span> <span style="color:#66d9ef">return</span> x<span style="color:#f92672">;</span> <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setX</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i<span style="color:#f92672">)</span> <span style="color:#f92672">{</span> x <span style="color:#f92672">=</span> i<span style="color:#f92672">;</span> <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当你写这样代码的时候:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Point p <span style="color:#f92672">=</span> getPoint<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+p<span style="color:#f92672">.</span><span style="color:#a6e22e">setX</span><span style="color:#f92672">(</span>p<span style="color:#f92672">.</span><span style="color:#a6e22e">getX</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">*</span> 2<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><p>编译后的代码执行的将会是:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Point p <span style="color:#f92672">=</span> getPoint<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+p<span style="color:#f92672">.</span><span style="color:#a6e22e">x</span> <span style="color:#f92672">=</span> p<span style="color:#f92672">.</span><span style="color:#a6e22e">x</span> <span style="color:#f92672">*</span> 2<span style="color:#f92672">;</span>
+</code></pre></div><p>The basic decision about whether to inline a method depends on <strong>多频繁</strong> and <strong>大小</strong>. The JVM determines if a method is hot (i.e., called frequently) based on an internal calculation; it is not directly subject to any tunable parameters. If a method is eligible for inlining because it is called frequently, then it will be inlined only if its <strong>字节码大小小于 325 字节</strong> (or whatever is specified as the <code>-XX:MaxFreqInlineSize=N</code> flag). Otherwise, it is eligible for inlining only if it is small: <strong>小于 35 字节</strong> (or whatever is specified as the <code>-XX:MaxInlineSize=N</code> flag)</p>
+<hr>
+<p><strong>逃逸分析</strong>:</p>
+<p>The server compiler performs some very <strong>aggressive optimizations</strong> if escape analysis is enabled (<code>-XX:+DoEscapeAnalysis</code>, <strong>默认开启</strong>).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Factorial</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">private</span> BigInteger factorial<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> n<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">Factorial</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> n<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">n</span> <span style="color:#f92672">=</span> n<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> BigInteger <span style="color:#a6e22e">getFactorial</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>factorial <span style="color:#f92672">=</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span>
+            factorial <span style="color:#f92672">=</span> <span style="color:#f92672">.</span><span style="color:#f92672">.</span><span style="color:#f92672">.</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">return</span> factorial<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><img src="/images/posts/jvm-optimization/17-08-01-14:51:48_789_196.png" alt=""></p>
+<p>The <code>factorial</code> object is referenced only inside that loop; no other code can ever access that object. Hence, the JVM is free to perform a number of optimizations on that object:</p>
+<ul>
+<li>It needn’t get a synchronization lock when calling the <code>getFactorial()</code> method.</li>
+<li>It needn’t store the field <code>n</code> in memory; it can keep that value in a <code>register</code>. Similarly it can store the <code>factorial</code> object reference in a register.</li>
+<li>In fact, it needn’t allocate an actual <code>factorial</code> object at all; it can just keep track of the individual fields of the object.</li>
+</ul>
+<h3 id="6-deoptimization">(6) Deoptimization</h3>
+<p>Deoptimization means that the compiler <strong>不得不撤销一些优化</strong>; the effect is that the performance of the application will be reduced—at least until the compiler can recompile the code in question. There are two cases of deoptimization: when code is <strong>“made not entrant,”</strong> and when code is <strong>“made zombie”</strong>.</p>
+<hr>
+<p><strong>Not Entrant Code</strong>:</p>
+<p>There are two things that cause code to be made not entrant. One is due to <strong>the way classes and interfaces work</strong>, and one is <strong>an implementation detail of tiered compilation</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">StockPriceHistory sph<span style="color:#f92672">;</span>
+String log <span style="color:#f92672">=</span> request<span style="color:#f92672">.</span><span style="color:#a6e22e">getParameter</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;log&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>log <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> log<span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;true&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    sph <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StockPriceHistoryLogger<span style="color:#f92672">(</span><span style="color:#f92672">.</span><span style="color:#f92672">.</span><span style="color:#f92672">.</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+<span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+    sph <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StockPriceHistoryImpl<span style="color:#f92672">(</span><span style="color:#f92672">.</span><span style="color:#f92672">.</span><span style="color:#f92672">.</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+<span style="color:#75715e">// Then the JSP makes calls to:
+</span><span style="color:#75715e"></span>sph<span style="color:#f92672">.</span><span style="color:#a6e22e">getHighPrice</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+sph<span style="color:#f92672">.</span><span style="color:#a6e22e">getStdDev</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+<span style="color:#75715e">// and so on
+</span></code></pre></div><p>If a bunch of calls are made to <code>http://localhost:8080/StockServlet</code> (that is, without the log parameter), the compiler will see that the actual type of the sph object is <code>StockPriceHistoryImpl</code>. It will then inline code and perform other optimizations based on that knowledge. Later, say a call is made to <code>http://localhost:8080/StockServlet?log=true</code>. Now the assumption the compiler made regarding the type of the sph object is false; the previous optimizations are no longer valid. This generates a deoptimization trap, and the previous optimizations are discarded. If a lot of additional calls are made with logging enabled, the JVM will quickly end up compiling that code and making new optimizations.</p>
+<p>In tiered compilation, code is compiled by the client compiler, and then later compiled by the server compiler (and actually it’s a little more complicated than that, as discussed in the next section). When the code compiled by the server compiler is ready, the JVM must replace the code compiled by the client compiler. It does this by <strong>将旧代码标记为 Not Entrant</strong> and using the same mechanism to substitute the newly compiled (and more efficient) code.</p>
+<hr>
+<p><strong>Deoptimizing Zombie Code</strong>:</p>
+<p>Recall that the compiled code is held in a fixedsize code cache; when zombie methods are identified, it means that the code in question can be removed from the code cache, making room for other classes to be compiled (or limiting the amount of memory the JVM will need to allocate later).</p>
+<p>The possible downside here is that if the code for the class is made zombie and then later reloaded and heavily used again, the JVM will need to recompile and reoptimize the code.</p>
+<h2 id="todo">TODO</h2>
+<ul>
+<li><a href="https://docs.oracle.com/javase/6/docs/technotes/guides/management/jconsole.html">https://docs.oracle.com/javase/6/docs/technotes/guides/management/jconsole.html</a></li>
+<li><a href="https://stackoverflow.com/questions/1058991/how-to-monitor-java-memory-usage">https://stackoverflow.com/questions/1058991/how-to-monitor-java-memory-usage</a></li>
+</ul>
+<h2 id="远程-jvisualvm">远程 <code>JVisualVM</code></h2>
+<p>远程机器上输入 <code>jstatd</code>:</p>
+<pre><code>Could not create remote object
+access denied (&quot;java.util.PropertyPermission&quot; &quot;java.rmi.server.ignoreSubClasses&quot; &quot;write&quot;)
+java.security.AccessControlException: access denied (&quot;java.util.PropertyPermission&quot; &quot;java.rmi.server.ignoreSubClasses&quot; &quot;write&quot;)
+	at java.security.AccessControlContext.checkPermission(AccessControlContext.java:472)
+	at java.security.AccessController.checkPermission(AccessController.java:884)
+	at java.lang.SecurityManager.checkPermission(SecurityManager.java:549)
+	at java.lang.System.setProperty(System.java:792)
+	at sun.tools.jstatd.Jstatd.main(Jstatd.java:139)
+</code></pre><p>你需要创建一个安全策略文件: <code>jstatd.all.policy</code>，里面写上这句话:</p>
+<pre><code>grant codebase &quot;file:/opt/java/jdk1.7.0_21/lib/tools.jar&quot; { permission java.security.AllPermission; };
+</code></pre><p>然后使用如下命令重新启动:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstatd -J -Djava.security.policy<span style="color:#f92672">=</span>/home/user/jstatd.all.policy
+</code></pre></div><p>在本机测试，是否能够 <code>telnet</code> 到 <code>jstatd</code> 服务:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">telnet 10.108.112.218 <span style="color:#ae81ff">1099</span>
+</code></pre></div><p>有些时候，<code>jstatd</code> 可能绑定的并不是正确的网卡:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-J-Djava.rmi.server.hostname<span style="color:#f92672">=</span>10.1.1.123
+</code></pre></div><p>强制使用 <code>IPV4</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-J-Djava.net.preferIPv4Stack<span style="color:#f92672">=</span>true
+</code></pre></div><p>查看一些日志输出:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-J-Djava.rmi.server.logCalls<span style="color:#f92672">=</span>true
+</code></pre></div><p>最后的命令:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstatd -J-Djava.security.policy<span style="color:#f92672">=</span>./jstatd.all.policy -J-Djava.rmi.server.hostname<span style="color:#f92672">=</span>10.108.112.218 -J-Djava.rmi.server.logCalls<span style="color:#f92672">=</span>true
+</code></pre></div><h2 id="gc-日志分析工具">GC 日志分析工具</h2>
+<ul>
+<li><a href="http://gceasy.io/">GCeasy</a></li>
+</ul>
+<h2 id="dump-什么">DUMP 什么</h2>
+<p>以下是 <a href="https://github.com/alibaba/dubbo/blob/master/dubbo-container/dubbo-container-api/src/main/resources/META-INF/assembly/bin/dump.sh">dubbo - dump.sh</a> 备份的内容:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">DUMP_DATE<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>date +%Y%m%d%H%M%S<span style="color:#e6db74">`</span>
+DATE_DIR<span style="color:#f92672">=</span>$DUMP_DIR/$DUMP_DATE
+
+echo -e <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">Dumping the </span>$SERVER_NAME<span style="color:#e6db74"> ...\c</span><span style="color:#e6db74">&#34;</span>
+<span style="color:#66d9ef">for</span> PID in $PIDS ; <span style="color:#66d9ef">do</span>
+	jstack $PID &gt; $DATE_DIR/jstack-$PID.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+	echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+	jinfo $PID &gt; $DATE_DIR/jinfo-$PID.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+	echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+	jstat -gcutil $PID &gt; $DATE_DIR/jstat-gcutil-$PID.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+	echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+	jstat -gccapacity $PID &gt; $DATE_DIR/jstat-gccapacity-$PID.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+	echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+	jmap $PID &gt; $DATE_DIR/jmap-$PID.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+	echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+	jmap -heap $PID &gt; $DATE_DIR/jmap-heap-$PID.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+	echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+	jmap -histo $PID &gt; $DATE_DIR/jmap-histo-$PID.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+	echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+	<span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -r /usr/sbin/lsof <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+	/usr/sbin/lsof -p $PID &gt; $DATE_DIR/lsof-$PID.dump
+	echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+	<span style="color:#66d9ef">fi</span>
+<span style="color:#66d9ef">done</span>
+
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -r /bin/netstat <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+/bin/netstat -an &gt; $DATE_DIR/netstat.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+<span style="color:#66d9ef">fi</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -r /usr/bin/iostat <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+/usr/bin/iostat &gt; $DATE_DIR/iostat.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+<span style="color:#66d9ef">fi</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -r /usr/bin/mpstat <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+/usr/bin/mpstat &gt; $DATE_DIR/mpstat.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+<span style="color:#66d9ef">fi</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -r /usr/bin/vmstat <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+/usr/bin/vmstat &gt; $DATE_DIR/vmstat.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+<span style="color:#66d9ef">fi</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -r /usr/bin/free <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+/usr/bin/free -t &gt; $DATE_DIR/free.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+<span style="color:#66d9ef">fi</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -r /usr/bin/sar <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+/usr/bin/sar &gt; $DATE_DIR/sar.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+<span style="color:#66d9ef">fi</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -r /usr/bin/uptime <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+/usr/bin/uptime &gt; $DATE_DIR/uptime.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
+<span style="color:#66d9ef">fi</span>
+</code></pre></div><p>从上可知一般<strong>统计</strong>的都有如下几项:</p>
+<ul>
+<li><a href="https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jstack.html"><strong><code>jstack</code></strong></a>: 线程信息</li>
+<li><a href="https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jinfo.html"><strong><code>jinfo</code></strong></a>: 配置信息. The configuration information includes <strong>Java system properties</strong> and <strong>Java Virtual Machine (JVM) command-line flags</strong>.</li>
+<li><a href="https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jstat.html"><strong><code>jstat -gcutil</code></strong></a>: 垃圾收集统计</li>
+<li><strong><code>jstat -gccapacity</code></strong>: Displays statistics about the <strong>capacities</strong> of the generations and their corresponding spaces.</li>
+<li><a href="https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jmap.html"><strong><code>jmap</code></strong></a>: Prints <strong>共享对象内存</strong> maps or <strong>堆内存</strong> details for a process, core file, or remote debug server.</li>
+<li><code>jmap -heap</code>: Prints a heap summary of the garbage collection used, the head configuration, and generation-wise heap usage. In addition, the number and size of interned Strings are printed.</li>
+<li><code>jmap -histo</code>: Prints a <strong>histogram</strong> of the heap</li>
+<li><code>lsof -p</code></li>
+<li><code>netstat -an</code></li>
+<li><code>iostat</code>: Report Central Processing Unit (CPU) statistics and input/output statistics for devices, partitions and network filesystems (NFS).</li>
+<li><code>mpstat</code>: Report <strong>处理器</strong> related statistics.</li>
+<li><code>vmstat</code>: vmstat (virtual memory statistics) is a computer system monitoring tool that collects and displays summary information about operating system memory, processes, interrupts, paging and block I/O.</li>
+<li><code>free -t</code>: Display amount of <strong>可用/已用内存</strong> in the system. <code>-t</code>: Display a line showing the column totals.</li>
+<li><code>sar</code>: In computing, sar (<strong>System Activity Report</strong>) is a Unix System V-derived system monitor command used to report on various system loads, including <strong>CPU 活动</strong>, memory/paging, <strong>设备负载</strong>, <strong>网络</strong>. Linux distributions provide <code>sar</code> through the <code>sysstat</code> package.</li>
+<li><code>uptime</code>: uptime gives a one line display of the following information. The <strong>当前时间</strong>, <strong>多长时间</strong> the system has been running, <strong>多少用户</strong> are currently logged on, and the <strong>系统平均负载</strong> averages for the past 1, 5, and 15 minutes.</li>
+</ul>
+<h2 id="实际运用中如何清晰明了地观察-jvm-的运行过程">实际运用中如何清晰明了地观察 JVM 的运行过程?</h2>
+<ul>
+<li>图形工具: <code>JProfiler</code>, <code>JConsole</code>, <code>Java VisualVM</code></li>
+<li>命令: <code>jps</code>, <code>jstack</code>, <code>jmap</code>, <code>jhat</code>, <code>jstat</code></li>
+</ul>
+<h2 id="jvm-如何进阶">JVM 如何进阶</h2>
+<p>问:<code>JVM</code>如何进阶，目前周志明的《深入理解JVM》第2版看了两遍，能够根据目录口述书中大部分内容，还需要了解哪些知识？</p>
+<p>答：周志明的书只能算是 <code>JVM</code> 的入门书籍。接下来你应该去读一读**《Java虚拟机规范》**，周志明的书很多内容是从里面来的，但是规范本身比较详细，注意读英文原版。其次去读一下Oralce的文档：**《Hotspot Memory Management white paper》, 《Java Platform, Standard Edition HotSpot Virtual Machine Garbage Collection Tuning Guide》**。现在你需要进一步修炼关于**内存管理**的部分，阅读比如**《垃圾回收算法与实现》**，如果这本读完还不满足，那么阅读**《自动内存管理艺术——垃圾回收算法手册》**。到了这一步，理论你已经掌握得很好了，是时候把 <code>Hotspot</code> 源码 download 下来编译好之后断点调试玩玩了，这个时候我要推荐你今年阿里人刚出的**《揭秘Java虚拟机》**，不过阅读这本书之前你要是愿意先读完**《深入理解计算机系统》**效果更好。到了这一步，剩下的，自己探索了，我也在探索。</p>
+<hr>
+<p>问: 线上CPU很高、内存占用很少，有能快速查找到原因的方法吗？</p>
+<p>答: 给一个代码，在 <code>Linux</code> 下保存成 <code>.sh</code> 文件直接执行即可。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/sh
+</span><span style="color:#75715e"></span>ts<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>date +<span style="color:#e6db74">&#34;%s&#34;</span><span style="color:#66d9ef">)</span>
+jvmPid<span style="color:#f92672">=</span>$1
+defaultLines<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>
+defaultTop<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>
+
+threadStackLines<span style="color:#f92672">=</span><span style="color:#e6db74">${</span>2<span style="color:#66d9ef">:-</span>$defaultLines<span style="color:#e6db74">}</span>
+topThreads<span style="color:#f92672">=</span><span style="color:#e6db74">${</span>3<span style="color:#66d9ef">:-</span>$defaultTop<span style="color:#e6db74">}</span>
+
+jvmCapture<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>top -b -n1 | grep java <span style="color:#66d9ef">)</span>
+threadsTopCapture<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>top -b -n1 -H | grep java <span style="color:#66d9ef">)</span>
+jstackOutput<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>echo <span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">$(</span>jstack $jvmPid <span style="color:#66d9ef">)</span><span style="color:#e6db74">&#34;</span> <span style="color:#66d9ef">)</span>
+topOutput<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>echo <span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">$(</span>echo <span style="color:#e6db74">&#34;</span>$threadsTopCapture<span style="color:#e6db74">&#34;</span> | head -n $topThreads | perl -pe <span style="color:#e6db74">&#39;s/\e\[?.*?[\@-~] ?//g&#39;</span> | awk <span style="color:#e6db74">&#39;{gsub(/^ +/,&#34;&#34;);print}&#39;</span> | awk <span style="color:#e6db74">&#39;{gsub(/ +|[+-]/,&#34; &#34;);print}&#39;</span> | cut -d <span style="color:#e6db74">&#34; &#34;</span> -f 1,9 <span style="color:#66d9ef">)</span><span style="color:#e6db74">\n </span><span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">)</span>
+
+echo <span style="color:#e6db74">&#34;*************************************************************************************************************&#34;</span>
+
+uptime
+
+echo <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">Analyzing top </span>$topThreads<span style="color:#e6db74"> threads</span><span style="color:#e6db74">&#34;</span>
+
+echo <span style="color:#e6db74">&#34;*************************************************************************************************************&#34;</span>
+
+printf %s <span style="color:#e6db74">&#34;</span>$topOutput<span style="color:#e6db74">&#34;</span> | <span style="color:#66d9ef">while</span> IFS<span style="color:#f92672">=</span> read  line
+
+<span style="color:#66d9ef">do</span>
+   pid<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>echo $line | cut -d <span style="color:#e6db74">&#34; &#34;</span> -f 1<span style="color:#66d9ef">)</span>
+   hexapid<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>printf <span style="color:#e6db74">&#34;%x&#34;</span> $pid<span style="color:#66d9ef">)</span>
+   cpu<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>echo $line | cut -d <span style="color:#e6db74">&#34; &#34;</span> -f 2<span style="color:#66d9ef">)</span>
+   echo -n $cpu<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">% [</span>$pid<span style="color:#e6db74">] </span><span style="color:#e6db74">&#34;</span> 
+   echo <span style="color:#e6db74">&#34;</span>$jstackOutput<span style="color:#e6db74">&#34;</span> | grep <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">tid.*0x</span>$hexapid<span style="color:#e6db74"> </span><span style="color:#e6db74">&#34;</span> -A $threadStackLines | sed -n -e <span style="color:#e6db74">&#39;/0x&#39;</span>$hexapid<span style="color:#e6db74">&#39;/,/tid/ p&#39;</span> | head -n -1
+   echo <span style="color:#e6db74">&#34;\n&#34;</span>
+<span style="color:#66d9ef">done</span>
+
+echo <span style="color:#e6db74">&#34;\n&#34;</span> 
+</code></pre></div><p>代码的意思，打印出 <code>JVM</code> 的所有线程以及按照 <code>CPU</code> 占比排序。</p>
+<hr>
+<p>问: 您好，想问一个 JVM 比较基础的知识，现在的垃圾收集都是分代回收，那么在回收新生代的时候是要同时扫描老年代吗？是全表还是有一种策略，比如 G1 的 Remembered set，这个 set 只是记录了一种引用关系；那其它的分代回收，比如 CMS 和 ParNew 组合时只能是回收新生代的时候扫描老年代吗？那这样效率不就是降低了不少吗？</p>
+<p>答：对于老年代指向新生代的引用，JVM提供了一种叫 <code>card table</code> 的数据结构，所以每次<strong>并不需要全量遍历老年代</strong>，只需要遍历 <code>card table</code> 就行了。</p>
+<hr>
+<p>问: 线上定位内存 JVM 内存溢出，除了打印堆栈拿出来分析，还有没有其它的方式？</p>
+<p>答：<strong>导出 <code>JVM dump</code> 文件</strong>，在本地使用 <code>Eclipse</code> 插件 <strong><code>MAT</code></strong> 分析，可视化的分析最方便、直观、有效。</p>
+<h2 id="垃圾回收器怎么选择">垃圾回收器怎么选择</h2>
+<ul>
+<li>最小化地使用内存和并行开销，请选择 <code>Serial GC</code></li>
+<li>最大化应用程序的吞吐量，请选择<code>Parallel GC</code></li>
+<li>最小化 <code>GC</code> 的中断或者停顿时间，请选择 <code>CMS GC</code></li>
+</ul>
+<hr>
+<p>并发和并行都可以表示两个或者多个任务一起执行，但是偏重点不同。并发偏重于<strong>多个任务交替执行</strong>，而多个任务之间有可能还是串行的。而并行是真正意义上的“同时执行”。</p>
+<h2 id="内存泄漏代码示例">内存泄漏代码示例</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+  <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i<span style="color:#f92672">=</span>0<span style="color:#f92672">;</span> i<span style="color:#f92672">&lt;</span>10000<span style="color:#f92672">;</span> i<span style="color:#f92672">+</span><span style="color:#f92672">+</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#f92672">!</span>m<span style="color:#f92672">.</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Key<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+      m<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Key<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Number:&#34;</span> <span style="color:#f92672">+</span> i<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+  <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="interned-strings">Interned Strings</h2>
+<p><code>String</code> 类型的常量池比较特殊。主要使用方法有两种:</p>
+<ul>
+<li>直接使用双引号声明出来的 <code>String</code> 对象会直接存储在常量池中。</li>
+<li>如果不是双引号声明的 <code>String</code> 对象，可以使用 <code>String</code> 提供的 <code>intern</code> 方法。<code>intern</code> 会先判断是否存在常量池中，如果不存在，则会将当前字符串放入常量池中。</li>
+</ul>
+<p>JDK 6的常量池放在 <strong><code>Perm</code></strong> 区中，默认大小只有 4 MB。JDK 7开始，放在<strong>堆</strong>中。</p>
+<h2 id="mat">MAT</h2>
+<p><strong>1) The Dominator Tree</strong>:</p>
+<p>The key to understanding your retained heap, is looking at the dominator tree. The dominator tree is a tree produced by the <strong>complex object graph</strong> in your system. The dominator tree allows you to identify the largest memory graphs. An Object X is said to dominate an Object Y if every path from the Root to Y must pass through X.</p>
+<p><a href="https://javaeesupportpatterns.blogspot.jp/2013/03/openjpa-memory-leak-case-study.html">https://javaeesupportpatterns.blogspot.jp/2013/03/openjpa-memory-leak-case-study.html</a></p>
+<h2 id="jvm-诊断示例httpsplumbreublogmemory-leaksmemory-leaks-fallacies-and-misconceptions">JVM 诊断<a href="https://plumbr.eu/blog/memory-leaks/memory-leaks-fallacies-and-misconceptions">示例</a></h2>
+<p><strong>1) 健康的 <code>JVM</code></strong>:</p>
+<p><img src="/images/posts/jvm-optimization/java-memory-usage-example.png" alt=""></p>
+<p><strong>2) 启动内存暴涨</strong>:</p>
+<p><img src="/images/posts/jvm-optimization/java-memory-usage-quick-growth-at-startup.png" alt=""></p>
+<p><strong>3) 激增</strong>:</p>
+<p><img src="/images/posts/jvm-optimization/java-memory-usage-spike.png" alt=""></p>
+<p><strong>4) 内存泄露</strong></p>
+<p><img src="/images/posts/jvm-optimization/java-memory-leak.png" alt=""></p>
+<h2 id="jvisualvm">JVisualVM</h2>
+<p>需要安装一个 <code>Visual GC</code> 插件:</p>
+<p><img src="/images/posts/jvm-optimization/2017_09_18_14_38_51.png" alt=""></p>
+<p>才能显示具体的 <code>GC</code> 过程:</p>
+<p><img src="/images/posts/jvm-optimization/2017_09_18_14_40_26.png" alt=""></p>
+<h2 id="todo-1">TODO</h2>
+<p><a href="https://plumbr.eu/handbook/garbage-collection-algorithms-implementations#serial-minor-gc">https://plumbr.eu/handbook/garbage-collection-algorithms-implementations#serial-minor-gc</a></p>
+<h2 id="如何在生产环境使用-btrace-进行调试httpwwwimportnewcom23614html"><a href="http://www.importnew.com/23614.html">如何在生产环境使用 Btrace 进行调试</a></h2>
+<p>大多数问题的解决方式都是在<strong>本地打断点</strong>进行调试，或者在测试环境利用<strong>输出日志</strong>进行调试，这种方式简单粗暴，但过程比较繁琐，需要各种重新发布，重启应用，还不能保证一次就找到问题的根源。</p>
+<p><a href="https://github.com/btraceio/btrace"><code>BTrace</code></a> 是 sun 公司推出的一款 <code>Java</code> <strong>动态、安全追踪（监控）工具</strong>，可以在不用重启的情况下监控系统运行情况，方便的获取程序运行时的数据信息，如<strong>方法参数、返回值、全局变量和堆栈信息</strong>等，并且做到最少的侵入，占用最少的系统资源。</p>
+<p>由于 Btrace 会把<strong>脚本逻辑</strong>直接侵入到运行的代码中，所以在使用上做很多限制：</p>
+<ol>
+<li>不能创建对象</li>
+<li>不能使用数组</li>
+<li>不能抛出或捕获异常</li>
+<li>不能使用循环</li>
+<li>不能使用 <code>synchronized</code> 关键字</li>
+<li>属性和方法必须使用 <code>static</code> 修饰</li>
+</ol>
+<p>根据官方声明，不恰当的使用 BTrace 可能导致 JVM 崩溃，如在 BTrace 脚本使用错误的 class 文件，所以在上生产环境之前，<strong>务必在本地充分的验证脚本的正确性</strong>。</p>
+<h3 id="btrace-可以做什么">Btrace 可以做什么？</h3>
+<ul>
+<li>接口性能变慢，分析每个方法的<strong>耗时</strong>情况；</li>
+<li>当在 Map 中插入大量数据，分析其扩容情况；</li>
+<li>分析哪个方法调用了 <code>System.gc()</code></li>
+<li>执行某个方法抛出异常时，分析<strong>运行时参数</strong>；</li>
+<li>&hellip;</li>
+</ul>
+<p>假设服务器端运行的是如下代码:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BtraceCase</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> Random random <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Random<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> size<span style="color:#f92672">;</span>
+ 
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[</span><span style="color:#f92672">]</span> args<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">new</span> BtraceCase<span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">run</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+ 
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            add<span style="color:#f92672">(</span>random<span style="color:#f92672">.</span><span style="color:#a6e22e">nextInt</span><span style="color:#f92672">(</span>10<span style="color:#f92672">)</span><span style="color:#f92672">,</span> random<span style="color:#f92672">.</span><span style="color:#a6e22e">nextInt</span><span style="color:#f92672">(</span>10<span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+ 
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> a<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> b<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">sleep</span><span style="color:#f92672">(</span>random<span style="color:#f92672">.</span><span style="color:#a6e22e">nextInt</span><span style="color:#f92672">(</span>10<span style="color:#f92672">)</span> <span style="color:#f92672">*</span> 100<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">return</span> a <span style="color:#f92672">+</span> b<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>我们想要对 <code>add</code> 方法的<strong>传入参数、返回值和执行耗时</strong>进行分析:</p>
+<p><img src="/images/posts/jvm-optimization/2184951-03afa420cfaa077d.png" alt=""></p>
+<p>通过 <code>jps</code> 获取服务器端的进程ID: 8454，执行命令</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">btrace <span style="color:#ae81ff">8454</span> Debug.java
+</code></pre></div><p>实现对运行代码的监控:</p>
+<p><img src="/images/posts/jvm-optimization/2184951-9264da5116fd16eb.png" alt=""></p>
+<p>可以发现，<code>Btrace</code> 可以获取每次执行 <code>add</code> 方法时的数据，当然 <code>Btrace</code> 能做的远远不止这些，比如获取当前 <code>jvm</code> 堆使用情况、当前线程的执行栈等等。</p>
+<h3 id="参数说明">参数说明</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// clazz: 需要监控的类
+</span><span style="color:#75715e"></span><span style="color:#75715e">// method: 需要监控的方法
+</span><span style="color:#75715e"></span><span style="color:#75715e">//       clazz 和 method 可以使用正则、接口、注解等来指定
+</span><span style="color:#75715e"></span><span style="color:#75715e">// location: 拦截位置
+</span><span style="color:#75715e"></span><span style="color:#75715e">//     Kind.ENTRY: 进入方法的时候，调用脚本
+</span><span style="color:#75715e"></span><span style="color:#75715e">//     Kind.RETURN: 执行完的时候，调用脚本
+</span><span style="color:#75715e"></span><span style="color:#75715e">//     只有定义为 RETURN，才能获取方法的返回结果 @Return 和 @Duration
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">@OnMethod</span><span style="color:#f92672">(</span>clazz<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;com.metty.rpc.common.BtraceCase&#34;</span><span style="color:#f92672">,</span>
+          method<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;add&#34;</span><span style="color:#f92672">,</span>
+          location<span style="color:#f92672">=</span><span style="color:#a6e22e">@Location</span><span style="color:#f92672">(</span>Kind<span style="color:#f92672">.</span><span style="color:#a6e22e">RETURN</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span>
+</code></pre></div><h3 id="如何使用-btrace-定位问题">如何使用 Btrace 定位问题</h3>
+<ul>
+<li><strong>找出所有耗时超过 1ms</strong> 的过滤器 <code>Filter</code></li>
+</ul>
+<p><img src="/images/posts/jvm-optimization/2184951-5a84b16be8670045.png" alt=""></p>
+<p>由于 <code>@Dutation</code> 返回的时间是<strong>纳秒</strong>级别，需要进行转换。</p>
+<ul>
+<li>哪个方法调用了 <strong><code>System.gc()</code></strong>，调用栈如何？</li>
+</ul>
+<p><img src="/images/posts/jvm-optimization/2184951-2ed3e5769fcd41a4.png" alt=""></p>
+<ul>
+<li><strong>统计方法的调用次数</strong>，且每隔 1 分钟<strong>打印调用次数</strong></li>
+</ul>
+<p><img src="/images/posts/jvm-optimization/2184951-0545a415522401b1.png" alt=""></p>
+<p>Btrace 的 <code>@OnTimer</code> 注解可以实现<strong>定时执行</strong>脚本中的一个方法</p>
+<ul>
+<li>方法执行时，<strong>查看对象的实例属性值</strong></li>
+</ul>
+<p><img src="/images/posts/jvm-optimization/2184951-c246051ab7985760.png" alt=""></p>
+<p>通过反射机制，可以很方便的得到当前实例的属性值。</p>
+<h3 id="总结">总结</h3>
+<p><code>Btrace</code> 能做的事情太多，但使用之前切记检查脚本的可行性，一旦 <code>Btrace</code> 脚本侵入到系统中，<strong>只有通过重启才能恢复</strong>。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://item.jd.com/11099999.html">《Java 程序性能优化》</a></li>
+<li><a href="http://www.journaldev.com/2856/java-jvm-memory-model-memory-management-in-java">Java (JVM) Memory Model – Memory Management in Java</a></li>
+<li><a href="http://stackoverflow.com/questions/5024959/find-which-type-of-garbage-collector-is-running">find which type of garbage collector is running</a></li>
+<li><a href="http://stackoverflow.com/questions/33206313/default-garbage-collector-for-java-8">Default garbage collector for Java 8</a></li>
+<li><a href="http://www.oracle.com/technetwork/tutorials/tutorials-1876574.html">Getting Started with the G1 Garbage Collector</a></li>
+<li><a href="https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/cms.html">cms</a></li>
+<li><a href="https://plumbr.eu/blog/garbage-collection/minor-gc-vs-major-gc-vs-full-gc">Minor GC vs Major GC vs Full GC</a></li>
+<li><a href="https://www.amazon.com/Java-Performance-Definitive-Guide-Getting/dp/1449358454/">《Java Performance: The Definitive Guide》</a></li>
+<li><a href="https://item.jd.com/11908449.html">《大话 Java 性能调优》</a></li>
+<li><a href="https://item.jd.com/12087807.html">《深入理解 JVM &amp; G1 GC》</a></li>
+</ul></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#java-虚拟机内存模型">Java 虚拟机内存模型</a></li>
+    <li><a href="#pc-register">pc register</a></li>
+    <li><a href="#stack">stack</a></li>
+    <li><a href="#native-method-stack">native method stack</a></li>
+    <li><a href="#heap">HEAP</a>
+      <ul>
+        <li><a href="#逃逸分析">逃逸分析</a></li>
+      </ul>
+    </li>
+    <li><a href="#method-area">method area</a></li>
+    <li><a href="#直接内存">直接内存</a></li>
+    <li><a href="#区域比例">区域比例</a></li>
+    <li><a href="#垃圾回收算法">垃圾回收算法</a></li>
+    <li><a href="#谁才是真正的垃圾">谁才是真正的垃圾</a></li>
+    <li><a href="#垃圾回收器">垃圾回收器</a>
+      <ul>
+        <li><a href="#串行回收器">串行回收器</a></li>
+        <li><a href="#并行回收器">并行回收器</a></li>
+        <li><a href="#g1-garbage-first-垃圾收集器">G1 (Garbage-First) 垃圾收集器</a></li>
+        <li><a href="#g1-垃圾收集器-vs-cms-垃圾收集器">G1 垃圾收集器 VS CMS 垃圾收集器</a></li>
+      </ul>
+    </li>
+    <li><a href="#实用-jvm-参数">实用 JVM 参数</a></li>
+    <li><a href="#minor-gcmajor-gc-和-full-gc">Minor GC、Major GC 和 Full GC</a></li>
+    <li><a href="#java-各版本默认垃圾收集器">Java 各版本默认垃圾收集器</a></li>
+    <li><a href="#jvm-的工作模式">JVM 的工作模式</a></li>
+    <li><a href="#heap-memory-最佳实践">Heap Memory 最佳实践</a></li>
+    <li><a href="#java-monitoring-常用工具">Java Monitoring 常用工具</a>
+      <ul>
+        <li><a href="#jstack">jstack</a></li>
+        <li><a href="#jinfo">jinfo</a></li>
+        <li><a href="#jstat">jstat</a></li>
+        <li><a href="#jmap-memory-map">jmap (Memory Map)</a></li>
+      </ul>
+    </li>
+    <li><a href="#堆内存使用最佳实践">堆内存使用最佳实践</a>
+      <ul>
+        <li><a href="#堆分析">堆分析</a></li>
+        <li><a href="#使用更少的内存">使用更少的内存</a></li>
+        <li><a href="#对象生命周期管理">对象生命周期管理</a></li>
+      </ul>
+    </li>
+    <li><a href="#jit">JIT</a>
+      <ul>
+        <li><a href="#1-编译还是解释">(1) 编译还是解释</a></li>
+        <li><a href="#2-hotspot-名字的含义">(2) HotSpot 名字的含义</a></li>
+        <li><a href="#3-寄存器和内存">(3) 寄存器和内存</a></li>
+        <li><a href="#4-选择-java-编译器">(4) 选择 Java 编译器</a></li>
+        <li><a href="#5-更多考虑因素">(5) 更多考虑因素</a></li>
+        <li><a href="#6-deoptimization">(6) Deoptimization</a></li>
+      </ul>
+    </li>
+    <li><a href="#todo">TODO</a></li>
+    <li><a href="#远程-jvisualvm">远程 JVisualVM</a></li>
+    <li><a href="#gc-日志分析工具">GC 日志分析工具</a></li>
+    <li><a href="#dump-什么">DUMP 什么</a></li>
+    <li><a href="#实际运用中如何清晰明了地观察-jvm-的运行过程">实际运用中如何清晰明了地观察 JVM 的运行过程?</a></li>
+    <li><a href="#jvm-如何进阶">JVM 如何进阶</a></li>
+    <li><a href="#垃圾回收器怎么选择">垃圾回收器怎么选择</a></li>
+    <li><a href="#内存泄漏代码示例">内存泄漏代码示例</a></li>
+    <li><a href="#interned-strings">Interned Strings</a></li>
+    <li><a href="#mat">MAT</a></li>
+    <li><a href="#jvm-诊断示例httpsplumbreublogmemory-leaksmemory-leaks-fallacies-and-misconceptions">JVM 诊断示例</a></li>
+    <li><a href="#jvisualvm">JVisualVM</a></li>
+    <li><a href="#todo-1">TODO</a></li>
+    <li><a href="#如何在生产环境使用-btrace-进行调试httpwwwimportnewcom23614html">如何在生产环境使用 Btrace 进行调试</a>
+      <ul>
+        <li><a href="#btrace-可以做什么">Btrace 可以做什么？</a></li>
+        <li><a href="#参数说明">参数说明</a></li>
+        <li><a href="#如何使用-btrace-定位问题">如何使用 Btrace 定位问题</a></li>
+        <li><a href="#总结">总结</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
