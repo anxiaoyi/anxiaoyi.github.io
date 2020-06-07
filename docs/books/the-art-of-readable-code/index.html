@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="编写可读代码的艺术"><meta property="og:title" content="编写可读代码的艺术" />
+<meta property="og:description" content="编写可读代码的艺术 代码应当易于理解 Q: 可读性基本定理？
+ 可读性基本原理：使别人理解它所需的时间最小化。
+ Q: 代码总是越小越好？
+ 减少代码行数是一个好目标，但是把理解代码所需的时间最小化是一个更好的目标。
+ 表面层次的改进 把信息装到名字里 （1）选择专业的词
+def getPage(url) 上述例子，get 词没有表达出很多信息。从本地缓存得到一个页面，还是从数据库中，或者从互联网中？如果从互联网中，应该使用更为专业的名字：fetchPage(url) 或 downloadPage(url)。
+class BinaryTree { int size(); } 上述例子，size() 返回的是什么？树的高度，节点树，还是树在内存中所占的空间？size() 没有承载更多的信息，更专业的词汇是 height()、numNodes() 或 memoryBytes()。
+英语是一门丰富的语言，有很多词汇可以选择。下面是一些例子，这些单词更富有表现力，可能更适合你的语境：
+   单词 更多选择     send deliver、dispatch、announce、distribute、route   find search、extract、locate、recover   start launch、create、begin、open   make create、set up、build、generate、compose、add、new    （2）避免像 tmp 和 retval 这样泛泛的名字
+除非你有更好的理由！
+（3）用具体的名字代替抽象的名字
+searchCanStart() 比 canListenOnPort() 更具体一些，这个名字直接描述了方法所做的事情。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/books/the-art-of-readable-code/" />
+
+<title>编写可读代码的艺术 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.c65190039cb46ec38c7136bc9daa64a3e02a94d9f5a9412d3f0dfde8ca7756be.js" integrity="sha256-xlGQA5y0bsOMcTa8napko&#43;AqlNn1qUEtPw396Mp3Vr4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      🔥IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/beauty_of_mathematics/" >
+      数学之美
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/history_of_quantum_physics/" >
+      上帝掷骰子吗
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/clean_code/" >
+      代码整洁之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the_transformation_of_enterprise_it_architecture/" >
+      企业 IT 架构转型之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/redis_5_source_code/" >
+      Redis 5 设计与源码分析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/" >
+      深度剖析 Apache Dubbo 核心技术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/everyone-is-architect/" >
+      人人都是架构师 (一)
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-art-of-readable-code/"  class="active">
+      编写可读代码的艺术
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>编写可读代码的艺术</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#代码应当易于理解">代码应当易于理解</a></li>
+    <li><a href="#表面层次的改进">表面层次的改进</a>
+      <ul>
+        <li><a href="#把信息装到名字里">把信息装到名字里</a></li>
+        <li><a href="#不会误解的名字">不会误解的名字</a></li>
+        <li><a href="#审美">审美</a></li>
+        <li><a href="#该写什么样的注释">该写什么样的注释</a></li>
+        <li><a href="#写出言简意赅的注释">写出言简意赅的注释</a></li>
+      </ul>
+    </li>
+    <li><a href="#简化循环和逻辑">简化循环和逻辑</a>
+      <ul>
+        <li><a href="#把控制流变得易读">把控制流变得易读</a></li>
+        <li><a href="#拆分超长的表达式">拆分超长的表达式</a></li>
+        <li><a href="#变量与可读性">变量与可读性</a></li>
+      </ul>
+    </li>
+    <li><a href="#重新组织代码">重新组织代码</a>
+      <ul>
+        <li><a href="#抽取不相关的子问题">抽取不相关的子问题</a></li>
+        <li><a href="#一次只做一件事">一次只做一件事</a></li>
+        <li><a href="#把想法变成代码">把想法变成代码</a></li>
+        <li><a href="#少写代码">少写代码</a></li>
+      </ul>
+    </li>
+    <li><a href="#精度代码">精度代码</a>
+      <ul>
+        <li><a href="#测试与可读性">测试与可读性</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="编写可读代码的艺术">编写可读代码的艺术</h1>
+<h2 id="代码应当易于理解">代码应当易于理解</h2>
+<p>Q: 可读性基本定理？</p>
+<blockquote>
+<p>可读性基本原理：使别人理解它所需的时间最小化。</p>
+</blockquote>
+<p>Q: 代码总是越小越好？</p>
+<blockquote>
+<p>减少代码行数是一个好目标，但是把理解代码所需的时间最小化是一个更好的目标。</p>
+</blockquote>
+<h2 id="表面层次的改进">表面层次的改进</h2>
+<h3 id="把信息装到名字里">把信息装到名字里</h3>
+<p>（1）选择专业的词</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getPage</span>(url)
+</code></pre></div><p>上述例子，<code>get</code> 词没有表达出很多信息。从本地缓存得到一个页面，还是从数据库中，或者从互联网中？如果从互联网中，应该使用更为专业的名字：<code>fetchPage(url)</code> 或 <code>downloadPage(url)</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BinaryTree</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">size</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>上述例子，<code>size()</code> 返回的是什么？树的高度，节点树，还是树在内存中所占的空间？<code>size()</code> 没有承载更多的信息，更专业的词汇是 <code>height()</code>、<code>numNodes()</code> 或 <code>memoryBytes()</code>。</p>
+<p>英语是一门丰富的语言，有很多词汇可以选择。下面是一些例子，这些单词更富有表现力，可能更适合你的语境：</p>
+<table>
+<thead>
+<tr>
+<th>单词</th>
+<th>更多选择</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>send</td>
+<td>deliver、dispatch、announce、distribute、route</td>
+</tr>
+<tr>
+<td>find</td>
+<td>search、extract、locate、recover</td>
+</tr>
+<tr>
+<td>start</td>
+<td>launch、create、begin、open</td>
+</tr>
+<tr>
+<td>make</td>
+<td>create、set up、build、generate、compose、add、new</td>
+</tr>
+</tbody>
+</table>
+<p>（2）避免像 tmp 和 retval 这样泛泛的名字</p>
+<p>除非你有更好的理由！</p>
+<p>（3）用具体的名字代替抽象的名字</p>
+<p><code>searchCanStart()</code> 比 <code>canListenOnPort()</code> 更具体一些，这个名字直接描述了方法所做的事情。</p>
+<p>（4）为名字附带更多信息</p>
+<p>附带<strong>单位</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>单词</th>
+<th>更多选择</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>start(int delay)</td>
+<td>delay -&gt; delay_secs</td>
+</tr>
+<tr>
+<td>createCache(int size)</td>
+<td>size -&gt; size_mb</td>
+</tr>
+<tr>
+<td>throttleDownload(float limit)</td>
+<td>limit -&gt; max_kbps</td>
+</tr>
+<tr>
+<td>rotate(float angle)</td>
+<td>angle -&gt; degrees_cw</td>
+</tr>
+</tbody>
+</table>
+<p>附带其它重要<strong>属性</strong>：</p>
+<p><img src="/images/docs/books/the-art-of-readable-code/take_more_attr_info.png" alt=""></p>
+<p>（5）名字应该有多长</p>
+<p><strong>作用域大的名字采用更长的名字</strong>，不要用让人费解的一个或两个字母的名字来命名在几屏之间都可见的变量。对于只存在于几行之间的变量用短一点的名字更好。</p>
+<h3 id="不会误解的名字">不会误解的名字</h3>
+<p>（1）例子：<code>filter()</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">results <span style="color:#f92672">=</span> database<span style="color:#f92672">.</span><span style="color:#a6e22e">allObjects</span><span style="color:#f92672">.</span><span style="color:#a6e22e">filter</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;year &lt;= 2011&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><p>这里的 <code>filter</code> 是<strong>挑出</strong>还是<strong>减掉</strong>？</p>
+<p>（2）例子：<code>clip(text, length)</code></p>
+<p>这里的 <code>clip</code> 是从尾部删除掉 length 的长度？还是裁掉最大长度为 length 的一段？</p>
+<p>（3）推荐用 min 和 max 来表示极限</p>
+<div class="book-columns flex flex-wrap">
+  
+  <div class="flex-even markdown-inner">
+    <h3 id="优化前">优化前</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">CART_TOO_BIG_LIMIT <span style="color:#f92672">=</span> 10<span style="color:#f92672">;</span>
+
+<span style="color:#66d9ef">if</span> shoppingCart<span style="color:#f92672">.</span><span style="color:#a6e22e">numItems</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span><span style="color:#f92672">=</span> CART_TOO_BIG_LIMIT<span style="color:#f92672">:</span>
+    error<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;too many items in cart&#34;</span><span style="color:#f92672">)</span>
+</code></pre></div>
+  </div>
+  
+  <div class="flex-even markdown-inner">
+    <h3 id="优化后">优化后</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> MAX_ITEMS_IN_CART <span style="color:#f92672">=</span> 10<span style="color:#f92672">;</span>
+
+<span style="color:#66d9ef">if</span> shoppingCart<span style="color:#f92672">.</span><span style="color:#a6e22e">numItems</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> MAX_ITEMS_IN_CART<span style="color:#f92672">:</span>
+    error<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;too many items in cart.&#34;</span><span style="color:#f92672">)</span>
+</code></pre></div>
+  </div>
+  
+</div>
+
+<p>（4）推荐用 first 和 last 来表示包含的范围</p>
+<p><img src="/images/docs/books/the-art-of-readable-code/first-last.png" alt=""></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">set<span style="color:#f92672">.</span><span style="color:#a6e22e">printKeys</span><span style="color:#f92672">(</span>first <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Bart&#34;</span><span style="color:#f92672">,</span> last <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Maggie&#34;</span><span style="color:#f92672">)</span>
+</code></pre></div><p>（5）推荐用 begin 和 end 来表示包含/排除范围</p>
+<p><img src="/images/docs/books/the-art-of-readable-code/begin-end.png" alt=""></p>
+<p>（6）给布尔值命名</p>
+<ul>
+<li>通常加上 <code>is</code>、<code>has</code>、<code>can</code>、<code>should</code> 这样的词，可以把布尔值变得更明确（存疑：JSON 序列化是否有影响？）</li>
+<li>最好避免使用反义名字</li>
+</ul>
+<p>（7）与使用者的期望相匹配</p>
+<p>如果 <code>getMean()</code> 做的是一个比较重的任务，并不是一个轻量级访问器，那么这样的命名换成 <code>computeMean()</code> 会更好一些。</p>
+<h3 id="审美">审美</h3>
+<p>（1）重新安排换行来保持一致</p>
+<div class="book-columns flex flex-wrap">
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="no">NO</h2>
+<p><img src="/images/docs/books/the-art-of-readable-code/WX20200607-154111@2x.png" alt="">
+  </div>
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="yes">YES</h2>
+<p><img src="/images/docs/books/the-art-of-readable-code/WX20200607-154253@2x.png" alt="">
+  </div>
+  
+</div>
+
+<p>（2）个人风格与一致性</p>
+<blockquote>
+<p>一致的风格比 “正确” 的风格更为重要</p>
+</blockquote>
+<h3 id="该写什么样的注释">该写什么样的注释</h3>
+<p>好的注释记录你在<strong>写代码时的重要想法</strong>。</p>
+<h3 id="写出言简意赅的注释">写出言简意赅的注释</h3>
+<p>（1）保持紧凑</p>
+<div class="book-columns flex flex-wrap">
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="no">NO</h2>
+<p><img src="/images/docs/books/the-art-of-readable-code/WX20200607-170410@2x.png" alt="">
+  </div>
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="yes">YES</h2>
+<p><img src="/images/docs/books/the-art-of-readable-code/WX20200607-170439@2x.png" alt="">
+  </div>
+  
+</div>
+
+<p>（2）具名函数参数的注释</p>
+<div class="book-columns flex flex-wrap">
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="no---让人困惑">NO - 让人困惑</h2>
+<p><img src="/images/docs/books/the-art-of-readable-code/WX20200607-170931@2x.png" alt="">
+  </div>
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="yes">YES</h2>
+<p><img src="/images/docs/books/the-art-of-readable-code/WX20200607-171003@2x.png" alt="">
+  </div>
+  
+</div>
+
+<h2 id="简化循环和逻辑">简化循环和逻辑</h2>
+<h3 id="把控制流变得易读">把控制流变得易读</h3>
+<p>（1）条件语句中参数的顺序</p>
+<ul>
+<li><code>if (length &gt;= 10)</code> 和 <code>if (10 &lt;= length)</code> 第一个更易读</li>
+<li><code>whiler (bytes_received &lt; bytes_expected)</code> 和 <code>while(bytes_expected &gt; bytes_received)</code> 第一个更易读</li>
+</ul>
+<p>通用的规则是什么？怎么决定 <code>a &lt; b</code> 好还是 <code>b &gt; a</code> 好？</p>
+<p><img src="/images/docs/books/the-art-of-readable-code/WX20200607-172144@2x.png" alt=""></p>
+<p>上述指导原则与英语的语法一致。</p>
+<p>（2）if/else 语句块的顺序</p>
+<ul>
+<li>首先处理正逻辑，而非负逻辑。</li>
+<li>先处理掉简单的情况。</li>
+<li>先处理有趣或者可疑的情况。</li>
+</ul>
+<p>（3）?: 条件表达式</p>
+<p>下述代码应该是用 <code>if/else</code> 拆分开：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">return</span> exponent <span style="color:#f92672">&gt;</span><span style="color:#f92672">=</span> 0 <span style="color:#f92672">?</span> mantissa <span style="color:#f92672">*</span> <span style="color:#f92672">(</span>1 <span style="color:#f92672">&lt;</span><span style="color:#f92672">&lt;</span> exponent<span style="color:#f92672">)</span> <span style="color:#f92672">:</span> mantissa <span style="color:#f92672">/</span> <span style="color:#f92672">(</span>1 <span style="color:#f92672">&lt;</span><span style="color:#f92672">&lt;</span> <span style="color:#f92672">-</span>exponent<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</code></pre></div><blockquote>
+<p>默认情况下都用 if/else，三目运算发 ?: 只有在<strong>最简单的</strong>情况下使用。</p>
+</blockquote>
+<p>（4）避免 do/while 循环</p>
+<blockquote>
+<p>我的经验是，do 语句是错误和困惑的来源……我倾向于把条件放在“前面我能看到的地方”。其结果是，我倾向于避免使用 do 语句。&mdash; C++ 开创者 Bjarne Stroustrup《C++ 程序设计语言》</p>
+</blockquote>
+<p>（5）从函数中提前返回</p>
+<p>从函数中提前返回，常常很受欢迎。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span>String str<span style="color:#f92672">,</span> String substr<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>str <span style="color:#f92672">=</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">|</span><span style="color:#f92672">|</span> substr <span style="color:#f92672">=</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>substr<span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#75715e">// do other things ...
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+</code></pre></div><p>（6）最小化嵌套</p>
+<p>每个嵌套层次都在读者的 “思维栈” 上又增加了一个条件。</p>
+<ul>
+<li>提早返回来减少嵌套</li>
+<li>在循环中，提早返回的技术是：<code>continue</code></li>
+</ul>
+<h3 id="拆分超长的表达式">拆分超长的表达式</h3>
+<p>（1）用作解释的变量</p>
+<div class="book-columns flex flex-wrap">
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="no">NO</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#66d9ef">if</span> line<span style="color:#f92672">.</span>split(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;</span><span style="color:#e6db74">:</span><span style="color:#e6db74">&#39;</span>)[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>strip() <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;</span><span style="color:#e6db74">root</span><span style="color:#e6db74">&#39;</span>
+</code></pre></div>
+  </div>
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="yes">YES</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">username <span style="color:#f92672">=</span> line<span style="color:#f92672">.</span>split(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;</span><span style="color:#e6db74">:</span><span style="color:#e6db74">&#39;</span>)[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>strip()
+<span style="color:#66d9ef">if</span> username <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;</span><span style="color:#e6db74">root</span><span style="color:#e6db74">&#39;</span>
+</code></pre></div>
+  </div>
+  
+</div>
+
+<p>（2）总结变量</p>
+<div class="book-columns flex flex-wrap">
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="no">NO</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">user</span><span style="color:#f92672">.</span><span style="color:#a6e22e">id</span> <span style="color:#f92672">=</span><span style="color:#f92672">=</span> document<span style="color:#f92672">.</span><span style="color:#a6e22e">owner_id</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// user 可疑编辑文档
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">user</span><span style="color:#f92672">.</span><span style="color:#a6e22e">id</span> <span style="color:#f92672">!</span><span style="color:#f92672">=</span> document<span style="color:#f92672">.</span><span style="color:#a6e22e">owner_id</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// 文档只可读
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+</code></pre></div>
+  </div>
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="yes">YES</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> user_own_document <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">user</span><span style="color:#f92672">.</span><span style="color:#a6e22e">id</span> <span style="color:#f92672">=</span><span style="color:#f92672">=</span> document<span style="color:#f92672">.</span><span style="color:#a6e22e">owner_id</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>oser_own_document<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// user 可以编辑文档
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#f92672">!</span>oser_own_document<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// 文档只可读
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+</code></pre></div>
+  </div>
+  
+</div>
+
+<h3 id="变量与可读性">变量与可读性</h3>
+<ul>
+<li>让你的变量对尽量少的代码行可见</li>
+<li>操作一个变量的地方越多，越难确定它的当前值。</li>
+</ul>
+<h2 id="重新组织代码">重新组织代码</h2>
+<h3 id="抽取不相关的子问题">抽取不相关的子问题</h3>
+<ul>
+<li>纯工具函数抽取到一起，从项目中拆分出的独立库越多越好</li>
+<li>永远都不要安于使用不理想的接口，你总是可以创建你自己的包装函数来隐藏接口的粗陋细节</li>
+<li>不要太过：引入很多小函数对可读性是不利的，因为读者要关注更多东西。</li>
+</ul>
+<blockquote>
+<p>把一般项目和项目专有的代码分开，其结果是，大部分代码都是一般代码，其余的是让你的程序与众不同的核心部分。</p>
+</blockquote>
+<h3 id="一次只做一件事">一次只做一件事</h3>
+<ul>
+<li>列出所有任务，一些任务变为单独的函数或类，另外一些可以称为一个函数中的<strong>逻辑段落</strong>。</li>
+</ul>
+<h3 id="把想法变成代码">把想法变成代码</h3>
+<ul>
+<li>用<strong>自然语言描述程序</strong>，然后用这个描述来帮助你写出更<strong>自然的代码</strong>。</li>
+</ul>
+<div class="book-columns flex flex-wrap">
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="no">NO</h2>
+<p><img src="/images/docs/books/the-art-of-readable-code/WX20200607-230554@2x.png" alt="">
+  </div>
+  
+  <div class="flex-even markdown-inner">
+    <h2 id="易读无反义即时有空语句体">易读无反义(即时有空语句体)</h2>
+<p><img src="/images/docs/books/the-art-of-readable-code/WX20200607-230643@2x.png" alt="">
+  </div>
+  
+</div>
+
+<h3 id="少写代码">少写代码</h3>
+<blockquote>
+<p>最好读的代码就是没有代码</p>
+</blockquote>
+<ul>
+<li>从项目中消除不必要的功能，不要过度设计</li>
+<li>重新考虑需求，解决版本最简单的问题，只要能完成工作就行</li>
+<li>经常性地通读标准库的整个 API，保持对它们的熟悉程度</li>
+</ul>
+<h2 id="精度代码">精度代码</h2>
+<h3 id="测试与可读性">测试与可读性</h3>
+<ul>
+<li>测试应当具有可读性，以便其他程序员可以舒服地改变或增加测试</li>
+<li>对使用者隐去不重要的细节，以便更重要的细节会更突出</li>
+<li>选择一组最简单的输入，它能完整地使用被测代码</li>
+</ul>
+<p>扫描下面二维码，在手机端阅读：</p>
+<p><img src="/images/docs/books/the-art-of-readable-code/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#代码应当易于理解">代码应当易于理解</a></li>
+    <li><a href="#表面层次的改进">表面层次的改进</a>
+      <ul>
+        <li><a href="#把信息装到名字里">把信息装到名字里</a></li>
+        <li><a href="#不会误解的名字">不会误解的名字</a></li>
+        <li><a href="#审美">审美</a></li>
+        <li><a href="#该写什么样的注释">该写什么样的注释</a></li>
+        <li><a href="#写出言简意赅的注释">写出言简意赅的注释</a></li>
+      </ul>
+    </li>
+    <li><a href="#简化循环和逻辑">简化循环和逻辑</a>
+      <ul>
+        <li><a href="#把控制流变得易读">把控制流变得易读</a></li>
+        <li><a href="#拆分超长的表达式">拆分超长的表达式</a></li>
+        <li><a href="#变量与可读性">变量与可读性</a></li>
+      </ul>
+    </li>
+    <li><a href="#重新组织代码">重新组织代码</a>
+      <ul>
+        <li><a href="#抽取不相关的子问题">抽取不相关的子问题</a></li>
+        <li><a href="#一次只做一件事">一次只做一件事</a></li>
+        <li><a href="#把想法变成代码">把想法变成代码</a></li>
+        <li><a href="#少写代码">少写代码</a></li>
+      </ul>
+    </li>
+    <li><a href="#精度代码">精度代码</a>
+      <ul>
+        <li><a href="#测试与可读性">测试与可读性</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
