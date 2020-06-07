@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="JS 优化"><meta property="og:title" content="JS 优化" />
+<meta property="og:description" content="JS 优化 本文介绍常见的优化 JS、提升 JS 加载性能的优化方法！
+提升加载性能 script 放入到 body 中 &lt;script&gt; 标签经常以下面的这种方式引入：
+&lt;script src=&#34;script.js&#34;&gt;&lt;/script&gt; 当 HTML 解析器看到这一行代码时，就会请求获取脚本，并执行脚本。一旦这个过程完成，解析就可以继续，剩下的 HTML 也可以被分析。所以你可以想象，这个操作会对页面的加载时间产生多么大的影响。如果脚本加载的时间比预期的稍长，例如，如果网络有点慢，或者如果您在移动设备上，并且网速特别慢，则在加载和执行脚本之前，访问者可能会看到一个空白页。
+所以推荐将 script 标签从 &lt;head&gt; 位置挪到 &lt;/body&gt; 标签前。如果你这样做了，脚本在所有页面都被解析和加载之后才会加载和执行，这是对 &lt;head&gt; 替代方案的巨大改进。
+&lt;script defer src=&#34;script.js&#34;&gt;&lt;/script&gt; Async 和 Defer 如果不考虑兼容旧浏览器，那么 async 和 defer 这两个布尔属性值，会是提升页面加载速度的更好选择：
+&lt;script async src=&#34;script.js&#34;&gt;&lt;/script&gt; &lt;script defer src=&#34;script.js&#34;&gt;&lt;/script&gt; 这两个属性都可以达到异步加载和执行 script 标签的目的，如果同时指定了两个，那么 async 优先级高一点，老一点的浏览器不支持 async 会降级到 defer。这些属性只有在页面的 &lt;head&gt; 部分使用 &lt;script&gt; 时才有意义，如果像我们上面看到的那样将脚本放在 &lt;body&gt; 中，则这些属性是无用的。
+使用 async 会阻塞 HTML 的解析：
+使用 defer 并不会阻塞 HTML 的解析：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/front-end-optimization-guide/js-optimization/" />
+
+<title>JS 优化 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.cd7574f1d3e46f2d4b81cf4fb49601901eb16d0643f847035209708e43025ff4.js" integrity="sha256-zXV08dPkby1Lgc9PtJYBkB6xbQZD&#43;EcDUglwjkMCX/Q="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/front-end-optimization-guide/image-optimization/" >
+      图片优化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/front-end-optimization-guide/html-optimization/" >
+      HTML 优化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/front-end-optimization-guide/css-optimization/" >
+      CSS 优化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/front-end-optimization-guide/js-optimization/"  class="active">
+      JS 优化
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      🔥IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>JS 优化</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#提升加载性能">提升加载性能</a>
+      <ul>
+        <li><a href="#script-放入到-body-中">script 放入到 body 中</a></li>
+        <li><a href="#async-和-defer">Async 和 Defer</a></li>
+      </ul>
+    </li>
+    <li><a href="#js-变量和函数优化">JS 变量和函数优化</a>
+      <ul>
+        <li><a href="#尽量使用-id-选择器">尽量使用 ID 选择器</a></li>
+        <li><a href="#不要使用-eval">不要使用 eval</a></li>
+        <li><a href="#js-事件节流">JS 事件节流</a></li>
+        <li><a href="#事件委托">事件委托</a></li>
+      </ul>
+    </li>
+    <li><a href="#js-动画优化">JS 动画优化</a>
+      <ul>
+        <li><a href="#尽量使用-css-动画">尽量使用 CSS 动画</a></li>
+        <li><a href="#使用-requestanimationframe">使用 requestAnimationFrame</a></li>
+        <li><a href="#javascript-函数应该保持简洁">JavaScript 函数应该保持简洁</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="js-优化">JS 优化</h1>
+<p>本文介绍常见的优化 JS、提升 JS 加载性能的优化方法！</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/js-optimization/technology-1283624__480.webp" alt=""></p>
+<h2 id="提升加载性能">提升加载性能</h2>
+<h3 id="script-放入到-body-中">script 放入到 body 中</h3>
+<p><code>&lt;script&gt;</code> 标签经常以下面的这种方式引入：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;script.js&#34;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
+</code></pre></div><p>当 HTML 解析器看到这一行代码时，就会请求获取脚本，并执行脚本。一旦这个过程完成，解析就可以继续，剩下的 HTML 也可以被分析。所以你可以想象，这个操作会对页面的加载时间产生多么大的影响。如果脚本加载的时间比预期的稍长，例如，如果网络有点慢，或者如果您在移动设备上，并且网速特别慢，则在加载和执行脚本之前，访问者可能会看到一个空白页。</p>
+<p>所以推荐将 <code>script</code> 标签从 <code>&lt;head&gt;</code> 位置挪到 <code>&lt;/body&gt;</code> 标签前。如果你这样做了，脚本在所有页面都被解析和加载之后才会加载和执行，这是对 <code>&lt;head&gt;</code> 替代方案的巨大改进。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">defer</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;script.js&#34;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
+</code></pre></div><h3 id="async-和-defer">Async 和 Defer</h3>
+<p>如果不考虑兼容旧浏览器，那么 <code>async</code> 和 <code>defer</code> 这两个布尔属性值，会是提升页面加载速度的更好选择：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">async</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;script.js&#34;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
+&lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">defer</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;script.js&#34;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
+</code></pre></div><p>这两个属性都可以达到异步加载和执行 <code>script</code> 标签的目的，如果同时指定了两个，那么 <code>async</code> 优先级高一点，老一点的浏览器不支持 <code>async</code> 会降级到 <code>defer</code>。这些属性只有在页面的 <code>&lt;head&gt;</code> 部分使用 <code>&lt;script&gt;</code> 时才有意义，如果像我们上面看到的那样将脚本放在 <code>&lt;body&gt;</code> 中，则这些属性是无用的。</p>
+<p>使用 <code>async</code> 会阻塞 HTML 的解析：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/js-optimization/with-async.png" alt=""></p>
+<p>使用 <code>defer</code> 并不会阻塞 HTML 的解析：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/js-optimization/with-defer.png" alt=""></p>
+<p>因此在使用 <code>script</code> 时，要加快页面加载速度，<strong>最好的方法</strong>是将它们放在 <code>&lt;head&gt;</code> 中，并在 <code>&lt;script&gt;</code> 中添加一个 <code>defer</code> 属性：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">defer</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;script.js&#34;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
+</code></pre></div><h2 id="js-变量和函数优化">JS 变量和函数优化</h2>
+<h3 id="尽量使用-id-选择器">尽量使用 ID 选择器</h3>
+<p>使用 ID 选择器来选择元素永远都是最快的！</p>
+<h3 id="不要使用-eval">不要使用 <code>eval</code></h3>
+<p><code>eval</code> 函数的三宗罪：</p>
+<ul>
+<li>不正确使用 <code>eval</code> 会让代码变得更容易注入攻击</li>
+<li>调试可能更具挑战性（没有行号等）</li>
+<li><code>eval</code> 代码执行速度较慢（没有机会编译/缓存 <code>eval</code> 代码）</li>
+</ul>
+<h3 id="js-事件节流">JS 事件节流</h3>
+<p>假设您有一个滚动事件处理程序，当用户在页面上向下移动时，您想在其中向用户显示新内容。如果我们在用户每次滚动单个像素时就执行回调，那么如果他们快速滚动事件，我们的页面将会变得巨卡无比，因为它将快速连续发送数百或数千个事件。相反，我们对其进行限制，比如仅检查每100毫秒滚动一次的数量，这样每秒仅获得10个回调。用户仍然可以立即感觉到响应，并且计算效率更高。可以看到，通过限制这些回调或者比如频繁的 API 请求等，可以防止应用程序卡住或对服务器不必要的请求。</p>
+<p>节流函数示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#75715e">// Pass in the callback that we want to throttle and the delay between throttled events
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">throttle</span> <span style="color:#f92672">=</span> (<span style="color:#a6e22e">callback</span>, <span style="color:#a6e22e">delay</span>) =&gt; {
+  <span style="color:#75715e">// Create a closure around these variables.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// They will be shared among all events handled by the throttle.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">throttleTimeout</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>;
+  <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">storedEvent</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>;
+
+  <span style="color:#75715e">// This is the function that will handle events and throttle callbacks when the throttle is active.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">throttledEventHandler</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">event</span> =&gt; {
+    <span style="color:#75715e">// Update the stored event every iteration
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">storedEvent</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">event</span>;
+
+    <span style="color:#75715e">// We execute the callback with our event if our throttle is not active
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">shouldHandleEvent</span> <span style="color:#f92672">=</span> <span style="color:#f92672">!</span><span style="color:#a6e22e">throttleTimeout</span>;
+
+    <span style="color:#75715e">// If there isn&#39;t a throttle active, we execute the callback and create a new throttle.
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">shouldHandleEvent</span>) {
+      <span style="color:#75715e">// Handle our event
+</span><span style="color:#75715e"></span>      <span style="color:#a6e22e">callback</span>(<span style="color:#a6e22e">storedEvent</span>);
+
+      <span style="color:#75715e">// Since we have used our stored event, we null it out.
+</span><span style="color:#75715e"></span>      <span style="color:#a6e22e">storedEvent</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>;
+
+      <span style="color:#75715e">// Create a new throttle by setting a timeout to prevent handling events during the delay.
+</span><span style="color:#75715e"></span>      <span style="color:#75715e">// Once the timeout finishes, we execute our throttle if we have a stored event.
+</span><span style="color:#75715e"></span>      <span style="color:#a6e22e">throttleTimeout</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">setTimeout</span>(() =&gt; {
+        <span style="color:#75715e">// We immediately null out the throttleTimeout since the throttle time has expired.
+</span><span style="color:#75715e"></span>        <span style="color:#a6e22e">throttleTimeout</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span>;
+
+        <span style="color:#75715e">// If we have a stored event, recursively call this function.
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">// The recursion is what allows us to run continusously while events are present.
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">// If events stop coming in, our throttle will end. It will then execute immediately if a new event ever comes.
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">storedEvent</span>) {
+          <span style="color:#75715e">// Since our timeout finishes:
+</span><span style="color:#75715e"></span>          <span style="color:#75715e">// 1. This recursive call will execute `callback` immediately since throttleTimeout is now null
+</span><span style="color:#75715e"></span>          <span style="color:#75715e">// 2. It will restart the throttle timer, allowing us to repeat the throttle process
+</span><span style="color:#75715e"></span>          <span style="color:#a6e22e">throttledEventHandler</span>(<span style="color:#a6e22e">storedEvent</span>);
+        }
+      }, <span style="color:#a6e22e">delay</span>);
+    }
+  };
+
+  <span style="color:#75715e">// Return our throttled event handler as a closure
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">throttledEventHandler</span>;
+};
+</code></pre></div><p>如何使用这个节流器呢？</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#66d9ef">var</span> <span style="color:#a6e22e">returnedFunction</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">throttle</span>(<span style="color:#66d9ef">function</span>() {
+  <span style="color:#75715e">// Do all the taxing stuff and API requests
+</span><span style="color:#75715e"></span>}, <span style="color:#ae81ff">500</span>);
+
+window.<span style="color:#a6e22e">addEventListener</span>(<span style="color:#e6db74">&#39;scroll&#39;</span>, <span style="color:#a6e22e">returnedFunction</span>);
+</code></pre></div><h3 id="事件委托">事件委托</h3>
+<p>如下图所示，“+ Add Character” 按钮可以动态地给 DOM 增加复选框，复选框本身又可以进行点击，那么新增的复选框点击的事件如何绑定上？针对此问题，事件委托的解决方案是指将拦截点击的事件监听器绑定在父元素 <code>&lt;ul&gt;</code> 上，而非单个 <code>input</code> 上。</p>
+<p>最好把事件委托看作是负责任的父母和疏忽大意的孩子。父母基本上是神，孩子们必须听父母的话。美妙的是，如果我们增加更多的孩子（更多的输入），父母会保持不变-他们从一开始就在那里（<code>ul</code> 元素在页面加载的时候就存在）。</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/js-optimization/1_e8wwVTidL-Wt_4-eN_PY4Q.png" alt=""></p>
+<p>事件委托的代码：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">ul</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">”characters”</span>&gt; // PARENT -- 监听器绑定在这个元素上 !
+ &lt;<span style="color:#f92672">li</span>&gt;
+   &lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">”checkbox”</span> <span style="color:#a6e22e">data-index</span><span style="color:#f92672">=</span><span style="color:#e6db74">”0&#34;</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">”char0&#34;</span>&gt; //CHILD 1
+   &lt;<span style="color:#f92672">label</span> <span style="color:#a6e22e">for</span><span style="color:#f92672">=</span><span style="color:#e6db74">”char0&#34;</span>&gt;Mickey&lt;/<span style="color:#f92672">label</span>&gt;
+ &lt;/<span style="color:#f92672">li</span>&gt;
+ 
+ &lt;<span style="color:#f92672">li</span>&gt;
+   &lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">”checkbox”</span> <span style="color:#a6e22e">data-index</span><span style="color:#f92672">=</span><span style="color:#e6db74">”1&#34;</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">”char1&#34;</span>&gt; //CHILD 2
+   &lt;<span style="color:#f92672">label</span> <span style="color:#a6e22e">for</span><span style="color:#f92672">=</span><span style="color:#e6db74">”char1&#34;</span>&gt;Minnie&lt;/<span style="color:#f92672">label</span>&gt;
+ &lt;/<span style="color:#f92672">li</span>&gt;
+ 
+ &lt;<span style="color:#f92672">li</span>&gt;
+   &lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">”checkbox”</span> <span style="color:#a6e22e">data-index</span><span style="color:#f92672">=</span><span style="color:#e6db74">”2&#34;</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">”char2&#34;</span>&gt; //CHILD 3
+   &lt;<span style="color:#f92672">label</span> <span style="color:#a6e22e">for</span><span style="color:#f92672">=</span><span style="color:#e6db74">”char2&#34;</span>&gt;Goofy&lt;/<span style="color:#f92672">label</span>&gt;
+ &lt;/<span style="color:#f92672">li</span>&gt;
+&lt;/<span style="color:#f92672">ul</span>&gt;
+&lt;<span style="color:#f92672">script</span>&gt;
+<span style="color:#75715e">//Event Delegation
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">toggleDone</span> (<span style="color:#a6e22e">event</span>) {
+  <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span><span style="color:#a6e22e">event</span>.<span style="color:#a6e22e">target</span>.<span style="color:#a6e22e">matches</span>(<span style="color:#960050;background-color:#1e0010">‘</span><span style="color:#a6e22e">input</span><span style="color:#960050;background-color:#1e0010">’</span>)) <span style="color:#66d9ef">return</span>
+  <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#a6e22e">event</span>.<span style="color:#a6e22e">target</span>)
+  <span style="color:#75715e">//We now have the correct input - we can manipulate the node here
+</span><span style="color:#75715e"></span>}
+
+  <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">characterList</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">querySelector</span>(<span style="color:#e6db74">&#39;.characters&#39;</span>);
+  <span style="color:#a6e22e">characterList</span>.<span style="color:#a6e22e">addEventListener</span>(<span style="color:#e6db74">&#39;click&#39;</span>, <span style="color:#a6e22e">toggleDone</span>);
+&lt;/<span style="color:#f92672">script</span>&gt;
+</code></pre></div><p>上述，当点击任意一个 <code>input</code> 的时候，<code>event.target</code> 的值指向的是哪个元素发生了点击：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/js-optimization/1_zEg2lVlISrmkA1pjJzW6Lg.png" alt=""></p>
+<p>而 <code>event.currentTarget</code> 代表的是事件监听器绑定在哪个元素上：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/js-optimization/1_Dr7TDideY1Tp4KQUiWxbjg.png" alt=""></p>
+<p>更进一步，当点击 <code>input</code> 元素的时候，这个事件会沿着自己的父链向上传递，所以任何一个父节点都能感受到这个事件，这称之为<strong>事件冒泡</strong>。</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/js-optimization/1_ImxlC10hU2YCx3A8XKla7w.png" alt=""></p>
+<p>如果没有事件委托，则必须将单击事件监听器重新绑定到加载到页面的每个新输入，这是复杂和繁重的编码任务。首先，它会大幅增加页面上事件监听器的数量，更多的事件监听器会增加页面的总内存占用。内存占用量越大，性能越差……这是一件坏事。其次，可能存在与绑定和解除绑定事件监听器以及从 DOM 中删除元素相关联的内存泄漏问题。</p>
+<h2 id="js-动画优化">JS 动画优化</h2>
+<h3 id="尽量使用-css-动画">尽量使用 CSS 动画</h3>
+<p>如果 CSS 动画能够满足要求，那么尽量使用 CSS 动画，因为其可以充分利用浏览器提供的优化、甚至可以使用 GPU 来提高性能。而 JS 动画涉及到导入库、JS 执行、学习 JS 动画库提供的 API 等，成本高。</p>
+<h3 id="使用-requestanimationframe">使用 <code>requestAnimationFrame</code></h3>
+<ul>
+<li>浏览器可以优化它，所以动画看起来更流畅</li>
+<li>当页面不可见的时候，动画自动停止运行，让 CPU 歇会儿</li>
+<li>比较省电</li>
+</ul>
+<h3 id="javascript-函数应该保持简洁">JavaScript 函数应该保持简洁</h3>
+<p>将大量 JS 动画添加到页面中，一定要想好。如果你的页面开始变卡，代码看起来不太灵活，那么可以使用 Web Workers 来尝试将 JS 动画放到另外一个线程来执行。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://flaviocopes.com/javascript-async-defer/">Efficiently load JavaScript with defer and async</a></li>
+<li><a href="https://stackoverflow.com/questions/86513/why-is-using-the-javascript-eval-function-a-bad-idea">Why is using the JavaScript eval function a bad idea?</a></li>
+<li><a href="https://levelup.gitconnected.com/throttle-in-javascript-improve-your-applications-performance-984a4e020a3f">Throttle in JavaScript: Improve Your Application’s Performance</a></li>
+<li><a href="https://medium.com/@bretdoucette/part-4-what-is-event-delegation-in-javascript-f5c8c0de2983">Part 4: What is Event Delegation in JavaScript?</a></li>
+<li><a href="https://www.keycdn.com/blog/animation-performance">Tips for Improving CSS and JS Animation Performance</a></li>
+</ul>
+<p>扫描下面二维码，在手机端阅读：</p>
+<p><img src="/images/docs/tutorial/front-end-optimization-guide/js-optimization/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#提升加载性能">提升加载性能</a>
+      <ul>
+        <li><a href="#script-放入到-body-中">script 放入到 body 中</a></li>
+        <li><a href="#async-和-defer">Async 和 Defer</a></li>
+      </ul>
+    </li>
+    <li><a href="#js-变量和函数优化">JS 变量和函数优化</a>
+      <ul>
+        <li><a href="#尽量使用-id-选择器">尽量使用 ID 选择器</a></li>
+        <li><a href="#不要使用-eval">不要使用 eval</a></li>
+        <li><a href="#js-事件节流">JS 事件节流</a></li>
+        <li><a href="#事件委托">事件委托</a></li>
+      </ul>
+    </li>
+    <li><a href="#js-动画优化">JS 动画优化</a>
+      <ul>
+        <li><a href="#尽量使用-css-动画">尽量使用 CSS 动画</a></li>
+        <li><a href="#使用-requestanimationframe">使用 requestAnimationFrame</a></li>
+        <li><a href="#javascript-函数应该保持简洁">JavaScript 函数应该保持简洁</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
