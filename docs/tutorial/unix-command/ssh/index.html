@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ssh"><meta property="og:title" content="ssh" />
+<meta property="og:description" content="ssh 本文展示了一些常见的 ssh 命令，了解一些 ssh 技巧将有利于任何系统管理员、网络工程师或安全专业人员。
+连接远程主机 localhost:~$ ssh -v -p 22 -C neo@remoteserver  -v：打印 debug 日志信息，用于打印连接时候的一些日志。 -p 22：指定连接远程主机的哪个端口，默认情况下，不用指定，因为 ssh 默认端口就是 22。编辑 sshd_config 文件，可以修改默认的 ssh 的监听端口。 -C：传输数据的时候，是否对数据启用压缩。 neo@remoteserver：neo 代表远程主机的用户名，remoteserver 代表远程主机的 IP 或者域名。添加 -4 选项，可以只连接 IPv4 连接；添加 -6 选项，只连接 IPv6 连接。  拷贝文件到远程服务器 远程拷贝文件的命令 scp 建立在 ssh 命令之上：
+localhost:~$ scp mypic.png neo@remoteserver:/media/data/mypic_2.png  mypic.png：代表本地电脑上的图片 /media/data/mypic_2.png：代表你想把图片拷贝到远程主机的哪个路径  流量代理 SSH 代理特性被放在第1位是有充分理由的。它的功能比许多用户意识到的要强大得多，它允许您使用几乎任何应用程序访问远程服务器可以访问的任何系统。ssh客户机可以仅用一行代码，就可以使用SOCKS代理服务器在连接隧道上通信。
+localhost:~$ ssh -D 8888 user@remoteserver localhost:~$ netstat -pan | grep 8888 tcp 0 0 127." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-command/ssh/" />
+
+<title>ssh | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.de2b46b093e3f740b3dd2a7edd25ac5b503cb210b8f7248b5d685b0d976505c1.js" integrity="sha256-3itGsJPj90Cz3Sp&#43;3SWsW1A8shC49ySLXWhbDZdlBcE="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-command/grep/" >
+      grep
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-command/find/" >
+      find
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-command/ls/" >
+      ls
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-command/ssh/"  class="active">
+      ssh
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-command/top/" >
+      top
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      🔥IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>ssh</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#连接远程主机">连接远程主机</a></li>
+    <li><a href="#拷贝文件到远程服务器">拷贝文件到远程服务器</a></li>
+    <li><a href="#流量代理">流量代理</a></li>
+    <li><a href="#生成-ssh-key">生成 SSH Key</a></li>
+    <li><a href="#拷贝-ssh-key-到远程主机">拷贝 SSH Key 到远程主机</a></li>
+    <li><a href="#远程执行命令">远程执行命令</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="ssh">ssh</h1>
+<p>本文展示了一些常见的 <code>ssh</code> 命令，了解一些 <code>ssh</code> 技巧将有利于任何系统管理员、网络工程师或安全专业人员。</p>
+<h2 id="连接远程主机">连接远程主机</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">localhost:~$ ssh -v -p <span style="color:#ae81ff">22</span> -C neo@remoteserver
+</code></pre></div><ul>
+<li><code>-v</code>：打印 <code>debug</code> 日志信息，用于打印连接时候的一些日志。</li>
+<li><code>-p 22</code>：指定连接远程主机的哪个端口，默认情况下，不用指定，因为 <code>ssh</code> 默认端口就是 <code>22</code>。编辑 <code>sshd_config</code> 文件，可以修改默认的 <code>ssh</code> 的监听端口。</li>
+<li><code>-C</code>：传输数据的时候，是否对数据启用<strong>压缩</strong>。</li>
+<li><code>neo@remoteserver</code>：<code>neo</code> 代表远程主机的用户名，<code>remoteserver</code> 代表远程主机的 IP 或者域名。添加 <code>-4</code> 选项，可以只连接 <code>IPv4</code> 连接；添加 <code>-6</code> 选项，只连接 <code>IPv6</code> 连接。</li>
+</ul>
+<h2 id="拷贝文件到远程服务器">拷贝文件到远程服务器</h2>
+<p>远程拷贝文件的命令 <code>scp</code> 建立在 <code>ssh</code> 命令之上：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">localhost:~$ scp mypic.png neo@remoteserver:/media/data/mypic_2.png
+</code></pre></div><ul>
+<li><code>mypic.png</code>：代表本地电脑上的图片</li>
+<li><code>/media/data/mypic_2.png</code>：代表你想把图片拷贝到远程主机的哪个路径</li>
+</ul>
+<h2 id="流量代理">流量代理</h2>
+<p>SSH 代理特性被放在第1位是有充分理由的。它的功能比许多用户意识到的要强大得多，它允许您使用几乎任何应用程序访问远程服务器可以访问的任何系统。ssh客户机可以仅用一行代码，就可以使用SOCKS代理服务器在连接隧道上通信。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">localhost:~$ ssh -D <span style="color:#ae81ff">8888</span> user@remoteserver
+
+localhost:~$ netstat -pan | grep <span style="color:#ae81ff">8888</span>
+tcp        <span style="color:#ae81ff">0</span>      <span style="color:#ae81ff">0</span> 127.0.0.1:8888       0.0.0.0:*               LISTEN      23880/ssh
+</code></pre></div><p>在这里，我们启动在TCP端口8888上运行的socks代理服务器，第二个命令检查端口是否正在监听。127.0.0.1表示服务仅在本地主机上运行。我们可以使用稍微不同的命令来监听所有接口，包括以太网或wifi，这将允许我们网络上的其他应用程序（浏览器或其他）连接到ssh socks代理服务。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">localhost:~$ ssh -D 0.0.0.0:8888 user@remoteserver
+</code></pre></div><p>现在我们可以配置浏览器来连接socks代理。在 Firefox 中选择 preferences | general | network settings。添加浏览器连接到的IP地址和端口。</p>
+<h2 id="生成-ssh-key">生成 SSH Key</h2>
+<p><code>ssh-keygen</code> 是一个为 <code>ssh</code> 创建新的<strong>身份验证密钥对</strong>的工具。此类密钥对用于自动登录、单点登录和对主机进行身份验证。</p>
+<p>生成密钥对的最简单方法是不带参数运行 <code>ssh-keygen</code>。在这种情况下，它将提示输入要在其中存储密钥的文件。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ssh-keygen
+</code></pre></div><h2 id="拷贝-ssh-key-到远程主机">拷贝 SSH Key 到远程主机</h2>
+<p>拷贝 <code>~/.ssh/id_rsa.pub</code> 中的所有内容，追加到远程主机的 <code>~/.ssh/authorized_keys</code> 这个文件中。这样，下次 <code>ssh</code> 就无需输入密码了。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">localhost:~$ ssh-copy-id user@remoteserver
+</code></pre></div><h2 id="远程执行命令">远程执行命令</h2>
+<p>ssh命令可以链接到其他命令以获得常见的管道乐趣。将要在远程主机上运行的命令添加为引号中的最后一个参数。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">localhost:~$ ssh remoteserver <span style="color:#e6db74">&#34;cat /var/log/nginx/access.log&#34;</span> | grep badstuff.php
+</code></pre></div><h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://hackertarget.com/ssh-examples-tunnels/">SSH Examples, Tips &amp; Tunnels</a></li>
+<li><a href="https://www.ssh.com/ssh/command/">SSH Command</a></li>
+</ul>
+<p>扫描下面二维码，在手机端阅读：</p>
+<p><img src="/images/docs/tutorial/unix-command/ssh/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#连接远程主机">连接远程主机</a></li>
+    <li><a href="#拷贝文件到远程服务器">拷贝文件到远程服务器</a></li>
+    <li><a href="#流量代理">流量代理</a></li>
+    <li><a href="#生成-ssh-key">生成 SSH Key</a></li>
+    <li><a href="#拷贝-ssh-key-到远程主机">拷贝 SSH Key 到远程主机</a></li>
+    <li><a href="#远程执行命令">远程执行命令</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
