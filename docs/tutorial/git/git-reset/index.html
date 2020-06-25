@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Git 重置"><meta property="og:title" content="Git 重置" />
+<meta property="og:description" content="Git 重置 git reset 命令是 Git 最危险最容易误用的命令之一！一定要慎用，要清除地知道你自己在做什么！
+Git reset 命令格式 git reset [--soft | --mixed | --hard] [&lt;commit&gt;] Git 提交历史记录 cat .git/refs/heads/master 显示的就是当前版本库的最新的 commitid
+Git 重置与版本变化关系图 上述图，
+ 1 代表更新引用指向，即引用指向新的 commit 2 代表暂存区的内容与版本库保持一致 3 代表工作区的内容与暂存区保持一致  使用不同的参数，执行的操作不一样：
+ --hard 参数，上图 1、2、3 这三步全部执行 --soft 参数，上图 1 执行 --mixed 参数，上图 1、2 执行 不使用参数，等同于使用了 --mixed 参数  根据上述解释，我们来看几个例子：
+彻底回退到上一次提交 git reset --hard HEAD^  HEAD^ 指：HEAD 的父提交，即上一次提交。注意 --hard 选项会将本地工作区的内容也恢复为上一次提交，且不可恢复，所以此命令慎用！！！
+ 彻底回退到某一次 commit 根据 commit id 回退到某一次的提交：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/git/git-reset/" />
+
+<title>Git 重置 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.05be583284fb3b87d1cf4773d0d7dac45d86df89b126aad652c78c453b3a9b29.js" integrity="sha256-Bb5YMoT7O4fRz0dz0NfaxF2G34mxJqrWUseMRTs6myk="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/config-user-and-email/" >
+      Git 配置用户名和邮箱
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/create-repository/" >
+      创建 Git 仓库
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/check-file-diff/" >
+      Git 查看文件差异
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-reset/"  class="active">
+      Git 重置
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      🔥IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Git 重置</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#git-reset-命令格式">Git reset 命令格式</a></li>
+    <li><a href="#git-提交历史记录">Git 提交历史记录</a></li>
+    <li><a href="#git-重置与版本变化关系图">Git 重置与版本变化关系图</a>
+      <ul>
+        <li><a href="#彻底回退到上一次提交">彻底回退到上一次提交</a></li>
+        <li><a href="#彻底回退到某一次-commit">彻底回退到某一次 commit</a></li>
+        <li><a href="#将文件改动撤出暂存区">将文件改动撤出暂存区</a></li>
+        <li><a href="#软回退到上一次提交">软回退到上一次提交</a></li>
+      </ul>
+    </li>
+    <li><a href="#如何恢复-reset">如何恢复 reset</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="git-重置">Git 重置</h1>
+<p><code>git reset</code> 命令是 <code>Git</code> <strong>最危险最容易误用</strong>的命令之一！一定要慎用，要清除地知道你自己在做什么！</p>
+<h2 id="git-reset-命令格式">Git reset 命令格式</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git reset <span style="color:#f92672">[</span>--soft | --mixed | --hard<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>&lt;commit&gt;<span style="color:#f92672">]</span>
+</code></pre></div><h2 id="git-提交历史记录">Git 提交历史记录</h2>
+<p><img src="/images/docs/tutorial/git/git-reset/git-commit-log.png" alt=""></p>
+<p><code>cat .git/refs/heads/master</code> 显示的就是当前版本库的<strong>最新</strong>的 <code>commitid</code></p>
+<h2 id="git-重置与版本变化关系图">Git 重置与版本变化关系图</h2>
+<p><img src="/images/docs/tutorial/git/git-reset/git-reset-explained.png" alt=""></p>
+<p>上述图，</p>
+<ul>
+<li>1 代表更新引用指向，即引用指向新的 commit</li>
+<li>2 代表暂存区的内容与版本库保持一致</li>
+<li>3 代表工作区的内容与暂存区保持一致</li>
+</ul>
+<p>使用不同的参数，执行的操作不一样：</p>
+<ul>
+<li><code>--hard</code> 参数，上图 1、2、3 这三步全部执行</li>
+<li><code>--soft</code> 参数，上图 1 执行</li>
+<li><code>--mixed</code> 参数，上图 1、2 执行</li>
+<li>不使用参数，等同于使用了 <code>--mixed</code> 参数</li>
+</ul>
+<p>根据上述解释，我们来看几个例子：</p>
+<h3 id="彻底回退到上一次提交">彻底回退到上一次提交</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git reset --hard HEAD^
+</code></pre></div><blockquote>
+<p><code>HEAD^</code> 指：<code>HEAD</code> 的父提交，即上一次提交。注意 <code>--hard</code> 选项会将本地工作区的内容也恢复为上一次提交，且<strong>不可恢复</strong>，所以此命令慎用！！！</p>
+</blockquote>
+<h3 id="彻底回退到某一次-commit">彻底回退到某一次 commit</h3>
+<p>根据 commit id 回退到某一次的提交：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git reset --hard 9e8a761
+</code></pre></div><blockquote>
+<p><code>9e8a761</code> 代表完整 commit id 的前 6 位，一般前 6 位就可以定位出一次 commit 了。</p>
+</blockquote>
+<h3 id="将文件改动撤出暂存区">将文件改动撤出暂存区</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git reset
+<span style="color:#75715e"># 或</span>
+git reset HEAD
+<span style="color:#75715e"># 或</span>
+git reset -- fileName
+<span style="color:#75715e"># 或</span>
+git reset HEAD fileName
+</code></pre></div><p>上述命令，相当于对 <code>git add</code> 命令的<strong>反向</strong>操作，其可以撤出所有 <code>add</code> 进暂存区的文件，也可以单独针对某个 <code>fileName</code> 文件做出撤出。</p>
+<p>撤出后，你对这个文件的改动依然保留在本地，只不过这个文件没有 <code>add</code> 进暂存区而已，没有什么损失。</p>
+<h3 id="软回退到上一次提交">软回退到上一次提交</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git reset --soft HEAD^
+</code></pre></div><p>工作区和暂存区保持不变，但是引用向前回退一次。当对最新提交的修改、或者提交的修改说明不满意的时候，可以使用这个命令撤销最新的提交，以便重新提交。</p>
+<p>工作中常用的 <code>git commit --amend</code> 命令（用于对最新的提交修改或提交说明进行修改，以便重新进行提交）就是相当于执行了下面两条命令：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git reset --soft HEAD^
+git commit -e -F .git/COMMIT_EDITMSG
+</code></pre></div><h2 id="如何恢复-reset">如何恢复 reset</h2>
+<p>在执行 <code>reset</code> 之前，一定要使用 <code>git log</code> 记录好最近的几次 commitId 记录，当出现问题的时候，还可以恢复到指定的 <code>commitId</code> 提交上。</p>
+<p>不过如果之前忘记记录的话，也可以通过查看 <code>cat .git/logs/HEAD</code> 日志文件内容，来找到有关 commit id 的记录。</p>
+<p>Git 本身也提供了 <code>git reflog</code> 命令，来查看日志信息：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git reflog show master
+</code></pre></div><h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://book.douban.com/subject/6526452/">Git权威指南</a></li>
+</ul>
+<p>扫描下面二维码，在手机端阅读：</p>
+<p><img src="/images/docs/tutorial/git/git-reset/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#git-reset-命令格式">Git reset 命令格式</a></li>
+    <li><a href="#git-提交历史记录">Git 提交历史记录</a></li>
+    <li><a href="#git-重置与版本变化关系图">Git 重置与版本变化关系图</a>
+      <ul>
+        <li><a href="#彻底回退到上一次提交">彻底回退到上一次提交</a></li>
+        <li><a href="#彻底回退到某一次-commit">彻底回退到某一次 commit</a></li>
+        <li><a href="#将文件改动撤出暂存区">将文件改动撤出暂存区</a></li>
+        <li><a href="#软回退到上一次提交">软回退到上一次提交</a></li>
+      </ul>
+    </li>
+    <li><a href="#如何恢复-reset">如何恢复 reset</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
