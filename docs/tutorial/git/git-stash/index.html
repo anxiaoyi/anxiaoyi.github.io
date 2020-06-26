@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Git 保存当前进度"><meta property="og:title" content="Git 保存当前进度" />
+<meta property="og:description" content="Git 保存当前进度 git stash 命令可以帮助我们保存和恢复日常的工作进度。
+应用场景 你正在 dev 分支上开发项目的某个新功能，开发到一半的时候，master 分支的代码（线上正在运行的代码）出现了一个 bug，需要紧急修复。你现在需要从 dev 分支切换到 master 分支修 BUG，而你现在在 dev 分支正在开发的代码也不可能开发到一半就要 push 上去，此时就可以先在 dev 分支把代码给 stash 起来，也就是暂存起来，然后再切换到 master 分支。等 master 分支修复好了后，再切回 dev 分支，执行 stash pop 把这部分代码给恢复出来即可。
+下面示例几个基础用法：
+保存当前工作进度 git stash 显示进度列表 git stash list stash 就是一个栈数据结构管理的，你可以保存多次工作进度，并且恢复的时候也可以选择恢复哪个。
+恢复进度 # 恢复最新保存的工作进度，并将工作进度从 stash 列表中清除 git stash pop # 恢复某个指定的 stash (git stash list 可以看到) git stash pop [&lt;stash&gt;] 命令 git stash apply [&lt;stash&gt;] 同 git stash pop，只是不会从 stash 列表中删除恢复的进度。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/git/git-stash/" />
+
+<title>Git 保存当前进度 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.80a22cc30fc47f0d61171d28f1e4e8dfab32ad514cf36c489bcb0f01fca4acae.js" integrity="sha256-gKIsww/Efw1hFx0o8eTo36syrVFM82xIm8sPAfykrK4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/config-user-and-email/" >
+      Git 配置用户名和邮箱
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/create-repository/" >
+      创建 Git 仓库
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/check-file-diff/" >
+      Git 查看文件差异
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-reset/" >
+      Git 重置
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-checkout/" >
+      Git checkout
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-stash/"  class="active">
+      Git 保存当前进度
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/merge-multiple-commit/" >
+      Git 多次提交合并成一次提交
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      🔥IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Git 保存当前进度</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#应用场景">应用场景</a></li>
+    <li><a href="#保存当前工作进度">保存当前工作进度</a></li>
+    <li><a href="#显示进度列表">显示进度列表</a></li>
+    <li><a href="#恢复进度">恢复进度</a></li>
+    <li><a href="#删除一个存储的进度">删除一个存储的进度</a></li>
+    <li><a href="#删除所有存储的进度">删除所有存储的进度</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="git-保存当前进度">Git 保存当前进度</h1>
+<p><code>git stash</code> 命令可以帮助我们<strong>保存和恢复</strong>日常的工作进度。</p>
+<h2 id="应用场景">应用场景</h2>
+<p>你正在 <code>dev</code> 分支上开发项目的某个新功能，开发到一半的时候，<code>master</code> 分支的代码（线上正在运行的代码）出现了一个 <code>bug</code>，需要紧急修复。你现在需要从 <code>dev</code> 分支切换到 <code>master</code> 分支修 BUG，而你现在在 <code>dev</code> 分支正在开发的代码也不可能开发到一半就要 <code>push</code> 上去，此时就可以先在 <code>dev</code> 分支把代码给 <code>stash</code> 起来，也就是暂存起来，然后再切换到 <code>master</code> 分支。等 <code>master</code> 分支修复好了后，再切回 <code>dev</code> 分支，执行 <code>stash pop</code> 把这部分代码给恢复出来即可。</p>
+<p>下面示例几个基础用法：</p>
+<h2 id="保存当前工作进度">保存当前工作进度</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git stash
+</code></pre></div><h2 id="显示进度列表">显示进度列表</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git stash list
+</code></pre></div><p><code>stash</code> 就是一个<strong>栈</strong>数据结构管理的，你可以保存多次工作进度，并且恢复的时候也可以选择恢复哪个。</p>
+<h2 id="恢复进度">恢复进度</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 恢复最新保存的工作进度，并将工作进度从 stash 列表中清除</span>
+git stash pop
+
+<span style="color:#75715e"># 恢复某个指定的 stash (git stash list 可以看到)</span>
+git stash pop <span style="color:#f92672">[</span>&lt;stash&gt;<span style="color:#f92672">]</span>
+</code></pre></div><p>命令 <code>git stash apply [&lt;stash&gt;]</code> 同 <code>git stash pop</code>，只是不会从 <code>stash</code> 列表中删除恢复的进度。</p>
+<h2 id="删除一个存储的进度">删除一个存储的进度</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git stash drop <span style="color:#f92672">[</span>&lt;stash&gt;<span style="color:#f92672">]</span>
+</code></pre></div><h2 id="删除所有存储的进度">删除所有存储的进度</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git stash clear
+</code></pre></div><p>扫描下面二维码，在手机端阅读：</p>
+<p><img src="/images/docs/tutorial/git/git-stash/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#应用场景">应用场景</a></li>
+    <li><a href="#保存当前工作进度">保存当前工作进度</a></li>
+    <li><a href="#显示进度列表">显示进度列表</a></li>
+    <li><a href="#恢复进度">恢复进度</a></li>
+    <li><a href="#删除一个存储的进度">删除一个存储的进度</a></li>
+    <li><a href="#删除所有存储的进度">删除所有存储的进度</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

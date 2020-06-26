@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Git 多次提交合并成一次提交"><meta property="og:title" content="Git 多次提交合并成一次提交" />
+<meta property="og:description" content="Git 多次提交合并成一次提交 你在 dev 分支上开发某个功能，在本地执行了三次 commit，注意这三次 commit 都没有 push 到远程分支，都只是在本地存在。现在你想要在 push 之前，将你本地的这多个 commit 合并成一个 commit，请问应该怎么做？
+答案是：git rebase -i HEAD~N，N 代表你想把最近的几条 commitId 记录合并。具体操作步骤如下：
+查看提交记录 git log 查看提交记录：
+871adf OK, feature Z is fully implemented --- newer commit --┐ 0c3317 Whoops, not yet... | 87871a I&#39;m ready! | 643d0e Code cleanup |-- Join these into one afb581 Fix this and that | 4e9baa Cool implementation | d94e78 Prepare the workbench for feature Z -------------------┘ 6394dc Feature Y --- older commit  假设 6394dc 提交已经 push 上去了 你现在想把 d94e78 ~ 871adf 这几个 commit 合并一下  即最终你再次执行 git log 想要看到的效果如下：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/git/merge-multiple-commit/" />
+
+<title>Git 多次提交合并成一次提交 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.80a22cc30fc47f0d61171d28f1e4e8dfab32ad514cf36c489bcb0f01fca4acae.js" integrity="sha256-gKIsww/Efw1hFx0o8eTo36syrVFM82xIm8sPAfykrK4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/config-user-and-email/" >
+      Git 配置用户名和邮箱
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/create-repository/" >
+      创建 Git 仓库
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/check-file-diff/" >
+      Git 查看文件差异
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-reset/" >
+      Git 重置
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-checkout/" >
+      Git checkout
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-stash/" >
+      Git 保存当前进度
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/merge-multiple-commit/"  class="active">
+      Git 多次提交合并成一次提交
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      🔥IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Git 多次提交合并成一次提交</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#查看提交记录">查看提交记录</a></li>
+    <li><a href="#合并-commit-记录">合并 commit 记录</a></li>
+    <li><a href="#创建一个新的-commit">创建一个新的 commit</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="git-多次提交合并成一次提交">Git 多次提交合并成一次提交</h1>
+<p>你在 <code>dev</code> 分支上开发某个功能，在本地执行了三次 <code>commit</code>，注意这三次 <code>commit</code> 都没有 <code>push</code> 到远程分支，都只是在本地存在。现在你想要在 <code>push</code> 之前，将你本地的这多个 <code>commit</code> 合并成一个 <code>commit</code>，请问应该怎么做？</p>
+<p>答案是：<code>git rebase -i HEAD~N</code>，<code>N</code> 代表你想把最近的几条 <code>commitId</code> 记录合并。具体操作步骤如下：</p>
+<h2 id="查看提交记录">查看提交记录</h2>
+<p><code>git log</code> 查看提交记录：</p>
+<pre><code>871adf OK, feature Z is fully implemented      --- newer commit --┐
+0c3317 Whoops, not yet...                                         |
+87871a I'm ready!                                                 |
+643d0e Code cleanup                                               |-- Join these into one
+afb581 Fix this and that                                          |
+4e9baa Cool implementation                                        |
+d94e78 Prepare the workbench for feature Z     -------------------┘
+6394dc Feature Y                               --- older commit
+</code></pre><ul>
+<li>假设 <code>6394dc</code> 提交已经 <code>push</code> 上去了</li>
+<li>你现在想把 <code>d94e78</code> ~ <code>871adf</code> 这几个 <code>commit</code> 合并一下</li>
+</ul>
+<p>即最终你再次执行 <code>git log</code> 想要看到的效果如下：</p>
+<pre><code>84d1f8 Feature Z                               --- newer commit (result of rebase)
+6394dc Feature Y                               --- older commit
+</code></pre><p>从 <code>d94e78</code> ~ <code>871adf</code> 共有 7 个 commit，因此执行命令：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git rebase -i HEAD~7
+</code></pre></div><blockquote>
+<p><code>-i</code> 是 <code>--interactive</code> 参数的缩写表达，即交互的 rebase</p>
+</blockquote>
+<p>现在只有 7 个 commit，数起来还简单一些。假设，我需要将 70 个 commit 合并，难不成我还要一个一个精确的数？答案是不需要。后面加上最后一次的 <code>commitId</code> 也可以，含义是从这个 <code>commitId</code> 之后的多个 <code>commit</code> 都要合并到一起，但是并不包含这个 <code>commit</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git rebase -i 6394dc
+</code></pre></div><h2 id="合并-commit-记录">合并 commit 记录</h2>
+<p>执行 <code>git rebase -i HEAD~7</code> 命令后，你将会进入到命令行编辑其中（比如 <code>Vi</code> 中），然后选择这些 <code>commit</code> 如何进行合并。</p>
+<blockquote>
+<p>在这个地方特别需要注意，在<strong>编辑器</strong>中，现在看到的<strong>旧的提交</strong>位于第一行，<strong>新的提交</strong>位于最后一行，顺序和 <code>git log</code> 查看的顺序颠倒了。</p>
+</blockquote>
+<pre><code>pick d94e78 Prepare the workbench for feature Z     --- older commit
+pick 4e9baa Cool implementation 
+pick afb581 Fix this and that  
+pick 643d0e Code cleanup
+pick 87871a I'm ready! 
+pick 0c3317 Whoops, not yet... 
+pick 871adf OK, feature Z is fully implemented      --- newer commit
+</code></pre><p>然后下面其实也有注释：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># Commands:</span>
+<span style="color:#75715e">#  p, pick = use commit</span>
+<span style="color:#75715e">#  r, reword = use commit, but edit the commit message</span>
+<span style="color:#75715e">#  e, edit = use commit, but stop for amending</span>
+<span style="color:#75715e">#  s, squash = use commit, but meld into previous commit</span>
+<span style="color:#75715e">#  f, fixup = like &#34;squash&#34;, but discard this commit&#39;s log message</span>
+<span style="color:#75715e">#  x, exec = run command (the rest of the line) using shell</span>
+</code></pre></div><p>下面对 <code>p</code> 和 <code>s</code> 命令，简单解释：</p>
+<ul>
+<li><code>p</code>：这条 <code>commit</code> 依然保留，不要被去掉，这条 <code>commit</code> 的信息也依然维持原样，最终的 <code>git log</code> 也依然能看到这条 <code>commit</code></li>
+<li><code>s</code>：将这条 <code>commit</code> 与前一次 <code>commit </code> 合并到一起</li>
+</ul>
+<p>我们在编辑器中，使用 <code>s</code> 来将最近 6 次的 commit 合并到第一次 commit 上，修改如下：</p>
+<pre><code>pick d94e78 Prepare the workbench for feature Z     --- older commit
+s 4e9baa Cool implementation 
+s afb581 Fix this and that  
+s 643d0e Code cleanup
+s 87871a I'm ready! 
+s 0c3317 Whoops, not yet... 
+s 871adf OK, feature Z is fully implemented      --- newer commit
+</code></pre><p>然后输入 <code>:wq</code> 保存编辑器的内容。</p>
+<h2 id="创建一个新的-commit">创建一个新的 commit</h2>
+<p>上述当离开编辑器的时候，Git 会再次弹出一个编辑器让你输入此次合并 commit 的信息输入界面：</p>
+<pre><code>Prepare the workbench for feature Z
+Cool implementation 
+Fix this and that  
+Code cleanup
+I'm ready! 
+Whoops, not yet... 
+OK, feature Z is fully implemented
+</code></pre><p>你可以在这个地方修改信息，也可以直接使用 Git 给你生成好的信息，之后再次输入 <code>:wq</code> 保存即可。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://www.internalpointers.com/post/squash-commits-into-one-git">Squash commits into one with Git</a></li>
+<li><a href="https://thoughtbot.com/blog/git-interactive-rebase-squash-amend-rewriting-history">Git Interactive Rebase, Squash, Amend and Other Ways of Rewriting History</a></li>
+</ul>
+<p>扫描下面二维码，在手机端阅读：</p>
+<p><img src="/images/docs/tutorial/git/merge-multiple-commit/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#查看提交记录">查看提交记录</a></li>
+    <li><a href="#合并-commit-记录">合并 commit 记录</a></li>
+    <li><a href="#创建一个新的-commit">创建一个新的 commit</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
