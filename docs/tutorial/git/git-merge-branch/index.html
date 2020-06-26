@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Git 分支合并"><meta property="og:title" content="Git 分支合并" />
+<meta property="og:description" content="Git 分支合并 某个功能在开发分支上开发完毕后，需要合并到 master 分支，合并分支有两种方式：
+ git merge git rebase  分支现状展示  从 master 分支的 A 提交点，拉取了分支 user2/i18n user2/i18n 的功能开发总共有两个 commit：E 和 F master 在 A 提交点之后，又有 B、C 和 D 这三个提交被合入进来  Git merge 我们使用 git merge 来合并 user2/i18n 分支到 master 分支上：
+# 切换到 master 分支 git checkout master # 合并 user2/i18n 分支 git merge user2/i18n 合并后的分支示意图：
+Git rebase 我们使用 git rebase 来合并 user2/i18n 到 master 分支上：
+git checkout user2/i18n git rebase master # 如果有冲突，则需要解决冲突 # 解决完冲突，使用 git add -u 将完成冲突解决的文件加入到暂存区 # git rebase --continue # 直接推送，用本地的 user2/i18n 分支更新远程的 master 分支即可 git push origin user2/i18n:master rebase 之后的分支示例：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/git/git-merge-branch/" />
+
+<title>Git 分支合并 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.dd7088fa1dad3ba1b324f0d4962c0be80097c01d4c7f0ed863b065df272ecbc3.js" integrity="sha256-3XCI&#43;h2tO6GzJPDUliwL6ACXwB1Mfw7YY7Bl3ycuy8M="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/config-user-and-email/" >
+      Git 配置用户名和邮箱
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/create-repository/" >
+      创建 Git 仓库
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/check-file-diff/" >
+      Git 查看文件差异
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-reset/" >
+      Git 重置
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-checkout/" >
+      Git checkout
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-stash/" >
+      Git 保存当前进度
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/merge-multiple-commit/" >
+      Git 多次提交合并成一次提交
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-branch/" >
+      Git 分支
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-merge-branch/"  class="active">
+      Git 分支合并
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-fix-conflict/" >
+      Git 解决冲突
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-ignore/" >
+      Git .gitignore 文件
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Git 分支合并</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#分支现状展示">分支现状展示</a></li>
+    <li><a href="#git-merge">Git merge</a></li>
+    <li><a href="#git-rebase">Git rebase</a></li>
+    <li><a href="#merge-和-rebase-对比">merge 和 rebase 对比</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="git-分支合并">Git 分支合并</h1>
+<p>某个功能在开发分支上开发完毕后，需要合并到 <code>master</code> 分支，合并分支有两种方式：</p>
+<ul>
+<li><code>git merge</code></li>
+<li><code>git rebase</code></li>
+</ul>
+<h2 id="分支现状展示">分支现状展示</h2>
+<p><img src="/images/docs/tutorial/git/git-merge-branch/current-branch.png" alt=""></p>
+<ul>
+<li>从 <code>master</code> 分支的 <code>A</code> 提交点，拉取了分支 <code>user2/i18n</code></li>
+<li><code>user2/i18n</code> 的功能开发总共有两个 commit：<code>E</code> 和 <code>F</code></li>
+<li><code>master</code> 在 <code>A</code> 提交点之后，又有 <code>B</code>、<code>C</code> 和 <code>D</code> 这三个提交被合入进来</li>
+</ul>
+<h2 id="git-merge">Git merge</h2>
+<p>我们使用 <code>git merge</code> 来合并 <code>user2/i18n</code> 分支到 <code>master</code> 分支上：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 切换到 master 分支</span>
+git checkout master
+<span style="color:#75715e"># 合并 user2/i18n 分支</span>
+git merge user2/i18n
+</code></pre></div><p>合并后的分支示意图：</p>
+<p><img src="/images/docs/tutorial/git/git-merge-branch/git-merge-branch.png" alt=""></p>
+<h2 id="git-rebase">Git rebase</h2>
+<p>我们使用 <code>git rebase</code> 来合并 <code>user2/i18n</code> 到 <code>master</code> 分支上：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git checkout user2/i18n
+git rebase master
+
+<span style="color:#75715e"># 如果有冲突，则需要解决冲突</span>
+<span style="color:#75715e"># 解决完冲突，使用 git add -u 将完成冲突解决的文件加入到暂存区</span>
+<span style="color:#75715e"># git rebase --continue</span>
+
+<span style="color:#75715e"># 直接推送，用本地的 user2/i18n 分支更新远程的 master 分支即可</span>
+git push origin user2/i18n:master
+</code></pre></div><p><code>rebase</code> 之后的分支示例：</p>
+<p><img src="/images/docs/tutorial/git/git-merge-branch/git-rebase-merge.png" alt=""></p>
+<h2 id="merge-和-rebase-对比"><code>merge</code> 和 <code>rebase</code> 对比</h2>
+<ul>
+<li><code>rebase</code> 相比 <code>merge</code> 少了一次 <code>merge</code> 产生的提交，减轻了代码审核的负担</li>
+<li><code>rebase</code> 产生的分支关系图，比 <code>merge</code> 产生的分支关系图更为简单，更有顺序性</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#分支现状展示">分支现状展示</a></li>
+    <li><a href="#git-merge">Git merge</a></li>
+    <li><a href="#git-rebase">Git rebase</a></li>
+    <li><a href="#merge-和-rebase-对比">merge 和 rebase 对比</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

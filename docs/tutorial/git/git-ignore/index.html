@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Git .gitignore 文件"><meta property="og:title" content="Git .gitignore 文件" />
+<meta property="og:description" content="Git .gitignore 文件 Git 可以使用 .gitignore 文件来对工作区的某个目录、某个文件等设置忽略，忽略后这些文件的状态变化，将不会被记录在 git 中，也不会被 push 到远程服务器上。
+如果想要忽略项目里面的某些文件夹，比如 build/、target/、node_modules/ 等文件夹，不 push 到服务器上，就需要在相应的目录中添加一个 .gitignore 文件，并在里面将这些文件夹的名字给加上。
+.gitignore 的作用范围 作用范围：.gitignore 文件所处的目录及其子目录。
+如何查看哪些文件被忽略了 git status --ignored # 或 git check-ignore -v example.jpg .gitignore 文件语法  # 开始的行代表注释 *：代表任意多个字符，?：代表一个字符，[abc] 代表可选字符范围等 **：匹配任意数量的目录 名称以 / 开头：只忽略此目录下的文件，对于子目录中的文件不忽略 名称以 / 结尾：忽略整个目录，同名文件不忽略；否则同名文件和目录都被忽略 名称以 ! 开头：代表不忽略这个文件  示例 # 任何目录下面的 .DS_Store 文件都会被忽略 .DS_Store # 忽略整个目录 node_modules/ logs/ # 忽略所有以 log 结尾的文件，但是 example.log 不被忽略 *.log !example.log # 忽略 abc 文件夹下面的以 log 结尾的文件，注意：子目录不会被忽略 abc/*." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/git/git-ignore/" />
+
+<title>Git .gitignore 文件 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.dd7088fa1dad3ba1b324f0d4962c0be80097c01d4c7f0ed863b065df272ecbc3.js" integrity="sha256-3XCI&#43;h2tO6GzJPDUliwL6ACXwB1Mfw7YY7Bl3ycuy8M="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/config-user-and-email/" >
+      Git 配置用户名和邮箱
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/create-repository/" >
+      创建 Git 仓库
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/check-file-diff/" >
+      Git 查看文件差异
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-reset/" >
+      Git 重置
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-checkout/" >
+      Git checkout
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-stash/" >
+      Git 保存当前进度
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/merge-multiple-commit/" >
+      Git 多次提交合并成一次提交
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-branch/" >
+      Git 分支
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-merge-branch/" >
+      Git 分支合并
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-fix-conflict/" >
+      Git 解决冲突
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-ignore/"  class="active">
+      Git .gitignore 文件
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Git .gitignore 文件</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#gitignore-的作用范围">.gitignore 的作用范围</a></li>
+    <li><a href="#如何查看哪些文件被忽略了">如何查看哪些文件被忽略了</a></li>
+    <li><a href="#gitignore-文件语法">.gitignore 文件语法</a></li>
+    <li><a href="#示例">示例</a></li>
+    <li><a href="#快速生成一份-gitingore-忽略文件">快速生成一份 .gitingore 忽略文件</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="git-gitignore-文件">Git .gitignore 文件</h1>
+<p>Git 可以使用 <code>.gitignore</code> 文件来对工作区的某个目录、某个文件等设置忽略，忽略后这些文件的状态变化，将不会被记录在 <code>git</code> 中，也不会被 <code>push</code> 到远程服务器上。</p>
+<p>如果想要忽略项目里面的某些文件夹，比如 <code>build/</code>、<code>target/</code>、<code>node_modules/</code> 等文件夹，不 <code>push</code> 到服务器上，就需要在相应的目录中添加一个 <code>.gitignore</code> 文件，并在里面将这些文件夹的名字给加上。</p>
+<h2 id="gitignore-的作用范围">.gitignore 的作用范围</h2>
+<p><strong>作用范围</strong>：<code>.gitignore</code> 文件所处的目录及其子目录。</p>
+<h2 id="如何查看哪些文件被忽略了">如何查看哪些文件被忽略了</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git status --ignored
+
+<span style="color:#75715e"># 或</span>
+git check-ignore -v example.jpg
+</code></pre></div><h2 id="gitignore-文件语法">.gitignore 文件语法</h2>
+<ul>
+<li><code>#</code> 开始的行代表<strong>注释</strong></li>
+<li><code>*</code>：代表任意多个字符，<code>?</code>：代表一个字符，<code>[abc]</code> 代表可选字符范围等</li>
+<li><code>**</code>：匹配任意数量的目录</li>
+<li>名称以 <code>/</code> 开头：只忽略此目录下的文件，对于子目录中的文件不忽略</li>
+<li>名称以 <code>/</code> 结尾：忽略整个目录，同名文件不忽略；否则同名文件和目录都被忽略</li>
+<li>名称以 <code>!</code> 开头：代表不忽略这个文件</li>
+</ul>
+<h2 id="示例">示例</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 任何目录下面的 .DS_Store 文件都会被忽略</span>
+.DS_Store
+
+<span style="color:#75715e"># 忽略整个目录</span>
+node_modules/
+logs/
+
+<span style="color:#75715e"># 忽略所有以 log 结尾的文件，但是 example.log 不被忽略</span>
+*.log
+!example.log
+
+<span style="color:#75715e"># 忽略 abc 文件夹下面的以 log 结尾的文件，注意：子目录不会被忽略</span>
+abc/*.log
+<span style="color:#75715e"># 忽略 abc 文件夹以及所有子目录下面的以 log 结尾的文件</span>
+abc/**/*.log
+</code></pre></div><h2 id="快速生成一份-gitingore-忽略文件">快速生成一份 .gitingore 忽略文件</h2>
+<p>如果你不知道应该忽略哪些文件，那么请访问 <a href="https://www.toptal.com/developers/gitignore">gitignore.io</a> 网站，通过输入你的框架名称、IDE 名称、开发语言等来生成一份 <code>.gitignore</code> 文件。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://www.pluralsight.com/guides/how-to-use-gitignore-file">How to Use a .gitignore File</a></li>
+</ul>
+<p>扫描下面二维码，在手机端阅读：</p>
+<p><img src="/images/docs/tutorial/git/git-ignore/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#gitignore-的作用范围">.gitignore 的作用范围</a></li>
+    <li><a href="#如何查看哪些文件被忽略了">如何查看哪些文件被忽略了</a></li>
+    <li><a href="#gitignore-文件语法">.gitignore 文件语法</a></li>
+    <li><a href="#示例">示例</a></li>
+    <li><a href="#快速生成一份-gitingore-忽略文件">快速生成一份 .gitingore 忽略文件</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

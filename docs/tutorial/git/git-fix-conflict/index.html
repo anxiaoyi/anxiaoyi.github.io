@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Git 解决冲突"><meta property="og:title" content="Git 解决冲突" />
+<meta property="og:description" content="Git 解决冲突 某个分支的代码想要合并到其它分支，可能会产生冲突，产生的原因就是这两个分支都对代码的同一个区域做了修改，Git 本身并不知道应该采用哪个修改最为合适，因此需要你来决定。
+解决冲突 如下所示是冲突代码的示例：
+ A 和 B 之间的代码，是你本地的代码所做的改动 B 和 C 之间的代码，是远程代码所做的改动  你的工作是重新编辑 A 到 C 区域之间的内容，去掉 &lt;&lt;&lt;&lt;&lt;&lt;&lt; 、=======、&gt;&gt;&gt;&gt;&gt;&gt;&gt; 符号，重新编辑 A 和 C 之间的代码，以让整个项目运行起来。
+编辑完之后，可以通过 git add 命令将冲突的文件假如到暂存区，然后再 git commit，就完成了冲突解决。
+打开图形界面工具解决冲突 使用图形化工具来帮助你解决冲突，不过需要事先安装工具。打开图形界面工具的命令如下：
+git mergetool 打开之前，也可以使用 git config 进行简单的配置，比如使用 vimdiff 工具作为默认的冲突解决工具：
+git config merge.tool vimdiff git config merge.conflictstyle diff3 git config mergetool.prompt false 放弃合并操作 你暂时不想解决冲突：
+git reset 参考  How to resolve merge conflicts in Git  扫描下面二维码，在手机端阅读：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/git/git-fix-conflict/" />
+
+<title>Git 解决冲突 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.dd7088fa1dad3ba1b324f0d4962c0be80097c01d4c7f0ed863b065df272ecbc3.js" integrity="sha256-3XCI&#43;h2tO6GzJPDUliwL6ACXwB1Mfw7YY7Bl3ycuy8M="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/config-user-and-email/" >
+      Git 配置用户名和邮箱
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/create-repository/" >
+      创建 Git 仓库
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/check-file-diff/" >
+      Git 查看文件差异
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-reset/" >
+      Git 重置
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-checkout/" >
+      Git checkout
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-stash/" >
+      Git 保存当前进度
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/merge-multiple-commit/" >
+      Git 多次提交合并成一次提交
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-branch/" >
+      Git 分支
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-merge-branch/" >
+      Git 分支合并
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-fix-conflict/"  class="active">
+      Git 解决冲突
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-ignore/" >
+      Git .gitignore 文件
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Git 解决冲突</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#解决冲突">解决冲突</a></li>
+    <li><a href="#打开图形界面工具解决冲突">打开图形界面工具解决冲突</a></li>
+    <li><a href="#放弃合并操作">放弃合并操作</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="git-解决冲突">Git 解决冲突</h1>
+<p>某个分支的代码想要合并到其它分支，可能会产生冲突，产生的原因就是这两个分支都对代码的同一个区域做了修改，Git 本身并不知道应该采用哪个修改最为合适，因此需要你来决定。</p>
+<h2 id="解决冲突">解决冲突</h2>
+<p>如下所示是冲突代码的示例：</p>
+<p><img src="/images/docs/tutorial/git/git-merge-branch/mergeconflict_git_branches.png" alt=""></p>
+<ul>
+<li><code>A</code> 和 <code>B</code> 之间的代码，是你<strong>本地</strong>的代码所做的改动</li>
+<li><code>B</code> 和 <code>C</code> 之间的代码，是<strong>远程</strong>代码所做的改动</li>
+</ul>
+<p>你的工作是重新编辑 <code>A</code> 到 <code>C</code> 区域之间的内容，去掉 <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> 、<code>=======</code>、<code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code> 符号，重新编辑 <code>A</code> 和 <code>C</code> 之间的代码，以让整个项目运行起来。</p>
+<p>编辑完之后，可以通过 <code>git add</code> 命令将冲突的文件假如到暂存区，然后再 <code>git commit</code>，就完成了冲突解决。</p>
+<h2 id="打开图形界面工具解决冲突">打开图形界面工具解决冲突</h2>
+<p>使用图形化工具来帮助你解决冲突，不过需要事先安装工具。打开图形界面工具的命令如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git mergetool
+</code></pre></div><p>打开之前，也可以使用 <code>git config</code> 进行简单的配置，比如使用 <code>vimdiff</code> 工具作为默认的冲突解决工具：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git config merge.tool vimdiff
+git config merge.conflictstyle diff3
+git config mergetool.prompt false
+</code></pre></div><h2 id="放弃合并操作">放弃合并操作</h2>
+<p>你暂时不想解决冲突：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git reset
+</code></pre></div><h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://stackoverflow.com/questions/161813/how-to-resolve-merge-conflicts-in-git">How to resolve merge conflicts in Git</a></li>
+</ul>
+<p>扫描下面二维码，在手机端阅读：</p>
+<p><img src="/images/docs/tutorial/git/git-fix-conflict/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#解决冲突">解决冲突</a></li>
+    <li><a href="#打开图形界面工具解决冲突">打开图形界面工具解决冲突</a></li>
+    <li><a href="#放弃合并操作">放弃合并操作</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
