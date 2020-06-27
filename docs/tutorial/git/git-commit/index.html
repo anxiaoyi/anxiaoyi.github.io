@@ -4,16 +4,18 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Git 保存当前进度"><meta property="og:title" content="Git 保存当前进度" />
-<meta property="og:description" content="Git 保存当前进度 git stash 命令可以帮助我们保存和恢复日常的工作进度。
-应用场景 你正在 dev 分支上开发项目的某个新功能，开发到一半的时候，master 分支的代码（线上正在运行的代码）出现了一个 bug，需要紧急修复。你现在需要从 dev 分支切换到 master 分支修 BUG，而你现在在 dev 分支正在开发的代码也不可能开发到一半就要 push 上去，此时就可以先在 dev 分支把代码给 stash 起来，也就是暂存起来，然后再切换到 master 分支。等 master 分支修复好了后，再切回 dev 分支，执行 stash pop 把这部分代码给恢复出来即可。
-下面示例几个基础用法：
-保存当前工作进度 git stash 显示进度列表 git stash list stash 就是一个栈数据结构管理的，你可以保存多次工作进度，并且恢复的时候也可以选择恢复哪个。
-恢复进度 # 恢复最新保存的工作进度，并将工作进度从 stash 列表中清除 git stash pop # 恢复某个指定的 stash (git stash list 可以看到) git stash pop [&lt;stash&gt;] 命令 git stash apply [&lt;stash&gt;] 同 git stash pop，只是不会从 stash 列表中删除恢复的进度。" />
+<meta name="description" content="Git commit"><meta property="og:title" content="Git commit" />
+<meta property="og:description" content="Git commit git commit 可以将暂存区的文件，commit 提交到本地仓库中。
+git commit -m -m 代表 message 信息的意思。git commit 需要一个信息作为它的参数，这个信息是对此次 commit 的简短描述，消息应该放到双引号里面。
+git commit -m &#34;my brief description about commit&#34;  如果没有携带 -m 参数，Git 也会弹出编辑器让你输入消息的。
+ git commit -a -a 选项代表 all，即所有。该选项可以将本地工作区所有改动的/被删除的文件，直接 commit 到仓库中，而无需调用 git add/rm 命令手动添加或删除。
+git commit -am &#34;My message&#34;  -a 并不会将新添加的文件 commit 到版本库中。
+ git commit &ndash;amend --amend 选项可以让你修改上一次提交的信息。
+# 第一次提交信息 git commit -m &#34;my first message&#34; # 你对 my first message 这个描述不满意 # 所以使用下面命令来修正成你想要的信息 git commit --amend -m &#34;an updated commit message&#34; 参考  Git Commit Command Explained  扫描下面二维码，在手机端阅读：" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/git/git-stash/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/git/git-commit/" />
 
-<title>Git 保存当前进度 | 赵坤的个人网站</title>
+<title>Git commit | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
@@ -228,7 +230,7 @@ var _hmt = _hmt || [];
       
         <li>
 
-  <a href="/docs/tutorial/git/git-stash/"  class="active">
+  <a href="/docs/tutorial/git/git-stash/" >
       Git 保存当前进度
   </a>
 
@@ -308,7 +310,7 @@ var _hmt = _hmt || [];
       
         <li>
 
-  <a href="/docs/tutorial/git/git-commit/" >
+  <a href="/docs/tutorial/git/git-commit/"  class="active">
       Git commit
   </a>
 
@@ -576,7 +578,7 @@ var _hmt = _hmt || [];
     <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
-  <strong>Git 保存当前进度</strong>
+  <strong>Git commit</strong>
 
   <label for="toc-control">
     <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
@@ -590,12 +592,10 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#应用场景">应用场景</a></li>
-    <li><a href="#保存当前工作进度">保存当前工作进度</a></li>
-    <li><a href="#显示进度列表">显示进度列表</a></li>
-    <li><a href="#恢复进度">恢复进度</a></li>
-    <li><a href="#删除一个存储的进度">删除一个存储的进度</a></li>
-    <li><a href="#删除所有存储的进度">删除所有存储的进度</a></li>
+    <li><a href="#git-commit--m">git commit -m</a></li>
+    <li><a href="#git-commit--a">git commit -a</a></li>
+    <li><a href="#git-commit---amend">git commit &ndash;amend</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -606,29 +606,34 @@ var _hmt = _hmt || [];
       </header>
 
       
-<article class="markdown"><h1 id="git-保存当前进度">Git 保存当前进度</h1>
-<p><code>git stash</code> 命令可以帮助我们<strong>保存和恢复</strong>日常的工作进度。</p>
-<h2 id="应用场景">应用场景</h2>
-<p>你正在 <code>dev</code> 分支上开发项目的某个新功能，开发到一半的时候，<code>master</code> 分支的代码（线上正在运行的代码）出现了一个 <code>bug</code>，需要紧急修复。你现在需要从 <code>dev</code> 分支切换到 <code>master</code> 分支修 BUG，而你现在在 <code>dev</code> 分支正在开发的代码也不可能开发到一半就要 <code>push</code> 上去，此时就可以先在 <code>dev</code> 分支把代码给 <code>stash</code> 起来，也就是暂存起来，然后再切换到 <code>master</code> 分支。等 <code>master</code> 分支修复好了后，再切回 <code>dev</code> 分支，执行 <code>stash pop</code> 把这部分代码给恢复出来即可。</p>
-<p>下面示例几个基础用法：</p>
-<h2 id="保存当前工作进度">保存当前工作进度</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git stash
-</code></pre></div><h2 id="显示进度列表">显示进度列表</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git stash list
-</code></pre></div><p><code>stash</code> 就是一个<strong>栈</strong>数据结构管理的，你可以保存多次工作进度，并且恢复的时候也可以选择恢复哪个。</p>
-<h2 id="恢复进度">恢复进度</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 恢复最新保存的工作进度，并将工作进度从 stash 列表中清除</span>
-git stash pop
+<article class="markdown"><h1 id="git-commit">Git commit</h1>
+<p><code>git commit</code> 可以将暂存区的文件，<code>commit</code> 提交到本地仓库中。</p>
+<h2 id="git-commit--m">git commit -m</h2>
+<p><code>-m</code> 代表 <code>message</code> 信息的意思。<code>git commit</code> 需要一个信息作为它的参数，这个信息是对此次 commit 的简短描述，消息应该放到<strong>双引号</strong>里面。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git commit -m <span style="color:#e6db74">&#34;my brief description about commit&#34;</span>
+</code></pre></div><blockquote>
+<p>如果没有携带 <code>-m</code> 参数，Git 也会弹出编辑器让你输入消息的。</p>
+</blockquote>
+<h2 id="git-commit--a">git commit -a</h2>
+<p><code>-a</code> 选项代表 <code>all</code>，即所有。该选项可以将本地<strong>工作区所有改动的/被删除的</strong>文件，直接 commit 到仓库中，而无需调用 <code>git add/rm</code> 命令手动添加或删除。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git commit -am <span style="color:#e6db74">&#34;My message&#34;</span>
+</code></pre></div><blockquote>
+<p><code>-a</code> 并不会将新添加的文件 commit 到版本库中。</p>
+</blockquote>
+<h2 id="git-commit---amend">git commit &ndash;amend</h2>
+<p><code>--amend</code> 选项可以让你<strong>修改上一次提交的信息</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 第一次提交信息</span>
+git commit -m <span style="color:#e6db74">&#34;my first message&#34;</span>
 
-<span style="color:#75715e"># 恢复某个指定的 stash (git stash list 可以看到)</span>
-git stash pop <span style="color:#f92672">[</span>&lt;stash&gt;<span style="color:#f92672">]</span>
-</code></pre></div><p>命令 <code>git stash apply [&lt;stash&gt;]</code> 同 <code>git stash pop</code>，只是不会从 <code>stash</code> 列表中删除恢复的进度。</p>
-<h2 id="删除一个存储的进度">删除一个存储的进度</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git stash drop <span style="color:#f92672">[</span>&lt;stash&gt;<span style="color:#f92672">]</span>
-</code></pre></div><h2 id="删除所有存储的进度">删除所有存储的进度</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git stash clear
-</code></pre></div><p>扫描下面二维码，在手机端阅读：</p>
-<p><img src="/images/docs/tutorial/git/git-stash/qrcode.png" alt=""></p>
+<span style="color:#75715e"># 你对 my first message 这个描述不满意</span>
+<span style="color:#75715e"># 所以使用下面命令来修正成你想要的信息</span>
+git commit --amend -m <span style="color:#e6db74">&#34;an updated commit message&#34;</span>
+</code></pre></div><h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://www.freecodecamp.org/news/git-commit-command-explained/">Git Commit Command Explained</a></li>
+</ul>
+<p>扫描下面二维码，在手机端阅读：</p>
+<p><img src="/images/docs/tutorial/git/git-commit/qrcode.png" alt=""></p>
 </article>
  
 
@@ -674,12 +679,10 @@ git stash pop <span style="color:#f92672">[</span>&lt;stash&gt;<span style="colo
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#应用场景">应用场景</a></li>
-    <li><a href="#保存当前工作进度">保存当前工作进度</a></li>
-    <li><a href="#显示进度列表">显示进度列表</a></li>
-    <li><a href="#恢复进度">恢复进度</a></li>
-    <li><a href="#删除一个存储的进度">删除一个存储的进度</a></li>
-    <li><a href="#删除所有存储的进度">删除所有存储的进度</a></li>
+    <li><a href="#git-commit--m">git commit -m</a></li>
+    <li><a href="#git-commit--a">git commit -a</a></li>
+    <li><a href="#git-commit---amend">git commit &ndash;amend</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
