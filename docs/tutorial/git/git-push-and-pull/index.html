@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Git push 和 Git pull"><meta property="og:title" content="Git push 和 Git pull" />
+<meta property="og:description" content="Git push 和 Git pull git push 、git pull 用于向远程分支推送文件，以及从远程分支拉取文件等。
+远程版本库地址 .git/config 文件中记录了当前仓库远程版本库的地址：
+vi .git/config 直接修改这个地址保存后，当前版本库的远程版本库的地址也就变化了。Git 本身也提供了用来操纵版本库地址的命令：
+# 添加远程版本库地址 git remote add origin git@github.com:facebook/react.git # 更新远程版本库地址 git remote set-url origin git@github.com:facebook/react.git push 和 pull push 命令和 pull 命令的语法相似：
+git push &lt;remote_name&gt; &lt;branch_name&gt; git pull &lt;remote_name&gt; &lt;branch_name&gt; 不带参数，执行命令 git push 的过程（git pull 同理）：
+ 如果当前分支有 remote（如何知道是否有 remote？还是看 .git/config 文件，如下图所示，每个 branch 的 remote 都不是空的），那么 git push 相当于执行了 git push &lt;remote&gt; 如果没有设置，则相当于执行 git push origin  一般而言，你这个项目本身应该只有一个版本库地址，如下图所示，版本库的名称就叫做 origin，它的地址就是 url 后面的那一部分：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/git/git-push-and-pull/" />
+
+<title>Git push 和 Git pull | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.43f6f95a5040bc574490f77786030426cd21c8759a18c791f468c4937ac4f704.js" integrity="sha256-Q/b5WlBAvFdEkPd3hgMEJs0hyHWaGMeR9GjEk3rE9wQ="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/config-user-and-email/" >
+      Git 配置用户名和邮箱
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/create-repository/" >
+      创建 Git 仓库
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/check-file-diff/" >
+      Git 查看文件差异
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-reset/" >
+      Git 重置
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-checkout/" >
+      Git checkout
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-stash/" >
+      Git 保存当前进度
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/merge-multiple-commit/" >
+      Git 多次提交合并成一次提交
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-branch/" >
+      Git 分支
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-merge-branch/" >
+      Git 分支合并
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-fix-conflict/" >
+      Git 解决冲突
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-tag/" >
+      Git tag
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-add-and-rm/" >
+      Git add 和 Git rm
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-push-and-pull/"  class="active">
+      Git push 和 Git pull
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/git/git-ignore/" >
+      Git .gitignore 文件
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Git push 和 Git pull</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#远程版本库地址">远程版本库地址</a></li>
+    <li><a href="#push-和-pull">push 和 pull</a></li>
+    <li><a href="#git-push--u">git push -u</a></li>
+    <li><a href="#fetch">fetch</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="git-push-和-git-pull">Git push 和 Git pull</h1>
+<p><code>git push</code> 、<code>git pull</code> 用于<strong>向远程分支推送</strong>文件，以及<strong>从远程分支拉取文件</strong>等。</p>
+<h2 id="远程版本库地址">远程版本库地址</h2>
+<p><code>.git/config</code> 文件中记录了当前仓库远程版本库的地址：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">vi .git/config
+</code></pre></div><p><img src="/images/docs/tutorial/git/git-push-and-pull/remote-address.png" alt=""></p>
+<p>直接修改这个地址保存后，当前版本库的远程版本库的地址也就变化了。Git 本身也提供了用来操纵版本库地址的<strong>命令</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 添加远程版本库地址</span>
+git remote add origin git@github.com:facebook/react.git
+
+<span style="color:#75715e"># 更新远程版本库地址</span>
+git remote set-url origin git@github.com:facebook/react.git
+</code></pre></div><h2 id="push-和-pull">push 和 pull</h2>
+<p><code>push</code> 命令和 <code>pull</code> 命令的语法相似：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git push &lt;remote_name&gt; &lt;branch_name&gt;
+git pull &lt;remote_name&gt; &lt;branch_name&gt;
+</code></pre></div><p>不带参数，执行命令 <code>git push</code> 的过程（<code>git pull</code> 同理）：</p>
+<ul>
+<li>如果当前分支有 <code>remote</code>（如何知道是否有 <code>remote</code>？还是看 <code>.git/config</code> 文件，如下图所示，每个 <code>branch</code> 的 <code>remote</code> 都不是空的），那么 <code>git push</code> 相当于执行了 <code>git push &lt;remote&gt;</code></li>
+<li>如果没有设置，则相当于执行 <code>git push origin</code></li>
+</ul>
+<p><img src="/images/docs/tutorial/git/git-push-and-pull/branch-name.png" alt=""></p>
+<p>一般而言，你这个项目本身应该<strong>只有一个版本库地址</strong>，如下图所示，版本库的名称就叫做 <code>origin</code>，它的地址就是 <code>url</code> 后面的那一部分：</p>
+<p><img src="/images/docs/tutorial/git/git-push-and-pull/remote-origin.png" alt=""></p>
+<p>一般情况下，在日常开发过程中，直接使用<strong>不带参数</strong>的 <code>git push</code> 和 <code>git pull</code> 命令就可以完成当前分支文件的推送和拉取操作。</p>
+<h2 id="git-push--u">git push -u</h2>
+<p>部分程序员在 <code>git push</code> 的时候，会加上 <code>-u</code> 这个参数，这个主要目的是为了能够使用不带参数的 <code>git pull</code> 命令，更方便地拉取分支代码。其相当于是下面两条命令的结合（<code>master</code> 也可以换成其它分支名字，此处仅仅是一个例子）：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git push -u origin master
+git push origin master ; git branch --set-upstream master origin/master
+</code></pre></div><p>假如我们本地<strong>新建</strong>了一个分支，<code>git push</code> 不带 <code>-u</code>，你 <code>git pull</code> 的时候，<code>git</code> 会提示你不能直接这样用：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ git checkout -b test
+$ git push origin test
+$ git pull
+You asked me to pull without telling me which branch you
+want to merge with, and <span style="color:#e6db74">&#39;branch.test.merge&#39;</span> in
+your configuration file does not tell me, either. Please
+specify which branch you want to use on the command line and
+try again <span style="color:#f92672">(</span>e.g. <span style="color:#e6db74">&#39;git pull &lt;repository&gt; &lt;refspec&gt;&#39;</span><span style="color:#f92672">)</span>.
+See git-pull<span style="color:#f92672">(</span>1<span style="color:#f92672">)</span> <span style="color:#66d9ef">for</span> details.
+
+If you often merge with the same branch, you may want to
+use something like the following in your configuration file:
+
+    <span style="color:#f92672">[</span>branch <span style="color:#e6db74">&#34;test&#34;</span><span style="color:#f92672">]</span>
+    remote <span style="color:#f92672">=</span> &lt;nickname&gt;
+    merge <span style="color:#f92672">=</span> &lt;remote-ref&gt;
+
+    <span style="color:#f92672">[</span>remote <span style="color:#e6db74">&#34;&lt;nickname&gt;&#34;</span><span style="color:#f92672">]</span>
+    url <span style="color:#f92672">=</span> &lt;url&gt;
+    fetch <span style="color:#f92672">=</span> &lt;refspec&gt;
+
+See git-config<span style="color:#f92672">(</span>1<span style="color:#f92672">)</span> <span style="color:#66d9ef">for</span> details.
+</code></pre></div><p>假设 <code>git push</code> 的时候，带上了 <code>-u</code> 这个参数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ git push -u origin test
+Branch test set up to track remote branch test from origin.
+Everything up-to-date
+$ git pull
+Already up-to-date.
+</code></pre></div><h2 id="fetch">fetch</h2>
+<p><code>git fetch</code> 也可以拉取远程分支的文件，它和 <code>git pull</code> 的不同之处在于，它不会自动执行 <code>git merge</code>。</p>
+<p><code>git pull</code> = <code>git fetch</code> + <code>git merge</code></p>
+<p><img src="/images/docs/tutorial/git/git-push-and-pull/git-fetch.png" alt=""></p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://stackoverflow.com/questions/292357/what-is-the-difference-between-git-pull-and-git-fetch">What is the difference between &lsquo;git pull&rsquo; and &lsquo;git fetch&rsquo;?</a></li>
+<li><a href="https://stackoverflow.com/questions/5697750/what-exactly-does-the-u-do-git-push-u-origin-master-vs-git-push-origin-ma">What exactly does the “u” do? “git push -u origin master” vs “git push origin master”</a></li>
+</ul>
+<p>扫描下面二维码，在手机端阅读：</p>
+<p><img src="/images/docs/tutorial/git/git-push-and-pull/qrcode.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#远程版本库地址">远程版本库地址</a></li>
+    <li><a href="#push-和-pull">push 和 pull</a></li>
+    <li><a href="#git-push--u">git push -u</a></li>
+    <li><a href="#fetch">fetch</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
