@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
 
 
-<script defer src="/en.search.min.562d59b0a6c94e39cce3d76fe4357a0ad115206ec47d9732e6317d62e5a0a1ea.js" integrity="sha256-Vi1ZsKbJTjnM49dv5DV6CtEVIG7EfZcy5jF9YuWgoeo="></script>
+<script defer src="/en.search.min.0fc6e86633b969097ab0e0244e334cab29f3904fdc1fe3d093f31d81e23612a2.js" integrity="sha256-D8boZjO5aQl6sOAkTjNMqynzkE/cH&#43;PQk/MdgeI2EqI="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -461,28 +461,28 @@ var _hmt = _hmt || [];
 <p><img src="/images/docs/rocketmq/rocketmq-master-slave-sync/master_slave_sync_architecture.png" alt="主备架构"></p>
 <p>为了能够将 Master 和 Slave 搭建在同一台计算机上，我们除了需要将 Broker 的角色设置为 <code>SLAVE</code> ，还需要为其指定单独的 <code>brokerId</code>、 <code>storePathRootDir</code>、 <code>storePathCommitLog</code>。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// SLAVE 角色
-</span><span style="color:#75715e"></span>messageStoreConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setBrokerRole</span><span style="color:#f92672">(</span>BrokerRole<span style="color:#f92672">.</span><span style="color:#a6e22e">SLAVE</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>messageStoreConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setBrokerRole</span><span style="color:#f92672">(</span>BrokerRole<span style="color:#f92672">.</span><span style="color:#a6e22e">SLAVE</span><span style="color:#f92672">);</span>
 
 <span style="color:#75715e">// 一个机器如果要启动多个 Broker，那么每个 Broker 的 store 根目录必须不同
-</span><span style="color:#75715e"></span>messageStoreConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setStorePathRootDir</span><span style="color:#f92672">(</span>storePathRootDir<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>messageStoreConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setStorePathRootDir</span><span style="color:#f92672">(</span>storePathRootDir<span style="color:#f92672">);</span>
 <span style="color:#75715e">// 一个机器如果要启动多个 Broker，那么每个 Broker 的 storePathCommitLog 根目录必须不同
-</span><span style="color:#75715e"></span>messageStoreConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setStorePathCommitLog</span><span style="color:#f92672">(</span>storePathCommitLog<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>messageStoreConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setStorePathCommitLog</span><span style="color:#f92672">(</span>storePathCommitLog<span style="color:#f92672">);</span>
 <span style="color:#75715e">// 设置 Slave 的 Master HA 地址
-</span><span style="color:#75715e"></span>messageStoreConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setHaMasterAddress</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;localhost:10912&#34;</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>messageStoreConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setHaMasterAddress</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;localhost:10912&#34;</span><span style="color:#f92672">);</span>
 
 <span style="color:#75715e">// SLAVE 角色的 brokerId 必须大于 0
-</span><span style="color:#75715e"></span>brokerConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setBrokerId</span><span style="color:#f92672">(</span>1<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>brokerConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setBrokerId</span><span style="color:#f92672">(</span>1<span style="color:#f92672">);</span>
 </code></pre></div><p>注意 Slave 和 Master 的 <code>brokerName</code> 必须一致，即它们必须处于同一个 <code>BrokerData</code> 数据结构里面。实际上在做了如上的修改之后， Slave 和 Master 依旧不能同时运行在同一台机器上，因为 Slave 本身也可以称为 Master，接受来自其他 Slave 的请求，因此当运行 Slave 的时候，需要将 <code>HAService</code> 里面的启动 <code>AcceptSocketService</code> 运行的相关方法注释掉。</p>
 <h2 id="三建立连接">三、建立连接</h2>
 <p>当一个 Broker 在启动的时候，会调用 <code>HAService</code> 的 <code>start()</code> 方法:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HAService</span> <span style="color:#f92672">{</span>
 
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">start</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">acceptSocketService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">beginAccept</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
-        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">acceptSocketService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">start</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">acceptSocketService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">beginAccept</span><span style="color:#f92672">();</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">acceptSocketService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
         
-        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">groupTransferService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
-        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">haClient</span><span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">groupTransferService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">haClient</span><span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
     <span style="color:#f92672">}</span>
     
 <span style="color:#f92672">}</span>
@@ -502,14 +502,14 @@ var _hmt = _hmt || [];
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">handleHA</span><span style="color:#f92672">(</span>AppendMessageResult result<span style="color:#f92672">,</span> PutMessageResult putMessageResult<span style="color:#f92672">,</span> MessageExt messageExt<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>BrokerRole<span style="color:#f92672">.</span><span style="color:#a6e22e">SYNC_MASTER</span> <span style="color:#f92672">=</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMessageStore</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageStoreConfig</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBrokerRole</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-            HAService service <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMessageStore</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getHaService</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>BrokerRole<span style="color:#f92672">.</span><span style="color:#a6e22e">SYNC_MASTER</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMessageStore</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageStoreConfig</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getBrokerRole</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            HAService service <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMessageStore</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getHaService</span><span style="color:#f92672">();</span>
 
             <span style="color:#75715e">// 消息是否允许等待同步
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>messageExt<span style="color:#f92672">.</span><span style="color:#a6e22e">isWaitStoreMsgOK</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>messageExt<span style="color:#f92672">.</span><span style="color:#a6e22e">isWaitStoreMsgOK</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
                 
                 <span style="color:#75715e">// Slave 是否没有落下 Master 太多
-</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>service<span style="color:#f92672">.</span><span style="color:#a6e22e">isSlaveOK</span><span style="color:#f92672">(</span>result<span style="color:#f92672">.</span><span style="color:#a6e22e">getWroteOffset</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">+</span> result<span style="color:#f92672">.</span><span style="color:#a6e22e">getWroteBytes</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>service<span style="color:#f92672">.</span><span style="color:#a6e22e">isSlaveOK</span><span style="color:#f92672">(</span>result<span style="color:#f92672">.</span><span style="color:#a6e22e">getWroteOffset</span><span style="color:#f92672">()</span> <span style="color:#f92672">+</span> result<span style="color:#f92672">.</span><span style="color:#a6e22e">getWroteBytes</span><span style="color:#f92672">()))</span> <span style="color:#f92672">{</span>
                     <span style="color:#75715e">// 等待同步完成
 </span><span style="color:#75715e"></span>                    <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>                <span style="color:#f92672">}</span>
@@ -517,7 +517,7 @@ var _hmt = _hmt || [];
                 <span style="color:#75715e">// Slave problem
 </span><span style="color:#75715e"></span>                <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
                     <span style="color:#75715e">// Tell the producer, slave not available
-</span><span style="color:#75715e"></span>                    putMessageResult<span style="color:#f92672">.</span><span style="color:#a6e22e">setPutMessageStatus</span><span style="color:#f92672">(</span>PutMessageStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">SLAVE_NOT_AVAILABLE</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>                    putMessageResult<span style="color:#f92672">.</span><span style="color:#a6e22e">setPutMessageStatus</span><span style="color:#f92672">(</span>PutMessageStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">SLAVE_NOT_AVAILABLE</span><span style="color:#f92672">);</span>
                 <span style="color:#f92672">}</span>
             <span style="color:#f92672">}</span>
         <span style="color:#f92672">}</span>
@@ -529,15 +529,15 @@ var _hmt = _hmt || [];
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HAService</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isSlaveOK</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> masterPutWhere<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">boolean</span> result <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">connectionCount</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">boolean</span> result <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">connectionCount</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">;</span>
 
         result <span style="color:#f92672">=</span>
             result
 
-            <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> <span style="color:#f92672">(</span><span style="color:#f92672">(</span>masterPutWhere <span style="color:#f92672">-</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">push2SlaveMaxOffset</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">&lt;</span>
+            <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">((</span>masterPutWhere <span style="color:#f92672">-</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">push2SlaveMaxOffset</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">())</span> <span style="color:#f92672">&lt;</span>
                 <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMessageStore</span>
-                <span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageStoreConfig</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span>
-                <span style="color:#f92672">.</span><span style="color:#a6e22e">getHaSlaveFallbehindMax</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span> <span style="color:#75715e">// 默认 256 * 1024 * 1024 = 256 MB
+                <span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageStoreConfig</span><span style="color:#f92672">()</span>
+                <span style="color:#f92672">.</span><span style="color:#a6e22e">getHaSlaveFallbehindMax</span><span style="color:#f92672">());</span> <span style="color:#75715e">// 默认 256 * 1024 * 1024 = 256 MB
 </span><span style="color:#75715e"></span>        
         <span style="color:#66d9ef">return</span> result<span style="color:#f92672">;</span>
     <span style="color:#f92672">}</span>
@@ -547,19 +547,19 @@ var _hmt = _hmt || [];
 <p>消息等待是否同步到 Slave 是借助 <code>CountDownLatch</code> 来实现的。当消息需要等待的时候，便会构建一个 <code>GroupCommitRequest</code> ，每个请求在其内部都维护了一个 <code>CountDownLatch</code> ，然后通过调用 <code>await(timeout)</code> 方法来等待消息同步到 Slave 之后，或者超时之后自动返回。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">GroupCommitRequest</span> <span style="color:#f92672">{</span>
 
-    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> CountDownLatch countDownLatch <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> CountDownLatch<span style="color:#f92672">(</span>1<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> CountDownLatch countDownLatch <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> CountDownLatch<span style="color:#f92672">(</span>1<span style="color:#f92672">);</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">wakeupCustomer</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> flushOK<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">flushOK</span> <span style="color:#f92672">=</span> flushOK<span style="color:#f92672">;</span>
-        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">countDownLatch</span><span style="color:#f92672">.</span><span style="color:#a6e22e">countDown</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">countDownLatch</span><span style="color:#f92672">.</span><span style="color:#a6e22e">countDown</span><span style="color:#f92672">();</span>
     <span style="color:#f92672">}</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">waitForFlush</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> timeout<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">countDownLatch</span><span style="color:#f92672">.</span><span style="color:#a6e22e">await</span><span style="color:#f92672">(</span>timeout<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">MILLISECONDS</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">countDownLatch</span><span style="color:#f92672">.</span><span style="color:#a6e22e">await</span><span style="color:#f92672">(</span>timeout<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">MILLISECONDS</span><span style="color:#f92672">);</span>
             <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">flushOK</span><span style="color:#f92672">;</span>
         <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>InterruptedException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-            log<span style="color:#f92672">.</span><span style="color:#a6e22e">error</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Interrupted&#34;</span><span style="color:#f92672">,</span> e<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            log<span style="color:#f92672">.</span><span style="color:#a6e22e">error</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Interrupted&#34;</span><span style="color:#f92672">,</span> e<span style="color:#f92672">);</span>
             <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
         <span style="color:#f92672">}</span>
     <span style="color:#f92672">}</span>
@@ -574,20 +574,20 @@ var _hmt = _hmt || [];
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">putRequest</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> CommitLog<span style="color:#f92672">.</span><span style="color:#a6e22e">GroupCommitRequest</span> request<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>        <span style="color:#75715e">// 放入请求，唤醒
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>hasNotified<span style="color:#f92672">.</span><span style="color:#a6e22e">compareAndSet</span><span style="color:#f92672">(</span><span style="color:#66d9ef">false</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-            waitPoint<span style="color:#f92672">.</span><span style="color:#a6e22e">countDown</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span> <span style="color:#75715e">// notify
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>hasNotified<span style="color:#f92672">.</span><span style="color:#a6e22e">compareAndSet</span><span style="color:#f92672">(</span><span style="color:#66d9ef">false</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            waitPoint<span style="color:#f92672">.</span><span style="color:#a6e22e">countDown</span><span style="color:#f92672">();</span> <span style="color:#75715e">// notify
 </span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span>
     <span style="color:#f92672">}</span>
 
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// 循环体
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span><span style="color:#f92672">!</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">isStopped</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">isStopped</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
             <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
                 <span style="color:#75715e">// putRequest 会提前唤醒这句话
-</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">waitForRunning</span><span style="color:#f92672">(</span>10<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
-                <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">doWaitTransfer</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">waitForRunning</span><span style="color:#f92672">(</span>10<span style="color:#f92672">);</span>
+                <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">doWaitTransfer</span><span style="color:#f92672">();</span>
             <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Exception e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-                log<span style="color:#f92672">.</span><span style="color:#a6e22e">warn</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getServiceName</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; service has exception. &#34;</span><span style="color:#f92672">,</span> e<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+                log<span style="color:#f92672">.</span><span style="color:#a6e22e">warn</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getServiceName</span><span style="color:#f92672">()</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; service has exception. &#34;</span><span style="color:#f92672">,</span> e<span style="color:#f92672">);</span>
             <span style="color:#f92672">}</span>
         <span style="color:#f92672">}</span>
 
@@ -600,16 +600,16 @@ var _hmt = _hmt || [];
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WriteSocketService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// 循环体
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span><span style="color:#f92672">!</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">isStopped</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">isStopped</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
             SelectMappedBufferResult selectResult <span style="color:#f92672">=</span>
-                HAConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">haService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getDefaultMessageStore</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getCommitLogData</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">nextTransferFromWhere</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
-            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>selectResult <span style="color:#f92672">!</span><span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                HAConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">haService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getDefaultMessageStore</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getCommitLogData</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">nextTransferFromWhere</span><span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>selectResult <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
                 <span style="color:#75715e">// 传输（写入）消息
 </span><span style="color:#75715e"></span>            <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
                 <span style="color:#75715e">// 等待 100 毫秒或者提前被唤醒
-</span><span style="color:#75715e"></span>                HAConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">haService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getWaitNotifyObject</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">allWaitForRunning</span><span style="color:#f92672">(</span>100<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>                HAConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">haService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getWaitNotifyObject</span><span style="color:#f92672">().</span><span style="color:#a6e22e">allWaitForRunning</span><span style="color:#f92672">(</span>100<span style="color:#f92672">);</span>
             <span style="color:#f92672">}</span>
         <span style="color:#f92672">}</span>
     <span style="color:#f92672">}</span>
@@ -622,11 +622,11 @@ var _hmt = _hmt || [];
                          PutMessageResult putMessageResult<span style="color:#f92672">,</span>
                          MessageExt messageExt<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         GroupCommitRequest request <span style="color:#f92672">=</span>
-            <span style="color:#66d9ef">new</span> GroupCommitRequest<span style="color:#f92672">(</span>result<span style="color:#f92672">.</span><span style="color:#a6e22e">getWroteOffset</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">+</span>
-                                   result<span style="color:#f92672">.</span><span style="color:#a6e22e">getWroteBytes</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
-        service<span style="color:#f92672">.</span><span style="color:#a6e22e">putRequest</span><span style="color:#f92672">(</span>request<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">new</span> GroupCommitRequest<span style="color:#f92672">(</span>result<span style="color:#f92672">.</span><span style="color:#a6e22e">getWroteOffset</span><span style="color:#f92672">()</span> <span style="color:#f92672">+</span>
+                                   result<span style="color:#f92672">.</span><span style="color:#a6e22e">getWroteBytes</span><span style="color:#f92672">());</span>
+        service<span style="color:#f92672">.</span><span style="color:#a6e22e">putRequest</span><span style="color:#f92672">(</span>request<span style="color:#f92672">);</span>
         <span style="color:#75715e">// 提前唤醒 WriteSocketService
-</span><span style="color:#75715e"></span>        service<span style="color:#f92672">.</span><span style="color:#a6e22e">getWaitNotifyObject</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">.</span><span style="color:#a6e22e">wakeupAll</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>        service<span style="color:#f92672">.</span><span style="color:#a6e22e">getWaitNotifyObject</span><span style="color:#f92672">().</span><span style="color:#a6e22e">wakeupAll</span><span style="color:#f92672">();</span>
     <span style="color:#f92672">}</span>
     
 <span style="color:#f92672">}</span>
@@ -635,9 +635,9 @@ var _hmt = _hmt || [];
 </ul>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReadSocketService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
-    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">processReadEvent</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">processReadEvent</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// 唤醒 GroupTransferService
-</span><span style="color:#75715e"></span>        HAConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">haService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notifyTransferSome</span><span style="color:#f92672">(</span>HAConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">slaveAckOffset</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>        HAConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">haService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notifyTransferSome</span><span style="color:#f92672">(</span>HAConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">slaveAckOffset</span><span style="color:#f92672">);</span>
     <span style="color:#f92672">}</span>
     
 <span style="color:#f92672">}</span>
@@ -645,23 +645,23 @@ var _hmt = _hmt || [];
 <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">GroupTransferService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#75715e">// 被唤醒
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">notifyTransferSome</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notifyTransferObject</span><span style="color:#f92672">.</span><span style="color:#a6e22e">wakeup</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">notifyTransferSome</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notifyTransferObject</span><span style="color:#f92672">.</span><span style="color:#a6e22e">wakeup</span><span style="color:#f92672">();</span>
     <span style="color:#f92672">}</span>
 
-    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doWaitTransfer</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doWaitTransfer</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>CommitLog<span style="color:#f92672">.</span><span style="color:#a6e22e">GroupCommitRequest</span> req <span style="color:#f92672">:</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">requestsRead</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">boolean</span> transferOK <span style="color:#f92672">=</span> HAService<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">push2SlaveMaxOffset</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span><span style="color:#f92672">=</span> req<span style="color:#f92672">.</span><span style="color:#a6e22e">getNextOffset</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">boolean</span> transferOK <span style="color:#f92672">=</span> HAService<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">push2SlaveMaxOffset</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;=</span> req<span style="color:#f92672">.</span><span style="color:#a6e22e">getNextOffset</span><span style="color:#f92672">();</span>
 
             <span style="color:#75715e">// 5 次重试
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> <span style="color:#f92672">!</span>transferOK <span style="color:#f92672">&amp;</span><span style="color:#f92672">&amp;</span> i <span style="color:#f92672">&lt;</span> 5<span style="color:#f92672">;</span> i<span style="color:#f92672">+</span><span style="color:#f92672">+</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> <span style="color:#f92672">!</span>transferOK <span style="color:#f92672">&amp;&amp;</span> i <span style="color:#f92672">&lt;</span> 5<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
                 <span style="color:#75715e">// 等待被唤醒或者超时
-</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notifyTransferObject</span><span style="color:#f92672">.</span><span style="color:#a6e22e">waitForRunning</span><span style="color:#f92672">(</span>1000<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
-                transferOK <span style="color:#f92672">=</span> HAService<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">push2SlaveMaxOffset</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span><span style="color:#f92672">=</span> req<span style="color:#f92672">.</span><span style="color:#a6e22e">getNextOffset</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notifyTransferObject</span><span style="color:#f92672">.</span><span style="color:#a6e22e">waitForRunning</span><span style="color:#f92672">(</span>1000<span style="color:#f92672">);</span>
+                transferOK <span style="color:#f92672">=</span> HAService<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">push2SlaveMaxOffset</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;=</span> req<span style="color:#f92672">.</span><span style="color:#a6e22e">getNextOffset</span><span style="color:#f92672">();</span>
             <span style="color:#f92672">}</span>
 
             <span style="color:#75715e">// 唤醒 GroupCommitRequest 的 CountDownLatch
-</span><span style="color:#75715e"></span>            req<span style="color:#f92672">.</span><span style="color:#a6e22e">wakeupCustomer</span><span style="color:#f92672">(</span>transferOK<span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+</span><span style="color:#75715e"></span>            req<span style="color:#f92672">.</span><span style="color:#a6e22e">wakeupCustomer</span><span style="color:#f92672">(</span>transferOK<span style="color:#f92672">);</span>
         <span style="color:#f92672">}</span>
     <span style="color:#f92672">}</span>
     
@@ -672,7 +672,7 @@ var _hmt = _hmt || [];
     <span style="color:#75715e">// 被唤醒
 </span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">wakeupCustomer</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> flushOK<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">flushOK</span> <span style="color:#f92672">=</span> flushOK<span style="color:#f92672">;</span>
-        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">countDownLatch</span><span style="color:#f92672">.</span><span style="color:#a6e22e">countDown</span><span style="color:#f92672">(</span><span style="color:#f92672">)</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">countDownLatch</span><span style="color:#f92672">.</span><span style="color:#a6e22e">countDown</span><span style="color:#f92672">();</span>
     <span style="color:#f92672">}</span>
 
 <span style="color:#f92672">}</span>
