@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="子数组的最大平均值"><meta property="og:title" content="子数组的最大平均值" />
+<meta property="og:description" content="子数组的最大平均值 描述 原题 给定一个由 n 个整数组成的数组，找到给定长度 k 的连续子数组，该子数组具有最大平均值。你需要输出最大平均值。
+答案  前缀和  // https://www.lintcode.com/problem/maximum-average-subarray/description // 给定一个由 n 个整数组成的数组，找到给定长度 k 的连续子数组，该子数组具有最大平均值。你需要输出最大平均值。 // 注意这个长度 k 是固定的 // public class MaximumAverageSubarray { public double findMaxAverage(int[] nums, int k) { int[] prefixSum = prefixSum(nums); int maxSum = 0; for (int i = k; i &lt; prefixSum.length; i&#43;&#43;) { maxSum = Math.max(maxSum, prefixSum[i] - prefixSum[i - k]); } return maxSum * 1.0 / k; } private int[] prefixSum(int[] nums) { int[] prefixSum = new int[nums." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/algorithm/maximumaveragesubarray/" />
+
+<title>子数组的最大平均值 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.46ce30c09fe23cd7fa2503cafca6a8518a7798aefd1baccbb06b4051897c7f1e.js" integrity="sha256-Rs4wwJ/iPNf6JQPK/KaoUYp3mK79G6zLsGtAUYl8fx4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock/" >
+      Best Time to Buy and Sell Stock
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock-2/" >
+      Best Time to Buy and Sell Stock Ⅱ
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock-3/" >
+      Best Time to Buy and Sell Stock Ⅲ
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock-4/" >
+      Best Time to Buy and Sell Stock Ⅳ
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock-with-cooldown/" >
+      Best Time to Buy and Sell Stock With Cooldown
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock-with-transaction-fee/" >
+      Best Time to Buy and Sell Stock with Transaction Fee
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/binary-search/" >
+      Binary Search 二分搜索
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/circular-array/" >
+      Circular Array (循环数组)
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/container-with-most-water/" >
+      Container With Most Water
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/countofsmallerafterself/" >
+      Count Of Smaller After Self
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/designcircularqueue/" >
+      设计循环队列
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/findfirstandlastpositionofelementinsortedarray/" >
+      有序数组查找最小和最大元素的位置
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/findmedianfromdatastream/" >
+      数据流寻找中位数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/findminimuminrotatedsortedarray/" >
+      旋转有序数组中寻找最小数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/findpeakelement/" >
+      寻找峰值元素
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/findtheduplicatenumber/" >
+      寻找重复数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/firstmissingpositive/" >
+      第一个缺失的最小正数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/firstuniquenumberindatastream/" >
+      数据流的第一个唯一数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/insertinterval/" >
+      插入 Interval
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/intersectionoftwoarrays/" >
+      数组交集
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/ksmallestnuminanarray/" >
+      最小的K个数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/kdiffpairsinanarray/" >
+      绝对值差为K的数对数量
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/kthlargestelement/" >
+      第 K 个最大的数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/kthsmallestelement/" >
+      第 K 个最小的数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/largestnumber/" >
+      数组元素所能拼成的最大数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/largestrectangleinhistogram/" >
+      柱状图中最大的矩形
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/longestsequence/" >
+      最长序列
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/majorityelement/" >
+      找出过半数的元素
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maxareaofisland/" >
+      最大的岛屿
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maxpointsonaline/" >
+      直线上最多的点数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximalrectangle/" >
+      最大的矩形
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximumaveragesubarray/"  class="active">
+      子数组的最大平均值
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximumproductsubarray/" >
+      连续子数组最大乘积
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximumsizesubarraysumequalsk/" >
+      最大子数组之和为 K
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximumsubmatrix/" >
+      最大子矩阵
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximumswap/" >
+      最大的交换
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/medianoftwosortedarrays/" >
+      两个有序数组合并后的中位数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/mergeintervals/" >
+      合并区间
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/mergeksortedarrays/" >
+      合并 K 个有序数组
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/minimumsizesubarraysum/" >
+      长度最小的子数组
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>子数组的最大平均值</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#描述">描述</a></li>
+    <li><a href="#答案">答案</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="子数组的最大平均值">子数组的最大平均值</h1>
+<h2 id="描述">描述</h2>
+<p><a href="https://www.lintcode.com/problem/maximum-average-subarray/description">原题</a> 给定一个由 <code>n</code> 个整数组成的数组，找到给定长度 <code>k</code> 的连续子数组，该子数组具有最大平均值。你需要输出最大平均值。</p>
+<h2 id="答案">答案</h2>
+<ul>
+<li>前缀和</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// https://www.lintcode.com/problem/maximum-average-subarray/description
+</span><span style="color:#75715e">// 给定一个由 n 个整数组成的数组，找到给定长度 k 的连续子数组，该子数组具有最大平均值。你需要输出最大平均值。
+</span><span style="color:#75715e">// 注意这个长度 k 是固定的
+</span><span style="color:#75715e">//
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MaximumAverageSubarray</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">double</span> <span style="color:#a6e22e">findMaxAverage</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> nums<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> k<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> prefixSum <span style="color:#f92672">=</span> prefixSum<span style="color:#f92672">(</span>nums<span style="color:#f92672">);</span>
+
+        <span style="color:#66d9ef">int</span> maxSum <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> k<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> prefixSum<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+            maxSum <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>maxSum<span style="color:#f92672">,</span> prefixSum<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#f92672">-</span> prefixSum<span style="color:#f92672">[</span>i <span style="color:#f92672">-</span> k<span style="color:#f92672">]);</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">return</span> maxSum <span style="color:#f92672">*</span> 1<span style="color:#f92672">.</span><span style="color:#a6e22e">0</span> <span style="color:#f92672">/</span> k<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> <span style="color:#a6e22e">prefixSum</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> nums<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> prefixSum <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">int</span><span style="color:#f92672">[</span>nums<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span> <span style="color:#f92672">+</span> 1<span style="color:#f92672">];</span>
+
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;=</span> nums<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+            prefixSum<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> prefixSum<span style="color:#f92672">[</span>i <span style="color:#f92672">-</span> 1<span style="color:#f92672">]</span> <span style="color:#f92672">+</span> nums<span style="color:#f92672">[</span>i <span style="color:#f92672">-</span> 1<span style="color:#f92672">];</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">return</span> prefixSum<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div></article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#描述">描述</a></li>
+    <li><a href="#答案">答案</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
