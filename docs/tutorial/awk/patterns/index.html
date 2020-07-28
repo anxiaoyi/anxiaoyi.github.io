@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Patterns"><meta property="og:title" content="Patterns" />
+<meta property="og:description" content="Patterns Patterns 控制是否执行 actions，只有当 pattern 匹配的时候，才会执行 action。
+本文介绍六种常用的 pattern：
+ BEGIN { statements }：所有行处理之前执行一次 BEGIN END { statements }：所有行处理完了执行一次 END expression { statements }：普通的表达式 /正则表达式/ { statements }：匹配正则 组合表达式 { statements }：使用 &amp;&amp; 或 || 或 ! 进行组合 pattern1, pattern2 { statements }：范围匹配  BEGIN 和 END BEGIN 和 END 只会执行一次，BEGIN 是在开始执行前执行，END 是在结束前执行。
+一种常见的使用 BEGIN 的用法是改变默认的列分割符，列分割符默认被一个内置变量 FS 所控制，这个变量的默认值是空格或者tabs。如下示例在 BEGIN 中设置了 FS 为 \t，同时打印了表头。在 END 块中打印了面积和人口的总和。
+BEGIN { FS = &#34;\t&#34; printf(&#34;%10s %6s %5s %s\n\n&#34;, &#34;COUNTRY&#34;, &#34;AREA&#34;, &#34;POP&#34;, &#34;CONTINENT&#34;) } { printf(&#34;%10s %6d %5d %s\n&#34;, $1, $2, $3, $4) area = area &#43; $2 pop = pop &#43; $3 } END { printf(&#34;\n%10s %6d %5d\n&#34;, &#34;TOTAL&#34;, area, pop) } expression 表达式示例：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/awk/patterns/" />
+
+<title>Patterns | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.28a14e52aafc5fa27e3a17ae0222be7aaf1ff01a297a513c855a4f8cc06c2c62.js" integrity="sha256-KKFOUqr8X6J&#43;OheuAiK&#43;eq8f8BopelE8hVpPjMBsLGI="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/awk/intro/" >
+      简介
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/awk/patterns/"  class="active">
+      Patterns
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Patterns</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#begin-和-end">BEGIN 和 END</a></li>
+    <li><a href="#expression">expression</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="patterns">Patterns</h1>
+<p><code>Patterns</code> 控制是否执行 <code>actions</code>，只有当 <code>pattern</code> 匹配的时候，才会执行 <code>action</code>。</p>
+<p>本文介绍六种常用的 <code>pattern</code>：</p>
+<ul>
+<li><code>BEGIN { statements }</code>：所有行处理之前执行一次 <code>BEGIN</code></li>
+<li><code>END { statements }</code>：所有行处理完了执行一次 <code>END</code></li>
+<li><code>expression { statements }</code>：普通的表达式</li>
+<li><code>/正则表达式/ { statements }</code>：匹配正则</li>
+<li><code>组合表达式 { statements }</code>：使用 <code>&amp;&amp;</code> 或 <code>||</code> 或 <code>!</code> 进行组合</li>
+<li><code>pattern1, pattern2 { statements }</code>：范围匹配</li>
+</ul>
+<h2 id="begin-和-end">BEGIN 和 END</h2>
+<p>BEGIN 和 END 只会执行一次，BEGIN 是在开始执行前执行，END 是在结束前执行。</p>
+<p>一种常见的使用 BEGIN 的用法是改变默认的列分割符，列分割符默认被一个内置变量 <code>FS</code> 所控制，这个变量的默认值是<strong>空格或者tabs</strong>。如下示例在 BEGIN 中设置了 <code>FS</code> 为 <code>\t</code>，同时打印了表头。在 END 块中打印了面积和人口的总和。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-awk" data-lang="awk">BEGIN {
+        FS <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;\t&#34;</span>
+        <span style="color:#66d9ef">printf</span>(<span style="color:#e6db74">&#34;%10s %6s %5s   %s\n\n&#34;</span>, <span style="color:#e6db74">&#34;COUNTRY&#34;</span>, <span style="color:#e6db74">&#34;AREA&#34;</span>, <span style="color:#e6db74">&#34;POP&#34;</span>, <span style="color:#e6db74">&#34;CONTINENT&#34;</span>) 
+      }
+      {
+        <span style="color:#66d9ef">printf</span>(<span style="color:#e6db74">&#34;%10s %6d %5d   %s\n&#34;</span>, <span style="color:#f92672">$</span><span style="color:#ae81ff">1</span>, <span style="color:#f92672">$</span><span style="color:#ae81ff">2</span>, <span style="color:#f92672">$</span><span style="color:#ae81ff">3</span>, <span style="color:#f92672">$</span><span style="color:#ae81ff">4</span>)
+        <span style="color:#a6e22e">area</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">area</span> <span style="color:#f92672">+</span> <span style="color:#f92672">$</span><span style="color:#ae81ff">2</span>
+        <span style="color:#a6e22e">pop</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">pop</span> <span style="color:#f92672">+</span> <span style="color:#f92672">$</span><span style="color:#ae81ff">3</span>
+      }
+END {
+        <span style="color:#66d9ef">printf</span>(<span style="color:#e6db74">&#34;\n%10s %6d %5d\n&#34;</span>, <span style="color:#e6db74">&#34;TOTAL&#34;</span>, <span style="color:#a6e22e">area</span>, <span style="color:#a6e22e">pop</span>)
+    }
+</code></pre></div><h2 id="expression">expression</h2>
+<p>表达式示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-awk" data-lang="awk"><span style="color:#f92672">$</span><span style="color:#ae81ff">3</span> <span style="color:#f92672">/</span> <span style="color:#f92672">$</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0.5</span>
+<span style="color:#f92672">$</span><span style="color:#ae81ff">0</span> <span style="color:#f92672">&gt;=</span> <span style="color:#e6db74">&#34;M&#34;</span>
+<span style="color:#f92672">$</span><span style="color:#ae81ff">1</span> <span style="color:#f92672">&lt;</span> <span style="color:#f92672">$</span><span style="color:#ae81ff">4</span>
+</code></pre></div><p>可用的比较符号：</p>
+<p><img src="/images/docs/tutorial/awk/patterns/comparison_operators.png" alt=""></p>
+<blockquote>
+<p><code>~</code> 和 <code>!~</code> 是专门用于比较字符串的符号</p>
+</blockquote>
+<p>如果表达式返回的是一个布尔值，那么根据此布尔值来决定是否匹配这一行；如果表达式返回的是一个数字，那么数字如果是非 0 数字，会匹配这一行；如果表达式返回的是一个字符串，那么非空字符串，会匹配这一行。</p>
+<p>当比较操作符的两个比较对象，均为数字，那么使用数字的比较原则进行大小比较；否则任何数字将会被转为字符串，使用字符串的方式按照 ASCII 顺序进行比较。</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#begin-和-end">BEGIN 和 END</a></li>
+    <li><a href="#expression">expression</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
