@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="限流器"><meta property="og:title" content="限流器" />
+<meta property="og:description" content="限流器  基于 Token Bucket 的限流算法 基于 Redis 的限流算法  public class RateLimiter { public static long now() { return System.currentTimeMillis(); } // ==================  // - Token Bucket  // - Redis  // ==================  // =========================  // Token Bucket 算法  // 每过 RATE / PER 时间，就加  // =========================  public static class TokenBucketRateLimiter { private long lastCheck = now(); private static final int RATE = 5; // 5 requests  private static final int PER = 8; // 8 seconds  private int allowance = RATE; public boolean overhead(String key) { long current = now(); long timePassed = current - lastCheck; lastCheck = timePassed; // ======================  // 过去的这段时间内可以增加多少个 allowance  // ======================  allowance &#43;= timePassed * (RATE / PER); if (allowance &gt; RATE) { allowance = RATE; } // ======================  // 是否能够减去 1." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/algorithm/ratelimiter/" />
+
+<title>限流器 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.fd01f39d6ac70bc5c364aa14ebf9d5d39eacac192a49398e77586a35137a31cb.js" integrity="sha256-/QHznWrHC8XDZKoU6/nV056srBkqSTmOd1hqNRN6Mcs="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock/" >
+      Best Time to Buy and Sell Stock
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock-2/" >
+      Best Time to Buy and Sell Stock Ⅱ
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock-3/" >
+      Best Time to Buy and Sell Stock Ⅲ
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock-4/" >
+      Best Time to Buy and Sell Stock Ⅳ
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock-with-cooldown/" >
+      Best Time to Buy and Sell Stock With Cooldown
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock-with-transaction-fee/" >
+      Best Time to Buy and Sell Stock with Transaction Fee
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/binary-search/" >
+      Binary Search 二分搜索
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/circular-array/" >
+      Circular Array (循环数组)
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/container-with-most-water/" >
+      Container With Most Water
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/countofsmallerafterself/" >
+      Count Of Smaller After Self
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/designcircularqueue/" >
+      设计循环队列
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/findfirstandlastpositionofelementinsortedarray/" >
+      有序数组查找最小和最大元素的位置
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/findmedianfromdatastream/" >
+      数据流寻找中位数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/findminimuminrotatedsortedarray/" >
+      旋转有序数组中寻找最小数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/findpeakelement/" >
+      寻找峰值元素
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/findtheduplicatenumber/" >
+      寻找重复数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/firstmissingpositive/" >
+      第一个缺失的最小正数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/firstuniquenumberindatastream/" >
+      数据流的第一个唯一数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/insertinterval/" >
+      插入区间
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/intersectionoftwoarrays/" >
+      数组交集
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/ksmallestnuminanarray/" >
+      最小的K个数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/kdiffpairsinanarray/" >
+      绝对值差为K的数对数量
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/kthlargestelement/" >
+      第 K 个最大的数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/kthsmallestelement/" >
+      第 K 个最小的数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/largestnumber/" >
+      数组元素所能拼成的最大数字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/largestrectangleinhistogram/" >
+      柱状图中最大的矩形
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/longestsequence/" >
+      最长序列
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/majorityelement/" >
+      找出过半数的元素
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maxareaofisland/" >
+      最大的岛屿
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maxpointsonaline/" >
+      直线上最多的点数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximalrectangle/" >
+      最大的矩形
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximumaveragesubarray/" >
+      子数组的最大平均值
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximumproductsubarray/" >
+      连续子数组最大乘积
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximumsizesubarraysumequalsk/" >
+      最大子数组之和为 K
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximumsubmatrix/" >
+      最大子矩阵
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/maximumswap/" >
+      最大的交换
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/medianoftwosortedarrays/" >
+      两个有序数组合并后的中位数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/mergeintervals/" >
+      合并区间
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/mergeksortedarrays/" >
+      合并 K 个有序数组
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/minimumsizesubarraysum/" >
+      长度最小的子数组
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/movingaveragefromdatastream/" >
+      数据流滑动窗口平均值
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/nextgreaterelementii/" >
+      下一个更大元素 II
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/nextpermutation/" >
+      下一个排列
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/numberofairplanesinthesky/" >
+      数飞机
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/partitionequalsubsetsum/" >
+      分割等和子集
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/productofarrayexceptself/" >
+      数组除了自身的乘积
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/queuereconstructionbyheight/" >
+      根据身高重建队列
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/ratelimiter/"  class="active">
+      限流器
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/removeduplicatesfromsortedarray/" >
+      删除排序数组中的重复项
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/removeelement/" >
+      移除元素
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/reversepairs/" >
+      逆序对
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/rotateimage/" >
+      旋转图像
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/searcha2dmatrix/" >
+      二维数组中的查找
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/searchforarange/" >
+      搜索区间
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/searchinrotatedsortedarray/" >
+      搜索旋转排序数组
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/slidingwindowmaximum/" >
+      滑动窗口最大值
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/slidingwindowmedian/" >
+      滑动窗口中位数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/sortcolors/" >
+      颜色分类
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/spiralmatrix/" >
+      螺旋矩阵
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/algorithm/splitarraylargestsum/" >
+      分割数组的最大值
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>限流器</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents"></nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="限流器">限流器</h1>
+<ul>
+<li>基于 Token Bucket 的限流算法</li>
+<li>基于 Redis 的限流算法</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RateLimiter</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">now</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#75715e">// ==================
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// - Token Bucket
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// - Redis
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// ==================
+</span><span style="color:#75715e"></span>
+    <span style="color:#75715e">// =========================
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// Token Bucket 算法
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 每过 RATE / PER 时间，就加
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// =========================
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TokenBucketRateLimiter</span> <span style="color:#f92672">{</span>
+
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">long</span> lastCheck <span style="color:#f92672">=</span> now<span style="color:#f92672">();</span>
+
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> RATE <span style="color:#f92672">=</span> 5<span style="color:#f92672">;</span> <span style="color:#75715e">// 5 requests
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> PER <span style="color:#f92672">=</span> 8<span style="color:#f92672">;</span> <span style="color:#75715e">// 8 seconds
+</span><span style="color:#75715e"></span>
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> allowance <span style="color:#f92672">=</span> RATE<span style="color:#f92672">;</span>
+
+        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">overhead</span><span style="color:#f92672">(</span>String key<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">long</span> current <span style="color:#f92672">=</span> now<span style="color:#f92672">();</span>
+            <span style="color:#66d9ef">long</span> timePassed <span style="color:#f92672">=</span> current <span style="color:#f92672">-</span> lastCheck<span style="color:#f92672">;</span>
+            lastCheck <span style="color:#f92672">=</span> timePassed<span style="color:#f92672">;</span>
+
+            <span style="color:#75715e">// ======================
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// 过去的这段时间内可以增加多少个 allowance
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// ======================
+</span><span style="color:#75715e"></span>
+            allowance <span style="color:#f92672">+=</span> timePassed <span style="color:#f92672">*</span> <span style="color:#f92672">(</span>RATE <span style="color:#f92672">/</span> PER<span style="color:#f92672">);</span>
+
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>allowance <span style="color:#f92672">&gt;</span> RATE<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                allowance <span style="color:#f92672">=</span> RATE<span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#75715e">// ======================
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// 是否能够减去 1.0 个
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// ======================
+</span><span style="color:#75715e"></span>            
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>allowance <span style="color:#f92672">&lt;</span> 1<span style="color:#f92672">.</span><span style="color:#a6e22e">0</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+                allowance <span style="color:#f92672">-=</span> 1<span style="color:#f92672">.</span><span style="color:#a6e22e">0</span><span style="color:#f92672">;</span>
+                <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#75715e">// =========================
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// Redis RateLimiter 算法
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 系统要限定用户的某个行为在指定的时间里只能允许发生 N 次
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">//
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 每一个行为到来时，都维护一次时间窗口。
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 将时间窗口外的记录全部清理掉，只保留窗口内的记录。
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// zset 集合中只有 score 值非常重要，value 值没有特别的意义，
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 只需要保证它是唯一的就可以了
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">//
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 因为这几个连续的 Redis 操作都是针对同一个 key 的，
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 使用 pipeline 可以显著提升 Redis 存取效率。
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 但这种方案也有缺点，因为它要记录时间窗口内所有的行为记录，
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 如果这个量很大，比如限定 60s 内操作不得超过 100w 次这样的参数，
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 它是不适合做这样的限流的，因为会消耗大量的存储空间。
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// =========================
+</span><span style="color:#75715e"></span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RedisRateLimiter</span> <span style="color:#f92672">{</span>
+
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> MAX_COUNT <span style="color:#f92672">=</span> 5<span style="color:#f92672">;</span> <span style="color:#75715e">// 5 requests
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> PERIOD <span style="color:#f92672">=</span> 60<span style="color:#f92672">;</span> <span style="color:#75715e">// 60 s
+</span><span style="color:#75715e"></span>
+        <span style="color:#66d9ef">private</span> Jedis jedis <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Jedis<span style="color:#f92672">();</span>
+
+        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">overhead</span><span style="color:#f92672">(</span>String key<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">long</span> nowTs <span style="color:#f92672">=</span> now<span style="color:#f92672">();</span>
+
+            Pipeline pipe <span style="color:#f92672">=</span> jedis<span style="color:#f92672">.</span><span style="color:#a6e22e">pipelined</span><span style="color:#f92672">();</span>
+            pipe<span style="color:#f92672">.</span><span style="color:#a6e22e">multi</span><span style="color:#f92672">();</span>
+
+            pipe<span style="color:#f92672">.</span><span style="color:#a6e22e">zadd</span><span style="color:#f92672">(</span>key<span style="color:#f92672">,</span> nowTs<span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#f92672">+</span> nowTs<span style="color:#f92672">);</span>
+            pipe<span style="color:#f92672">.</span><span style="color:#a6e22e">zremrangeByScore</span><span style="color:#f92672">(</span>key<span style="color:#f92672">,</span> 0<span style="color:#f92672">,</span> nowTs <span style="color:#f92672">-</span> PERIOD <span style="color:#f92672">*</span> 1000<span style="color:#f92672">);</span>
+
+            Response<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">&gt;</span> count <span style="color:#f92672">=</span> pipe<span style="color:#f92672">.</span><span style="color:#a6e22e">zcard</span><span style="color:#f92672">(</span>key<span style="color:#f92672">);</span>
+            pipe<span style="color:#f92672">.</span><span style="color:#a6e22e">expire</span><span style="color:#f92672">(</span>key<span style="color:#f92672">,</span> PERIOD <span style="color:#f92672">+</span> 1<span style="color:#f92672">);</span> <span style="color:#75715e">// 防止这个 key 一直存在
+</span><span style="color:#75715e"></span>            pipe<span style="color:#f92672">.</span><span style="color:#a6e22e">exec</span><span style="color:#f92672">();</span>
+            pipe<span style="color:#f92672">.</span><span style="color:#a6e22e">close</span><span style="color:#f92672">();</span>
+
+            <span style="color:#66d9ef">return</span> count<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">&lt;=</span> MAX_COUNT<span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Jedis</span> <span style="color:#f92672">{</span>
+        Pipeline <span style="color:#a6e22e">pipelined</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Pipeline</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">exec</span><span style="color:#f92672">()</span> <span style="color:#f92672">{}</span>
+        <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">close</span><span style="color:#f92672">()</span> <span style="color:#f92672">{}</span>
+        <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">multi</span><span style="color:#f92672">()</span> <span style="color:#f92672">{}</span>
+        <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">zadd</span><span style="color:#f92672">(</span>String key<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> time<span style="color:#f92672">,</span> String value<span style="color:#f92672">)</span> <span style="color:#f92672">{}</span>
+        <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">zremrangeByScore</span><span style="color:#f92672">(</span>String key<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> begin<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> end<span style="color:#f92672">)</span> <span style="color:#f92672">{};</span>
+        <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">expire</span><span style="color:#f92672">(</span>String key<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> timeout<span style="color:#f92672">)</span> <span style="color:#f92672">{}</span>
+        Response<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">zcard</span><span style="color:#f92672">(</span>String key<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Response<span style="color:#f92672">&lt;</span>Long<span style="color:#f92672">&gt;();</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Response</span><span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span> <span style="color:#66d9ef">return</span> 0<span style="color:#f92672">;</span> <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div></article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents"></nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
