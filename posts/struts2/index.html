@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Struts 2"><meta property="og:title" content="Struts 2" />
+<meta property="og:description" content="Action 访问 Servlet API 使用 ActionContext 来访问 Servlet API。
+    Servlet API JSP 对象     HttpServletRequest request   HttpSession session   ServletContext application     操作 Session：
+ActionContext.getContext().getSession().put(&#34;user&#34;, userName); 在 JSP 页面中可以通过
+${sessionScope.user}来输出userName。
+数据校验 ActionSupport 是一个工具类，已经实现了 Action 接口，实现了 Validatable 接口，提供数据校验功能。
+@Override public void validate() { if (getUserName() == null || getUserName().trim().equals(&#34;&#34;)) { addFieldError(&#34;username&#34;, getText(&#34;user.required&#34;)); } } struts.xml 配置文件 分为多个配置文件：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/posts/struts2/" />
+<meta property="article:published_time" content="2020-08-06T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-08-06T00:00:00+00:00" />
+<title>Struts 2 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.c3d3dacdb07d9a3caf12f9e0ed853aaabad974ae7433c6979c1b627bd70c3a45.js" integrity="sha256-w9PazbB9mjyvEvng7YU6qrrZdK50M8aXnBtie9cMOkU="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Struts 2</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#action-访问-servlet-api">Action 访问 Servlet API</a></li>
+    <li><a href="#数据校验">数据校验</a></li>
+    <li><a href="#strutsxml-配置文件">struts.xml 配置文件</a></li>
+    <li><a href="#action">Action</a></li>
+    <li><a href="#类型转换">类型转换</a>
+      <ul>
+        <li><a href="#类">类</a></li>
+        <li><a href="#map">Map</a></li>
+        <li><a href="#list">List</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  <h1>
+    <a href="/posts/struts2/">Struts 2</a>
+  </h1>
+  
+
+<div>
+
+  <h5>August 6, 2020</h5>
+
+
+
+  
+  <div>
+    
+  </div>
+  
+
+  
+  <div>
+    
+        <a href="/tags/struts/">Struts</a>
+  </div>
+  
+
+
+</div>
+
+
+  <p><h2 id="action-访问-servlet-api">Action 访问 Servlet API</h2>
+<p>使用 <code>ActionContext</code> 来访问 Servlet API。</p>
+<hr>
+<table>
+<thead>
+<tr>
+<th>Servlet API</th>
+<th>JSP 对象</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HttpServletRequest</td>
+<td>request</td>
+</tr>
+<tr>
+<td>HttpSession</td>
+<td>session</td>
+</tr>
+<tr>
+<td>ServletContext</td>
+<td>application</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p>操作 Session：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">ActionContext<span style="color:#f92672">.</span><span style="color:#a6e22e">getContext</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getSession</span><span style="color:#f92672">().</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;user&#34;</span><span style="color:#f92672">,</span> userName<span style="color:#f92672">);</span>
+</code></pre></div><p>在 JSP 页面中可以通过</p>
+<pre><code class="language-jsp" data-lang="jsp">${sessionScope.user}
+</code></pre><p>来输出<strong>userName</strong>。</p>
+<h2 id="数据校验">数据校验</h2>
+<p><code>ActionSupport</code> 是一个工具类，已经实现了 <code>Action</code> 接口，实现了 <code>Validatable</code> 接口，提供数据校验功能。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">validate</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>getUserName<span style="color:#f92672">()</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">||</span> getUserName<span style="color:#f92672">().</span><span style="color:#a6e22e">trim</span><span style="color:#f92672">().</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        addFieldError<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;username&#34;</span><span style="color:#f92672">,</span> getText<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;user.required&#34;</span><span style="color:#f92672">));</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="strutsxml-配置文件">struts.xml 配置文件</h2>
+<p>分为多个配置文件：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;struts&gt;</span>
+    <span style="color:#f92672">&lt;include</span> <span style="color:#a6e22e">file=</span><span style="color:#e6db74">&#34;struts-part1.xml&#34;</span> <span style="color:#f92672">/&gt;</span>
+<span style="color:#f92672">&lt;/struts&gt;</span>
+</code></pre></div><hr>
+<p>Struts 2 不支持为单独的 Action 设置命名空间，而是通过为包指定 namespace 属性来为包下面的所有 Action 指定共同的命名空间。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;package</span> <span style="color:#a6e22e">name=</span><span style="color:#e6db74">&#34;book&#34;</span> <span style="color:#a6e22e">extends=</span><span style="color:#e6db74">&#34;struts-default&#34;</span> <span style="color:#a6e22e">namespace=</span><span style="color:#e6db74">&#34;/book&#34;</span><span style="color:#f92672">&gt;</span>
+</code></pre></div><p>当指定了命名空间后，该包下所有的 Action 处理的 URL 应该是命名空间 + Action 名。</p>
+<pre><code>http://localhost:8888/namespace/book/getBooks.action
+</code></pre><blockquote>
+<p>默认的命名空间是 &quot;&rdquo;</p>
+</blockquote>
+<h2 id="action">Action</h2>
+<p>Action 类是一个普通的 POJO 类，来封装 HTTP 请求参数，并为请求参数对应的属性封装对应的 <code>setter</code> 和 <code>getter</code> 方法。</p>
+<p>在 JSP 中输出：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;s:property</span> <span style="color:#a6e22e">value=</span><span style="color:#e6db74">&#34;tip&#34;</span><span style="color:#f92672">&gt;</span>
+</code></pre></div><hr>
+<p>不推荐在 <code>&lt;action name=&quot;xxx&quot;&gt;</code> 的 name 属性中包含 <code>.</code> 或 <code>-</code>，可能引发未知异常。</p>
+<hr>
+<p>通过指定 <code>&lt;action method=&quot;login&quot; /&gt;</code> 就可以让 Action 类调用指定方法，而非 <code>execute</code> 方法来处理用户请求。</p>
+<p><code>name</code> 属性支持<strong>通配符</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;action</span> <span style="color:#a6e22e">name=</span><span style="color:#e6db74">&#34;*Pro&#34;</span> <span style="color:#a6e22e">class=</span><span style="color:#e6db74">&#34;com.zk.LoginAction&#34;</span> <span style="color:#a6e22e">method=</span><span style="color:#e6db74">&#34;{1}&#34;</span><span style="color:#f92672">&gt;</span>
+</code></pre></div><p>另外一个示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;action</span> <span style="color:#a6e22e">name=</span><span style="color:#e6db74">&#34;*_*&#34;</span> <span style="color:#a6e22e">method=</span><span style="color:#e6db74">&#34;{2}&#34;</span> <span style="color:#a6e22e">class=</span><span style="color:#e6db74">&#34;actions.{1}&#34;</span><span style="color:#f92672">&gt;</span>
+</code></pre></div><h2 id="类型转换">类型转换</h2>
+<h3 id="类">类</h3>
+<p>Struts 2 内建类型转换器可以完成基本数据类型转换、<code>Date</code> 与字符串之间的转换。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;form</span> <span style="color:#a6e22e">method=</span><span style="color:#e6db74">&#34;post&#34;</span> <span style="color:#a6e22e">action=</span><span style="color:#e6db74">&#34;regist&#34;</span><span style="color:#f92672">&gt;</span>
+    <span style="color:#f92672">&lt;input</span> <span style="color:#a6e22e">type=</span><span style="color:#e6db74">&#34;text&#34;</span> <span style="color:#a6e22e">name=</span><span style="color:#e6db74">&#34;user.name&#34;</span> <span style="color:#f92672">/&gt;&lt;br</span> <span style="color:#f92672">/&gt;</span>
+    <span style="color:#f92672">&lt;input</span> <span style="color:#a6e22e">type=</span><span style="color:#e6db74">&#34;password&#34;</span> <span style="color:#a6e22e">name=</span><span style="color:#e6db74">&#34;user.pass&#34;</span> <span style="color:#f92672">/&gt;</span>
+<span style="color:#f92672">&lt;/form&gt;</span>
+</code></pre></div><p>对应的 <code>User</code> 类：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> User user<span style="color:#f92672">;</span>
+</code></pre></div><p><code>User</code> 类必须提供<strong>无参构造器</strong>。</p>
+<h3 id="map">Map</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> Map<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> User<span style="color:#f92672">&gt;</span> users<span style="color:#f92672">;</span>
+</code></pre></div><p>设置 <code>map</code>：</p>
+<p><img src="/images/posts/struts2/convert_map.png" alt=""></p>
+<p>读取 <code>map</code>：</p>
+<p><img src="/images/posts/struts2/read_map.png" alt=""></p>
+<h3 id="list">List</h3>
+<p>设置 <code>List</code>：</p>
+<p><img src="/images/posts/struts2/set_list.png" alt=""></p>
+<p>读取 <code>List</code>：</p>
+<p><img src="/images/posts/struts2/read_list.png" alt=""></p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://book.douban.com/subject/19959642/">Struts 2.x权威指南</a></li>
+</ul>
+</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#action-访问-servlet-api">Action 访问 Servlet API</a></li>
+    <li><a href="#数据校验">数据校验</a></li>
+    <li><a href="#strutsxml-配置文件">struts.xml 配置文件</a></li>
+    <li><a href="#action">Action</a></li>
+    <li><a href="#类型转换">类型转换</a>
+      <ul>
+        <li><a href="#类">类</a></li>
+        <li><a href="#map">Map</a></li>
+        <li><a href="#list">List</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
