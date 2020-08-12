@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>阿里巴巴 Sentinel on 赵坤的个人网站</title>
+    <link>https://kunzhao.org/docs/tutorial/sentinel/</link>
+    <description>Recent content in 阿里巴巴 Sentinel on 赵坤的个人网站</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    
+	<atom:link href="https://kunzhao.org/docs/tutorial/sentinel/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>架构</title>
+      <link>https://kunzhao.org/docs/tutorial/sentinel/architecture/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/sentinel/architecture/</guid>
+      <description>架构 随着微服务的流行，服务和服务之间的稳定性变得越来越重要。Sentinel 是面向分布式服务架构的流量控制组件，主要以流量为切入点，从限流、流量整形、熔断降级、系统负载保护、热点防护等多个维度来帮助开发者保障微服务的稳定性。
+有关 Sentinel 更为详细的使用文档和介绍请移至 Sentinel Github Wiki。
+主要特性 流量控制 流量控制在网络传输中是一个常用的概念，它用于调整网络包的发送数据。然而，从系统稳定性角度考虑，在处理请求的速度上，也有非常多的讲究。任意时间到来的请求往往是随机不可控的，而系统的处理能力是有限的。我们需要根据系统的处理能力对流量进行控制。Sentinel 作为一个调配器，可以根据需要把随机的请求调整成合适的形状，如下图所示：
+熔断降级 除了流量控制以外，及时对调用链路中的不稳定因素进行熔断也是 Sentinel 的使命之一。由于调用关系的复杂性，如果调用链路中的某个资源出现了不稳定，可能会导致请求发生堆积，进而导致级联错误。
+网关限流 Sentinel 支持对 Spring Cloud Gateway、Zuul 等主流的 API Gateway 进行限流。
+架构 另外一幅更为漂亮的图：
+可扩展性 开源生态 参考  Sentinel Wiki  </description>
+    </item>
+    
+    <item>
+      <title>LeapArray</title>
+      <link>https://kunzhao.org/docs/tutorial/sentinel/leaparray/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/sentinel/leaparray/</guid>
+      <description>LeapArray Sentinel 底层采用高性能的滑动窗口数据结构 LeapArray 来统计实时的秒级指标数据，可以很好地支撑写多于读的高并发场景。
+主要数据结构 protected int windowLengthInMs; protected int sampleCount; protected int intervalInMs; protected final AtomicReferenceArray&amp;lt;WindowWrap&amp;lt;T&amp;gt;&amp;gt; array;  intervalInMs 代表滑动窗口的总时间长度 sampleCount 表示要将 intervalInMs 切割成多少份，也就是滑动窗口中有多少个 bucket windowLengthInMs 表示每一份代表多长时间 array 表示的是底层的数组，即这么多份 bucket 构成的数组  根据时间戳定位某个 Bucket （1）获取对应的索引
+long timeId = timeMillis / windowLengthInMs; // Calculate current index so we can map the timestamp to the leap array. return (int)(timeId % array.length()); （2）计算当前 Bucket 开始的时间
+long windowStart = timeMillis - timeMillis % windowLengthInMs; （3）如果此 Bucket 不存在，创建并 CAS 更新</description>
+    </item>
+    
+    <item>
+      <title>可扩展性</title>
+      <link>https://kunzhao.org/docs/tutorial/sentinel/spi/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/sentinel/spi/</guid>
+      <description>可扩展性 SpiLoader public final class SpiLoader { public static &amp;lt;T&amp;gt; T loadFirstInstanceOrDefault(Class&amp;lt;T&amp;gt; clazz, Class&amp;lt;? extends T&amp;gt; defaultClass) { AssertUtil.notNull(clazz, &amp;#34;SPI class cannot be null&amp;#34;); AssertUtil.notNull(defaultClass, &amp;#34;default SPI class cannot be null&amp;#34;); try { String key = clazz.getName(); // Not thread-safe, as it&amp;#39;s expected to be resolved in a thread-safe context.  ServiceLoader&amp;lt;T&amp;gt; serviceLoader = SERVICE_LOADER_MAP.get(key); if (serviceLoader == null) { serviceLoader = ServiceLoaderUtil.getServiceLoader(clazz); SERVICE_LOADER_MAP.put(key, serviceLoader); } for (T instance : serviceLoader) { if (instance.</description>
+    </item>
+    
+  </channel>
+</rss>

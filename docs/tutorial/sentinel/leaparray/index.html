@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="LeapArray"><meta property="og:title" content="LeapArray" />
+<meta property="og:description" content="LeapArray Sentinel 底层采用高性能的滑动窗口数据结构 LeapArray 来统计实时的秒级指标数据，可以很好地支撑写多于读的高并发场景。
+主要数据结构 protected int windowLengthInMs; protected int sampleCount; protected int intervalInMs; protected final AtomicReferenceArray&lt;WindowWrap&lt;T&gt;&gt; array;  intervalInMs 代表滑动窗口的总时间长度 sampleCount 表示要将 intervalInMs 切割成多少份，也就是滑动窗口中有多少个 bucket windowLengthInMs 表示每一份代表多长时间 array 表示的是底层的数组，即这么多份 bucket 构成的数组  根据时间戳定位某个 Bucket （1）获取对应的索引
+long timeId = timeMillis / windowLengthInMs; // Calculate current index so we can map the timestamp to the leap array. return (int)(timeId % array.length()); （2）计算当前 Bucket 开始的时间
+long windowStart = timeMillis - timeMillis % windowLengthInMs; （3）如果此 Bucket 不存在，创建并 CAS 更新" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/sentinel/leaparray/" />
+
+<title>LeapArray | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.9b15a1e284a02dc6f60d61535c6dd4eaf9a9dceeb3232688f8c27723b86fd0f2.js" integrity="sha256-mxWh4oSgLcb2DWFTXG3U6vmp3O6zIyaI&#43;MJ3I7hv0PI="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/architecture/" >
+      架构
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/leaparray/"  class="active">
+      LeapArray
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/spi/" >
+      可扩展性
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>LeapArray</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#主要数据结构">主要数据结构</a></li>
+    <li><a href="#根据时间戳定位某个-bucket">根据时间戳定位某个 Bucket</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="leaparray">LeapArray</h1>
+<p>Sentinel 底层采用高性能的<strong>滑动窗口</strong>数据结构 LeapArray 来统计<strong>实时的秒级指标数据</strong>，可以很好地支撑<strong>写多于读</strong>的高并发场景。</p>
+<p><img src="/images/docs/tutorial/sentinel/leaparray/51955215-0af7c500-247e-11e9-8895-9fc0e4c10c8c.png" alt=""></p>
+<h2 id="主要数据结构">主要数据结构</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">int</span> windowLengthInMs<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">int</span> sampleCount<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">int</span> intervalInMs<span style="color:#f92672">;</span>
+
+<span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">final</span> AtomicReferenceArray<span style="color:#f92672">&lt;</span>WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;&gt;</span> array<span style="color:#f92672">;</span>
+</code></pre></div><ul>
+<li><code>intervalInMs</code> 代表滑动窗口的<strong>总时间长度</strong></li>
+<li><code>sampleCount</code> 表示要将 <code>intervalInMs</code> 切割成<strong>多少份</strong>，也就是滑动窗口中有多少个 <code>bucket</code></li>
+<li><code>windowLengthInMs</code> 表示<strong>每一份代表多长时间</strong></li>
+<li><code>array</code> 表示的是底层的数组，即这么多份 <code>bucket</code> 构成的数组</li>
+</ul>
+<h2 id="根据时间戳定位某个-bucket">根据时间戳定位某个 Bucket</h2>
+<p>（1）获取对应的索引</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">long</span> timeId <span style="color:#f92672">=</span> timeMillis <span style="color:#f92672">/</span> windowLengthInMs<span style="color:#f92672">;</span>
+<span style="color:#75715e">// Calculate current index so we can map the timestamp to the leap array.
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">return</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">)(</span>timeId <span style="color:#f92672">%</span> array<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">());</span>
+</code></pre></div><p>（2）计算当前 Bucket 开始的时间</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">long</span> windowStart <span style="color:#f92672">=</span> timeMillis <span style="color:#f92672">-</span> timeMillis <span style="color:#f92672">%</span> windowLengthInMs<span style="color:#f92672">;</span>
+</code></pre></div><p>（3）如果此 Bucket 不存在，创建并 CAS 更新</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> old <span style="color:#f92672">=</span> array<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>idx<span style="color:#f92672">);</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>old <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">/*
+</span><span style="color:#75715e">        *     B0       B1      B2    NULL      B4
+</span><span style="color:#75715e">        * ||_______|_______|_______|_______|_______||___
+</span><span style="color:#75715e">        * 200     400     600     800     1000    1200  timestamp
+</span><span style="color:#75715e">        *                             ^
+</span><span style="color:#75715e">        *                          time=888
+</span><span style="color:#75715e">        *            bucket is empty, so create new and update
+</span><span style="color:#75715e">        *
+</span><span style="color:#75715e">        * If the old bucket is absent, then we create a new bucket at {@code windowStart},
+</span><span style="color:#75715e">        * then try to update circular array via a CAS operation. Only one thread can
+</span><span style="color:#75715e">        * succeed to update, while other threads yield its time slice.
+</span><span style="color:#75715e">        */</span>
+    WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> window <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;(</span>windowLengthInMs<span style="color:#f92672">,</span> windowStart<span style="color:#f92672">,</span> newEmptyBucket<span style="color:#f92672">(</span>timeMillis<span style="color:#f92672">));</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>array<span style="color:#f92672">.</span><span style="color:#a6e22e">compareAndSet</span><span style="color:#f92672">(</span>idx<span style="color:#f92672">,</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">,</span> window<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// Successfully updated, return the created bucket.
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> window<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>（4）如果存在，且 <code>start</code> 一致</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>windowStart <span style="color:#f92672">==</span> old<span style="color:#f92672">.</span><span style="color:#a6e22e">windowStart</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">/*
+</span><span style="color:#75715e">    *     B0       B1      B2     B3      B4
+</span><span style="color:#75715e">    * ||_______|_______|_______|_______|_______||___
+</span><span style="color:#75715e">    * 200     400     600     800     1000    1200  timestamp
+</span><span style="color:#75715e">    *                             ^
+</span><span style="color:#75715e">    *                          time=888
+</span><span style="color:#75715e">    *            startTime of Bucket 3: 800, so it&#39;s up-to-date
+</span><span style="color:#75715e">    *
+</span><span style="color:#75715e">    * If current {@code windowStart} is equal to the start timestamp of old bucket,
+</span><span style="color:#75715e">    * that means the time is within the bucket, so directly return the bucket.
+</span><span style="color:#75715e">    */</span>
+    <span style="color:#66d9ef">return</span> old<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>（5）如果存在，且原 <code>start</code> 已经落后</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>windowStart <span style="color:#f92672">&gt;</span> old<span style="color:#f92672">.</span><span style="color:#a6e22e">windowStart</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">/*
+</span><span style="color:#75715e">    *   (old)
+</span><span style="color:#75715e">    *             B0       B1      B2    NULL      B4
+</span><span style="color:#75715e">    * |_______||_______|_______|_______|_______|_______||___
+</span><span style="color:#75715e">    * ...    1200     1400    1600    1800    2000    2200  timestamp
+</span><span style="color:#75715e">    *                              ^
+</span><span style="color:#75715e">    *                           time=1676
+</span><span style="color:#75715e">    *          startTime of Bucket 2: 400, deprecated, should be reset
+</span><span style="color:#75715e">    *
+</span><span style="color:#75715e">    * If the start timestamp of old bucket is behind provided time, that means
+</span><span style="color:#75715e">    * the bucket is deprecated. We have to reset the bucket to current {@code windowStart}.
+</span><span style="color:#75715e">    * Note that the reset and clean-up operations are hard to be atomic,
+</span><span style="color:#75715e">    * so we need a update lock to guarantee the correctness of bucket update.
+</span><span style="color:#75715e">    *
+</span><span style="color:#75715e">    * The update lock is conditional (tiny scope) and will take effect only when
+</span><span style="color:#75715e">    * bucket is deprecated, so in most cases it won&#39;t lead to performance loss.
+</span><span style="color:#75715e">    */</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>updateLock<span style="color:#f92672">.</span><span style="color:#a6e22e">tryLock</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// Successfully get the update lock, now we reset the bucket.
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">return</span> resetWindowTo<span style="color:#f92672">(</span>old<span style="color:#f92672">,</span> windowStart<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
+            updateLock<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">();</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div></article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#主要数据结构">主要数据结构</a></li>
+    <li><a href="#根据时间戳定位某个-bucket">根据时间戳定位某个 Bucket</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

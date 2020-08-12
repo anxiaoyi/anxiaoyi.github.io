@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="IBM MQ"><meta property="og:title" content="IBM MQ" />
+<meta property="og:description" content="整体教程参考：Writing IBM MQ classes for Java applications
+Queue Manager // declare an object of type queue manager MQQueueManager queueManager = new MQQueueManager(); MQQueueManager queueManager = new MQQueueManager(&#34;qMgrName&#34;); ... // do something... ... // disconnect from the queue manager queueManager.disconnect(); MQEnvironment MQEnvironment.hostname = &#34;host.domain.com&#34;; MQEnvironment.channel = &#34;java.client.channel&#34;; // 默认 port 是 1414 MQEnvironment.port = nnnn; MQEnvironment.CCSID = 1381;//这个是编码格式的代号,UTF-8为1381 MQEnvironment.userID = &#34;MUSR_MQADMIN&#34;;//这个是登录MQ服务器用的用户名，需要在MQ服务器上设置 MQEnvironment.password = &#34;123456&#34;;//这个是登录MQ服务器用的密码 Queue // 打开队列 MQQueue queue = queueManager.accessQueue(&#34;qName&#34;,CMQC.MQOO_OUTPUT); queue." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/posts/ibmmq/" />
+<meta property="article:published_time" content="2020-08-10T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-08-10T00:00:00+00:00" />
+<title>IBM MQ | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.9b15a1e284a02dc6f60d61535c6dd4eaf9a9dceeb3232688f8c27723b86fd0f2.js" integrity="sha256-mxWh4oSgLcb2DWFTXG3U6vmp3O6zIyaI&#43;MJ3I7hv0PI="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>IBM MQ</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#queue-manager">Queue Manager</a></li>
+    <li><a href="#mqenvironment">MQEnvironment</a></li>
+    <li><a href="#queue">Queue</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  <h1>
+    <a href="/posts/ibmmq/">IBM MQ</a>
+  </h1>
+  
+
+<div>
+
+  <h5>August 10, 2020</h5>
+
+
+
+  
+  <div>
+    
+  </div>
+  
+
+  
+  <div>
+    
+        <a href="/tags/mq/">MQ</a>
+  </div>
+  
+
+
+</div>
+
+
+  <p><p>整体教程参考：<a href="https://www.ibm.com/support/knowledgecenter/SSFKSJ_8.0.0/com.ibm.mq.dev.doc/q030730_.htm">Writing IBM MQ classes for Java applications</a></p>
+<h2 id="queue-manager">Queue Manager</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// declare an object of type queue manager
+</span><span style="color:#75715e"></span>MQQueueManager queueManager <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> MQQueueManager<span style="color:#f92672">();</span>
+MQQueueManager queueManager <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> MQQueueManager<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;qMgrName&#34;</span><span style="color:#f92672">);</span>
+
+<span style="color:#f92672">...</span>
+<span style="color:#75715e">// do something...
+</span><span style="color:#75715e"></span><span style="color:#f92672">...</span>
+<span style="color:#75715e">// disconnect from the queue manager
+</span><span style="color:#75715e"></span>queueManager<span style="color:#f92672">.</span><span style="color:#a6e22e">disconnect</span><span style="color:#f92672">();</span>
+</code></pre></div><h2 id="mqenvironment">MQEnvironment</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">MQEnvironment<span style="color:#f92672">.</span><span style="color:#a6e22e">hostname</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;host.domain.com&#34;</span><span style="color:#f92672">;</span>
+MQEnvironment<span style="color:#f92672">.</span><span style="color:#a6e22e">channel</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;java.client.channel&#34;</span><span style="color:#f92672">;</span>
+<span style="color:#75715e">// 默认 port 是 1414
+</span><span style="color:#75715e"></span>MQEnvironment<span style="color:#f92672">.</span><span style="color:#a6e22e">port</span> <span style="color:#f92672">=</span> nnnn<span style="color:#f92672">;</span>
+MQEnvironment<span style="color:#f92672">.</span><span style="color:#a6e22e">CCSID</span> <span style="color:#f92672">=</span> 1381<span style="color:#f92672">;</span><span style="color:#75715e">//这个是编码格式的代号,UTF-8为1381
+</span><span style="color:#75715e"></span>MQEnvironment<span style="color:#f92672">.</span><span style="color:#a6e22e">userID</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;MUSR_MQADMIN&#34;</span><span style="color:#f92672">;</span><span style="color:#75715e">//这个是登录MQ服务器用的用户名，需要在MQ服务器上设置
+</span><span style="color:#75715e"></span>MQEnvironment<span style="color:#f92672">.</span><span style="color:#a6e22e">password</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;123456&#34;</span><span style="color:#f92672">;</span><span style="color:#75715e">//这个是登录MQ服务器用的密码
+</span></code></pre></div><h2 id="queue">Queue</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 打开队列
+</span><span style="color:#75715e"></span>MQQueue queue <span style="color:#f92672">=</span> queueManager<span style="color:#f92672">.</span><span style="color:#a6e22e">accessQueue</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;qName&#34;</span><span style="color:#f92672">,</span>CMQC<span style="color:#f92672">.</span><span style="color:#a6e22e">MQOO_OUTPUT</span><span style="color:#f92672">);</span>
+queue<span style="color:#f92672">.</span><span style="color:#a6e22e">close</span><span style="color:#f92672">();</span>
+</code></pre></div></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#queue-manager">Queue Manager</a></li>
+    <li><a href="#mqenvironment">MQEnvironment</a></li>
+    <li><a href="#queue">Queue</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
