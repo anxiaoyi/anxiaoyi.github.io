@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Brave 收集数据"><meta property="og:title" content="Brave 收集数据" />
+<meta property="og:description" content="Brave 收集数据 在 Java 生态世界中，Zipkin 团队官方提供了 Brave 用来收集数据到 Zipkin Server 中。其它的用来收集数据的框架还有 cassandra-zipkin-tracing、Dropwizard Zipkin、htrace、Spring Cloud Sleuth 以及 Wingtips 等。
+示例代码 配置 Tracer 配置 Tracer 以向 Zipkin Server 上传数据。
+// Configure a reporter, which controls how often spans are sent // (this dependency is io.zipkin.reporter2:zipkin-sender-okhttp3) sender = OkHttpSender.create(&#34;http://127.0.0.1:9411/api/v2/spans&#34;); // (this dependency is io.zipkin.reporter2:zipkin-reporter-brave) zipkinSpanHandler = AsyncZipkinSpanHandler.create(sender); // Create a tracing component with the service name you want to see in Zipkin. tracing = Tracing." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/zipkin/brave/" />
+
+<title>Brave 收集数据 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.b180bb1756990c1838b080a532f7d9d3ff8142dccf3d4b7e235fafe988d0e3ef.js" integrity="sha256-sYC7F1aZDBg4sIClMvfZ0/&#43;BQtzPPUt&#43;I1&#43;v6YjQ4&#43;8="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      🔥教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/zipkin/brave/"  class="active">
+      Brave 收集数据
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Brave 收集数据</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#示例代码">示例代码</a>
+      <ul>
+        <li><a href="#配置-tracer">配置 Tracer</a></li>
+        <li><a href="#进程内跟踪">进程内跟踪</a></li>
+      </ul>
+    </li>
+    <li><a href="#主要类讲解">主要类讲解</a>
+      <ul>
+        <li><a href="#span">Span</a></li>
+        <li><a href="#跟踪器-tracer">跟踪器 Tracer</a></li>
+        <li><a href="#上下文-currenttracecontext">上下文 CurrentTraceContext</a></li>
+        <li><a href="#采样器-sampler">采样器 Sampler</a></li>
+        <li><a href="#跟踪监听器-spanhandler">跟踪监听器 SpanHandler</a></li>
+        <li><a href="#计时器-clock">计时器 Clock</a></li>
+      </ul>
+    </li>
+    <li><a href="#propagation">Propagation</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="brave-收集数据">Brave 收集数据</h1>
+<p>在 Java 生态世界中，Zipkin 团队官方提供了 <code>Brave</code> 用来收集数据到 Zipkin Server 中。其它的用来收集数据的框架还有 <code>cassandra-zipkin-tracing</code>、<code>Dropwizard Zipkin</code>、<code>htrace</code>、<code>Spring Cloud Sleuth</code> 以及 <code>Wingtips</code> 等。</p>
+<h2 id="示例代码">示例代码</h2>
+<h3 id="配置-tracer">配置 Tracer</h3>
+<p>配置 Tracer 以向 Zipkin Server 上传数据。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// Configure a reporter, which controls how often spans are sent
+</span><span style="color:#75715e">//   (this dependency is io.zipkin.reporter2:zipkin-sender-okhttp3)
+</span><span style="color:#75715e"></span>sender <span style="color:#f92672">=</span> OkHttpSender<span style="color:#f92672">.</span><span style="color:#a6e22e">create</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;http://127.0.0.1:9411/api/v2/spans&#34;</span><span style="color:#f92672">);</span>
+<span style="color:#75715e">//   (this dependency is io.zipkin.reporter2:zipkin-reporter-brave)
+</span><span style="color:#75715e"></span>zipkinSpanHandler <span style="color:#f92672">=</span> AsyncZipkinSpanHandler<span style="color:#f92672">.</span><span style="color:#a6e22e">create</span><span style="color:#f92672">(</span>sender<span style="color:#f92672">);</span>
+
+<span style="color:#75715e">// Create a tracing component with the service name you want to see in Zipkin.
+</span><span style="color:#75715e"></span>tracing <span style="color:#f92672">=</span> Tracing<span style="color:#f92672">.</span><span style="color:#a6e22e">newBuilder</span><span style="color:#f92672">()</span>
+                 <span style="color:#f92672">.</span><span style="color:#a6e22e">localServiceName</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;my-service&#34;</span><span style="color:#f92672">)</span>
+                 <span style="color:#f92672">.</span><span style="color:#a6e22e">addSpanHandler</span><span style="color:#f92672">(</span>zipkinSpanHandler<span style="color:#f92672">)</span>
+                 <span style="color:#f92672">.</span><span style="color:#a6e22e">build</span><span style="color:#f92672">();</span>
+
+<span style="color:#75715e">// Tracing exposes objects you might need, most importantly the tracer
+</span><span style="color:#75715e"></span>tracer <span style="color:#f92672">=</span> tracing<span style="color:#f92672">.</span><span style="color:#a6e22e">tracer</span><span style="color:#f92672">();</span>
+
+<span style="color:#75715e">// Failing to close resources can result in dropped spans! When tracing is no
+</span><span style="color:#75715e">// longer needed, close the components you made in reverse order. This might be
+</span><span style="color:#75715e">// a shutdown hook for some users.
+</span><span style="color:#75715e"></span>tracing<span style="color:#f92672">.</span><span style="color:#a6e22e">close</span><span style="color:#f92672">();</span>
+zipkinSpanHandler<span style="color:#f92672">.</span><span style="color:#a6e22e">close</span><span style="color:#f92672">();</span>
+sender<span style="color:#f92672">.</span><span style="color:#a6e22e">close</span><span style="color:#f92672">();</span>
+</code></pre></div><h3 id="进程内跟踪">进程内跟踪</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// Start a new trace or a span within an existing trace representing an operation
+</span><span style="color:#75715e"></span>ScopedSpan span <span style="color:#f92672">=</span> tracer<span style="color:#f92672">.</span><span style="color:#a6e22e">startScopedSpan</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;encode&#34;</span><span style="color:#f92672">);</span>
+<span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+  <span style="color:#75715e">// The span is in &#34;scope&#34; meaning downstream code such as loggers can see trace IDs
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">return</span> encoder<span style="color:#f92672">.</span><span style="color:#a6e22e">encode</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>RuntimeException <span style="color:#f92672">|</span> Error e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+  span<span style="color:#f92672">.</span><span style="color:#a6e22e">error</span><span style="color:#f92672">(</span>e<span style="color:#f92672">);</span> <span style="color:#75715e">// Unless you handle exceptions, you might not know the operation failed!
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">throw</span> e<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
+  span<span style="color:#f92672">.</span><span style="color:#a6e22e">finish</span><span style="color:#f92672">();</span> <span style="color:#75715e">// always finish the span
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+</code></pre></div><p>也可以通过如下更为高级、更为灵活的方式跟踪数据：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// Start a new trace or a span within an existing trace representing an operation
+</span><span style="color:#75715e"></span>Span span <span style="color:#f92672">=</span> tracer<span style="color:#f92672">.</span><span style="color:#a6e22e">nextSpan</span><span style="color:#f92672">().</span><span style="color:#a6e22e">name</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;encode&#34;</span><span style="color:#f92672">).</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+<span style="color:#75715e">// Put the span in &#34;scope&#34; so that downstream code such as loggers can see trace IDs
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">try</span> <span style="color:#f92672">(</span>SpanInScope ws <span style="color:#f92672">=</span> tracer<span style="color:#f92672">.</span><span style="color:#a6e22e">withSpanInScope</span><span style="color:#f92672">(</span>span<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+  <span style="color:#66d9ef">return</span> encoder<span style="color:#f92672">.</span><span style="color:#a6e22e">encode</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>RuntimeException <span style="color:#f92672">|</span> Error e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+  span<span style="color:#f92672">.</span><span style="color:#a6e22e">error</span><span style="color:#f92672">(</span>e<span style="color:#f92672">);</span> <span style="color:#75715e">// Unless you handle exceptions, you might not know the operation failed!
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">throw</span> e<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
+  span<span style="color:#f92672">.</span><span style="color:#a6e22e">finish</span><span style="color:#f92672">();</span> <span style="color:#75715e">// note the scope is independent of the span. Always finish a span.
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+</code></pre></div><h2 id="主要类讲解">主要类讲解</h2>
+<h3 id="span">Span</h3>
+<p>Span 是存储跟踪数据的容器，其主要属性和行为如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 主要属性
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> TraceContext <span style="color:#a6e22e">context</span><span style="color:#f92672">();</span>
+<span style="color:#a6e22e">@Override</span> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> Span <span style="color:#a6e22e">name</span><span style="color:#f92672">(</span>String name<span style="color:#f92672">);</span>
+<span style="color:#a6e22e">@Override</span> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> Span <span style="color:#a6e22e">annotate</span><span style="color:#f92672">(</span>String value<span style="color:#f92672">);</span>
+<span style="color:#a6e22e">@Override</span> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> Span <span style="color:#a6e22e">tag</span><span style="color:#f92672">(</span>String key<span style="color:#f92672">,</span> String value<span style="color:#f92672">);</span>
+
+<span style="color:#75715e">// 主要行为
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> Span <span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">finish</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">abandon</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">flush</span><span style="color:#f92672">();</span>
+</code></pre></div><h3 id="跟踪器-tracer">跟踪器 Tracer</h3>
+<p><code>Tracer</code> 可以创建各种各样的 <code>Span</code>。其主要字段：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Tracer</span> <span style="color:#f92672">{</span>
+  
+  <span style="color:#66d9ef">final</span> Clock clock<span style="color:#f92672">;</span>
+  <span style="color:#66d9ef">final</span> Propagation<span style="color:#f92672">.</span><span style="color:#a6e22e">Factory</span> propagationFactory<span style="color:#f92672">;</span>
+  <span style="color:#66d9ef">final</span> SpanHandler spanHandler<span style="color:#f92672">;</span> <span style="color:#75715e">// only for toString
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">final</span> PendingSpans pendingSpans<span style="color:#f92672">;</span>
+  <span style="color:#66d9ef">final</span> Sampler sampler<span style="color:#f92672">;</span>
+  <span style="color:#66d9ef">final</span> CurrentTraceContext currentTraceContext<span style="color:#f92672">;</span>
+  <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> traceId128Bit<span style="color:#f92672">,</span> supportsJoin<span style="color:#f92672">,</span> alwaysSampleLocal<span style="color:#f92672">;</span>
+  <span style="color:#66d9ef">final</span> AtomicBoolean noop<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>下面以伪代码说明执行 <code>tracer.startScopedSpan(&quot;encode&quot;)</code> 做了哪些事情：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 获取 parent 上下文
+</span><span style="color:#75715e"></span>TraceContext parent <span style="color:#f92672">=</span> currentTraceContext<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">();</span>
+<span style="color:#75715e">// 装饰 parent 上下文或创建新的 root 上下文
+</span><span style="color:#75715e"></span>TraceContext context <span style="color:#f92672">=</span> parent <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">?</span> decorateContext<span style="color:#f92672">(</span>parent<span style="color:#f92672">,</span> parent<span style="color:#f92672">.</span><span style="color:#a6e22e">spanId</span><span style="color:#f92672">())</span> <span style="color:#f92672">:</span> newRootContext<span style="color:#f92672">(</span>0<span style="color:#f92672">);</span>
+
+<span style="color:#75715e">// 创建 RealScopedSpan
+</span><span style="color:#75715e"></span>Scope scope <span style="color:#f92672">=</span> currentTraceContext<span style="color:#f92672">.</span><span style="color:#a6e22e">newScope</span><span style="color:#f92672">(</span>context<span style="color:#f92672">);</span>
+PendingSpan pendingSpan <span style="color:#f92672">=</span> pendingSpans<span style="color:#f92672">.</span><span style="color:#a6e22e">getOrCreate</span><span style="color:#f92672">(</span>parent<span style="color:#f92672">,</span> context<span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
+Clock clock <span style="color:#f92672">=</span> pendingSpan<span style="color:#f92672">.</span><span style="color:#a6e22e">clock</span><span style="color:#f92672">();</span>
+MutableSpan state <span style="color:#f92672">=</span> pendingSpan<span style="color:#f92672">.</span><span style="color:#a6e22e">state</span><span style="color:#f92672">();</span>
+state<span style="color:#f92672">.</span><span style="color:#a6e22e">name</span><span style="color:#f92672">(</span>name<span style="color:#f92672">);</span>
+<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> RealScopedSpan<span style="color:#f92672">(</span>context<span style="color:#f92672">,</span> scope<span style="color:#f92672">,</span> state<span style="color:#f92672">,</span> clock<span style="color:#f92672">,</span> pendingSpans<span style="color:#f92672">);</span>
+</code></pre></div><p>上述建立 <code>Context</code> 的过程，<code>spanId</code> 和 <code>traceId</code> 等 <code>id</code> 的生成方式如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 创建 64-bit spanId
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>spanId <span style="color:#f92672">==</span> 0L<span style="color:#f92672">)</span> spanId <span style="color:#f92672">=</span> nextId<span style="color:#f92672">();</span>
+<span style="color:#75715e">// 创建 TraceId
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>traceId <span style="color:#f92672">==</span> 0L<span style="color:#f92672">)</span> <span style="color:#f92672">{</span> <span style="color:#75715e">// make a new trace ID
+</span><span style="color:#75715e"></span>    traceIdHigh <span style="color:#f92672">=</span> traceId128Bit <span style="color:#f92672">?</span> Platform<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">().</span><span style="color:#a6e22e">nextTraceIdHigh</span><span style="color:#f92672">()</span> <span style="color:#f92672">:</span> 0L<span style="color:#f92672">;</span>
+    traceId <span style="color:#f92672">=</span> spanId<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+<span style="color:#75715e">// localRootId
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>localRootId <span style="color:#f92672">==</span> 0L<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    localRootId <span style="color:#f92672">=</span> spanId<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#75715e">/** Generates a new 64-bit ID, taking care to dodge zero which can be confused with absent */</span>
+<span style="color:#66d9ef">long</span> <span style="color:#a6e22e">nextId</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">long</span> nextId <span style="color:#f92672">=</span> Platform<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">().</span><span style="color:#a6e22e">randomLong</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>nextId <span style="color:#f92672">==</span> 0L<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        nextId <span style="color:#f92672">=</span> Platform<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">().</span><span style="color:#a6e22e">randomLong</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> nextId<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="上下文-currenttracecontext">上下文 CurrentTraceContext</h3>
+<h3 id="采样器-sampler">采样器 Sampler</h3>
+<p>采集上来的跟踪数据，要每一条都要发送到服务器吗？量会不会特别大？会不会有许多冗余重复的数据？采样器 Sampler 让你自主选择哪些数据需要发送，哪些不需要发送。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Sampler</span> <span style="color:#f92672">{</span>
+    
+    <span style="color:#75715e">// 这条 traceId 对应的数据，是否需要统计
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isSampled</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> traceId<span style="color:#f92672">);</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>Brave 自带的几个采样器：</p>
+<p><img src="/images/docs/tutorial/zipkin/brave/sampler.png" alt=""></p>
+<h3 id="跟踪监听器-spanhandler">跟踪监听器 SpanHandler</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SpanHandler</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">begin</span><span style="color:#f92672">(</span>TraceContext context<span style="color:#f92672">,</span> MutableSpan span<span style="color:#f92672">,</span> <span style="color:#a6e22e">@Nullable</span> TraceContext parent<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">end</span><span style="color:#f92672">(</span>TraceContext context<span style="color:#f92672">,</span> MutableSpan span<span style="color:#f92672">,</span> Cause cause<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p><img src="/images/docs/tutorial/zipkin/brave/spanhandler.png" alt=""></p>
+<h3 id="计时器-clock">计时器 Clock</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">Clock</span> <span style="color:#f92672">{</span>
+
+  <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">currentTimeMicroseconds</span><span style="color:#f92672">();</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>其只提供了一个实现 <code>TickClock</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TickClock</span> <span style="color:#66d9ef">implements</span> Clock <span style="color:#f92672">{</span>
+  
+  <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> baseEpochMicros<span style="color:#f92672">;</span>
+  <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> baseTickNanos<span style="color:#f92672">;</span>
+
+  TickClock<span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> baseEpochMicros<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> baseTickNanos<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">baseEpochMicros</span> <span style="color:#f92672">=</span> baseEpochMicros<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">baseTickNanos</span> <span style="color:#f92672">=</span> baseTickNanos<span style="color:#f92672">;</span>
+  <span style="color:#f92672">}</span>
+
+  <span style="color:#a6e22e">@Override</span> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">currentTimeMicroseconds</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#f92672">((</span>System<span style="color:#f92672">.</span><span style="color:#a6e22e">nanoTime</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> baseTickNanos<span style="color:#f92672">)</span> <span style="color:#f92672">/</span> 1000<span style="color:#f92672">)</span> <span style="color:#f92672">+</span> baseEpochMicros<span style="color:#f92672">;</span>
+  <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="propagation">Propagation</h2>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#示例代码">示例代码</a>
+      <ul>
+        <li><a href="#配置-tracer">配置 Tracer</a></li>
+        <li><a href="#进程内跟踪">进程内跟踪</a></li>
+      </ul>
+    </li>
+    <li><a href="#主要类讲解">主要类讲解</a>
+      <ul>
+        <li><a href="#span">Span</a></li>
+        <li><a href="#跟踪器-tracer">跟踪器 Tracer</a></li>
+        <li><a href="#上下文-currenttracecontext">上下文 CurrentTraceContext</a></li>
+        <li><a href="#采样器-sampler">采样器 Sampler</a></li>
+        <li><a href="#跟踪监听器-spanhandler">跟踪监听器 SpanHandler</a></li>
+        <li><a href="#计时器-clock">计时器 Clock</a></li>
+      </ul>
+    </li>
+    <li><a href="#propagation">Propagation</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
