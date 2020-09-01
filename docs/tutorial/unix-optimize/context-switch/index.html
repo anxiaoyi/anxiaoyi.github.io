@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="CPU 上下文切换"><meta property="og:title" content="CPU 上下文切换" />
+<meta property="og:description" content="CPU 上下文切换 CPU 上下文  CPU 上下文是 CPU 在运行任何任务前，必须的依赖环境。在每个任务运行前，CPU 需要知道任务从哪里加载、又从哪里开始运行，所以这些环境通常包括 CPU 寄存器和程序计数器等。
+ 查看系统上下文切换情况 可以使用 vmstat 查询：
+# 每隔 5 秒查询一次 $ vmstat 5 procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu----- r b swpd free buff cache si so bi bo in cs us sy id wa st 0 0 256 170532 136656 3361432 0 0 38 53 189 557 6 2 92 0 0 0 0 256 170060 136668 3362284 0 0 0 62 441 785 2 1 97 0 0 0 0 256 170320 136676 3362360 0 0 0 13 706 1002 3 1 97 0 0  cs：每秒上下文切换的次数" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/context-switch/" />
+
+<title>CPU 上下文切换 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.2138be7ac60b4f09bf26d9ed8bc81cc50f7ca6c77f707fe23fbfd0cd2ad5f93d.js" integrity="sha256-ITi&#43;esYLTwm/Jtnti8gcxQ98psd/cH/iP7/QzSrV&#43;T0="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/avg-load/" >
+      平均负载
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/context-switch/"  class="active">
+      CPU 上下文切换
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Spring Cloud Eureka 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>CPU 上下文切换</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#cpu-上下文">CPU 上下文</a></li>
+    <li><a href="#查看系统上下文切换情况">查看系统上下文切换情况</a></li>
+    <li><a href="#查看进程上下文切换情况">查看进程上下文切换情况</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="cpu-上下文切换">CPU 上下文切换</h1>
+<h2 id="cpu-上下文">CPU 上下文</h2>
+<blockquote>
+<p>CPU 上下文是 CPU 在运行任何任务前，必须的依赖环境。在每个任务运行前，CPU 需要知道任务从哪里加载、又从哪里开始运行，所以这些环境通常包括 <strong>CPU 寄存器和程序计数器</strong>等。</p>
+</blockquote>
+<h2 id="查看系统上下文切换情况">查看系统上下文切换情况</h2>
+<p>可以使用 <code>vmstat</code> 查询：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 每隔 5 秒查询一次</span>
+$ vmstat <span style="color:#ae81ff">5</span>
+procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
+r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+<span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">256</span> <span style="color:#ae81ff">170532</span> <span style="color:#ae81ff">136656</span> <span style="color:#ae81ff">3361432</span>    <span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">38</span>    <span style="color:#ae81ff">53</span>  <span style="color:#ae81ff">189</span>  <span style="color:#ae81ff">557</span>  <span style="color:#ae81ff">6</span>  <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">92</span>  <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">0</span>
+<span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">256</span> <span style="color:#ae81ff">170060</span> <span style="color:#ae81ff">136668</span> <span style="color:#ae81ff">3362284</span>    <span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">0</span>     <span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">62</span>  <span style="color:#ae81ff">441</span>  <span style="color:#ae81ff">785</span>  <span style="color:#ae81ff">2</span>  <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">97</span>  <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">0</span>
+<span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">256</span> <span style="color:#ae81ff">170320</span> <span style="color:#ae81ff">136676</span> <span style="color:#ae81ff">3362360</span>    <span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">0</span>     <span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">13</span>  <span style="color:#ae81ff">706</span> <span style="color:#ae81ff">1002</span>  <span style="color:#ae81ff">3</span>  <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">97</span>  <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">0</span>
+</code></pre></div><blockquote>
+<p>cs：每秒上下文切换的次数</p>
+</blockquote>
+<h2 id="查看进程上下文切换情况">查看进程上下文切换情况</h2>
+<p>使用 <code>pidstat</code> 查看：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ sudo apt install sysstat
+$ pidstat -w <span style="color:#ae81ff">5</span>
+Linux 5.4.0-42-generic <span style="color:#f92672">(</span>zk<span style="color:#f92672">)</span> 	2020年08月31日 	_x86_64_	<span style="color:#f92672">(</span><span style="color:#ae81ff">4</span> CPU<span style="color:#f92672">)</span>
+
+23时26分46秒   UID       PID   cswch/s nvcswch/s  Command
+23时26分51秒     <span style="color:#ae81ff">0</span>         <span style="color:#ae81ff">1</span>      2.19      0.00  systemd
+23时26分51秒     <span style="color:#ae81ff">0</span>         <span style="color:#ae81ff">9</span>      0.20      0.00  ksoftirqd/0
+23时26分51秒     <span style="color:#ae81ff">0</span>        <span style="color:#ae81ff">10</span>     17.13      0.00  rcu_sched
+23时26分51秒     <span style="color:#ae81ff">0</span>        <span style="color:#ae81ff">11</span>      0.20      0.00  migration/0
+</code></pre></div><ul>
+<li><code>cswch</code>，表示每秒自愿上下文切换（voluntary context switches）的次数，是指进程无法获取所需资源，导致的上下文切换。I/O、内存资源不足，容易发生。</li>
+<li><code>nvcswch</code>，表示每秒非自愿上下文切换（non voluntary context switches）的次数，指进程由于时间片已到等原因，被系统强制调度，进而发生的上下文切换。进程数量多，容易发生。</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#cpu-上下文">CPU 上下文</a></li>
+    <li><a href="#查看系统上下文切换情况">查看系统上下文切换情况</a></li>
+    <li><a href="#查看进程上下文切换情况">查看进程上下文切换情况</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

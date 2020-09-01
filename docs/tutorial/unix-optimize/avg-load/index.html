@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="平均负载"><meta property="og:title" content="平均负载" />
+<meta property="og:description" content="平均负载  作者：赵坤
+ uptime 命令 了解负载情况：
+$ uptime 22:39:37 up 2:47, 1 user, load average: 1.44, 1.12, 0.79 含义：
+# 当前时间 22:39:37 # 系统运行多久了 up 2:47 # 当前有几个用户登录 1 user # 过去 1 分钟、5 分钟、15 分钟的平均负载 load average: 1.44, 1.12, 0.79 平均负载的含义  平均负载是指单位时间内，系统处于可运行状态和不可中断状态的平均进程数，也就是平均活跃进程数。它不仅包括了正在使用 CPU 的进程，还包括等待 CPU 和等待 I/O 的进程。
+  可运行状态的进程，是指正在使用 CPU 或者正在等待 CPU 的进程，也就是我们常用 ps 命令看到的，处于 R 状态（Running 或 Runnable）的进程。 不可中断状态的进程则是正处于内核态关键流程中的进程，并且这些流程是不可打断的，比如最常见的是等待硬件设备的 I/O 响应，也就是我们在 ps 命令中看到的 D 状态（Uninterruptible Sleep，也称为 Disk Sleep）的进程。  $ ps -efl F S UID PID PPID C PRI NI ADDR SZ WCHAN STIME TTY TIME CMD 4 S root 1 0 0 80 0 - 42420 - 19:51 ?" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/avg-load/" />
+
+<title>平均负载 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.2138be7ac60b4f09bf26d9ed8bc81cc50f7ca6c77f707fe23fbfd0cd2ad5f93d.js" integrity="sha256-ITi&#43;esYLTwm/Jtnti8gcxQ98psd/cH/iP7/QzSrV&#43;T0="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/avg-load/"  class="active">
+      平均负载
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/context-switch/" >
+      CPU 上下文切换
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Spring Cloud Eureka 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>平均负载</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#uptime-命令">uptime 命令</a></li>
+    <li><a href="#平均负载的含义">平均负载的含义</a></li>
+    <li><a href="#平均负载多少算合理">平均负载多少算合理</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="平均负载">平均负载</h1>
+<blockquote>
+<p>作者：赵坤</p>
+</blockquote>
+<h2 id="uptime-命令">uptime 命令</h2>
+<p>了解负载情况：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ uptime
+22:39:37 up  2:47,  <span style="color:#ae81ff">1</span> user,  load average: 1.44, 1.12, 0.79
+</code></pre></div><p>含义：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 当前时间</span>
+22:39:37
+<span style="color:#75715e"># 系统运行多久了</span>
+up  2:47
+<span style="color:#75715e"># 当前有几个用户登录</span>
+<span style="color:#ae81ff">1</span> user
+<span style="color:#75715e"># 过去 1 分钟、5 分钟、15 分钟的平均负载</span>
+load average: 1.44, 1.12, 0.79
+</code></pre></div><h2 id="平均负载的含义">平均负载的含义</h2>
+<blockquote>
+<p>平均负载是指单位时间内，系统处于<strong>可运行状态</strong>和<strong>不可中断状态</strong>的平均进程数，也就是<strong>平均活跃进程数</strong>。它不仅包括了正在使用 CPU 的进程，还包括等待 CPU 和等待 I/O 的进程。</p>
+</blockquote>
+<ul>
+<li>可运行状态的进程，是指<strong>正在使用 CPU 或者正在等待 CPU 的进程</strong>，也就是我们常用 ps 命令看到的，处于 <code>R</code> 状态（Running 或 Runnable）的进程。</li>
+<li>不可中断状态的进程则是正处于内核态关键流程中的进程，并且这些流程是不可打断的，比如最常见的是等待硬件设备的 I/O 响应，也就是我们在 ps 命令中看到的 <code>D</code> 状态（Uninterruptible Sleep，也称为 Disk Sleep）的进程。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ps -efl
+F S UID          PID    PPID  C PRI  NI ADDR SZ WCHAN  STIME TTY          TIME CMD
+<span style="color:#ae81ff">4</span> S root           <span style="color:#ae81ff">1</span>       <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">80</span>   <span style="color:#ae81ff">0</span> - <span style="color:#ae81ff">42420</span> -      19:51 ?        00:00:11 /sbin/init splash
+<span style="color:#ae81ff">1</span> S root           <span style="color:#ae81ff">2</span>       <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">80</span>   <span style="color:#ae81ff">0</span> -     <span style="color:#ae81ff">0</span> -      19:51 ?        00:00:00 <span style="color:#f92672">[</span>kthreadd<span style="color:#f92672">]</span>
+<span style="color:#ae81ff">1</span> I root           <span style="color:#ae81ff">3</span>       <span style="color:#ae81ff">2</span>  <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">60</span> -20 -     <span style="color:#ae81ff">0</span> -      19:51 ?        00:00:00 <span style="color:#f92672">[</span>rcu_gp<span style="color:#f92672">]</span>
+<span style="color:#ae81ff">1</span> I root           <span style="color:#ae81ff">4</span>       <span style="color:#ae81ff">2</span>  <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">60</span> -20 -     <span style="color:#ae81ff">0</span> -      19:51 ?        00:00:00 <span style="color:#f92672">[</span>rcu_par_gp<span style="color:#f92672">]</span>
+<span style="color:#ae81ff">1</span> D root       <span style="color:#ae81ff">10529</span>       <span style="color:#ae81ff">2</span>  <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">80</span>   <span style="color:#ae81ff">0</span> -     <span style="color:#ae81ff">0</span> -      21:46 ?        00:00:04 <span style="color:#f92672">[</span>kworker/u16:1+events_unbound<span style="color:#f92672">]</span>
+<span style="color:#ae81ff">4</span> R zk         <span style="color:#ae81ff">15513</span>   <span style="color:#ae81ff">14502</span>  <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">80</span>   <span style="color:#ae81ff">0</span> -  <span style="color:#ae81ff">5029</span> -      22:48 pts/1    00:00:00 ps -efl
+</code></pre></div><h2 id="平均负载多少算合理">平均负载多少算合理</h2>
+<blockquote>
+<p>平均负载最理想的情况是等于 CPU 个数</p>
+</blockquote>
+<p>查看 CPU 个数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ grep <span style="color:#e6db74">&#39;model name&#39;</span> /proc/cpuinfo | wc -l
+<span style="color:#ae81ff">4</span>
+</code></pre></div><blockquote>
+<p>在生产环境中，当平均负载高于 CPU 数量 70% 的时候，你就应该分析排查负载高的问题了。一旦负载过高，就可能导致进程响应变慢，进而影响服务的正常功能。</p>
+</blockquote>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#uptime-命令">uptime 命令</a></li>
+    <li><a href="#平均负载的含义">平均负载的含义</a></li>
+    <li><a href="#平均负载多少算合理">平均负载多少算合理</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
