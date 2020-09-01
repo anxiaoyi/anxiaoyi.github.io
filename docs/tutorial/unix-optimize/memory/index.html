@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="内存"><meta property="og:title" content="内存" />
+<meta property="og:description" content="内存  作者：赵坤
+ 内存分配 首先给出 32 位系统虚拟内存空间分布图：
+在 C 语言中，内存分配采用 malloc() 函数进行分配。底层实现：
+ 申请的内存小于 128K，使用 brk() 函数完成，也就是从上图中的堆中分配的内存 申请的内存大于 128K，使用 mmap() 内存映射函数完成，也就是从上图中的文件映射中分配的内存  内存回收 应用程序应通过 free() 或 unmap() 来释放内存。
+当然，系统也会监管进程的内存，当发现系统内存不足时，会采取措施：
+ 使用 LRU 算法回收缓存 回收不常访问的内存，写到 Swap 区（位于硬盘上） 杀死进程  查看整个系统的内存 $ free total used free shared buff/cache available Mem: 6030036 2312004 266488 624252 3451544 2911700 Swap: 2097148 256 2096892 查看某个进程的内存 使用 top 或 ps：
+$ top PID USER PR NI VIRT RES SHR S %CPU %MEM TIME&#43; COMMAND 8883 zk 20 0 16." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/memory/" />
+
+<title>内存 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.25d4120078b42fb29742e39d0688e1607acb196c909366d1d9f76502e2c07190.js" integrity="sha256-JdQSAHi0L7KXQuOdBojhYHrLGWyQk2bR2fdlAuLAcZA="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/avg-load/" >
+      平均负载
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/context-switch/" >
+      CPU 上下文切换
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/memory/"  class="active">
+      内存
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Spring Cloud Eureka 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>内存</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#内存分配">内存分配</a></li>
+    <li><a href="#内存回收">内存回收</a></li>
+    <li><a href="#查看整个系统的内存">查看整个系统的内存</a></li>
+    <li><a href="#查看某个进程的内存">查看某个进程的内存</a></li>
+    <li><a href="#buffer-vs-cache">Buffer vs Cache</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="内存">内存</h1>
+<blockquote>
+<p>作者：赵坤</p>
+</blockquote>
+<h2 id="内存分配">内存分配</h2>
+<p>首先给出 32 位系统虚拟内存空间分布图：</p>
+<p><img src="/images/docs/tutorial/unix-optimize/memory/71a754523386cc75f4456a5eabc93c5d.png" alt=""></p>
+<p>在 C 语言中，内存分配采用 <code>malloc()</code> 函数进行分配。底层实现：</p>
+<ul>
+<li>申请的内存小于 128K，使用 <code>brk()</code> 函数完成，也就是从上图中的<strong>堆</strong>中分配的内存</li>
+<li>申请的内存大于 128K，使用 <code>mmap()</code> 内存映射函数完成，也就是从上图中的<strong>文件映射</strong>中分配的内存</li>
+</ul>
+<h2 id="内存回收">内存回收</h2>
+<p>应用程序应通过 <code>free()</code> 或 <code>unmap()</code> 来释放内存。</p>
+<p>当然，系统也会监管进程的内存，当发现系统内存不足时，会采取措施：</p>
+<ul>
+<li>使用 <code>LRU</code> 算法回收<strong>缓存</strong></li>
+<li>回收不常访问的内存，写到 <code>Swap</code> 区（位于硬盘上）</li>
+<li>杀死进程</li>
+</ul>
+<h2 id="查看整个系统的内存">查看整个系统的内存</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ free
+              total        used        free      shared  buff/cache   available
+Mem:        <span style="color:#ae81ff">6030036</span>     <span style="color:#ae81ff">2312004</span>      <span style="color:#ae81ff">266488</span>      <span style="color:#ae81ff">624252</span>     <span style="color:#ae81ff">3451544</span>     <span style="color:#ae81ff">2911700</span>
+Swap:       <span style="color:#ae81ff">2097148</span>         <span style="color:#ae81ff">256</span>     <span style="color:#ae81ff">2096892</span>
+</code></pre></div><h2 id="查看某个进程的内存">查看某个进程的内存</h2>
+<p>使用 <code>top</code> 或 <code>ps</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ top
+PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND                                                                
+<span style="color:#ae81ff">8883</span> zk        <span style="color:#ae81ff">20</span>   <span style="color:#ae81ff">0</span>   16.7g <span style="color:#ae81ff">477004</span> <span style="color:#ae81ff">223504</span> S   4.7   7.9   2:02.69 chrome                                                                 
+<span style="color:#ae81ff">2075</span> zk        <span style="color:#ae81ff">20</span>   <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1233356</span>  <span style="color:#ae81ff">99568</span>  <span style="color:#ae81ff">53584</span> S   4.0   1.7   4:49.63 Xorg                                                                   
+<span style="color:#ae81ff">2681</span> zk        <span style="color:#ae81ff">20</span>   <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">865052</span>  <span style="color:#ae81ff">56464</span>  <span style="color:#ae81ff">42040</span> S   2.7   0.9   0:11.70 gnome-terminal-                                                        
+<span style="color:#ae81ff">2247</span> zk        <span style="color:#ae81ff">20</span>   <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">4335224</span> <span style="color:#ae81ff">252364</span>  <span style="color:#ae81ff">99052</span> S   1.3   4.2   6:50.33 gnome-shell   
+</code></pre></div><h2 id="buffer-vs-cache">Buffer vs Cache</h2>
+<p><code>free</code> 命令中的 <code>buff/cache</code> 一列的 <code>buff</code> 和 <code>cache</code> 分别指代什么？</p>
+<ul>
+<li><code>buff</code> 即 Buffer，缓存<strong>磁盘数据</strong>，是对原始磁盘块的缓存，内核可以将分散写改为集中写。</li>
+<li><code>cache</code> 缓存从<strong>磁盘读取的数据</strong>，缓存的是磁盘<strong>读取文件的页缓存</strong>。</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#内存分配">内存分配</a></li>
+    <li><a href="#内存回收">内存回收</a></li>
+    <li><a href="#查看整个系统的内存">查看整个系统的内存</a></li>
+    <li><a href="#查看某个进程的内存">查看某个进程的内存</a></li>
+    <li><a href="#buffer-vs-cache">Buffer vs Cache</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
