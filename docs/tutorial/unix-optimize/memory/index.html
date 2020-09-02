@@ -22,7 +22,7 @@ $ top PID USER PR NI VIRT RES SHR S %CPU %MEM TIME&#43; COMMAND 8883 zk 20 0 16.
 <link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
 
 
-<script defer src="/en.search.min.25d4120078b42fb29742e39d0688e1607acb196c909366d1d9f76502e2c07190.js" integrity="sha256-JdQSAHi0L7KXQuOdBojhYHrLGWyQk2bR2fdlAuLAcZA="></script>
+<script defer src="/en.search.min.95c7023dce6dcad8a32bf306f39b633ff153c32b8065295c53543fda38b99a9f.js" integrity="sha256-lccCPc5tytijK/MG85tjP/FTwyuAZSlcU1Q/2ji5mp8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -202,6 +202,16 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/unix-optimize/memory/"  class="active">
       内存
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/io/" >
+      磁盘 I/O
   </a>
 
 </li>
@@ -685,6 +695,7 @@ var _hmt = _hmt || [];
     <li><a href="#查看整个系统的内存">查看整个系统的内存</a></li>
     <li><a href="#查看某个进程的内存">查看某个进程的内存</a></li>
     <li><a href="#buffer-vs-cache">Buffer vs Cache</a></li>
+    <li><a href="#内存回收机制">内存回收机制</a></li>
   </ul>
 </nav>
 
@@ -734,6 +745,19 @@ PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
 <li><code>buff</code> 即 Buffer，缓存<strong>磁盘数据</strong>，是对原始磁盘块的缓存，内核可以将分散写改为集中写。</li>
 <li><code>cache</code> 缓存从<strong>磁盘读取的数据</strong>，缓存的是磁盘<strong>读取文件的页缓存</strong>。</li>
 </ul>
+<h2 id="内存回收机制">内存回收机制</h2>
+<p>系统可以回收的内存：</p>
+<ul>
+<li>文件页（Buffer、Cache、文件映射页）</li>
+<li>匿名页（堆内存）</li>
+</ul>
+<p>其中，文件页如果被修改过，那么就会变为<strong>脏页</strong>，必须先写入磁盘，才能内存释放。脏页写入磁盘有两种方式：</p>
+<ul>
+<li>调用 <code>fsync()</code> 写入脏页到磁盘</li>
+<li>内核线程定期 <code>pdflush</code> 刷新这些脏页到磁盘</li>
+</ul>
+<p>而匿名页虽无法直接回收，但是通过 Swap 机制可以将不常用的内存写到磁盘中，然后释放内存，给其他程序用。</p>
+<p>通过调节 <code>/proc/sys/vm/swappiness</code> 值（0 - 100）可以控制回收匿名页的优先级，值越大，越优先回收匿名页。</p>
 </article>
  
 
@@ -784,6 +808,7 @@ PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
     <li><a href="#查看整个系统的内存">查看整个系统的内存</a></li>
     <li><a href="#查看某个进程的内存">查看某个进程的内存</a></li>
     <li><a href="#buffer-vs-cache">Buffer vs Cache</a></li>
+    <li><a href="#内存回收机制">内存回收机制</a></li>
   </ul>
 </nav>
 
