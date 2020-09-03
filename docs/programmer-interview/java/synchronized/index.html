@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="并发 - synchronized"><meta property="og:title" content="并发 - synchronized" />
+<meta property="og:description" content="synchronized 锁的对象是谁 当你使用 synchronized 关键字的时候，JVM 底层使用 Monitor 锁来实现同步。而锁的对象可以分为：
+ 如果 synchronized 的是普通方法，那么锁是当前实例 如果 synchronized 的是静态方法，那么锁是当前类的 Class 如果 synchronized 的是同步块，那么锁是括号里面的对象  synchronized 同步块 底层基于 monitorenter 和 monitorexit 这一对指令实现的。
+public void foo(Object lock) { synchronized (lock) { lock.hashCode(); } } 上面的Java代码将编译为下面的字节码：
+public void foo(java.lang.Object); Code: 0: aload_1 1: dup 2: astore_2 3: monitorenter 4: aload_1 5: invokevirtual java/lang/Object.hashCode:()I 8: pop 9: aload_2 10: monitorexit 11: goto 19 14: astore_3 15: aload_2 16: monitorexit 17: aload_3 18: athrow 19: return Exception table: from to target type 4 11 14 any 14 17 14 any synchronized 方法 方法标记为 ACC_SYNCHRONIZED，同样需要进行 monitorenter 操作。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/synchronized/" />
+
+<title>并发 - synchronized | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.403184a6f45d59a93d1aa637474c18bdd330ae13d7f96e4f043467741287cf74.js" integrity="sha256-QDGEpvRdWak9GqY3R0wYvdMwrhPX&#43;W5PBDRndBKHz3Q="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/java/" >
+      Java
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/multi-thread/" >
+      并发 - 多线程的实现方式
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/synchronized/"  class="active">
+      并发 - synchronized
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/threadlocal/" >
+      并发 - ThreadLocal
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/finally/" >
+      基础 - finally
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>并发 - synchronized</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#锁的对象是谁">锁的对象是谁</a></li>
+    <li><a href="#synchronized-同步块">synchronized 同步块</a></li>
+    <li><a href="#synchronized-方法">synchronized 方法</a></li>
+    <li><a href="#synzhronized-性能改进">synzhronized 性能改进</a>
+      <ul>
+        <li><a href="#对象头">对象头</a></li>
+        <li><a href="#偏斜锁">偏斜锁</a></li>
+        <li><a href="#轻量级锁">轻量级锁</a></li>
+        <li><a href="#重量级锁">重量级锁</a></li>
+        <li><a href="#锁降级">锁降级</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="synchronized">synchronized</h1>
+<h2 id="锁的对象是谁">锁的对象是谁</h2>
+<p>当你使用 <code>synchronized</code> 关键字的时候，JVM 底层使用 <strong>Monitor 锁</strong>来实现同步。而锁的对象可以分为：</p>
+<ul>
+<li>如果 synchronized 的是普通方法，那么锁是当前实例</li>
+<li>如果 synchronized 的是静态方法，那么锁是当前类的 Class</li>
+<li>如果 synchronized 的是同步块，那么锁是括号里面的对象</li>
+</ul>
+<h2 id="synchronized-同步块">synchronized 同步块</h2>
+<p>底层基于 <code>monitorenter</code> 和 <code>monitorexit</code> 这一对指令实现的。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>Object lock<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>lock<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        lock<span style="color:#f92672">.</span><span style="color:#a6e22e">hashCode</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>上面的Java代码将编译为下面的字节码：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>java<span style="color:#f92672">.</span><span style="color:#a6e22e">lang</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Object</span><span style="color:#f92672">);</span>
+Code:
+    0<span style="color:#f92672">:</span> aload_1
+    1<span style="color:#f92672">:</span> dup
+    2<span style="color:#f92672">:</span> astore_2
+    3<span style="color:#f92672">:</span> monitorenter
+    4<span style="color:#f92672">:</span> aload_1
+    5<span style="color:#f92672">:</span> invokevirtual java<span style="color:#f92672">/</span>lang<span style="color:#f92672">/</span>Object<span style="color:#f92672">.</span><span style="color:#a6e22e">hashCode</span><span style="color:#f92672">:()</span>I
+    8<span style="color:#f92672">:</span> pop
+    9<span style="color:#f92672">:</span> aload_2
+    10<span style="color:#f92672">:</span> monitorexit
+    11<span style="color:#f92672">:</span> <span style="color:#66d9ef">goto</span>          19
+    14<span style="color:#f92672">:</span> astore_3
+    15<span style="color:#f92672">:</span> aload_2
+    16<span style="color:#f92672">:</span> monitorexit
+    17<span style="color:#f92672">:</span> aload_3
+    18<span style="color:#f92672">:</span> athrow
+    19<span style="color:#f92672">:</span> <span style="color:#66d9ef">return</span>
+Exception table<span style="color:#f92672">:</span>
+    from    to  target type
+        4    11    14   any
+        14    17    14   any
+</code></pre></div><h2 id="synchronized-方法">synchronized 方法</h2>
+<p>方法标记为 <code>ACC_SYNCHRONIZED</code>，同样需要进行 <code>monitorenter</code> 操作。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>Object lock<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    lock<span style="color:#f92672">.</span><span style="color:#a6e22e">hashCode</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>上面的 Java 代码将编译为下面的字节码：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>java<span style="color:#f92672">.</span><span style="color:#a6e22e">lang</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Object</span><span style="color:#f92672">);</span>
+    descriptor<span style="color:#f92672">:</span> <span style="color:#f92672">(</span>Ljava<span style="color:#f92672">/</span>lang<span style="color:#f92672">/</span>Object<span style="color:#f92672">;)</span>V
+    flags<span style="color:#f92672">:</span> <span style="color:#f92672">(</span>0x0021<span style="color:#f92672">)</span> ACC_PUBLIC<span style="color:#f92672">,</span> ACC_SYNCHRONIZED
+    Code<span style="color:#f92672">:</span>
+    stack<span style="color:#f92672">=</span>1<span style="color:#f92672">,</span> locals<span style="color:#f92672">=</span>2<span style="color:#f92672">,</span> args_size<span style="color:#f92672">=</span>2
+        0<span style="color:#f92672">:</span> aload_1
+        1<span style="color:#f92672">:</span> invokevirtual java<span style="color:#f92672">/</span>lang<span style="color:#f92672">/</span>Object<span style="color:#f92672">.</span><span style="color:#a6e22e">hashCode</span><span style="color:#f92672">:()</span>I
+        4<span style="color:#f92672">:</span> pop
+        5<span style="color:#f92672">:</span> <span style="color:#66d9ef">return</span>
+</code></pre></div><h2 id="synzhronized-性能改进">synzhronized 性能改进</h2>
+<p>在 Java 6 之前，Monitor 的实现完全是依靠操作系统内部的<strong>互斥锁</strong>，因为需要进行用户态到内核态的切换，所以同步操作是一个无差别的<strong>重量级操作</strong>。</p>
+<p>现代的（Oracle）JDK 中，JVM 对此进行了非常大地改进，提供了三种不同的 Monitor 实现，也就是常说的三种不同的锁：<strong>偏斜锁（Biased Locking）</strong>、<strong>轻量级锁</strong>和<strong>重量级锁</strong>，大大改进了其性能。</p>
+<p>所谓<strong>锁的升级、降级</strong>，就是 JVM 优化 synchronized 运行的机制，当 JVM 检测到不同的竞争状况时，会自动切换到适合的锁实现，这种切换就是锁的升级、降级。</p>
+<h3 id="对象头">对象头</h3>
+<p>对于 HotSpot JVM，Java 对象保存在内存中时，由<strong>对象头、实例数据、对齐填充字节</strong>组成。对象头由 **Mark Word、指向类的指针、数组长度(只有数组对象才有)**组成。</p>
+<p>Mark Word 记录了对象和锁有关的信息，当这个对象被 synchronized 关键字当成同步锁时，围绕这个锁的一系列操作都和Mark Word 有关。Mark Word 在 32 位 JVM 中的长度是 32 bit，在 64 位 JVM 中长度是 64 bit。Mark Word 在不同的锁状态下存储的内容不同，在 32 位JVM中是这么存的：</p>
+<p><img src="/images/docs/programmer-interview/java/synchronized/mark-word-32.png" alt=""></p>
+<h3 id="偏斜锁">偏斜锁</h3>
+<p>当没有竞争出现时，默认会使用偏斜锁。JVM 会利用 CAS 操作（compare and swap），在对象头上的 <strong>Mark Word</strong> 部分设置<strong>线程 ID</strong>，以表示这个对象偏向于当前线程，所以并不涉及真正的互斥锁。这样做的假设是基于在很多应用场景中，大部分对象生命周期中最多会被一个线程锁定，使用偏斜锁可以降低无竞争开销。</p>
+<h3 id="轻量级锁">轻量级锁</h3>
+<p>如果有另外的线程试图锁定某个已经被偏斜过的对象，JVM 就需要撤销（revoke）偏斜锁，并切换到轻量级锁实现。轻量级锁依赖 CAS 操作 Mark Word 来试图获取锁，如果重试成功，就使用普通的轻量级锁；否则，进一步升级为重量级锁。</p>
+<h3 id="重量级锁">重量级锁</h3>
+<p>轻量级锁 CAS 获取锁失败，会升级为重量级锁。</p>
+<h3 id="锁降级">锁降级</h3>
+<p>当 JVM 进入安全点（<a href="http://blog.ragozin.info/2012/10/safepoints-in-hotspot-jvm.html">SafePoint</a>）的时候，会检查是否有闲置的 Monitor，然后试图进行降级。HotSpot JVM 的 Stop-the-World 机制称为 safepoint，在此期间，所有线程（不含 JNI 线程）会被挂起。</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#锁的对象是谁">锁的对象是谁</a></li>
+    <li><a href="#synchronized-同步块">synchronized 同步块</a></li>
+    <li><a href="#synchronized-方法">synchronized 方法</a></li>
+    <li><a href="#synzhronized-性能改进">synzhronized 性能改进</a>
+      <ul>
+        <li><a href="#对象头">对象头</a></li>
+        <li><a href="#偏斜锁">偏斜锁</a></li>
+        <li><a href="#轻量级锁">轻量级锁</a></li>
+        <li><a href="#重量级锁">重量级锁</a></li>
+        <li><a href="#锁降级">锁降级</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

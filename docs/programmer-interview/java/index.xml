@@ -21,5 +21,43 @@
 public class MyCallable implements Callable&amp;lt;String&amp;gt; { @Override public String call() throws Exception { return String.</description>
     </item>
     
+    <item>
+      <title>并发 - synchronized</title>
+      <link>https://kunzhao.org/docs/programmer-interview/java/synchronized/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/programmer-interview/java/synchronized/</guid>
+      <description>synchronized 锁的对象是谁 当你使用 synchronized 关键字的时候，JVM 底层使用 Monitor 锁来实现同步。而锁的对象可以分为：
+ 如果 synchronized 的是普通方法，那么锁是当前实例 如果 synchronized 的是静态方法，那么锁是当前类的 Class 如果 synchronized 的是同步块，那么锁是括号里面的对象  synchronized 同步块 底层基于 monitorenter 和 monitorexit 这一对指令实现的。
+public void foo(Object lock) { synchronized (lock) { lock.hashCode(); } } 上面的Java代码将编译为下面的字节码：
+public void foo(java.lang.Object); Code: 0: aload_1 1: dup 2: astore_2 3: monitorenter 4: aload_1 5: invokevirtual java/lang/Object.hashCode:()I 8: pop 9: aload_2 10: monitorexit 11: goto 19 14: astore_3 15: aload_2 16: monitorexit 17: aload_3 18: athrow 19: return Exception table: from to target type 4 11 14 any 14 17 14 any synchronized 方法 方法标记为 ACC_SYNCHRONIZED，同样需要进行 monitorenter 操作。</description>
+    </item>
+    
+    <item>
+      <title>并发 - ThreadLocal</title>
+      <link>https://kunzhao.org/docs/programmer-interview/java/threadlocal/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/programmer-interview/java/threadlocal/</guid>
+      <description>ThreadLocal 底层原理 假如你自己需要实现 ThreadLocal&amp;lt;T&amp;gt; 相关的 API，请问你会怎么做？
+ 你可能会使用 ConcurrentHashMap&amp;lt;Thread, T&amp;gt;，以 Thread.currentThread() 作为 key，这完全可以。但是缺点明显：1. 处理并发问题；2. 必须有指针指向 Thraed 和 这个对象，即使 Thraed 已经结束了，可以被 GC 了。 那我们改为  Collections.synchronizedMap(new WeakHashMap&amp;lt;Thread, T&amp;gt;()) 怎样？  使用场景  你想要在多线程环境下访问某个非线程安全的对象（例如 SimpleDateFormat），但是你又想避免通过添加 synchronized 来进行同步，此刻可以考虑使用 ThreadLocal 来给每个线程都搞一份找个对象的实例。 很多框架使用 ThreadLocal 来存储与当前线程相关的上下文信息 Context，这样从 A 方法调用到 B 方法的时候，不用手动通过参数传入当前的 Context 信息，直接从 ThreadLocal 中读取即可。  </description>
+    </item>
+    
+    <item>
+      <title>基础 - finally</title>
+      <link>https://kunzhao.org/docs/programmer-interview/java/finally/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/programmer-interview/java/finally/</guid>
+      <description>finally 常见疑惑代码片段 （1）下面代码中的 finally 块会执行吗？
+try { // do something  System.exit(1); } finally{ System.out.println(“Print from finally”); } 答案：不会。
+（2）finally 会执行吗？
+public static int test() { try { return 0; } finally { System.out.println(&amp;#34;finally trumps return.&amp;#34;); } } 答案：
+finally trumps return. 0 （3）这个方法返回的值是 10 还是 12？
+public static int getMonthsInYear() { try { return 10; } finally { return 12; } } 答案：12
+（4）执行顺序
+try{ int divideByZeroException = 5 / 0; } catch (Exception e){ System.</description>
+    </item>
+    
   </channel>
 </rss>
