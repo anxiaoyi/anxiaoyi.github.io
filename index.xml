@@ -50,7 +50,8 @@ IBM WheSphere MQ 特性：
 MQSC MQSC 是用来管理队列管理器等对象的脚本命令，可以使用 runmqsc 向队列管理器发出 MQSC 命令。
 MQSC 的官方命令文档：The MQSC Commands
 MQSC 的一些规则：
- 关键字不区分大小写：ALTER、alter、AlteR 都是一样的 很多命令都有同义词：例如 DEFINE CHANNEL 可以写为 def chl 用单引号引用的字符串，IBM MQ 不做转换处理 每条命令必须以新行开始  发送消息步骤 发送消息前，需要启动队列管理器、启动监听器（监听在某个端口）。
+ 关键字不区分大小写：ALTER、alter、AlteR 都是一样的 很多命令都有同义词：例如 DEFINE CHANNEL 可以写为 def chl 用单引号引用的字符串，IBM MQ 不做转换处理 每条命令必须以新行开始  Control Commands Control Commands 的官方文档：The control commands
+发送消息步骤 发送消息前，需要启动队列管理器、启动监听器（监听在某个端口）。
 为了把消息从一个队列管理器发送到另一个队列管理器，您需要定义两个通道；一个是在源队列管理器（指明传输队列名、目标系统的IP:PORT），另一个是在目标队列管理器。
 为把消息从一个队列管理器发送到另一个队列管理器，您需要定义六个队列；在源队列管理器需要定义四个（远程队列、启动队列、传输队列、死信队列-推荐），目标队列管理器要定义两个（本地队列、死信队列-推荐）。
 编程接口 Queue Manager // declare an object of type queue manager MQQueueManager queueManager = new MQQueueManager(); MQQueueManager queueManager = new MQQueueManager(&amp;#34;qMgrName&amp;#34;); .</description>
@@ -1923,8 +1924,12 @@ public void foo(java.lang.Object); Code: 0: aload_1 1: dup 2: astore_2 3: monito
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/programmer-interview/java/threadlocal/</guid>
-      <description>ThreadLocal 底层原理 假如你自己需要实现 ThreadLocal&amp;lt;T&amp;gt; 相关的 API，请问你会怎么做？
- 你可能会使用 ConcurrentHashMap&amp;lt;Thread, T&amp;gt;，以 Thread.currentThread() 作为 key，这完全可以。但是缺点明显：1. 处理并发问题；2. 必须有指针指向 Thraed 和 这个对象，即使 Thraed 已经结束了，可以被 GC 了。 那我们改为  Collections.synchronizedMap(new WeakHashMap&amp;lt;Thread, T&amp;gt;()) 怎样？  使用场景  你想要在多线程环境下访问某个非线程安全的对象（例如 SimpleDateFormat），但是你又想避免通过添加 synchronized 来进行同步，此刻可以考虑使用 ThreadLocal 来给每个线程都搞一份找个对象的实例。 很多框架使用 ThreadLocal 来存储与当前线程相关的上下文信息 Context，这样从 A 方法调用到 B 方法的时候，不用手动通过参数传入当前的 Context 信息，直接从 ThreadLocal 中读取即可。  </description>
+      <description>ThreadLocal 作用 有一个比喻：
+学生需要在签字墙签字，锁 相当于只有一个签字笔，学生们需要争抢这个签字笔；而 ThreadLocal 相当于给每个学生发了一个签字笔，每人一个，效率大大提升。
+底层原理 假如你自己需要实现 ThreadLocal&amp;lt;T&amp;gt; 相关的 API，请问你会怎么做？
+ 你可能会使用 ConcurrentHashMap&amp;lt;Thread, T&amp;gt;，以 Thread.currentThread() 作为 key，这完全可以。但是缺点明显：1. 处理并发问题；2. 必须有指针指向 Thraed 和 这个对象，即使 Thraed 已经结束了，可以被 GC 了。 那我们改为  Collections.synchronizedMap(new WeakHashMap&amp;lt;Thread, T&amp;gt;()) 怎样？ 可以解决 GC 问题，但是多线程问题仍然没有解决。  Java 实现的想法，没有用 &amp;lt;Thread, T&amp;gt; ，而是大概如下：
+new WeakHashMap&amp;lt;ThreadLocal,T&amp;gt;() 而事实上，在每个 Thread 内部也的确有这么一个 Map 指针：
+public class Thread implements Runnable { ThreadLocal.ThreadLocalMap threadLocals = null; } 虽然 ThreadLocalMap 并不是一个 WeakHashMap，但是它的设计类似 WeakHashMap，它的 Key 是由 Weak Reference 引用的。</description>
     </item>
     
     <item>
