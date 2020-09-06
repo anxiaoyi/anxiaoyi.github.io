@@ -4,12 +4,14 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Java"><meta property="og:title" content="Java" />
-<meta property="og:description" content="" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/" />
+<meta name="description" content="并发 - volatile"><meta property="og:title" content="并发 - volatile" />
+<meta property="og:description" content="volatile 作用  在多处理器中，保证共享变量的 “可见性”（一个线程修改后，另外一个线程能立即读取到这个最新修改的值） 禁止对指令进行重排序  对比 synchronized  volatile 无法保证原子性 volatile 不会使线程陷入阻塞，不会引起线程上下文的切换和调度  典型用法 数绵羊程序：
+volatile boolean sleep; while (!sleep) { countSleep(); } 底层原理 有 volatile 变量修饰的共享变量进行写操作的时候会多出一行以 lock;  指令开头的汇编代码。而 lock;  指令相当于一个内存屏障，其作用如下所示：
+ 将当前处理器缓存行的数据写回到系统内存。 这个写回内存的操作会使在其他 CPU 里缓存了该内存地址的数据无效。  " />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/volatile/" />
 
-<title>Java | 赵坤的个人网站</title>
+<title>并发 - volatile | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
@@ -34,7 +36,6 @@ var _hmt = _hmt || [];
 
 
 <script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-<link rel="alternate" type="application/rss+xml" href="https://kunzhao.org/docs/programmer-interview/java/index.xml" title="赵坤的个人网站" />
 
   
 </head>
@@ -261,7 +262,7 @@ var _hmt = _hmt || [];
     
       
 
-  <a href="/docs/programmer-interview/java/"  class="active">
+  <a href="/docs/programmer-interview/java/" >
       Java
   </a>
 
@@ -319,7 +320,7 @@ var _hmt = _hmt || [];
       
         <li>
 
-  <a href="/docs/programmer-interview/java/volatile/" >
+  <a href="/docs/programmer-interview/java/volatile/"  class="active">
       并发 - volatile
   </a>
 
@@ -509,7 +510,7 @@ var _hmt = _hmt || [];
     <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
-  <strong>Java</strong>
+  <strong>并发 - volatile</strong>
 
   <label for="toc-control">
     <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
@@ -518,47 +519,50 @@ var _hmt = _hmt || [];
 
 
   
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#volatile">volatile</a></li>
+    <li><a href="#作用">作用</a></li>
+    <li><a href="#对比-synchronized">对比 synchronized</a></li>
+    <li><a href="#典型用法">典型用法</a></li>
+    <li><a href="#底层原理">底层原理</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
  
       </header>
 
       
-<article class="markdown"><h1 id="java-面试题">Java 面试题</h1>
-<h2 id="java-基础">Java 基础</h2>
-<table>
-<thead>
-<tr>
-<th>并发</th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="/docs/programmer-interview/java/multi-thread/">多线程实现方式</a></td>
-<td><a href="/docs/programmer-interview/java/synchronized/">synchronized</a></td>
-<td><a href="/docs/programmer-interview/java/threadlocal/">ThreadLocal</a></td>
-<td><a href="/posts/java-lock/">锁</a></td>
-<td><a href="/docs/programmer-interview/java/threadpool/">线程池</a></td>
-<td><a href="/docs/programmer-interview/java/volatile/">volatile</a></td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th>基础</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="/docs/programmer-interview/java/finally/">finally</a></td>
-</tr>
-</tbody>
-</table>
-<h2 id="spring">Spring</h2>
+<article class="markdown"><h2 id="volatile">volatile</h2>
+<h2 id="作用">作用</h2>
+<ul>
+<li>在<strong>多处理器</strong>中，保证共享变量的 “<strong>可见性</strong>”（一个线程修改后，另外一个线程能立即读取到这个最新修改的值）</li>
+<li>禁止对指令进行重排序</li>
+</ul>
+<h2 id="对比-synchronized">对比 synchronized</h2>
+<ul>
+<li>volatile 无法保证原子性</li>
+<li>volatile 不会使线程陷入阻塞，不会引起线程上下文的切换和调度</li>
+</ul>
+<h2 id="典型用法">典型用法</h2>
+<p>数绵羊程序：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">boolean</span> sleep<span style="color:#f92672">;</span>
+
+<span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span>sleep<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    countSleep<span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="底层原理">底层原理</h2>
+<p>有 <code>volatile</code> 变量修饰的共享变量进行写操作的时候会多出一行以 <code>lock; </code> 指令开头的汇编代码。而 <code>lock; </code> 指令相当于一个<strong>内存屏障</strong>，其作用如下所示：</p>
+<ul>
+<li>将当前处理器<strong>缓存行</strong>的数据写回到系统内存。</li>
+<li>这个写回内存的操作会使在其他 CPU 里缓存了该内存地址的数据无效。</li>
+</ul>
 </article>
  
 
@@ -599,6 +603,21 @@ var _hmt = _hmt || [];
       
     </div>
 
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#volatile">volatile</a></li>
+    <li><a href="#作用">作用</a></li>
+    <li><a href="#对比-synchronized">对比 synchronized</a></li>
+    <li><a href="#典型用法">典型用法</a></li>
+    <li><a href="#底层原理">底层原理</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
     
   </main>
 
