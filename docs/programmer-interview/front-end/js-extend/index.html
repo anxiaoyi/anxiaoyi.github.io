@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="JavaScript 继承"><meta property="og:title" content="JavaScript 继承" />
+<meta property="og:description" content="JavaScript 继承 原型链 function Parent() {} function Child() {} Child.prototype = new Parent(); Child.prototype.constructor = Child; 构造器 function Parent() {} function Child() { Parent.call(this); } 原型链 &#43; 构造器 function Parent() {} function Child() { Parent.call(this); } Child.prototype = new Parent(); 原型式 function extendObject(obj) { function F() {} F.prototype = obj; return new F(); } 其实上述代码就是 Object.create() 的兼容方法。
+寄生组合 function inheritPrototype(child, parent) { var prototype = extendObject(parent.prototype); prototype.constructor = child; child.prototype = prototype; } function Child() { Parent." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/front-end/js-extend/" />
+
+<title>JavaScript 继承 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.c87b9ba933c5f86802cc88f7173082574f4f6db540351ee730a187780c982b83.js" integrity="sha256-yHubqTPF&#43;GgCzIj3FzCCV09PbbVANR7nMKGHeAyYK4M="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/java/" >
+      Java
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/css-center/" >
+      CSS 垂直居中
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/mobile-responsive/" >
+      移动端响应式布局
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/position/" >
+      position 属性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/box-sizing/" >
+      CSS 盒模型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/html-semantic/" >
+      HTML 语义化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/html5-new-feature/" >
+      HTML5 新特性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/js-detect-array/" >
+      JavaScript 检测数组
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/js-extend/"  class="active">
+      JavaScript 继承
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/vue/" >
+      VUE 面试题
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>JavaScript 继承</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#原型链">原型链</a></li>
+    <li><a href="#构造器">构造器</a></li>
+    <li><a href="#原型链--构造器">原型链 + 构造器</a></li>
+    <li><a href="#原型式">原型式</a></li>
+    <li><a href="#寄生组合">寄生组合</a></li>
+    <li><a href="#es6-extends">ES6 extends</a></li>
+    <li><a href="#对比">对比</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="javascript-继承">JavaScript 继承</h1>
+<h2 id="原型链">原型链</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">Parent</span>() {}
+<span style="color:#66d9ef">function</span> <span style="color:#a6e22e">Child</span>() {}
+
+<span style="color:#a6e22e">Child</span>.<span style="color:#a6e22e">prototype</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Parent</span>();
+<span style="color:#a6e22e">Child</span>.<span style="color:#a6e22e">prototype</span>.<span style="color:#a6e22e">constructor</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">Child</span>;
+</code></pre></div><h2 id="构造器">构造器</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">Parent</span>() {}
+<span style="color:#66d9ef">function</span> <span style="color:#a6e22e">Child</span>() {
+    <span style="color:#a6e22e">Parent</span>.<span style="color:#a6e22e">call</span>(<span style="color:#66d9ef">this</span>);
+}
+</code></pre></div><h2 id="原型链--构造器">原型链 + 构造器</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">Parent</span>() {}
+<span style="color:#66d9ef">function</span> <span style="color:#a6e22e">Child</span>() {
+    <span style="color:#a6e22e">Parent</span>.<span style="color:#a6e22e">call</span>(<span style="color:#66d9ef">this</span>);
+}
+<span style="color:#a6e22e">Child</span>.<span style="color:#a6e22e">prototype</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Parent</span>();
+</code></pre></div><h2 id="原型式">原型式</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">extendObject</span>(<span style="color:#a6e22e">obj</span>) {
+    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">F</span>() {}
+    <span style="color:#a6e22e">F</span>.<span style="color:#a6e22e">prototype</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">obj</span>;
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">F</span>();
+}
+</code></pre></div><p>其实上述代码就是 <code>Object.create()</code> 的兼容方法。</p>
+<h2 id="寄生组合">寄生组合</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">inheritPrototype</span>(<span style="color:#a6e22e">child</span>, <span style="color:#a6e22e">parent</span>) {
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">prototype</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">extendObject</span>(<span style="color:#a6e22e">parent</span>.<span style="color:#a6e22e">prototype</span>);
+    <span style="color:#a6e22e">prototype</span>.<span style="color:#a6e22e">constructor</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">child</span>;            
+    <span style="color:#a6e22e">child</span>.<span style="color:#a6e22e">prototype</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">prototype</span>;            
+}
+
+<span style="color:#66d9ef">function</span> <span style="color:#a6e22e">Child</span>() {
+    <span style="color:#a6e22e">Parent</span>.<span style="color:#a6e22e">call</span>(<span style="color:#66d9ef">this</span>);
+}
+
+<span style="color:#a6e22e">inheritPrototype</span>(<span style="color:#a6e22e">Child</span>, <span style="color:#a6e22e">Parent</span>)
+</code></pre></div><h2 id="es6-extends">ES6 extends</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Parent</span> {}
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Child</span> <span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Parent</span> {]}
+
+<span style="color:#66d9ef">let</span> <span style="color:#a6e22e">child</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Child</span>();
+</code></pre></div><ul>
+<li><code>child instanceof Parent</code> 返回 <code>true</code></li>
+<li><code>child instanceof Child</code> 返回 <code>true</code></li>
+</ul>
+<h2 id="对比">对比</h2>
+<ul>
+<li>可复用：可复用父类的构造函数</li>
+<li>会共享：子类的实例会共享父类的引用属性</li>
+<li>可传参：创建子类的时候能否传递参数</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>优点</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>原型链</td>
+<td>可复用</td>
+<td>会共享、不可传参</td>
+</tr>
+<tr>
+<td>构造器</td>
+<td>不会被共享、可传递参数</td>
+<td>不可复用</td>
+</tr>
+<tr>
+<td>原型链 + 构造器</td>
+<td>可复用、不会被共享、可传参</td>
+<td>调用了两次父类构造函数</td>
+</tr>
+<tr>
+<td>原型式</td>
+<td>可复用</td>
+<td>会共享、不可传参</td>
+</tr>
+<tr>
+<td>寄生组合</td>
+<td>完美的方案</td>
+<td></td>
+</tr>
+<tr>
+<td>ES6 extends</td>
+<td></td>
+<td>兼容性</td>
+</tr>
+</tbody>
+</table>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#原型链">原型链</a></li>
+    <li><a href="#构造器">构造器</a></li>
+    <li><a href="#原型链--构造器">原型链 + 构造器</a></li>
+    <li><a href="#原型式">原型式</a></li>
+    <li><a href="#寄生组合">寄生组合</a></li>
+    <li><a href="#es6-extends">ES6 extends</a></li>
+    <li><a href="#对比">对比</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
