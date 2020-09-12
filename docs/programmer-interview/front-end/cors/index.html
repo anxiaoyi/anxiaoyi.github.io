@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="跨域"><meta property="og:title" content="跨域" />
+<meta property="og:description" content="跨域 定义 跨域：指一个 domain 下的 HTML 或脚本试图去请求另一个 domain 下的资源。
+同源策略 同源策略 （Same origin policy）：两个 URL 的协议、域名、端口相同。
+同源限制访问资源  Cookie、LocalStorage 和 IndexDB 无法读取 DOM 和 Js 对象无法获得 AJAX 请求不能发送  JSONP &lt;script&gt; var script = document.createElement(&#39;script&#39;); script.type = &#39;text/javascript&#39;; // 传参一个回调函数名给后端，方便后端返回时执行这个在前端定义的回调函数  script.src = &#39;http://www.domain2.com:8080/login?user=admin&amp;callback=handleCallback&#39;; document.head.appendChild(script); // 回调执行函数  function handleCallback(res) { alert(JSON.stringify(res)); } &lt;/script&gt; 后端返回的内容如下所示，即返回后立即执行 handleCallback：
+handleCallback({&#34;status&#34;: true, &#34;user&#34;: &#34;admin&#34;})  JSONP 只能进行 GET 调用
+ 跨域资源共享 (CORS) 服务端设置 Access-Control-Allow-Origin:* 头即可，前端无须设置。如果想要进行 cookie 的读写，那么前端需要设置这个属性为 true：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/front-end/cors/" />
+
+<title>跨域 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.8673f936d5a418c38287225a3ee83b008a8898c3b569eba8f66ac624bd4dcc54.js" integrity="sha256-hnP5NtWkGMOChyJaPug7AIqImMO1aeuo9mrGJL1NzFQ="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/java/" >
+      Java
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/css-center/" >
+      CSS 垂直居中
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/mobile-responsive/" >
+      移动端响应式布局
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/position/" >
+      position 属性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/box-sizing/" >
+      CSS 盒模型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/bfc/" >
+      BFC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/html-semantic/" >
+      HTML 语义化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/html5-new-feature/" >
+      HTML5 新特性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/js-detect-array/" >
+      JavaScript 检测数组
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/js-extend/" >
+      JavaScript 继承
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/layout-left-fix-right-responsive/" >
+      左固定右自适应
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/typeof/" >
+      typeof
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/cors/"  class="active">
+      跨域
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/cache/" >
+      浏览器缓存
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/vue-lifecycle/" >
+      VUE 生命周期
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/nexttick/" >
+      Vue.nextTick
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/vue/" >
+      VUE 面试题
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>跨域</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#定义">定义</a></li>
+    <li><a href="#同源策略">同源策略</a></li>
+    <li><a href="#同源限制访问资源">同源限制访问资源</a></li>
+    <li><a href="#jsonp">JSONP</a></li>
+    <li><a href="#跨域资源共享-cors">跨域资源共享 (CORS)</a></li>
+    <li><a href="#websocket">WebSocket</a></li>
+    <li><a href="#postmessage">postMessage</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="跨域">跨域</h1>
+<h2 id="定义">定义</h2>
+<p>跨域：指一个 domain 下的 HTML 或脚本试图去请求另一个 domain 下的资源。</p>
+<h2 id="同源策略">同源策略</h2>
+<p>同源策略 （Same origin policy）：两个 URL 的<strong>协议、域名、端口</strong>相同。</p>
+<h2 id="同源限制访问资源">同源限制访问资源</h2>
+<ul>
+<li><code>Cookie</code>、<code>LocalStorage</code> 和 <code>IndexDB</code> 无法读取</li>
+<li><code>DOM</code> 和 <code>Js</code> 对象无法获得</li>
+<li><code>AJAX</code> 请求不能发送</li>
+</ul>
+<h2 id="jsonp">JSONP</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#f92672">&lt;</span><span style="color:#a6e22e">script</span><span style="color:#f92672">&gt;</span>
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">script</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#39;script&#39;</span>);
+    <span style="color:#a6e22e">script</span>.<span style="color:#a6e22e">type</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;text/javascript&#39;</span>;
+
+    <span style="color:#75715e">// 传参一个回调函数名给后端，方便后端返回时执行这个在前端定义的回调函数
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">script</span>.<span style="color:#a6e22e">src</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;http://www.domain2.com:8080/login?user=admin&amp;callback=handleCallback&#39;</span>;
+    document.<span style="color:#a6e22e">head</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">script</span>);
+
+    <span style="color:#75715e">// 回调执行函数
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">handleCallback</span>(<span style="color:#a6e22e">res</span>) {
+        <span style="color:#a6e22e">alert</span>(<span style="color:#a6e22e">JSON</span>.<span style="color:#a6e22e">stringify</span>(<span style="color:#a6e22e">res</span>));
+    }
+<span style="color:#f92672">&lt;</span><span style="color:#960050;background-color:#1e0010">/script&gt;</span>
+</code></pre></div><p>后端返回的<strong>内容如下</strong>所示，即返回后立即执行 <code>handleCallback</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#a6e22e">handleCallback</span>({<span style="color:#e6db74">&#34;status&#34;</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>, <span style="color:#e6db74">&#34;user&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;admin&#34;</span>})
+</code></pre></div><blockquote>
+<p>JSONP 只能进行 <code>GET</code> 调用</p>
+</blockquote>
+<h2 id="跨域资源共享-cors">跨域资源共享 (CORS)</h2>
+<p>服务端设置 <code>Access-Control-Allow-Origin:*</code> 头即可，前端无须设置。如果想要进行 <code>cookie</code> 的读写，那么前端需要设置这个属性为 <code>true</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#66d9ef">var</span> <span style="color:#a6e22e">xhr</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">XMLHttpRequest</span>();
+<span style="color:#75715e">// 前端开关：浏览器是否读写cookie
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">withCredentials</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>;
+</code></pre></div><h2 id="websocket">WebSocket</h2>
+<p>WebSocket 协议<strong>允许跨域通信</strong>。</p>
+<h2 id="postmessage">postMessage</h2>
+<p>这是 HTML5 XMLHttpRequest Level 2 引入的新的 API，可以用于前端多个打开的窗口之间的<strong>数据传递</strong>。</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#定义">定义</a></li>
+    <li><a href="#同源策略">同源策略</a></li>
+    <li><a href="#同源限制访问资源">同源限制访问资源</a></li>
+    <li><a href="#jsonp">JSONP</a></li>
+    <li><a href="#跨域资源共享-cors">跨域资源共享 (CORS)</a></li>
+    <li><a href="#websocket">WebSocket</a></li>
+    <li><a href="#postmessage">postMessage</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

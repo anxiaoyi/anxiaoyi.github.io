@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="浏览器缓存"><meta property="og:title" content="浏览器缓存" />
+<meta property="og:description" content="浏览器缓存 强缓存 HTTP 1.0 Expires Expires: Wed, 11 May 2018 07:20:00 GMT  缺点：时间是绝对时间，很难保证用户计算机时间和服务器时间一致
+ HTTP 1.1 Cache-Control Cache-Control: max-age=315360000  优先级高于 Expires
+ Cache-Control 取值如下：
+ no-store：不缓存到本地 public：多用户共享 private：只能被终端浏览器缓存 no-cache：缓存到本地，但是使用这个缓存之前，必须与服务器进行新鲜度验证  （1）禁用缓存
+Cache-Control: no-store （2）缓存静态资源
+Cache-Control: public, max-age=604800, immutable （3）重新校验资源
+Cache-Control: no-cache Cache-Control: no-cache, max-age=0 协商缓存 当浏览器对某个资源的请求没有命中强缓存，就会发一个请求到服务器，验证协商缓存是否命中，如果协商缓存命中，请求响应返回的 HTTP 状态为 304 并且会显示一个 Not Modified 的字符串。
+那么浏览器如何询问服务器？
+If-Modified-Since 浏览器请求服务器的时候带上这个头 If-Modified-Since，它的值是这个文件上一次服务器返回来的时候携带的 Last-Modified 的 HTTP 头的值。如果服务器有新的资源，那么会返回新的资源，否则响应 304。
+If-None-Match If-Modified-Since 是根据文件的修改时间定的，而 If-None-Match 携带的值是这个文件的指纹，即上一次服务器返回这个文件携带的 ETag HTTP 头的值。浏览器将这个信息发送给服务器，可以更为精确地知道这个文件有没有变化。如果服务器有新的资源，返回新的，否则响应 304 状态码。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/front-end/cache/" />
+
+<title>浏览器缓存 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.8673f936d5a418c38287225a3ee83b008a8898c3b569eba8f66ac624bd4dcc54.js" integrity="sha256-hnP5NtWkGMOChyJaPug7AIqImMO1aeuo9mrGJL1NzFQ="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/java/" >
+      Java
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/css-center/" >
+      CSS 垂直居中
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/mobile-responsive/" >
+      移动端响应式布局
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/position/" >
+      position 属性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/box-sizing/" >
+      CSS 盒模型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/bfc/" >
+      BFC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/html-semantic/" >
+      HTML 语义化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/html5-new-feature/" >
+      HTML5 新特性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/js-detect-array/" >
+      JavaScript 检测数组
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/js-extend/" >
+      JavaScript 继承
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/layout-left-fix-right-responsive/" >
+      左固定右自适应
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/typeof/" >
+      typeof
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/cors/" >
+      跨域
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/cache/"  class="active">
+      浏览器缓存
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/vue-lifecycle/" >
+      VUE 生命周期
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/nexttick/" >
+      Vue.nextTick
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/vue/" >
+      VUE 面试题
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>浏览器缓存</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#强缓存">强缓存</a>
+      <ul>
+        <li><a href="#http-10-expires">HTTP 1.0 Expires</a></li>
+        <li><a href="#http-11-cache-control">HTTP 1.1 Cache-Control</a></li>
+      </ul>
+    </li>
+    <li><a href="#协商缓存">协商缓存</a>
+      <ul>
+        <li><a href="#if-modified-since">If-Modified-Since</a></li>
+        <li><a href="#if-none-match">If-None-Match</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="浏览器缓存">浏览器缓存</h1>
+<h2 id="强缓存">强缓存</h2>
+<h3 id="http-10-expires">HTTP 1.0 Expires</h3>
+<pre><code>Expires: Wed, 11 May 2018 07:20:00 GMT
+</code></pre><blockquote>
+<p>缺点：时间是<strong>绝对时间</strong>，很难保证用户计算机时间和服务器时间一致</p>
+</blockquote>
+<h3 id="http-11-cache-control">HTTP 1.1 Cache-Control</h3>
+<pre><code>Cache-Control: max-age=315360000
+</code></pre><blockquote>
+<p>优先级高于 <code>Expires</code></p>
+</blockquote>
+<p><code>Cache-Control</code> 取值如下：</p>
+<ul>
+<li><code>no-store</code>：不缓存到本地</li>
+<li><code>public</code>：多用户共享</li>
+<li><code>private</code>：只能被<strong>终端浏览器</strong>缓存</li>
+<li><code>no-cache</code>：缓存到本地，但是使用这个缓存之前，必须与服务器进行<strong>新鲜度</strong>验证</li>
+</ul>
+<p>（1）禁用缓存</p>
+<pre><code>Cache-Control: no-store
+</code></pre><p>（2）缓存静态资源</p>
+<pre><code>Cache-Control: public, max-age=604800, immutable
+</code></pre><p>（3）重新校验资源</p>
+<pre><code>Cache-Control: no-cache
+Cache-Control: no-cache, max-age=0
+</code></pre><h2 id="协商缓存">协商缓存</h2>
+<p>当浏览器对某个资源的请求<strong>没有命中强缓存</strong>，就会发一个请求到服务器，验证<strong>协商缓存</strong>是否命中，如果协商缓存命中，请求响应返回的 HTTP 状态为 <code>304</code> 并且会显示一个 <code>Not Modified</code> 的字符串。</p>
+<p>那么浏览器<strong>如何询问</strong>服务器？</p>
+<h3 id="if-modified-since">If-Modified-Since</h3>
+<p>浏览器请求服务器的时候带上这个头 <code>If-Modified-Since</code>，它的值是这个<strong>文件</strong>上一次服务器返回来的时候携带的 <code>Last-Modified</code> 的 HTTP 头的值。如果服务器有新的资源，那么会返回新的资源，否则响应 <code>304</code>。</p>
+<h3 id="if-none-match">If-None-Match</h3>
+<p><code>If-Modified-Since</code> 是根据文件的修改时间定的，而 <code>If-None-Match</code> 携带的值是这个文件的<strong>指纹</strong>，即上一次服务器返回这个文件携带的 <code>ETag</code> HTTP 头的值。浏览器将这个信息发送给服务器，可以更为精确地知道这个文件有没有变化。如果服务器有新的资源，返回新的，否则响应 <code>304</code> 状态码。</p>
+<blockquote>
+<p><code>ETag</code> 优先级高于 <code>Last-Modified</code></p>
+</blockquote>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#强缓存">强缓存</a>
+      <ul>
+        <li><a href="#http-10-expires">HTTP 1.0 Expires</a></li>
+        <li><a href="#http-11-cache-control">HTTP 1.1 Cache-Control</a></li>
+      </ul>
+    </li>
+    <li><a href="#协商缓存">协商缓存</a>
+      <ul>
+        <li><a href="#if-modified-since">If-Modified-Since</a></li>
+        <li><a href="#if-none-match">If-None-Match</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
