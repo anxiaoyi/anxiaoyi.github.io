@@ -5,11 +5,11 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="事件循环"><meta property="og:title" content="事件循环" />
-<meta property="og:description" content="事件循环 Event Loop JS 是单线程的。在 JavaScript 引擎里，取 task 和执行 task 的代码封装在一个死循环里面，JavaScript 引擎等待 tasks 的出现，有则执行，无则 sleep。
-Macro Task 宏任务 宏任务示例：setTimeout、setInterval、setImmediate、requestAnimationFrame、I/O、UI 渲染
+<meta property="og:description" content="事件循环 Event Loop JS 是单线程的。在 JavaScript 引擎里，取 task 和执行 task 的代码封装在一个死循环里面，JavaScript 引擎等待 tasks 的出现，有则执行，无则 sleep。异步任务分为宏任务和微任务。
+Macro Task 宏任务 宏任务示例：&lt;script&gt;、setTimeout、setInterval、setImmediate、requestAnimationFrame、I/O、UI 渲染
 Micro Task 微任务 微任务示例：process.nextTick、Promises、queueMicrotask、MutationObserver
  Micro is like macro but with higher priority.
- Event Loop 算法 while (true) { // 执行宏任务  let task = macroTaskQueue.getOldestTask(); execute(task); // 执行微任务  while (microTaskQueue.length &gt; 0) { execute(microTaskQueue.getOldestTask()) } // 渲染  if (isRenderTime()) { render(); } } " />
+ Event Loop 算法 while (true) { // 执行宏任务  let task = macroTaskQueue.getOldestTask(); execute(task); // 执行微任务  while (microTaskQueue.length &gt; 0) { execute(microTaskQueue.getOldestTask()) } // 渲染  if (isRenderTime()) { render(); } } Node EventLoop vs 浏览器 EventLoop 参考  浏览器与Node的事件循环(Event Loop)有何区别?" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/front-end/eventloop/" />
 
@@ -20,7 +20,7 @@ Micro Task 微任务 微任务示例：process.nextTick、Promises、queueMicrot
 <link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
 
 
-<script defer src="/en.search.min.a64051cde285ea13280c35aad227afde2eb4d1b84ea64a22c3e7e10527b73fe9.js" integrity="sha256-pkBRzeKF6hMoDDWq0iev3i600bhOpkoiw&#43;fhBSe3P&#43;k="></script>
+<script defer src="/en.search.min.9ce810f5e6c6fb3c42d875a1b75b44858868f374b7ed6ec17e553baca0939861.js" integrity="sha256-nOgQ9ebG&#43;zxC2HWht1tEhYho83S37W7BflU7rKCTmGE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -378,6 +378,26 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/programmer-interview/front-end/css-jiugongge/" >
+      CSS 九宫格
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/clear-float/" >
+      清除浮动
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/programmer-interview/front-end/html-semantic/" >
       HTML 语义化
   </a>
@@ -420,6 +440,46 @@ var _hmt = _hmt || [];
 
   <a href="/docs/programmer-interview/front-end/typeof/" >
       typeof
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/new/" >
+      new 关键字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/data-types/" >
+      数据类型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/instanceof/" >
+      instanceof
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/currying/" >
+      柯里化 - Currying
   </a>
 
 </li>
@@ -660,6 +720,8 @@ var _hmt = _hmt || [];
     <li><a href="#macro-task-宏任务">Macro Task 宏任务</a></li>
     <li><a href="#micro-task-微任务">Micro Task 微任务</a></li>
     <li><a href="#event-loop-算法">Event Loop 算法</a></li>
+    <li><a href="#node-eventloop-vs-浏览器-eventloop">Node EventLoop vs 浏览器 EventLoop</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -672,9 +734,9 @@ var _hmt = _hmt || [];
       
 <article class="markdown"><h1 id="事件循环">事件循环</h1>
 <h2 id="event-loop">Event Loop</h2>
-<p>JS 是<strong>单线程</strong>的。在 JavaScript 引擎里，取 task 和执行 task 的代码封装在一个<strong>死循环</strong>里面，JavaScript 引擎等待 tasks 的出现，有则执行，无则 <code>sleep</code>。</p>
+<p>JS 是<strong>单线程</strong>的。在 JavaScript 引擎里，取 task 和执行 task 的代码封装在一个<strong>死循环</strong>里面，JavaScript 引擎等待 tasks 的出现，有则执行，无则 <code>sleep</code>。<strong>异步任务</strong>分为<strong>宏任务</strong>和<strong>微任务</strong>。</p>
 <h2 id="macro-task-宏任务">Macro Task 宏任务</h2>
-<p>宏任务示例：<code>setTimeout</code>、<code>setInterval</code>、<code>setImmediate</code>、<code>requestAnimationFrame</code>、<code>I/O</code>、<code>UI 渲染</code></p>
+<p>宏任务示例：<code>&lt;script&gt;</code>、<code>setTimeout</code>、<code>setInterval</code>、<code>setImmediate</code>、<code>requestAnimationFrame</code>、<code>I/O</code>、<code>UI 渲染</code></p>
 <h2 id="micro-task-微任务">Micro Task 微任务</h2>
 <p>微任务示例：<code>process.nextTick</code>、<code>Promises</code>、<code>queueMicrotask</code>、<code>MutationObserver</code></p>
 <blockquote>
@@ -697,7 +759,12 @@ var _hmt = _hmt || [];
         <span style="color:#a6e22e">render</span>();
     }
 }
-</code></pre></div></article>
+</code></pre></div><h2 id="node-eventloop-vs-浏览器-eventloop">Node EventLoop vs 浏览器 EventLoop</h2>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://blog.fundebug.com/2019/01/15/diffrences-of-browser-and-node-in-event-loop/">浏览器与Node的事件循环(Event Loop)有何区别?</a></li>
+</ul>
+</article>
  
 
       <footer class="book-footer">
@@ -746,6 +813,8 @@ var _hmt = _hmt || [];
     <li><a href="#macro-task-宏任务">Macro Task 宏任务</a></li>
     <li><a href="#micro-task-微任务">Micro Task 微任务</a></li>
     <li><a href="#event-loop-算法">Event Loop 算法</a></li>
+    <li><a href="#node-eventloop-vs-浏览器-eventloop">Node EventLoop vs 浏览器 EventLoop</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 

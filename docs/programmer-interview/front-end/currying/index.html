@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="柯里化 - Currying"><meta property="og:title" content="柯里化 - Currying" />
+<meta property="og:description" content="柯里化 - Currying 作用 将 f(a, b, c) 调用形式转为 f(a)(b)(c) 调用形式，它对函数只做转换，不做执行。
+实现 function curry(func) { return function curried(...args) { if (args.length &gt;= func.length) { return func.apply(this, args); } else { return function(...args2) { return curried.apply(this, args.concat(args2)); } } }; } 优点  多参数复用性 函数式编程  参考  Currying  " />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/front-end/currying/" />
+
+<title>柯里化 - Currying | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.9ce810f5e6c6fb3c42d875a1b75b44858868f374b7ed6ec17e553baca0939861.js" integrity="sha256-nOgQ9ebG&#43;zxC2HWht1tEhYho83S37W7BflU7rKCTmGE="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/java/" >
+      Java
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/css-center/" >
+      CSS 垂直居中
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/mobile-responsive/" >
+      移动端响应式布局
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/position/" >
+      position 属性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/box-sizing/" >
+      CSS 盒模型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/bfc/" >
+      BFC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/layout-left-fix-right-responsive/" >
+      左固定右自适应
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/flex/" >
+      flex 布局
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/css-jiugongge/" >
+      CSS 九宫格
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/clear-float/" >
+      清除浮动
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/html-semantic/" >
+      HTML 语义化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/html5-new-feature/" >
+      HTML5 新特性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/js-detect-array/" >
+      JavaScript 检测数组
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/js-extend/" >
+      JavaScript 继承
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/typeof/" >
+      typeof
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/new/" >
+      new 关键字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/data-types/" >
+      数据类型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/instanceof/" >
+      instanceof
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/currying/"  class="active">
+      柯里化 - Currying
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/cors/" >
+      跨域
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/throttle-and-debounce/" >
+      节流和防抖
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/cache/" >
+      浏览器缓存
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/eventloop/" >
+      事件循环
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/vue-lifecycle/" >
+      VUE 生命周期
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/nexttick/" >
+      Vue.nextTick
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/vue/" >
+      VUE 面试题
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>柯里化 - Currying</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#作用">作用</a></li>
+    <li><a href="#实现">实现</a></li>
+    <li><a href="#优点">优点</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="柯里化---currying">柯里化 - Currying</h1>
+<h2 id="作用">作用</h2>
+<p>将 <code>f(a, b, c)</code> 调用形式<strong>转</strong>为 <code>f(a)(b)(c)</code> 调用形式，它对函数只做转换，<strong>不做执行</strong>。</p>
+<h2 id="实现">实现</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">curry</span>(<span style="color:#a6e22e">func</span>) {
+
+  <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">curried</span>(...<span style="color:#a6e22e">args</span>) {
+    <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">length</span> <span style="color:#f92672">&gt;=</span> <span style="color:#a6e22e">func</span>.<span style="color:#a6e22e">length</span>) {
+      <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">func</span>.<span style="color:#a6e22e">apply</span>(<span style="color:#66d9ef">this</span>, <span style="color:#a6e22e">args</span>);
+    } <span style="color:#66d9ef">else</span> {
+      <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">function</span>(...<span style="color:#a6e22e">args2</span>) {
+        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">curried</span>.<span style="color:#a6e22e">apply</span>(<span style="color:#66d9ef">this</span>, <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#a6e22e">args2</span>));
+      }
+    }
+  };
+
+}
+</code></pre></div><h2 id="优点">优点</h2>
+<ul>
+<li>多参数复用性</li>
+<li>函数式编程</li>
+</ul>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://javascript.info/currying-partials">Currying</a></li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#作用">作用</a></li>
+    <li><a href="#实现">实现</a></li>
+    <li><a href="#优点">优点</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
