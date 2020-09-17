@@ -4,12 +4,17 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="new 关键字"><meta property="og:title" content="new 关键字" />
-<meta property="og:description" content="new 关键字 new 做了什么  创建一个对象 设置 __proto__ 属性 设置 this 指向这个对象 执行构造函数 返回对象  function New(func) { var res = {}; if (func.prototype !== null) { res.__proto__ = func.prototype; } var ret = func.apply(res, Array.prototype.slice.call(arguments, 1)); if ((typeof ret === &#34;object&#34; || typeof ret === &#34;function&#34;) &amp;&amp; ret !== null) { return ret; } return res; } 参考  What is the &lsquo;new&rsquo; keyword in JavaScript?  " />
+<meta name="description" content="浏览器存储"><meta property="og:title" content="浏览器存储" />
+<meta property="og:description" content="浏览器存储 Web Storage  Web Storage 也叫 DOM Storage.
+ 浏览器提供了两种支持 Web Storage 的对象：
+ window.localStorage：数据没有过期时间 window.sessionStorage：仅仅会话期间有效，关闭当前浏览器 Tab 页面的时候，数据消失  注意，这两个 Storage 对象存储的 value 只支持 String 类型，你存储其他类型，浏览器也会自动转为 String 类型存储进去。
+sessionStorage.setItem(&#39;key&#39;, &#39;value&#39;) localStorage.setItem(&#39;key&#39;, &#39;value&#39;) 存储大小  Cookie 允许 4KB Opera 10.50&#43; 允许 5MB Safari 8 允许 5MB Firefox 34 允许 10MB Chrome 允许 10MB IE 允许 10MB  数据可见性 （1）LocalStorage
+只有相同协议、相同 Host、相同端口，这三个都相同，才能算作是同一个 Origin。 只要两个页面处于同一 Origin ，那么存储在这一 Origin 的 LocalStorage 数据便可以自由访问。
+（2）SessionStorage" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/front-end/new/" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/front-end/storage/" />
 
-<title>new 关键字 | 赵坤的个人网站</title>
+<title>浏览器存储 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
@@ -454,7 +459,7 @@ var _hmt = _hmt || [];
       
         <li>
 
-  <a href="/docs/programmer-interview/front-end/new/"  class="active">
+  <a href="/docs/programmer-interview/front-end/new/" >
       new 关键字
   </a>
 
@@ -534,7 +539,7 @@ var _hmt = _hmt || [];
       
         <li>
 
-  <a href="/docs/programmer-interview/front-end/storage/" >
+  <a href="/docs/programmer-interview/front-end/storage/"  class="active">
       浏览器存储
   </a>
 
@@ -718,7 +723,7 @@ var _hmt = _hmt || [];
     <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
-  <strong>new 关键字</strong>
+  <strong>浏览器存储</strong>
 
   <label for="toc-control">
     <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
@@ -732,8 +737,13 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#new-做了什么">new 做了什么</a></li>
-    <li><a href="#参考">参考</a></li>
+    <li><a href="#web-storage">Web Storage</a>
+      <ul>
+        <li><a href="#存储大小">存储大小</a></li>
+        <li><a href="#数据可见性">数据可见性</a></li>
+      </ul>
+    </li>
+    <li><a href="#indexeddb">IndexedDB</a></li>
   </ul>
 </nav>
 
@@ -744,30 +754,35 @@ var _hmt = _hmt || [];
       </header>
 
       
-<article class="markdown"><h1 id="new-关键字">new 关键字</h1>
-<h2 id="new-做了什么">new 做了什么</h2>
+<article class="markdown"><h1 id="浏览器存储">浏览器存储</h1>
+<h2 id="web-storage">Web Storage</h2>
+<blockquote>
+<p>Web Storage 也叫 DOM Storage.</p>
+</blockquote>
+<p>浏览器提供了两种支持 Web Storage 的对象：</p>
 <ul>
-<li>创建一个对象</li>
-<li>设置 <code>__proto__</code> 属性</li>
-<li>设置 <code>this</code> 指向这个对象</li>
-<li>执行构造函数</li>
-<li>返回对象</li>
+<li><code>window.localStorage</code>：数据没有过期时间</li>
+<li><code>window.sessionStorage</code>：仅仅会话期间有效，关闭当前浏览器 Tab 页面的时候，数据消失</li>
 </ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">func</span>) {
-    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">res</span> <span style="color:#f92672">=</span> {};
-    <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">func</span>.<span style="color:#a6e22e">prototype</span> <span style="color:#f92672">!==</span> <span style="color:#66d9ef">null</span>) {
-        <span style="color:#a6e22e">res</span>.<span style="color:#a6e22e">__proto__</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">func</span>.<span style="color:#a6e22e">prototype</span>;
-    }
-    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">ret</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">func</span>.<span style="color:#a6e22e">apply</span>(<span style="color:#a6e22e">res</span>, Array.<span style="color:#a6e22e">prototype</span>.<span style="color:#a6e22e">slice</span>.<span style="color:#a6e22e">call</span>(<span style="color:#a6e22e">arguments</span>, <span style="color:#ae81ff">1</span>));
-    <span style="color:#66d9ef">if</span> ((<span style="color:#66d9ef">typeof</span> <span style="color:#a6e22e">ret</span> <span style="color:#f92672">===</span> <span style="color:#e6db74">&#34;object&#34;</span> <span style="color:#f92672">||</span> <span style="color:#66d9ef">typeof</span> <span style="color:#a6e22e">ret</span> <span style="color:#f92672">===</span> <span style="color:#e6db74">&#34;function&#34;</span>) <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">ret</span> <span style="color:#f92672">!==</span> <span style="color:#66d9ef">null</span>) {
-        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ret</span>;
-    }
-    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">res</span>;
-}
-</code></pre></div><h2 id="参考">参考</h2>
+<p>注意，这两个 <code>Storage</code> 对象存储的 <code>value</code> <strong>只支持 <code>String</code> 类型</strong>，你存储其他类型，浏览器也会自动转为 <code>String</code> 类型存储进去。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#a6e22e">sessionStorage</span>.<span style="color:#a6e22e">setItem</span>(<span style="color:#e6db74">&#39;key&#39;</span>, <span style="color:#e6db74">&#39;value&#39;</span>)
+<span style="color:#a6e22e">localStorage</span>.<span style="color:#a6e22e">setItem</span>(<span style="color:#e6db74">&#39;key&#39;</span>, <span style="color:#e6db74">&#39;value&#39;</span>)
+</code></pre></div><h3 id="存储大小">存储大小</h3>
 <ul>
-<li><a href="https://stackoverflow.com/questions/1646698/what-is-the-new-keyword-in-javascript">What is the &lsquo;new&rsquo; keyword in JavaScript?</a></li>
+<li>Cookie 允许 4KB</li>
+<li>Opera 10.50+ 允许 5MB</li>
+<li>Safari 8 允许 5MB</li>
+<li>Firefox 34 允许 10MB</li>
+<li>Chrome 允许 10MB</li>
+<li>IE 允许 10MB</li>
 </ul>
+<h3 id="数据可见性">数据可见性</h3>
+<p>（1）<code>LocalStorage</code></p>
+<p>只有相同协议、相同 Host、相同端口，这三个都相同，才能算作是同一个 <strong>Origin</strong>。 只要两个页面处于同一 <strong>Origin</strong> ，那么存储在这一 <strong>Origin</strong> 的 <code>LocalStorage</code> 数据便可以自由访问。</p>
+<p>（2）SessionStorage</p>
+<p>而 <code>SessionStorage</code> 除了需要同一 <code>Origin</code>，还需要同一 <code>Tab</code> 才可以。</p>
+<h2 id="indexeddb">IndexedDB</h2>
+<p>当数据量比较大的时候，可以使用 IndexedDB 来存储。</p>
 </article>
  
 
@@ -813,8 +828,13 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#new-做了什么">new 做了什么</a></li>
-    <li><a href="#参考">参考</a></li>
+    <li><a href="#web-storage">Web Storage</a>
+      <ul>
+        <li><a href="#存储大小">存储大小</a></li>
+        <li><a href="#数据可见性">数据可见性</a></li>
+      </ul>
+    </li>
+    <li><a href="#indexeddb">IndexedDB</a></li>
   </ul>
 </nav>
 
