@@ -64,7 +64,7 @@ getActiveAccount(); getActiveAccounts(); getActiveAccountInfo(); 使用常量，
       
       <guid>https://kunzhao.org/docs/books/the_transformation_of_enterprise_it_architecture/</guid>
       <description>企业 IT 架构转型之道 共享服务体系搭建 SOA 的主要特性：
- 面向服务的分布式计算。 服务间松散耦合。 支持服务的组装。 服务注册和自动发现。 以服务契约方式定义服务交互方式。  基于 “中心化” 的 ESB 服务调用方式  “去中心化” 服务架构调用方式   数据拆分实现数据库能力线性扩展 数据库的读写分离 读写分离基本原理是让主数据库处理事务性增、改、删（INSERT、UPDATE、DELETE）操作，而从数据库专门负责处理查询（SELECT）操作，在数据库的后台会把事务性操作导致的主数据库中的数据变更同步到集群中的从数据库。
+ 面向服务的分布式计算。 服务间松散耦合。 支持服务的组装。 服务注册和自动发现。 以服务契约方式定义服务交互方式。  基于 “中心化” 的 ESB 服务调用方式 “去中心化” 服务架构调用方式 数据拆分实现数据库能力线性扩展 数据库的读写分离 读写分离基本原理是让主数据库处理事务性增、改、删（INSERT、UPDATE、DELETE）操作，而从数据库专门负责处理查询（SELECT）操作，在数据库的后台会把事务性操作导致的主数据库中的数据变更同步到集群中的从数据库。
 数据库分库分表 采用分库分表的方式将业务数据拆分后，如果每一条SQL语句中都能带有分库分表键，SQL语句的执行效率最高：
 但不是所有的业务场景在进行数据库访问时每次都能带分库分表键的。比如在买家中心的界面中，要显示买家test1过去三个月的订单列表信息。此时就出现了我们所说的全表扫描，一条SQL语句同时被推送到后端所有数据库中运行。如果是高并发情况下同时请求的话，为了数据库整体的扩展能力，则要考虑下面描述的异构索引手段来避免这样的情况发生。对于在内存中要进行大数据量聚合操作和计算的SQL请求，如果这类SQL的不是大量并发或频繁调用的话，平台本身的性能影响也不会太大，如果这类SQL请求有并发或频繁访问的要求，则要考虑采用其他的平台来满足这一类场景的要求，比如Hadoop这类做大数据量离线分析的产品，如果应用对请求的实时性要求比较高，则可采用如内存数据库或HBase这类平台。
 所谓“异构索引表”，就是采用异步机制将原表内的每一次创建或更新，都换另一个维度保存一份完整的数据表或索引表。本质上这是互联网公司很多时候都采用的一个解决思路：“拿空间换时间”。也就是应用在创建或更新一条按照订单ID为分库分表键的订单数据时，也会再保存一份按照买家ID为分库分表键的订单索引数据。
@@ -109,7 +109,7 @@ struct __attribute__ ((__packed__))sdshdr8 { uint8_t len; // 已使用长度  ui
       
       <guid>https://kunzhao.org/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/</guid>
       <description>深度剖析 Apache Dubbo 核心技术 SPI 扩展 Dubbo 支持扩展的核心接口上，都会通过类似 @SPI(&amp;quot;dubbo&amp;quot;) 这样的注解，来标识当前接口的默认实现。如果你想替换掉这个默认实现，那么需要两个步骤。第一，实现 Protocol 接口，然后在 META-INF/dubbo 目录下创建一个名字为 org.apache.dubbo.rpc.Protocol 的文本文件。这个 META-INF 目录如果使用的是 IDEA 开发，那么其应该放到 resources 目录下的顶层，这样打 jar 包的时候，其也会被复制到 jar 包的第一级目录。内容如下：
-myProtocol = com.zk.MyProtocol 第二，需要在 XML 配置文件中，声明使用这个扩展实现：
+myProtocol = com.zk.MyProtocol第二，需要在 XML 配置文件中，声明使用这个扩展实现：
 &amp;lt;dubbo:protocol name=&amp;#34;myProtocol&amp;#34;&amp;gt; 其实 JDK 本身也提供了 SPI 扩展，Dubbo 之所以没有使用默认提供的实现，是因为：
  JDK 标准的 SPI 一次性实例化扩展点的所有实现，如果有些没有使用到，那么会浪费资源。 扩展点加载失败的异常提示不是很好。 增强了 Ioc 和 AOP 的支持。  性能 Dubbo 会给每个服务提供者的实现类生产一个 Wrapper 类，这个 Wrapper 类里面最终调用服务提供者的接口实现类，Wrapper 类的存在是为了减少反射的调用。当服务提供方收到消费方发来的请求后，需要根据消费者传递过来的方法名和参数反射调用服务提供者的实现类，而反射本身是有性能开销的，Dubbo 把每个服务提供者的实现类通过 JavaAssist 包装为一个 Wrapper 类以减少反射调用开销。
 其实就是由反射改为了比较方法名称，然后调用，伪代码如下：
@@ -124,7 +124,7 @@ GreetingServiceImpl impl = (GreetingServiceImpl) object; if (&amp;#34;sayHello&a
       <guid>https://kunzhao.org/docs/books/everyone-is-architect/</guid>
       <description>人人都是架构师 - 分布式系统架构落地与瓶颈突破 分布式系统应对高并发、大流量的常用手段：
  扩容 动静分离 缓存 服务降级 限流  限流 常见算法：
- 令牌桶，Nginx 限流模块用的是这个：限制的是流量的平均流入速率，允许一定程度上的突发流量。 漏桶：限制的是流出速率，并且这个速率还是保持不变的，不允许突发流量。  Nginx 限流 http { # 每个 IP 的 session 空间大小 limit_zone one $binary_remote_addr 20m; # 每个 IP 每秒允许发起的请求数 limit_req_zone $binary_remote_addr zone=req_one:20m rate=10r/s; # 每个 IP 能够发起的并发连接数 limit_conn one 10; # 缓存还没有来得及处理的请求 limit_req zone=req_one burst=100; } 消峰  活动分时段 答题验证  高并发读 &amp;ldquo;马某出轨王某&amp;rdquo;、&amp;ldquo;iPhone SE 2020 发布&amp;rdquo; 等这种热点新闻的 key 会始终落在同一个缓存节点上，分布式缓存一定会出现单点瓶颈，其资源连接容易瞬间耗尽。有如下两种方案解决这个问题：
+ 令牌桶，Nginx 限流模块用的是这个：限制的是流量的平均流入速率，允许一定程度上的突发流量。 漏桶：限制的是流出速率，并且这个速率还是保持不变的，不允许突发流量。  Nginx 限流 http {# 每个 IP 的 session 空间大小limit_zone one $binary_remote_addr 20m;# 每个 IP 每秒允许发起的请求数limit_req_zone $binary_remote_addr zone=req_one:20m rate=10r/s;# 每个 IP 能够发起的并发连接数limit_conn one 10;# 缓存还没有来得及处理的请求limit_req zone=req_one burst=100;}消峰  活动分时段 答题验证  高并发读 &amp;ldquo;马某出轨王某&amp;rdquo;、&amp;ldquo;iPhone SE 2020 发布&amp;rdquo; 等这种热点新闻的 key 会始终落在同一个缓存节点上，分布式缓存一定会出现单点瓶颈，其资源连接容易瞬间耗尽。有如下两种方案解决这个问题：
  基于 Redis 的集群多写多读方案。  多写如何保持一致性：将 Key 配置在 ZooKeeper，客户端监听 ZNode，一旦变化，全量更新本地持有的 Key   LocalCache 结合 Redis 集群的多级 Cache 方案。  LocalCache 拉取下来的商品数量有 5 个，但是实际上只有 4 个了，怎么解决？对于这种读场景，允许接受一定程度上的数据脏读，最终扣减库存的时候再提示商品已经售罄即可。    实时热点自动发现 交易系统产生的相关数据、上游系统中埋点上报的数据这两个，异步写入日志，对日志进行次数统计和热点分析</description>
     </item>
     
@@ -170,7 +170,7 @@ searchCanStart() 比 canListenOnPort() 更具体一些，这个名字直接描�
 人总是迟疑不决，心怀侥幸 每个炒股人都会经过这个过程。20元买好股票，定好18元止损，当股票跌到18元时，你有没有想想再等等？或许股票马上反弹！股票又跌到16元，你会不会拍自己的脑壳说：“真该按定好的规矩办！18元时就走人；现若股票反弹5毛钱我就一定说再见。”
 现股票跌到10元了，你准备怎么办？你会发毛吗？你会不会发狠：“老子这次拼了！现在就是不走，我倒要看看你最低会跌到什么地方？”
 当然，最后的结局很少例外，通常是股票学校又多了位交了学费毕不了业的炒股
-股票分析的基本知识 技术分析 升势：一浪比一浪高     朋友，你认为什么因素使投资者入市买股票？华尔街有过调查，使一般投资者入场买股票的原因最主要的就是因为股票在升！你明白吗？一般投资者入场买股票主要不是因为股票的成本收益比率低或红利高，而是因为股票在升！升！升！而投资人卖股票的最主要原因是因为股票在跌！在跌！</description>
+股票分析的基本知识 技术分析 升势：一浪比一浪高 朋友，你认为什么因素使投资者入市买股票？华尔街有过调查，使一般投资者入场买股票的原因最主要的就是因为股票在升！你明白吗？一般投资者入场买股票主要不是因为股票的成本收益比率低或红利高，而是因为股票在升！升！升！而投资人卖股票的最主要原因是因为股票在跌！在跌！</description>
     </item>
     
   </channel>
