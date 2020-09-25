@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="深度剖析 Apache Dubbo 核心技术"><meta property="og:title" content="深度剖析 Apache Dubbo 核心技术" />
 <meta property="og:description" content="深度剖析 Apache Dubbo 核心技术 SPI 扩展 Dubbo 支持扩展的核心接口上，都会通过类似 @SPI(&quot;dubbo&quot;) 这样的注解，来标识当前接口的默认实现。如果你想替换掉这个默认实现，那么需要两个步骤。第一，实现 Protocol 接口，然后在 META-INF/dubbo 目录下创建一个名字为 org.apache.dubbo.rpc.Protocol 的文本文件。这个 META-INF 目录如果使用的是 IDEA 开发，那么其应该放到 resources 目录下的顶层，这样打 jar 包的时候，其也会被复制到 jar 包的第一级目录。内容如下：
-myProtocol = com.zk.MyProtocol 第二，需要在 XML 配置文件中，声明使用这个扩展实现：
+myProtocol = com.zk.MyProtocol第二，需要在 XML 配置文件中，声明使用这个扩展实现：
 &lt;dubbo:protocol name=&#34;myProtocol&#34;&gt; 其实 JDK 本身也提供了 SPI 扩展，Dubbo 之所以没有使用默认提供的实现，是因为：
  JDK 标准的 SPI 一次性实例化扩展点的所有实现，如果有些没有使用到，那么会浪费资源。 扩展点加载失败的异常提示不是很好。 增强了 Ioc 和 AOP 的支持。  性能 Dubbo 会给每个服务提供者的实现类生产一个 Wrapper 类，这个 Wrapper 类里面最终调用服务提供者的接口实现类，Wrapper 类的存在是为了减少反射的调用。当服务提供方收到消费方发来的请求后，需要根据消费者传递过来的方法名和参数反射调用服务提供者的实现类，而反射本身是有性能开销的，Dubbo 把每个服务提供者的实现类通过 JavaAssist 包装为一个 Wrapper 类以减少反射调用开销。
 其实就是由反射改为了比较方法名称，然后调用，伪代码如下：
@@ -21,7 +21,7 @@ GreetingServiceImpl impl = (GreetingServiceImpl) object; if (&#34;sayHello&#34;.
 <link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
 
 
-<script defer src="/en.search.min.0cfb10d35d37cdd6ba6e482a6f321bd5c504faa5999883b98ef2c5a2915c7a83.js" integrity="sha256-DPsQ0103zda6bkgqbzIb1cUE&#43;qWZmIO5jvLFopFceoM="></script>
+<script defer src="/en.search.min.f3328d5fb306716e0854466cc8351817ead3d9dc59171e03231ce41e0aa574bc.js" integrity="sha256-8zKNX7MGcW4IVEZsyDUYF&#43;rT2dxZFx4DIxzkHgqldLw="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {

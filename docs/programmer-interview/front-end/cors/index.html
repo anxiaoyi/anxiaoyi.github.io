@@ -20,7 +20,7 @@ handleCallback({&#34;status&#34;: true, &#34;user&#34;: &#34;admin&#34;})  JSONP
 <link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
 
 
-<script defer src="/en.search.min.0cfb10d35d37cdd6ba6e482a6f321bd5c504faa5999883b98ef2c5a2915c7a83.js" integrity="sha256-DPsQ0103zda6bkgqbzIb1cUE&#43;qWZmIO5jvLFopFceoM="></script>
+<script defer src="/en.search.min.f3328d5fb306716e0854466cc8351817ead3d9dc59171e03231ce41e0aa574bc.js" integrity="sha256-8zKNX7MGcW4IVEZsyDUYF&#43;rT2dxZFx4DIxzkHgqldLw="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -490,6 +490,16 @@ var _hmt = _hmt || [];
 
   <a href="/docs/programmer-interview/front-end/cookie-session/" >
       Cookie 和 Session
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/call-apply-bind/" >
+      call、apply、bind
   </a>
 
 </li>
@@ -971,8 +981,18 @@ var _hmt = _hmt || [];
         <li><a href="#预请求-preflight">预请求 (preflight)</a></li>
       </ul>
     </li>
-    <li><a href="#websocket">WebSocket</a></li>
-    <li><a href="#postmessage">postMessage</a></li>
+    <li><a href="#websocket">WebSocket</a>
+      <ul>
+        <li><a href="#心跳怎么实现的">心跳怎么实现的</a></li>
+      </ul>
+    </li>
+    <li><a href="#postmessage">postMessage</a>
+      <ul>
+        <li><a href="#a-网站发送消息给-b-网站">A 网站发送消息给 B 网站</a></li>
+        <li><a href="#b-网站接受消息">B 网站接受消息</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -1019,10 +1039,44 @@ var _hmt = _hmt || [];
 <span style="color:#75715e">// 前端开关：浏览器是否读写cookie
 </span><span style="color:#75715e"></span><span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">withCredentials</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>;
 </code></pre></div><h3 id="预请求-preflight">预请求 (preflight)</h3>
+<p>（1）<strong>为什么</strong>需要预请求</p>
+<p>为了让浏览器知道，它所请求的服务器是一个对 CORS 有感知 (<code>CORS-aware</code>) 的服务器，也就是说让浏览器知道这个服务器是能够对 CORS 做出正确处理的服务器。</p>
+<p>（2）<strong>触发方式</strong></p>
+<p>浏览器发送 <strong>OPTIONS</strong> 请求。</p>
+<p>（3）<strong>触发</strong> 规则</p>
+<ul>
+<li>简单请求（<code>GET</code>、<code>HEAD</code>、<code>POST</code>）并且没有设置 <code>force preflight flag</code> 位，那么不触发</li>
+</ul>
 <h2 id="websocket">WebSocket</h2>
 <p>WebSocket 协议<strong>允许跨域通信</strong>。</p>
+<h3 id="心跳怎么实现的">心跳怎么实现的</h3>
+<p>任意一方，都可以发送 ping/pong <strong>control frame</strong> 来检测是否还处于连接状态。</p>
 <h2 id="postmessage">postMessage</h2>
 <p>这是 HTML5 XMLHttpRequest Level 2 引入的新的 API，可以用于前端多个打开的窗口之间的<strong>数据传递</strong>。</p>
+<h3 id="a-网站发送消息给-b-网站">A 网站发送消息给 B 网站</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-HTML" data-lang="HTML">&lt;<span style="color:#f92672">iframe</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;http://a.com&#34;</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;a&#34;</span>&gt;
+
+&lt;<span style="color:#f92672">script</span>&gt;
+  <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">a</span> <span style="color:#f92672">=</span> window.<span style="color:#a6e22e">frames</span>.<span style="color:#a6e22e">a</span>;
+  <span style="color:#a6e22e">a</span>.<span style="color:#a6e22e">postMessage</span>(<span style="color:#e6db74">&#34;message&#34;</span>, <span style="color:#e6db74">&#34;http://b.com&#34;</span>);
+&lt;/<span style="color:#f92672">script</span>&gt;
+</code></pre></div><h3 id="b-网站接受消息">B 网站接受消息</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript">window.<span style="color:#a6e22e">addEventListener</span>(<span style="color:#e6db74">&#34;message&#34;</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">event</span>) {
+  <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">event</span>.<span style="color:#a6e22e">origin</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#39;http://a.com&#39;</span>) {
+    <span style="color:#75715e">// something from an unknown domain, let&#39;s ignore it
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span>;
+  }
+
+  <span style="color:#a6e22e">alert</span>( <span style="color:#e6db74">&#34;received: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">event</span>.<span style="color:#a6e22e">data</span> );
+
+  <span style="color:#75715e">// can message back using event.source.postMessage(...)
+</span><span style="color:#75715e"></span>});
+</code></pre></div><h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://javascript.info/cross-window-communication">Cross-window communication</a></li>
+<li><a href="https://stackoverflow.com/questions/15381105/cors-what-is-the-motivation-behind-introducing-preflight-requests">CORS - What is the motivation behind introducing preflight requests?</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">Cross-Origin Resource Sharing (CORS)</a></li>
+</ul>
 </article>
  
 
@@ -1077,8 +1131,18 @@ var _hmt = _hmt || [];
         <li><a href="#预请求-preflight">预请求 (preflight)</a></li>
       </ul>
     </li>
-    <li><a href="#websocket">WebSocket</a></li>
-    <li><a href="#postmessage">postMessage</a></li>
+    <li><a href="#websocket">WebSocket</a>
+      <ul>
+        <li><a href="#心跳怎么实现的">心跳怎么实现的</a></li>
+      </ul>
+    </li>
+    <li><a href="#postmessage">postMessage</a>
+      <ul>
+        <li><a href="#a-网站发送消息给-b-网站">A 网站发送消息给 B 网站</a></li>
+        <li><a href="#b-网站接受消息">B 网站接受消息</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
