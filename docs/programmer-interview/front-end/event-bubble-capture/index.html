@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="冒泡捕获"><meta property="og:title" content="冒泡捕获" />
+<meta property="og:description" content="冒泡捕获 冒泡 &lt;style&gt; body * { margin: 10px; border: 1px solid blue; } &lt;/style&gt; &lt;form onclick=&#34;alert(&#39;form&#39;)&#34;&gt;FORM &lt;div onclick=&#34;alert(&#39;div&#39;)&#34;&gt;DIV &lt;p onclick=&#34;alert(&#39;p&#39;)&#34;&gt;P&lt;/p&gt; &lt;/div&gt; &lt;/form&gt;  冒泡：点击 p 元素，首先 alert p，其次 alert div，最后 alert form。从最内层的元素冒泡到最外层的元素。
+ 阻止冒泡 stopPropagation 阻止向父元素冒泡：
+event.stopPropagation() 示例：
+&lt;body onclick=&#34;alert(`the bubbling doesn&#39;t reach here`)&#34;&gt; &lt;button onclick=&#34;event.stopPropagation()&#34;&gt;Click me&lt;/button&gt; &lt;/body&gt; 阻止冒泡 stopImmediatePropagation 阻止向父元素冒泡，并且当前元素绑定的其它事件也不会执行：
+event.stopImmediatePropagation() 举例：
+$(&#39;p&#39;).click(event =&gt; event.stopImmediatePropagation()) $(&#39;p&#39;).click(event =&gt; console.log(&#39;这个事件不会执行&#39;)) 但是如果你调整一下顺序，这个事件就会执行了：
+$(&#39;p&#39;).click(event =&gt; console.log(&#39;这个事件会执行&#39;)) $(&#39;p&#39;).click(event =&gt; event.stopImmediatePropagation()) 捕获 事件传播的三个阶段 DOM Events 描述了事件传播的三个阶段：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/front-end/event-bubble-capture/" />
+
+<title>冒泡捕获 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.9368b346f4428a8c0ff24051fdc18577d87b0ef0d49d35adff7f91ba1a93b8f2.js" integrity="sha256-k2izRvRCiowP8kBR/cGFd9h7DvDUnTWt/3&#43;RuhqTuPI="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/java/" >
+      Java
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/css-center/" >
+      CSS 垂直居中
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/mobile-responsive/" >
+      移动端响应式布局
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/position/" >
+      position 属性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/box-sizing/" >
+      CSS 盒模型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/bfc_ifc/" >
+      BFC 和 IFC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/layout-left-fix-right-responsive/" >
+      左固定右自适应
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/flex/" >
+      flex 布局
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/css-jiugongge/" >
+      CSS 九宫格
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/clear-float/" >
+      清除浮动
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/css-triangle/" >
+      CSS 画三角形
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/css-selector/" >
+      CSS 选择器
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/fixed-side-responsive-middle/" >
+      CSS 两边固定中间自适应布局
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/css3-new-feature/" >
+      CSS3 新特性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/es6-new-feature/" >
+      ES6 新特性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/display/" >
+      display
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/es2020/" >
+      ES2020 新特性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/create-object/" >
+      创建对象
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/object-freeze/" >
+      Object.freeze()
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/cookie-session/" >
+      Cookie 和 Session
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/call-apply-bind/" >
+      call、apply、bind
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/css-square/" >
+      画正方形
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/html-semantic/" >
+      HTML 语义化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/html5-new-feature/" >
+      HTML5 新特性
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/js-detect-array/" >
+      JavaScript 检测数组
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/js-extend/" >
+      JavaScript 继承
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/array-shuffle/" >
+      数组乱序
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/typeof/" >
+      typeof
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/array-unique/" >
+      数组去重
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/new/" >
+      new 关键字
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/data-types/" >
+      数据类型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/instanceof/" >
+      instanceof
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/let-vs-const-vs-var/" >
+      let、var、const
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/currying/" >
+      柯里化 - Currying
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/settimeout/" >
+      setTimeout
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/strict-mode/" >
+      Strict Mode
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/implement-sleep/" >
+      实现 sleep 函数
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/js-copy/" >
+      JS 深浅拷贝
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/cors/" >
+      跨域
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/throttle-and-debounce/" >
+      节流和防抖
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/cache/" >
+      浏览器缓存
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/eventloop/" >
+      事件循环
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/storage/" >
+      浏览器存储
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/dom-operate-api/" >
+      DOM 操作 API
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/event/" >
+      Event
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/event-bubble-capture/"  class="active">
+      冒泡捕获
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/repaint-reflow/" >
+      重绘和重排
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/vue-lifecycle/" >
+      VUE 生命周期
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/nexttick/" >
+      Vue.nextTick
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/front-end/vue/" >
+      VUE 面试题
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/data-structure/" >
+      数据结构
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/design-pattern/" >
+      设计模式
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>冒泡捕获</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#冒泡">冒泡</a>
+      <ul>
+        <li><a href="#阻止冒泡-stoppropagation">阻止冒泡 stopPropagation</a></li>
+        <li><a href="#阻止冒泡-stopimmediatepropagation">阻止冒泡 stopImmediatePropagation</a></li>
+      </ul>
+    </li>
+    <li><a href="#捕获">捕获</a>
+      <ul>
+        <li><a href="#事件传播的三个阶段">事件传播的三个阶段</a></li>
+        <li><a href="#addeventlistener">addEventListener</a></li>
+        <li><a href="#示例">示例</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="冒泡捕获">冒泡捕获</h1>
+<h2 id="冒泡">冒泡</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-HTML" data-lang="HTML">&lt;<span style="color:#f92672">style</span>&gt;
+  <span style="color:#f92672">body</span> <span style="color:#f92672">*</span> {
+    <span style="color:#66d9ef">margin</span>: <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span>;
+    <span style="color:#66d9ef">border</span>: <span style="color:#ae81ff">1</span><span style="color:#66d9ef">px</span> <span style="color:#66d9ef">solid</span> <span style="color:#66d9ef">blue</span>;
+  }
+&lt;/<span style="color:#f92672">style</span>&gt;
+
+&lt;<span style="color:#f92672">form</span> <span style="color:#a6e22e">onclick</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;alert(&#39;form&#39;)&#34;</span>&gt;FORM
+  &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">onclick</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;alert(&#39;div&#39;)&#34;</span>&gt;DIV
+    &lt;<span style="color:#f92672">p</span> <span style="color:#a6e22e">onclick</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;alert(&#39;p&#39;)&#34;</span>&gt;P&lt;/<span style="color:#f92672">p</span>&gt;
+  &lt;/<span style="color:#f92672">div</span>&gt;
+&lt;/<span style="color:#f92672">form</span>&gt;
+</code></pre></div><p><img src="/images/docs/programmer-interview/front-end/event-bubble-capture/bubble-html.png" alt=""></p>
+<blockquote>
+<p><strong>冒泡</strong>：点击 <code>p</code> 元素，首先 <code>alert p</code>，其次 <code>alert div</code>，最后 <code>alert form</code>。从<strong>最内层</strong>的元素冒泡到<strong>最外层</strong>的元素。</p>
+</blockquote>
+<p><img src="/images/docs/programmer-interview/front-end/event-bubble-capture/bubble-internal.png" alt=""></p>
+<h3 id="阻止冒泡-stoppropagation">阻止冒泡 stopPropagation</h3>
+<p>阻止向父元素冒泡：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#a6e22e">event</span>.<span style="color:#a6e22e">stopPropagation</span>()
+</code></pre></div><p>示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-HTML" data-lang="HTML">&lt;<span style="color:#f92672">body</span> <span style="color:#a6e22e">onclick</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;alert(`the bubbling doesn&#39;t reach here`)&#34;</span>&gt;
+  &lt;<span style="color:#f92672">button</span> <span style="color:#a6e22e">onclick</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;event.stopPropagation()&#34;</span>&gt;Click me&lt;/<span style="color:#f92672">button</span>&gt;
+&lt;/<span style="color:#f92672">body</span>&gt;
+</code></pre></div><h3 id="阻止冒泡-stopimmediatepropagation">阻止冒泡 stopImmediatePropagation</h3>
+<p>阻止向父元素冒泡，并且当前元素绑定的其它事件也不会执行：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#a6e22e">event</span>.<span style="color:#a6e22e">stopImmediatePropagation</span>()
+</code></pre></div><p>举例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#a6e22e">$</span>(<span style="color:#e6db74">&#39;p&#39;</span>).<span style="color:#a6e22e">click</span>(<span style="color:#a6e22e">event</span> =&gt; <span style="color:#a6e22e">event</span>.<span style="color:#a6e22e">stopImmediatePropagation</span>())
+<span style="color:#a6e22e">$</span>(<span style="color:#e6db74">&#39;p&#39;</span>).<span style="color:#a6e22e">click</span>(<span style="color:#a6e22e">event</span> =&gt; <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#39;这个事件不会执行&#39;</span>))
+</code></pre></div><p>但是如果你调整一下顺序，这个事件就会执行了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#a6e22e">$</span>(<span style="color:#e6db74">&#39;p&#39;</span>).<span style="color:#a6e22e">click</span>(<span style="color:#a6e22e">event</span> =&gt; <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#39;这个事件会执行&#39;</span>))
+<span style="color:#a6e22e">$</span>(<span style="color:#e6db74">&#39;p&#39;</span>).<span style="color:#a6e22e">click</span>(<span style="color:#a6e22e">event</span> =&gt; <span style="color:#a6e22e">event</span>.<span style="color:#a6e22e">stopImmediatePropagation</span>())
+</code></pre></div><h2 id="捕获">捕获</h2>
+<h3 id="事件传播的三个阶段">事件传播的三个阶段</h3>
+<p>DOM Events 描述了事件传播的三个阶段：</p>
+<ul>
+<li>捕获阶段 (事件从 HTML 方向一层一层地向目标元素方向传递)</li>
+<li>目标阶段 (事件到达目标元素)</li>
+<li>冒泡阶段 (事件从目标元素向 HTML 方向冒泡)</li>
+</ul>
+<p><img src="/images/docs/programmer-interview/front-end/event-bubble-capture/capture-internal.png" alt=""></p>
+<h3 id="addeventlistener">addEventListener</h3>
+<p>为 <code>elem</code> 添加<strong>捕获事件监听</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#a6e22e">elem</span>.<span style="color:#a6e22e">addEventListener</span>(..., {<span style="color:#a6e22e">capture</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>})
+<span style="color:#75715e">// or, just &#34;true&#34; is an alias to {capture: true}
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">elem</span>.<span style="color:#a6e22e">addEventListener</span>(..., <span style="color:#66d9ef">true</span>)
+</code></pre></div><blockquote>
+<p>如果 <code>capture</code> 值是 <code>false</code>，那么会作为<strong>冒泡事件</strong>监听。</p>
+</blockquote>
+<p>移除事件监听器，同样需要对应的参数。如果你是 <code>addEventListener(..., true)</code> 这样添加的事件，那么	<code>removeEventListener(..., true)</code> 需要这样移除。</p>
+<h3 id="示例">示例</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-HTML" data-lang="HTML">&lt;<span style="color:#f92672">style</span>&gt;
+  <span style="color:#f92672">body</span> <span style="color:#f92672">*</span> {
+    <span style="color:#66d9ef">margin</span>: <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span>;
+    <span style="color:#66d9ef">border</span>: <span style="color:#ae81ff">1</span><span style="color:#66d9ef">px</span> <span style="color:#66d9ef">solid</span> <span style="color:#66d9ef">blue</span>;
+  }
+&lt;/<span style="color:#f92672">style</span>&gt;
+
+&lt;<span style="color:#f92672">form</span>&gt;FORM
+  &lt;<span style="color:#f92672">div</span>&gt;DIV
+    &lt;<span style="color:#f92672">p</span>&gt;P&lt;/<span style="color:#f92672">p</span>&gt;
+  &lt;/<span style="color:#f92672">div</span>&gt;
+&lt;/<span style="color:#f92672">form</span>&gt;
+
+&lt;<span style="color:#f92672">script</span>&gt;
+  <span style="color:#66d9ef">for</span>(<span style="color:#66d9ef">let</span> <span style="color:#a6e22e">elem</span> <span style="color:#66d9ef">of</span> document.<span style="color:#a6e22e">querySelectorAll</span>(<span style="color:#e6db74">&#39;*&#39;</span>)) {
+    <span style="color:#a6e22e">elem</span>.<span style="color:#a6e22e">addEventListener</span>(<span style="color:#e6db74">&#34;click&#34;</span>, <span style="color:#a6e22e">e</span> =&gt; <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">`Capturing: </span><span style="color:#e6db74">${</span><span style="color:#a6e22e">elem</span>.<span style="color:#a6e22e">tagName</span><span style="color:#e6db74">}</span><span style="color:#e6db74">`</span>), <span style="color:#66d9ef">true</span>);
+    <span style="color:#a6e22e">elem</span>.<span style="color:#a6e22e">addEventListener</span>(<span style="color:#e6db74">&#34;click&#34;</span>, <span style="color:#a6e22e">e</span> =&gt; <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">`Bubbling: </span><span style="color:#e6db74">${</span><span style="color:#a6e22e">elem</span>.<span style="color:#a6e22e">tagName</span><span style="color:#e6db74">}</span><span style="color:#e6db74">`</span>));
+  }
+&lt;/<span style="color:#f92672">script</span>&gt;
+</code></pre></div><p><img src="/images/docs/programmer-interview/front-end/event-bubble-capture/bubble-html.png" alt=""></p>
+<p>点击 <code>p</code> 元素，网页依次 <code>alert</code> 的是：</p>
+<ul>
+<li><code>Capturing: HTML</code> -&gt; <code>Capturing: BODY</code> -&gt; <code>Capturing: FORM</code> -&gt; <code>Capturing: DIV</code> -&gt; <code>Capturing: P</code></li>
+<li><code>Bubbling: P</code> -&gt; <code>Bubbling: DIV</code> -&gt; <code>Bubbling: FORM</code> -&gt; <code>Bubbling: BODY</code> -&gt; <code>Bubbling: HTML</code></li>
+</ul>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://javascript.info/bubbling-and-capturing">Bubbling and capturing</a></li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#冒泡">冒泡</a>
+      <ul>
+        <li><a href="#阻止冒泡-stoppropagation">阻止冒泡 stopPropagation</a></li>
+        <li><a href="#阻止冒泡-stopimmediatepropagation">阻止冒泡 stopImmediatePropagation</a></li>
+      </ul>
+    </li>
+    <li><a href="#捕获">捕获</a>
+      <ul>
+        <li><a href="#事件传播的三个阶段">事件传播的三个阶段</a></li>
+        <li><a href="#addeventlistener">addEventListener</a></li>
+        <li><a href="#示例">示例</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

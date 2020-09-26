@@ -5,7 +5,10 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Event"><meta property="og:title" content="Event" />
-<meta property="og:description" content="Event target 和 currentTarget  target：哪个元素触发了事件？ currentTarget：哪个元素监听了这个事件  事件代理 " />
+<meta property="og:description" content="Event target 和 currentTarget  target：哪个元素触发了事件？ currentTarget：哪个元素监听了这个事件  事件代理/委托 原因 添加的事件监听器数量，影响页面的整体运行性能，因为访问 DOM 的次数越多，引起浏览器的重绘和重排的次数也就越多。通过事件委托，可以减少添加的事件监听器数量，提高页面性能。
+原理 利用事件冒泡。
+示例 &lt;ul id=&#34;list&#34;&gt; &lt;li id=&#34;item1&#34;&gt;item1&lt;/li&gt; &lt;li id=&#34;item2&#34;&gt;item2&lt;/li&gt; &lt;li id=&#34;item3&#34;&gt;item3&lt;/li&gt; &lt;li id=&#34;item4&#34;&gt;item4&lt;/li&gt; &lt;/ul&gt; 目的：点击 li 然后弹出这个 li 的内容：
+window.onload=function(){ var ulNode=document.getElementById(&#34;list&#34;); ulNode.addEventListener(&#39;click&#39;,function(e){ if(e.target &amp;&amp; e.target.nodeName.toUpperCase() == &#34;LI&#34;){/*判断目标事件是否为li*/ alert(e.target.innerHTML); } },false); }; " />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/front-end/event/" />
 
@@ -16,7 +19,7 @@
 <link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
 
 
-<script defer src="/en.search.min.f3328d5fb306716e0854466cc8351817ead3d9dc59171e03231ce41e0aa574bc.js" integrity="sha256-8zKNX7MGcW4IVEZsyDUYF&#43;rT2dxZFx4DIxzkHgqldLw="></script>
+<script defer src="/en.search.min.9368b346f4428a8c0ff24051fdc18577d87b0ef0d49d35adff7f91ba1a93b8f2.js" integrity="sha256-k2izRvRCiowP8kBR/cGFd9h7DvDUnTWt/3&#43;RuhqTuPI="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -744,6 +747,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/programmer-interview/front-end/event-bubble-capture/" >
+      冒泡捕获
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/programmer-interview/front-end/repaint-reflow/" >
       重绘和重排
   </a>
@@ -783,6 +796,32 @@ var _hmt = _hmt || [];
     
   </ul>
   
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/data-structure/" >
+      数据结构
+  </a>
+
+
+    
+
+    
+
+
+
 
 
 
@@ -969,7 +1008,13 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#target-和-currenttarget">target 和 currentTarget</a></li>
-    <li><a href="#事件代理">事件代理</a></li>
+    <li><a href="#事件代理委托">事件代理/委托</a>
+      <ul>
+        <li><a href="#原因">原因</a></li>
+        <li><a href="#原理">原理</a></li>
+        <li><a href="#示例">示例</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 
@@ -986,8 +1031,28 @@ var _hmt = _hmt || [];
 <li><code>target</code>：哪个元素<strong>触发</strong>了事件？</li>
 <li><code>currentTarget</code>：哪个元素<strong>监听</strong>了这个事件</li>
 </ul>
-<h2 id="事件代理">事件代理</h2>
-</article>
+<h2 id="事件代理委托">事件代理/委托</h2>
+<h3 id="原因">原因</h3>
+<p>添加的事件监听器数量，影响页面的整体运行<strong>性能</strong>，因为访问 DOM 的次数越多，引起浏览器的重绘和重排的次数也就越多。通过事件委托，可以减少添加的事件监听器数量，提高页面性能。</p>
+<h3 id="原理">原理</h3>
+<p>利用事件<strong>冒泡</strong>。</p>
+<h3 id="示例">示例</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-HTML" data-lang="HTML">&lt;<span style="color:#f92672">ul</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;list&#34;</span>&gt;
+	&lt;<span style="color:#f92672">li</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;item1&#34;</span>&gt;item1&lt;/<span style="color:#f92672">li</span>&gt;
+	&lt;<span style="color:#f92672">li</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;item2&#34;</span>&gt;item2&lt;/<span style="color:#f92672">li</span>&gt;
+	&lt;<span style="color:#f92672">li</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;item3&#34;</span>&gt;item3&lt;/<span style="color:#f92672">li</span>&gt;
+	&lt;<span style="color:#f92672">li</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;item4&#34;</span>&gt;item4&lt;/<span style="color:#f92672">li</span>&gt;
+&lt;/<span style="color:#f92672">ul</span>&gt;
+</code></pre></div><p>目的：点击 <code>li</code> 然后弹出这个 <code>li</code> 的内容：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript">window.<span style="color:#a6e22e">onload</span><span style="color:#f92672">=</span><span style="color:#66d9ef">function</span>(){
+  <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">ulNode</span><span style="color:#f92672">=</span>document.<span style="color:#a6e22e">getElementById</span>(<span style="color:#e6db74">&#34;list&#34;</span>);
+  <span style="color:#a6e22e">ulNode</span>.<span style="color:#a6e22e">addEventListener</span>(<span style="color:#e6db74">&#39;click&#39;</span>,<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">e</span>){
+       <span style="color:#66d9ef">if</span>(<span style="color:#a6e22e">e</span>.<span style="color:#a6e22e">target</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">e</span>.<span style="color:#a6e22e">target</span>.<span style="color:#a6e22e">nodeName</span>.<span style="color:#a6e22e">toUpperCase</span>() <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;LI&#34;</span>){<span style="color:#75715e">/*判断目标事件是否为li*/</span>
+         <span style="color:#a6e22e">alert</span>(<span style="color:#a6e22e">e</span>.<span style="color:#a6e22e">target</span>.<span style="color:#a6e22e">innerHTML</span>);
+       }
+     },<span style="color:#66d9ef">false</span>);
+};
+</code></pre></div></article>
  
 
       <footer class="book-footer">
@@ -1033,7 +1098,13 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#target-和-currenttarget">target 和 currentTarget</a></li>
-    <li><a href="#事件代理">事件代理</a></li>
+    <li><a href="#事件代理委托">事件代理/委托</a>
+      <ul>
+        <li><a href="#原因">原因</a></li>
+        <li><a href="#原理">原理</a></li>
+        <li><a href="#示例">示例</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 
