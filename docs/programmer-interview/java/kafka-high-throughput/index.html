@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Kafka 高吞吐量怎么实现的"><meta property="og:title" content="Kafka 高吞吐量怎么实现的" />
+<meta property="og:description" content="Kafka 高吞吐量怎么实现的 顺序读写 Producer 发送的消息顺序追加到文件中，Consumer 从 Broker 自带偏移量读取消息。这两者可以充分利用磁盘的顺序写和顺序读性能，速度远快于随机读写。
+   零拷贝 mmap 持久化文件 Broker 写入数据，并非真正的 flush 到磁盘上了，而是写入到 mmap 中。
+sendfile 读取 Customer 从 Broker 读取数据，采用 sendfile，将磁盘文件读到 OS 内核缓冲区后，直接转到 socket buffer 进行网络发送。
+分区 Kafka 将消息分成多个 partition，增加了并行处理的能力。
+批量发送 Producer 发送多个消息到同一分区，通过批量发送可以减少系统性能开销。
+ batch.size：默认积压到 16K 就会批量发送 linger.ms：设置一定延迟来收集更多消息。默认 0ms ，即有消息就立马发送。  上述两个条件有任一条件满足，就会触发批量发送。
+数据压缩 Kafka 支持三种压缩算法：
+ gzip snappy lz4  /*compressType有四种取值:none lz4 gzip snappy*/ props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, compressType); 参考  Kafka为什么吞吐量大、速度快？  " />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/kafka-high-throughput/" />
+
+<title>Kafka 高吞吐量怎么实现的 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.49ce351a2b99d886c52282fa6dfd56d0adda82958da49fbf310ed19b20a683fe.js" integrity="sha256-Sc41GiuZ2IbFIoL6bf1W0K3agpWNpJ&#43;/MQ7RmyCmg/4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/java/" >
+      Java
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/multi-thread/" >
+      并发 - 多线程的实现方式
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/synchronized/" >
+      并发 - synchronized
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/threadlocal/" >
+      并发 - ThreadLocal
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/threadpool/" >
+      并发 - 线程池
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/volatile/" >
+      并发 - volatile
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/concurrenthashmap-18/" >
+      ConcurrentHashMap 1.8
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/arraylist/" >
+      ArrayList
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/finally/" >
+      基础 - finally
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/kafka-high-throughput/"  class="active">
+      Kafka 高吞吐量怎么实现的
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/why-develop-rocketmq/" >
+      为什么阿里要自研 RocketMQ ?
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/sentinel-vs-hystrix/" >
+      Sentinel 与 Hystrix 的对比
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/data-structure/" >
+      数据结构
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/design-pattern/" >
+      设计模式
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Kafka 高吞吐量怎么实现的</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#顺序读写">顺序读写</a></li>
+    <li><a href="#零拷贝">零拷贝</a>
+      <ul>
+        <li><a href="#mmap-持久化文件">mmap 持久化文件</a></li>
+        <li><a href="#sendfile-读取">sendfile 读取</a></li>
+      </ul>
+    </li>
+    <li><a href="#分区">分区</a></li>
+    <li><a href="#批量发送">批量发送</a></li>
+    <li><a href="#数据压缩">数据压缩</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="kafka-高吞吐量怎么实现的">Kafka 高吞吐量怎么实现的</h1>
+<h2 id="顺序读写">顺序读写</h2>
+<p>Producer 发送的消息顺序追加到文件中，Consumer 从 Broker 自带偏移量读取消息。这两者可以充分利用磁盘的顺序写和顺序读性能，速度远快于随机读写。</p>
+<div class="book-columns flex flex-wrap">
+  
+  <div class="flex-even markdown-inner">
+    <img src="/images/docs/programmer-interview/java/kafka-high-throughput/log_anatomy.png" alt="">
+  </div>
+  
+  <div class="flex-even markdown-inner">
+    <img src="/images/docs/programmer-interview/java/kafka-high-throughput/log_consumer.png" alt="">
+  </div>
+  
+</div>
+
+<h2 id="零拷贝">零拷贝</h2>
+<h3 id="mmap-持久化文件">mmap 持久化文件</h3>
+<p>Broker 写入数据，并非真正的 <code>flush</code> 到磁盘上了，而是写入到 <code>mmap</code> 中。</p>
+<h3 id="sendfile-读取">sendfile 读取</h3>
+<p>Customer 从 Broker 读取数据，采用 <code>sendfile</code>，将磁盘文件读到 OS 内核缓冲区后，直接转到 socket buffer 进行网络发送。</p>
+<h2 id="分区">分区</h2>
+<p>Kafka 将消息分成多个 partition，增加了<strong>并行处理</strong>的能力。</p>
+<h2 id="批量发送">批量发送</h2>
+<p>Producer 发送多个消息到<strong>同一分区</strong>，通过<strong>批量发送</strong>可以减少系统性能开销。</p>
+<ul>
+<li><code>batch.size</code>：默认积压到 16K 就会批量发送</li>
+<li><code>linger.ms</code>：设置一定延迟来收集更多消息。默认 0ms ，即有消息就立马发送。</li>
+</ul>
+<p>上述两个条件有任一条件满足，就会触发批量发送。</p>
+<h2 id="数据压缩">数据压缩</h2>
+<p>Kafka 支持三种压缩算法：</p>
+<ul>
+<li><code>gzip</code></li>
+<li><code>snappy</code></li>
+<li><code>lz4</code></li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">/*compressType有四种取值:none lz4 gzip snappy*/</span>
+props<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>ProducerConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">COMPRESSION_TYPE_CONFIG</span><span style="color:#f92672">,</span> compressType<span style="color:#f92672">);</span>
+</code></pre></div><h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://blog.csdn.net/kzadmxz/article/details/101576401">Kafka为什么吞吐量大、速度快？</a></li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#顺序读写">顺序读写</a></li>
+    <li><a href="#零拷贝">零拷贝</a>
+      <ul>
+        <li><a href="#mmap-持久化文件">mmap 持久化文件</a></li>
+        <li><a href="#sendfile-读取">sendfile 读取</a></li>
+      </ul>
+    </li>
+    <li><a href="#分区">分区</a></li>
+    <li><a href="#批量发送">批量发送</a></li>
+    <li><a href="#数据压缩">数据压缩</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

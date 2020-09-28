@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="为什么阿里要自研 RocketMQ ?"><meta property="og:title" content="为什么阿里要自研 RocketMQ ?" />
+<meta property="og:description" content="为什么阿里要自研 RocketMQ ? 为什么要重写一个类似于 Kafka 的消息队列，而非基于 Kafka 作二次开发？
+初衷 Kafka is a distributed streaming platform, which was born from logging aggregation cases. 它并不需要太高的并发. In some large scale cases in alibaba, we found that the original model 无法满足我们的实际需求.
+无法支持更多分区  Each partition stores the whole message data. 尽管单个分区是顺序写的, 随着越来越多的针对不同分区的写入, 在操作系统层面已经变为随机写了. Due to the scattered data files, it is difficult to use the Linux IO Group Commit mechanism.  RocketMQ 支持更多分区  所有消息数据都存储在 Commit Log 文件中。所有写入都是完全顺序的，而读取是随机的。对磁盘的访问是完全顺序的，这避免了磁盘锁争用，并且在创建大量队列时不会导致高磁盘 IO 等待。 ConsumeQueue 存储实际的用户消费位置信息，这些信息也以顺序方式刷新到磁盘。  参考  How to Support More Queues in RocketMQ?" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/why-develop-rocketmq/" />
+
+<title>为什么阿里要自研 RocketMQ ? | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.215f2c356498a041f9de3ebaab0d56c45dd9a6292b641970f0f751a7bcec3c63.css" integrity="sha256-IV8sNWSYoEH53j66qw1WxF3ZpikrZBlw8PdRp7zsPGM=">
+
+
+<script defer src="/en.search.min.49ce351a2b99d886c52282fa6dfd56d0adda82958da49fbf310ed19b20a683fe.js" integrity="sha256-Sc41GiuZ2IbFIoL6bf1W0K3agpWNpJ&#43;/MQ7RmyCmg/4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/java/" >
+      Java
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/multi-thread/" >
+      并发 - 多线程的实现方式
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/synchronized/" >
+      并发 - synchronized
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/threadlocal/" >
+      并发 - ThreadLocal
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/threadpool/" >
+      并发 - 线程池
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/volatile/" >
+      并发 - volatile
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/concurrenthashmap-18/" >
+      ConcurrentHashMap 1.8
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/arraylist/" >
+      ArrayList
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/finally/" >
+      基础 - finally
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/kafka-high-throughput/" >
+      Kafka 高吞吐量怎么实现的
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/why-develop-rocketmq/"  class="active">
+      为什么阿里要自研 RocketMQ ?
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/sentinel-vs-hystrix/" >
+      Sentinel 与 Hystrix 的对比
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/data-structure/" >
+      数据结构
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/design-pattern/" >
+      设计模式
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>为什么阿里要自研 RocketMQ ?</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#初衷">初衷</a>
+      <ul>
+        <li><a href="#无法支持更多分区">无法支持更多分区</a></li>
+        <li><a href="#rocketmq-支持更多分区">RocketMQ 支持更多分区</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="为什么阿里要自研-rocketmq-">为什么阿里要自研 RocketMQ ?</h1>
+<p>为什么要重写一个类似于 Kafka 的消息队列，而非基于 Kafka 作二次开发？</p>
+<h2 id="初衷">初衷</h2>
+<p>Kafka is a distributed streaming platform, which was born from <strong>logging aggregation cases</strong>. 它并不需要太高的并发. In some large scale cases in alibaba, we found that the original model <strong>无法满足我们的实际需求</strong>.</p>
+<h3 id="无法支持更多分区">无法支持更多分区</h3>
+<ul>
+<li>Each partition stores the whole message data. 尽管单个分区是顺序写的, 随着越来越多的针对不同分区的写入, 在操作系统层面已经变为<strong>随机写</strong>了.</li>
+<li>Due to the scattered data files, it is difficult to use the <strong>Linux IO Group Commit</strong> mechanism.</li>
+</ul>
+<h3 id="rocketmq-支持更多分区">RocketMQ 支持更多分区</h3>
+<p><img src="/images/docs/programmer-interview/java/why-develop-rocketmq/rocketmq-queues.png" alt=""></p>
+<ul>
+<li>所有消息数据都存储在 <strong>Commit Log</strong> 文件中。所有写入都是<strong>完全顺序</strong>的，而读取是随机的。对磁盘的访问是完全顺序的，这避免了<strong>磁盘锁争用</strong>，并且在创建大量队列时不会导致高磁盘 IO 等待。</li>
+<li><code>ConsumeQueue</code> 存储实际的用户消费位置信息，这些信息也以顺序方式刷新到磁盘。</li>
+</ul>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://rocketmq.apache.org/rocketmq/how-to-support-more-queues-in-rocketmq/">How to Support More Queues in RocketMQ?</a></li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#初衷">初衷</a>
+      <ul>
+        <li><a href="#无法支持更多分区">无法支持更多分区</a></li>
+        <li><a href="#rocketmq-支持更多分区">RocketMQ 支持更多分区</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
