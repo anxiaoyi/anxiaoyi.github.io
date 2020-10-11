@@ -5,7 +5,8 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="观察者模式"><meta property="og:title" content="观察者模式" />
-<meta property="og:description" content="观察者模式 JavaScript class EventObserver { constructor() { this.observers = []; } subscribe(fn) { this.observers.push(fn); } unsubscribe(fn) { this.observers = this.observers.filter((subscriber) =&gt; subscriber !== fn); } broadcast(data) { this.observers.forEach((subscriber) =&gt; subscriber(data)); } } 参考  The Observer Pattern JavaScript Design Patterns: The Observer Pattern  " />
+<meta property="og:description" content="观察者模式 JavaScript class EventObserver { constructor() { this.observers = []; } subscribe(fn) { this.observers.push(fn); } unsubscribe(fn) { this.observers = this.observers.filter((subscriber) =&gt; subscriber !== fn); } broadcast(data) { this.observers.forEach((subscriber) =&gt; subscriber(data)); } } 发布订阅者模式 其实遵循的就是观察者模式
+// publisher // Subscriber // unsubscribe // Some place to store callbacks that are registered from subscribers.  function pubSub() { // object which will track of all events and subscription  const subscribers = {} // Publisher:  function publish(eventName, data) { // return if event is not subscribed  if (!" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/design-pattern/observer/" />
 
@@ -16,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.96624437950ca4104acb84b03c51c2c5c47accdaf1d48f8f73c535cfaff07e4f.js" integrity="sha256-lmJEN5UMpBBKy4SwPFHCxcR6zNrx1I&#43;Pc8U1z6/wfk8="></script>
+<script defer src="/en.search.min.3505c0226852a19888219ae64188cf129ebf37de5eb485044aba6919b560c35d.js" integrity="sha256-NQXAImhSoZiIIZrmQYjPEp6/N95etIUESrppGbVgw10="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -525,6 +526,8 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#javascript">JavaScript</a></li>
+    <li><a href="#发布订阅者模式">发布订阅者模式</a></li>
+    <li><a href="#实现一个-eventbus">实现一个 EventBus</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -556,10 +559,62 @@ var _hmt = _hmt || [];
     <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">observers</span>.<span style="color:#a6e22e">forEach</span>((<span style="color:#a6e22e">subscriber</span>) =&gt; <span style="color:#a6e22e">subscriber</span>(<span style="color:#a6e22e">data</span>));
   }
 }
-</code></pre></div><h2 id="参考">参考</h2>
+</code></pre></div><h2 id="发布订阅者模式">发布订阅者模式</h2>
+<p>其实遵循的就是<strong>观察者</strong>模式</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JavaScript" data-lang="JavaScript"><span style="color:#75715e">// publisher
+</span><span style="color:#75715e">// Subscriber
+</span><span style="color:#75715e">// unsubscribe
+</span><span style="color:#75715e">// Some place to store callbacks that are registered from subscribers.
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">function</span> <span style="color:#a6e22e">pubSub</span>() {
+
+  <span style="color:#75715e">// object which will track of all events and subscription
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">subscribers</span> <span style="color:#f92672">=</span> {}
+
+  <span style="color:#75715e">// Publisher: 
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">publish</span>(<span style="color:#a6e22e">eventName</span>, <span style="color:#a6e22e">data</span>) {
+
+    <span style="color:#75715e">// return if event is not subscribed
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>Array.<span style="color:#a6e22e">isArray</span>(<span style="color:#a6e22e">subscribers</span>[<span style="color:#a6e22e">eventName</span>])) {
+      <span style="color:#66d9ef">return</span>
+    }
+
+    <span style="color:#75715e">// Whenever you publish any event, it will trigger callback for all stored event in subscriber object
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">subscribers</span>[<span style="color:#a6e22e">eventName</span>].<span style="color:#a6e22e">forEach</span>((<span style="color:#a6e22e">callback</span>) =&gt; {
+      <span style="color:#a6e22e">callback</span>(<span style="color:#a6e22e">data</span>)
+    })
+  }
+
+  <span style="color:#75715e">// Subscriber
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">subscribe</span>(<span style="color:#a6e22e">eventName</span>, <span style="color:#a6e22e">callback</span>) {
+
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>Array.<span style="color:#a6e22e">isArray</span>(<span style="color:#a6e22e">subscribers</span>[<span style="color:#a6e22e">eventName</span>])) {
+      <span style="color:#a6e22e">subscribers</span>[<span style="color:#a6e22e">eventName</span>] <span style="color:#f92672">=</span> []
+    }
+    <span style="color:#75715e">//on subscribe we will we will push callback to subscribers[eventName] array
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">subscribers</span>[<span style="color:#a6e22e">eventName</span>].<span style="color:#a6e22e">push</span>(<span style="color:#a6e22e">callback</span>);
+    <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">index</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">subscribers</span>[<span style="color:#a6e22e">eventName</span>].<span style="color:#a6e22e">length</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>
+
+    <span style="color:#75715e">// subscribed callbacks to be removed when they are no longer necessary.
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span> {
+      <span style="color:#a6e22e">unsubscribe</span>() {
+        <span style="color:#a6e22e">subscribers</span>[<span style="color:#a6e22e">eventName</span>].<span style="color:#a6e22e">splice</span>(<span style="color:#a6e22e">index</span>, <span style="color:#ae81ff">1</span>);
+      },
+    }
+  }
+
+  <span style="color:#66d9ef">return</span> {
+    <span style="color:#a6e22e">publish</span>,
+    <span style="color:#a6e22e">subscribe</span>,
+  }
+}
+</code></pre></div><h2 id="实现一个-eventbus">实现一个 EventBus</h2>
+<p>其实就是让你写<strong>观察者</strong>模式。</p>
+<h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://www.oreilly.com/library/view/learning-javascript-design/9781449334840/ch09s05.html">The Observer Pattern</a></li>
 <li><a href="https://www.sitepoint.com/javascript-design-patterns-observer-pattern/">JavaScript Design Patterns: The Observer Pattern</a></li>
+<li><a href="https://dev.to/unalo_baayriyo/design-a-pub-sub-pattern-in-vanilla-js-4aa1">Design a pub sub pattern in vanilla JS</a></li>
 </ul>
 </article>
  
@@ -607,6 +662,8 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#javascript">JavaScript</a></li>
+    <li><a href="#发布订阅者模式">发布订阅者模式</a></li>
+    <li><a href="#实现一个-eventbus">实现一个 EventBus</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>

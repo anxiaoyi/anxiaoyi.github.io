@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.96624437950ca4104acb84b03c51c2c5c47accdaf1d48f8f73c535cfaff07e4f.js" integrity="sha256-lmJEN5UMpBBKy4SwPFHCxcR6zNrx1I&#43;Pc8U1z6/wfk8="></script>
+<script defer src="/en.search.min.3505c0226852a19888219ae64188cf129ebf37de5eb485044aba6919b560c35d.js" integrity="sha256-NQXAImhSoZiIIZrmQYjPEp6/N95etIUESrppGbVgw10="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -382,6 +382,7 @@ var _hmt = _hmt || [];
         <li><a href="#分页查询">分页查询</a></li>
       </ul>
     </li>
+    <li><a href="#汉字占用长度">汉字占用长度</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -520,8 +521,18 @@ var _hmt = _hmt || [];
 ) t2
 <span style="color:#66d9ef">WHERE</span> rn <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">4</span> <span style="color:#66d9ef">AND</span> rn <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">6</span>;
 </code></pre></div><p>参考自 <a href="https://www.cnblogs.com/seven7seven/p/3662617.html">ORACLE中的TOP-N查询（TOP-N分析）、分页查询</a></p>
-<h2 id="参考">参考</h2>
+<h2 id="汉字占用长度">汉字占用长度</h2>
+<blockquote>
+<p>N 开头的字段类型(比如 <code>NCHAR</code>, <code>NVARCHAR2</code>)中，任何一个字符(包括一个汉字)占2个字节，统一的。不以 N 开头的字段类型(比如 <code>CHAR</code>, <code>VARCHAR2</code>)中，unicode 字符(比如汉字)占3个字节，其他字符占1个字节。</p>
+</blockquote>
+<p>如何求一个字符串占用的字符数和字节数？ <code>length</code> 函数求得是占用字符数，<code>lengthb</code>或者 <code>vsize</code> 函数求得是占用字节数。你说 <strong>中华12</strong> 这个字符串占用了多少字符，字节？看 sql 返回值便清楚了。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> <span style="color:#66d9ef">length</span>(<span style="color:#e6db74">&#39;中华12&#39;</span>) <span style="color:#66d9ef">from</span> dual  <span style="color:#75715e">--返回4，也就是占用4个字符
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">select</span> lengthb(<span style="color:#e6db74">&#39;中华12&#39;</span>) <span style="color:#66d9ef">from</span> dual  <span style="color:#75715e">--返回8，也就是占用8个字节，其中中华儿子各占3个字节，而12两个字符各占一个字节
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">select</span> lengthb(N<span style="color:#e6db74">&#39;中华1&#39;</span>) <span style="color:#66d9ef">from</span> dual  <span style="color:#75715e">--返回6，这是将字符串转换成为unicode字符串后，每个字符占用2个字节，3个就是6个字节
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">select</span> <span style="color:#66d9ef">length</span>(N<span style="color:#e6db74">&#39;中华1&#39;</span>) <span style="color:#66d9ef">from</span> dual  <span style="color:#75715e">--返回3，因为只有3个字符嘛。
+</span></code></pre></div><h2 id="参考">参考</h2>
 <ul>
+<li><a href="https://blog.csdn.net/tianzongnihao/article/details/55511323">ORACLE中一个字符占多少字节？（中文存储）</a></li>
 <li><a href="https://docs.oracle.com/database/121/SQLRF/sql_elements001.htm#SQLRF0021">Data Types</a></li>
 <li><a href="https://docs.oracle.com/database/121/SQLRF/pseudocolumns008.htm#SQLRF00254">ROWID Pseudocolumn</a></li>
 </ul>
@@ -580,6 +591,7 @@ var _hmt = _hmt || [];
         <li><a href="#分页查询">分页查询</a></li>
       </ul>
     </li>
+    <li><a href="#汉字占用长度">汉字占用长度</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
