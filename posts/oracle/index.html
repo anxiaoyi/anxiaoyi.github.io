@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.83b5cdefcd3d4d353e8fdceaab9d3d8810a3b8842cd06e5e0acfd9324dddd732.js" integrity="sha256-g7XN7809TTU&#43;j9zqq509iBCjuIQs0G5eCs/ZMk3d1zI="></script>
+<script defer src="/en.search.min.8684e057e37fc54aac859ecc357194612d9f5455fbe13ea8f6a1919a32f8b5f6.js" integrity="sha256-hoTgV&#43;N/xUqshZ7MNXGUYS2fVFX74T6o9qGRmjL4tfY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -383,6 +383,12 @@ var _hmt = _hmt || [];
       </ul>
     </li>
     <li><a href="#汉字占用长度">汉字占用长度</a></li>
+    <li><a href="#事务">事务</a>
+      <ul>
+        <li><a href="#setautocommitfalse">setAutoCommit(false)</a></li>
+        <li><a href="#setautocommittrue">setAutoCommit(true)</a></li>
+      </ul>
+    </li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -530,6 +536,18 @@ var _hmt = _hmt || [];
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">select</span> lengthb(<span style="color:#e6db74">&#39;中华12&#39;</span>) <span style="color:#66d9ef">from</span> dual  <span style="color:#75715e">--返回8，也就是占用8个字节，其中中华儿子各占3个字节，而12两个字符各占一个字节
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">select</span> lengthb(N<span style="color:#e6db74">&#39;中华1&#39;</span>) <span style="color:#66d9ef">from</span> dual  <span style="color:#75715e">--返回6，这是将字符串转换成为unicode字符串后，每个字符占用2个字节，3个就是6个字节
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">select</span> <span style="color:#66d9ef">length</span>(N<span style="color:#e6db74">&#39;中华1&#39;</span>) <span style="color:#66d9ef">from</span> dual  <span style="color:#75715e">--返回3，因为只有3个字符嘛。
+</span></code></pre></div><h2 id="事务">事务</h2>
+<p>oracle 数据库支持 <code>READ COMMITTED</code> 和 <code>SERIALIZABLE</code>这两种事务隔离级别。默认系统事务隔离级别是 <code>READ COMMITTED</code>，也就是<strong>读已提交</strong>。</p>
+<h3 id="setautocommitfalse">setAutoCommit(false)</h3>
+<p>如下，关闭自动 <code>commit</code>，对于同一个 <code>connection</code>，先 <code>insert</code>，然后 <code>select</code> 是可以查询到刚才 <code>insert</code> 的这行数据的，原因是这行数据在服务器已经执行了，只是对其它事务不可见（事务的<strong>隔离性</strong>）。比如使用 <code>Navicat</code> 或 <code>DBVisualizer</code> 是查询不到你刚刚 <code>insert</code> 的这条数据的。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">con<span style="color:#f92672">.</span><span style="color:#a6e22e">setAutoCommit</span><span style="color:#f92672">(</span><span style="color:#66d9ef">false</span><span style="color:#f92672">);</span>
+insertPreparedStatement<span style="color:#f92672">.</span><span style="color:#a6e22e">executeUpdate</span><span style="color:#f92672">();</span>
+ResultSet rs <span style="color:#f92672">=</span> selectPreparedStatement<span style="color:#f92672">.</span><span style="color:#a6e22e">executeQuery</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">boolean</span> exist <span style="color:#f92672">=</span> rs<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">();</span> <span style="color:#75715e">// 可以查询到
+</span></code></pre></div><h3 id="setautocommittrue">setAutoCommit(true)</h3>
+<p>未关闭自动 <code>commit</code>，那么当 <code>executeUpdate</code> 这句话执行结束的时候，就会自动 <code>commit</code>，其他事务（<code>Navicat</code> 或 <code>DBVisualizer</code>）也就可以立即查询到了。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">con<span style="color:#f92672">.</span><span style="color:#a6e22e">setAutoCommit</span><span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
+insertPreparedStatement<span style="color:#f92672">.</span><span style="color:#a6e22e">executeUpdate</span><span style="color:#f92672">();</span> <span style="color:#75715e">// 会自动 commit
 </span></code></pre></div><h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://blog.csdn.net/tianzongnihao/article/details/55511323">ORACLE中一个字符占多少字节？（中文存储）</a></li>
@@ -592,6 +610,12 @@ var _hmt = _hmt || [];
       </ul>
     </li>
     <li><a href="#汉字占用长度">汉字占用长度</a></li>
+    <li><a href="#事务">事务</a>
+      <ul>
+        <li><a href="#setautocommitfalse">setAutoCommit(false)</a></li>
+        <li><a href="#setautocommittrue">setAutoCommit(true)</a></li>
+      </ul>
+    </li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
