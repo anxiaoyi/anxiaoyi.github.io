@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Java 垃圾回收器"><meta property="og:title" content="Java 垃圾回收器" />
+<meta property="og:description" content="Java 垃圾回收器 判断对象是否可回收 如何判断一个对象属于垃圾对象呢？
+引用计数法 对于一个对象 A，只要有任意一个对象引用了 A，则 A 的计数器加 1，当引用失效的时候，引用计数器就减 1。如果 A 的应用计数器为 0，则对象 A 就不可能再被使用。
+ 缺点：无法处理循环引用的问题。
+ 可达性分析算法 通过一系列的称为 GC Roots 的对象作为起始点，从这些节点开始向下搜索，搜索所走过的循环称为引用链。当一个对象到 GC Roots 没有任何引用链的时候，则证明此对象是不可达的，因此它们会被判定为可回收对象。
+可以作为 GC Roots 的对象：
+ 类静态属性中引用的对象 常量引用的对象 虚拟机栈中引用的对象 本地方法栈中引用的对象  垃圾回收算法 标记-清除算法 从每个 GC Roots 对象出发，依次标记有引用关系的对象，最后将没有被标记的对象清除。
+ 缺点：带来大量空间碎片，导致需要分配一个较大连续空间时，容易触发 GC。
+ 标记-整理(标记-压缩)算法 从每个 GC Roots 对象出发，标记存活的对象，然后将存活的对象整理到内存空间的一端，形成连续的已使用空间，最后将已使用空间外的部分全部清理掉，消除空间碎片问题。
+标记-复制算法 为了能够并行的标记和整理，将整个空间分为两块，每次只激活一块，垃圾回收只需把存活的对象复制到另一块未激活的空间上，将未激活空间标记为已激活，将已激活空间标记为未激活，然后清除原空间中的原对象。
+分代收集算法 垃圾收集器一般根据对象存活周期的不同，将内存划分为几块，根据每块内存空间的特点，使用不同的回收算法，提供回收效率。
+分区算法 将整个堆空间划分为连续的不同小空间，每一个小空间独立使用，独立回收。
+ 优点：可以控制一次回收多少个小区间。
+ HotSpot 虚拟机垃圾收集器 Serial 新生代 Serial 收集器采用复制算法，使用单线程进行垃圾回收，回收时 Java 应用程序中的线程都需要暂停 (Stop-The-World)，以等待回收完成。使用 -XX:&#43;UseSerialGC 可以指定新生代采用 Serial 收集器，老年代采用 Serial Old 收集器。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/java-gc/" />
+
+<title>Java 垃圾回收器 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.0434fd5b0e4419a1bd009972e39091d43652d7cc043e7a6e58e51bc17fa43883.js" integrity="sha256-BDT9Ww5EGaG9AJly45CR1DZS18wEPnpuWOUbwX&#43;kOIM="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/java/" >
+      Java
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/java-gc/"  class="active">
+      Java 垃圾回收器
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/multi-thread/" >
+      并发 - 多线程的实现方式
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/synchronized/" >
+      并发 - synchronized
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/threadlocal/" >
+      并发 - ThreadLocal
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/threadpool/" >
+      并发 - 线程池
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/volatile/" >
+      并发 - volatile
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/concurrenthashmap-18/" >
+      ConcurrentHashMap 1.8
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/arraylist/" >
+      ArrayList
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/hashmap/" >
+      HashMap
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/finally/" >
+      基础 - finally
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/collections/" >
+      Java 集合类框架图
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/kafka-high-throughput/" >
+      Kafka 高吞吐量怎么实现的
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/why-develop-rocketmq/" >
+      为什么阿里要自研 RocketMQ ?
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/sentinel-vs-hystrix/" >
+      Sentinel 与 Hystrix 的对比
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/data-structure/" >
+      数据结构
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/design-pattern/" >
+      设计模式
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Java 垃圾回收器</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#判断对象是否可回收">判断对象是否可回收</a>
+      <ul>
+        <li><a href="#引用计数法">引用计数法</a></li>
+        <li><a href="#可达性分析算法">可达性分析算法</a></li>
+      </ul>
+    </li>
+    <li><a href="#垃圾回收算法">垃圾回收算法</a>
+      <ul>
+        <li><a href="#标记-清除算法">标记-清除算法</a></li>
+        <li><a href="#标记-整理标记-压缩算法">标记-整理(标记-压缩)算法</a></li>
+        <li><a href="#标记-复制算法">标记-复制算法</a></li>
+        <li><a href="#分代收集算法">分代收集算法</a></li>
+        <li><a href="#分区算法">分区算法</a></li>
+      </ul>
+    </li>
+    <li><a href="#hotspot-虚拟机垃圾收集器">HotSpot 虚拟机垃圾收集器</a>
+      <ul>
+        <li><a href="#serial">Serial</a></li>
+        <li><a href="#parnew">ParNew</a></li>
+        <li><a href="#parallel">Parallel</a></li>
+        <li><a href="#serial-old">Serial Old</a></li>
+        <li><a href="#parallel-old">Parallel Old</a></li>
+        <li><a href="#cms">CMS</a></li>
+        <li><a href="#g1">G1</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="java-垃圾回收器">Java 垃圾回收器</h1>
+<h2 id="判断对象是否可回收">判断对象是否可回收</h2>
+<p>如何判断一个对象属于<strong>垃圾</strong>对象呢？</p>
+<h3 id="引用计数法">引用计数法</h3>
+<p>对于一个对象 A，只要有任意一个对象引用了 A，则 A 的计数器加 1，当引用失效的时候，引用计数器就减 1。如果 A 的应用计数器为 0，则对象 A 就不可能再被使用。</p>
+<p><img src="/images/docs/programmer-interview/java/java-gc/circular-reference.png" alt=""></p>
+<blockquote>
+<p>缺点：无法处理<strong>循环引用</strong>的问题。</p>
+</blockquote>
+<h3 id="可达性分析算法">可达性分析算法</h3>
+<p>通过一系列的称为 <strong>GC Roots</strong> 的对象作为起始点，从这些节点开始向下搜索，搜索所走过的循环称为<strong>引用链</strong>。当一个对象到 GC Roots 没有任何引用链的时候，则证明此对象是不可达的，因此它们会被判定为<strong>可回收对象</strong>。</p>
+<p>可以作为 <strong>GC Roots</strong> 的对象：</p>
+<ul>
+<li>类静态属性中引用的对象</li>
+<li>常量引用的对象</li>
+<li>虚拟机栈中引用的对象</li>
+<li>本地方法栈中引用的对象</li>
+</ul>
+<h2 id="垃圾回收算法">垃圾回收算法</h2>
+<h3 id="标记-清除算法">标记-清除算法</h3>
+<p>从每个 GC Roots 对象出发，依次<strong>标记有引用关系的对象</strong>，最后将没有被标记的对象清除。</p>
+<p><img src="/images/docs/programmer-interview/java/java-gc/mark-sweep.png" alt=""></p>
+<blockquote>
+<p>缺点：<strong>带来大量空间碎片</strong>，导致需要分配一个较大连续空间时，<strong>容易触发 GC</strong>。</p>
+</blockquote>
+<h3 id="标记-整理标记-压缩算法">标记-整理(标记-压缩)算法</h3>
+<p>从每个 GC Roots 对象出发，<strong>标记存活的对象</strong>，然后将存活的对象<strong>整理到内存空间的一端</strong>，形成连续的已使用空间，最后将已使用空间外的部分全部清理掉，消除空间碎片问题。</p>
+<p><img src="/images/docs/programmer-interview/java/java-gc/mark-compact.png" alt=""></p>
+<h3 id="标记-复制算法">标记-复制算法</h3>
+<p>为了能够并行的标记和整理，将整个空间分为两块，每次只激活一块，垃圾回收只需把存活的对象复制到另一块未激活的空间上，将未激活空间标记为已激活，将已激活空间标记为未激活，然后清除原空间中的原对象。</p>
+<p><img src="/images/docs/programmer-interview/java/java-gc/mark-copy.png" alt=""></p>
+<h3 id="分代收集算法">分代收集算法</h3>
+<p>垃圾收集器一般根据对象存活周期的不同，将内存划分为几块，根据每块内存空间的特点，使用不同的回收算法，提供回收效率。</p>
+<p><img src="/images/docs/programmer-interview/java/java-gc/old-new-generation.png" alt=""></p>
+<h3 id="分区算法">分区算法</h3>
+<p>将整个堆空间划分为连续的不同小空间，每一个小空间独立使用，独立回收。</p>
+<p><img src="/images/docs/programmer-interview/java/java-gc/region.png" alt=""></p>
+<blockquote>
+<p>优点：可以控制一次回收多少个小区间。</p>
+</blockquote>
+<h2 id="hotspot-虚拟机垃圾收集器">HotSpot 虚拟机垃圾收集器</h2>
+<h3 id="serial">Serial</h3>
+<p>新生代 Serial 收集器采用<strong>复制</strong>算法，使用单线程进行垃圾回收，回收时 Java 应用程序中的线程都需要暂停 (Stop-The-World)，以等待回收完成。使用 <code>-XX:+UseSerialGC</code> 可以指定新生代采用 Serial 收集器，老年代采用 Serial Old 收集器。</p>
+<p><img src="/images/docs/programmer-interview/java/java-gc/serial.png" alt=""></p>
+<h3 id="parnew">ParNew</h3>
+<p>新生代 ParNew 将 Serial 收集器多线程化，在并发能力强的 CPU 上，产生的停顿时间短于串行回收器。开启 ParNew 回收器：</p>
+<ul>
+<li><code>-XX:+UseParNewGC</code>：新生代 ParNew，老年代采用 Serial Old</li>
+<li><code>-XX:+UseConcMarkSweepGC</code>：新生代 ParNew，老年代采用 CMS</li>
+</ul>
+<p><img src="/images/docs/programmer-interview/java/java-gc/parnew.png" alt=""></p>
+<p><code>-XX:ParallelGCThreads</code> 可以指定<strong>并行回收的线程数</strong>，这个线程数的默认值是：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">threadsNum <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>CORE_OF_CPU <span style="color:#f92672">&lt;</span> 8<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+	threadsNum <span style="color:#f92672">=</span> CORE_OF_CPU<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+	threadsNum <span style="color:#f92672">=</span> 3 <span style="color:#f92672">+</span> 5 <span style="color:#f92672">*</span> CORE_OF_CPU <span style="color:#f92672">/</span> 8<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="parallel">Parallel</h3>
+<p>新生代 Parallel 采用<strong>复制</strong>算法，多线程、独占式，它与 ParNew 的不同之处：</p>
+<ul>
+<li>关注系统的吞吐量</li>
+<li>支持自适应 GC 调节</li>
+</ul>
+<p>以下参数启用 Parallel 回收器：</p>
+<ul>
+<li><code>-XX:+UseParallelGC</code>：新生代 ParallelGC，老年代：Serial Old</li>
+<li><code>-XX:+UseParallelOldGC</code>：新生代 ParallelGC，老年代 ParallelOldGC</li>
+</ul>
+<h3 id="serial-old">Serial Old</h3>
+<p><strong>老年代串行</strong>收集器 Serial Old 采用<strong>标记-整理</strong>算法，也使用单线程进行垃圾回收。使用如下参数开启 Serial Old 回收器：</p>
+<ul>
+<li><code>-XX:+UseSerialGC</code>：新生代、老年代都使用 Serial 回收器 (老年代用的是 Serial Old)</li>
+<li><code>-XX:+UseParNewGC</code>：新生代采用 ParNew，老年代采用 Serial Old</li>
+<li><code>-XX:+UseParallelGC</code>：新生代采用 ParallelGC，老年代采用 Serial Old</li>
+</ul>
+<h3 id="parallel-old">Parallel Old</h3>
+<h3 id="cms">CMS</h3>
+<h3 id="g1">G1</h3>
+<h2 id="参考">参考</h2>
+<ul>
+<li>《深入理解 Java 虚拟机》</li>
+<li>《实战 Java 虚拟机》</li>
+<li>《码出高效：Java 开发手册》</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#判断对象是否可回收">判断对象是否可回收</a>
+      <ul>
+        <li><a href="#引用计数法">引用计数法</a></li>
+        <li><a href="#可达性分析算法">可达性分析算法</a></li>
+      </ul>
+    </li>
+    <li><a href="#垃圾回收算法">垃圾回收算法</a>
+      <ul>
+        <li><a href="#标记-清除算法">标记-清除算法</a></li>
+        <li><a href="#标记-整理标记-压缩算法">标记-整理(标记-压缩)算法</a></li>
+        <li><a href="#标记-复制算法">标记-复制算法</a></li>
+        <li><a href="#分代收集算法">分代收集算法</a></li>
+        <li><a href="#分区算法">分区算法</a></li>
+      </ul>
+    </li>
+    <li><a href="#hotspot-虚拟机垃圾收集器">HotSpot 虚拟机垃圾收集器</a>
+      <ul>
+        <li><a href="#serial">Serial</a></li>
+        <li><a href="#parnew">ParNew</a></li>
+        <li><a href="#parallel">Parallel</a></li>
+        <li><a href="#serial-old">Serial Old</a></li>
+        <li><a href="#parallel-old">Parallel Old</a></li>
+        <li><a href="#cms">CMS</a></li>
+        <li><a href="#g1">G1</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

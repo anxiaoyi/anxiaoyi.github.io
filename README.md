@@ -72,13 +72,13 @@
 |[多线程实现方式](https://kunzhao.org/docs/programmer-interview/java/multi-thread/)|[synchronized](https://kunzhao.org/docs/programmer-interview/java/synchronized/)|[ThreadLocal](https://kunzhao.org/docs/programmer-interview/java/threadlocal/)|[锁](https://kunzhao.org/posts/java-lock/)|[线程池](https://kunzhao.org/docs/programmer-interview/java/threadpool/)|[volatile](https://kunzhao.org/docs/programmer-interview/java/volatile/)|
 |ConcurrentHashMap 1.7|ConcurrentHashMap 1.8|
 
-|集合类|||
-|--|--|--|
-|[集合类关系图](https://kunzhao.org/docs/programmer-interview/java/collections/)|[ArrayList](https://kunzhao.org/docs/programmer-interview/java/arraylist/)|LinkedList|
+|集合类||||
+|--|--|--|--|
+|[集合类关系图](https://kunzhao.org/docs/programmer-interview/java/collections/)|[ArrayList](https://kunzhao.org/docs/programmer-interview/java/arraylist/)|LinkedList|[HashMap](https://kunzhao.org/docs/programmer-interview/java/hashmap/)|
 
-|基础|
-|--|
-|[finally](https://kunzhao.org/docs/programmer-interview/java/finally/)|
+|基础||
+|--|--|
+|[finally](https://kunzhao.org/docs/programmer-interview/java/finally/)|[Java GC](https://kunzhao.org/docs/programmer-interview/java/java-gc/)|
 
 ### 中间件
 
