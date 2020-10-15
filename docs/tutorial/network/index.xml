@@ -70,7 +70,8 @@ HTTP3 协议特点 协议栈 可靠性 虽然 UDP 不提供可靠的传输，但
 RSA 应用场景 （1）加密
 Bob 想要给 Alice 发送 &amp;ldquo;Hello Alice!&amp;rdquo; 这个信息：
  公钥加密 私钥解密  （2）数字签名
- 私钥签名 公钥验证  HTTPS 握手 CA 证书验证过程 参考  Public-key cryptography  </description>
+ 私钥签名 公钥验证  HTTPS 握手 CA 证书验证过程 抓包可以抓到吗 可以。
+参考  Public-key cryptography  </description>
     </item>
     
     <item>
@@ -95,6 +96,27 @@ CDN 可缓存的内容  静态资源：图片、CSS、JS、HTML 文件、流媒�
       <guid>https://kunzhao.org/docs/tutorial/network/dns/</guid>
       <description>DNS DNS 使用的传输层协议 主要使用 UDP 协议，端口 53, 也有一些采用 TCP 来实现。
 DNS 层次结构  根 DNS 服务器 ：返回顶级域 DNS 服务器的 IP 地址 顶级域 DNS 服务器：返回权威 DNS 服务器的 IP 地址 权威 DNS 服务器 ：返回相应主机的 IP 地址  DNS 数据库的记录类型    类型 描述     A、AAAA IP 地址   MX SMTP mail exchangers   NS name servers   CNAME domain name aliases    DNS 的解析流程 DNS 做负载均衡 DNS 除了可以通过名称映射为 IP 地址，它还可以做另外一件事，就是负载均衡。</description>
+    </item>
+    
+    <item>
+      <title>TCP</title>
+      <link>https://kunzhao.org/docs/tutorial/network/tcp/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/network/tcp/</guid>
+      <description>TCP TCP 头 三次握手 四次挥手 起始序列号 ISN ISN 为什么不从 1 开始 client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成数据错误)。
+起始序列号 ISN 如何计算 起始 ISN 是基于时钟的，每 4 毫秒加一，转一圈要 4.55 个小时。
+TCP 初始化序列号不能设置为一个固定值，因为这样容易被攻击者猜出后续序列号，从而遭到攻击。 RFC1948 中提出了一个较好的初始化序列号 ISN 随机生成算法。
+ISN = M + F (localhost, localport, remotehost, remoteport) M 是一个计时器，这个计时器每隔 4 毫秒加 1。F 是一个 Hash 算法，根据源 IP、目的 IP、源端口、目的端口生成一个随机数值。要保证 Hash 算法不能被外部轻易推算得出，用 MD5 算法是一个比较好的选择。</description>
+    </item>
+    
+    <item>
+      <title>UDP</title>
+      <link>https://kunzhao.org/docs/tutorial/network/udp/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/network/udp/</guid>
+      <description>UDP UDP 头 与 TCP 区别  无连接 不保证不丢失、不保证按序到达 基于数据报，一个一个发，一个一个收 无拥塞控制，让我发，我就发，管它洪水滔天 无状态服务  应用场景  需要资源少，网络情况较好的内网，或者对于丢包不敏感的应用 不需要一对一沟通建立连接，可以广播的应用: DHCP 处理速度快、低时延、可以容忍少数丢包 Quick UDP Internet Connections: Google 提出的，降低通信时延 流媒体协议，有的帧比较重要，有的不重要 实时游戏。游戏玩家多，服务器却不多，而维护 TCP 需要一些数据结构 IoT 物联网 4G 网络，数据流量上网的数据面对的协议 GTP-U 就是基于 UDP 的  </description>
     </item>
     
   </channel>

@@ -116,6 +116,7 @@
 |--|--|--|
 |[环形数组](https://kunzhao.org/docs/programmer-interview/algorithm/circular-array/)（**微软**）|[最大子数组之和为 K](https://kunzhao.org/docs/programmer-interview/algorithm/maximumsizesubarraysumequalsk/)（**微软**）|[下一个排列](https://kunzhao.org/docs/programmer-interview/algorithm/nextpermutation/)（**微软**）|
 |[两个有序数组合并后的中位数](https://kunzhao.org/docs/programmer-interview/algorithm/medianoftwosortedarrays/)（**微软**）|[买卖股票](https://kunzhao.org/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock/)（**微软**）|[生成螺旋矩阵](https://kunzhao.org/docs/programmer-interview/algorithm/spiralmatrix/)（**微软**）|
+|[两个有序数组第 K 大的数](https://kunzhao.org/docs/programmer-interview/algorithm/kth-of-two-sorted-array/)（**微软**）|
 
 ### 树
 
@@ -123,7 +124,7 @@
 |--|--|--|
 |[二叉搜索树中删除一个节点](https://kunzhao.org/docs/programmer-interview/algorithm/delete-node-in-bst/)（**微软**）|[二叉搜索树中新增一个节点](https://kunzhao.org/docs/programmer-interview/algorithm/insert-into-bst/)（**微软**）|[二叉树的直径](https://kunzhao.org/docs/programmer-interview/algorithm/diameter-of-binary-tree/)（**微软、头条**）|
 |[中序遍历的下一个节点](https://kunzhao.org/docs/programmer-interview/algorithm/next-node-of-inorder-traverse/)|[二叉树最大路径和](https://kunzhao.org/docs/programmer-interview/algorithm/binary-tree-maximum-path-sum/)（**微软**）|[二叉树非递归中序遍历](https://kunzhao.org/docs/programmer-interview/algorithm/binary-tree-inorder-traversal/)（**微软**）|
-|[二叉树最近公共祖先](https://kunzhao.org/docs/programmer-interview/algorithm/lowest-common-ancestor-of-a-binary-search-tree/)（**微软**）|[一颗二叉树是否是另外一颗的子树](https://kunzhao.org/docs/programmer-interview/algorithm/is-subtree-another-tree/)（**微软**）|
+|[二叉树最近公共祖先](https://kunzhao.org/docs/programmer-interview/algorithm/lowest-common-ancestor-of-a-binary-search-tree/)（**微软**）|[一颗二叉树是否是另外一颗的子树](https://kunzhao.org/docs/programmer-interview/algorithm/is-subtree-another-tree/)（**微软**）|[二叉树右视图](https://kunzhao.org/docs/programmer-interview/algorithm/binary-tree-right-side-view/)（**微软**）|
 
 ### DFS
 
@@ -135,7 +136,7 @@
 
 |栈||
 |--|--|
-|[写一个计算器(逆波兰表达式)](https://kunzhao.org/docs/programmer-interview/algorithm/evaluate-reverse-polish-notation/)（**微软**）|[MinStack](https://kunzhao.org/docs/programmer-interview/algorithm/minstack/)（**微软**）|
+|[写一个计算器(逆波兰表达式)](https://kunzhao.org/docs/programmer-interview/algorithm/evaluate-reverse-polish-notation/)（**微软**）|[MinStack](https://kunzhao.org/docs/programmer-interview/algorithm/minstack/)（**微软**）|中文大写转换为阿拉伯数字（**微软**）|
 
 ### 排序
 
@@ -186,7 +187,7 @@
 |网络协议||||||
 |--|--|--|--|--|--|
 |[DHCP](https://kunzhao.org/docs/tutorial/network/dhcp/)|[HTTP](https://kunzhao.org/docs/tutorial/network/http/)|[HTTP2](https://kunzhao.org/docs/tutorial/network/http2/)|[HTTP3](https://kunzhao.org/docs/tutorial/network/http3/)|[HTTPS](https://kunzhao.org/docs/tutorial/network/https/)|[CDN](https://kunzhao.org/docs/tutorial/network/cdn/)|
-|[DNS](https://kunzhao.org/docs/tutorial/network/dns/)|
+|[DNS](https://kunzhao.org/docs/tutorial/network/dns/)|[TCP](https://kunzhao.org/docs/tutorial/network/tcp/)|[UDP](https://kunzhao.org/docs/tutorial/network/udp/)|
 
 ## Git 教程
 

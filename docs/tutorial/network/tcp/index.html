@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="TCP"><meta property="og:title" content="TCP" />
+<meta property="og:description" content="TCP TCP 头 三次握手 四次挥手 起始序列号 ISN ISN 为什么不从 1 开始 client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成数据错误)。
+起始序列号 ISN 如何计算 起始 ISN 是基于时钟的，每 4 毫秒加一，转一圈要 4.55 个小时。
+TCP 初始化序列号不能设置为一个固定值，因为这样容易被攻击者猜出后续序列号，从而遭到攻击。 RFC1948 中提出了一个较好的初始化序列号 ISN 随机生成算法。
+ISN = M &#43; F (localhost, localport, remotehost, remoteport) M 是一个计时器，这个计时器每隔 4 毫秒加 1。F 是一个 Hash 算法，根据源 IP、目的 IP、源端口、目的端口生成一个随机数值。要保证 Hash 算法不能被外部轻易推算得出，用 MD5 算法是一个比较好的选择。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/network/tcp/" />
+
+<title>TCP | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.c721045fb85fe5d1eca0f7e9efe7fbf063979760f49fde43f77f11aa65151f54.js" integrity="sha256-xyEEX7hf5dHsoPfp7&#43;f78GOXl2D0n95D938RqmUVH1Q="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/dhcp/" >
+      DHCP
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/http/" >
+      HTTP
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/http2/" >
+      HTTP2
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/http3/" >
+      HTTP3
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/https/" >
+      HTTPS
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/cdn/" >
+      CDN
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/dns/" >
+      DNS
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/tcp/"  class="active">
+      TCP
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/udp/" >
+      UDP
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>TCP</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#tcp-头">TCP 头</a></li>
+    <li><a href="#三次握手">三次握手</a></li>
+    <li><a href="#四次挥手">四次挥手</a></li>
+    <li><a href="#起始序列号-isn">起始序列号 ISN</a>
+      <ul>
+        <li><a href="#isn-为什么不从-1-开始">ISN 为什么不从 1 开始</a></li>
+        <li><a href="#起始序列号-isn-如何计算">起始序列号 ISN 如何计算</a></li>
+      </ul>
+    </li>
+    <li><a href="#异常情况如何响应">异常情况如何响应</a>
+      <ul>
+        <li><a href="#server-端口没有打开">Server 端口没有打开</a></li>
+        <li><a href="#server-所在的机器都没有开机">Server 所在的机器都没有开机</a></li>
+        <li><a href="#server-宕机">Server 宕机</a></li>
+        <li><a href="#server-宕机又重启">Server 宕机又重启</a></li>
+      </ul>
+    </li>
+    <li><a href="#tcp-close-vs-shutdown">TCP close() vs shutdown()</a></li>
+    <li><a href="#大量-time_wait-状态">大量 TIME_WAIT 状态</a></li>
+    <li><a href="#什么时候发送-rst-响应">什么时候发送 RST 响应</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="tcp">TCP</h1>
+<h2 id="tcp-头">TCP 头</h2>
+<p><img src="/images/docs/tutorial/network/tcp/tcp-header.png" alt=""></p>
+<h2 id="三次握手">三次握手</h2>
+<p><img src="/images/docs/tutorial/network/tcp/three-way-hand-shake.png" alt=""></p>
+<h2 id="四次挥手">四次挥手</h2>
+<p><img src="/images/docs/tutorial/network/tcp/four-way-disconnect.png" alt=""></p>
+<h2 id="起始序列号-isn">起始序列号 ISN</h2>
+<h3 id="isn-为什么不从-1-开始">ISN 为什么不从 1 开始</h3>
+<p>client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成<strong>数据错误</strong>)。</p>
+<h3 id="起始序列号-isn-如何计算">起始序列号 ISN 如何计算</h3>
+<p>起始 <code>ISN</code> 是基于时钟的，每 4 毫秒加一，转一圈要 4.55 个小时。</p>
+<p>TCP 初始化序列号不能设置为一个固定值，因为这样<strong>容易被攻击者猜出后续序列号，从而遭到攻击</strong>。 RFC1948 中提出了一个较好的初始化序列号 ISN 随机生成算法。</p>
+<pre><code>ISN = M + F (localhost, localport, remotehost, remoteport)
+</code></pre><p><code>M</code> 是一个计时器，这个计时器每隔 4 毫秒加 1。<code>F</code> 是一个 Hash 算法，根据源 IP、目的 IP、源端口、目的端口生成一个随机数值。要保证 Hash 算法不能被外部轻易推算得出，用 MD5 算法是一个比较好的选择。</p>
+<h2 id="异常情况如何响应">异常情况如何响应</h2>
+<p>出现如下异常情况，TCP 会如何响应。</p>
+<h3 id="server-端口没有打开">Server 端口没有打开</h3>
+<p>内核给 Client 响应一个 <code>RST</code></p>
+<h3 id="server-所在的机器都没有开机">Server 所在的机器都没有开机</h3>
+<p>Client 等待 6s 重发一个 <code>SYN</code>，无响应则等待 24s 再发一个，若总共等待 75s 之后，则触发 <code>ETIMEDOUT</code>。通过 <code>setConnectTimeout()</code> 来改善这个等待时间，使其可以在合理的毫秒以内返回。</p>
+<h3 id="server-宕机">Server 宕机</h3>
+<p>客户端<strong>持续重传</strong>，并且 <code>read</code> 调用会<strong>阻塞</strong>，一段时间后 <code>TIMEOUT</code>，使用 <code>setReadTimeout()</code> 来改善这个阻塞时间。</p>
+<h3 id="server-宕机又重启">Server 宕机又重启</h3>
+<p>收到了一个这个连接上不该有的，所以响应一个 <code>RST</code>。</p>
+<h2 id="tcp-close-vs-shutdown">TCP close() vs shutdown()</h2>
+<ul>
+<li>调用 <code>close()</code> 函数会把<strong>读和写两个方向的，同时关闭</strong></li>
+<li>调用 <code>shutdown()</code> 可以只关闭一半的 TCP 连接。</li>
+</ul>
+<p><img src="/images/docs/tutorial/network/tcp/tcp_close_vs_shutdown.png" alt=""></p>
+<h2 id="大量-time_wait-状态">大量 TIME_WAIT 状态</h2>
+<p>如果存在大量的 <code>TIME_WAIT</code>，往往是因为<strong>短连接太多</strong>，不断的创建连接，然后释放连接，从而导致很多连接在这个状态，可能会导致无法发起新的连接。解决的方式往往是：</p>
+<ul>
+<li>打开 <code>tcp_tw_recycle</code> 和 <code>tcp_timestamps</code> 选项；</li>
+<li>打开 <code>tcp_tw_reuse</code> 和 <code>tcp_timestamps</code> 选项；</li>
+<li>程序中使用 <code>SO_LINGER</code>，应用强制使用 <code>rst</code> 关闭。</li>
+</ul>
+<h2 id="什么时候发送-rst-响应">什么时候发送 RST 响应</h2>
+<p>当客户端收到 Connection Reset，往往是收到了 TCP 的 RST 消息，RST 消息一般在下面的情况下发送：</p>
+<ul>
+<li>试图连接一个未被监听的服务端；</li>
+<li>对方处于 <code>TIME_WAIT</code> 状态，或者连接已经关闭处于 <code>CLOSED</code> 状态，或者重新监听 seq num 不匹配；</li>
+<li>发起连接时超时，重传超时，keepalive 超时</li>
+<li>在程序中使用 <code>SO_LINGER</code>，关闭连接时，放弃缓存中的数据，给对方发送 RST</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#tcp-头">TCP 头</a></li>
+    <li><a href="#三次握手">三次握手</a></li>
+    <li><a href="#四次挥手">四次挥手</a></li>
+    <li><a href="#起始序列号-isn">起始序列号 ISN</a>
+      <ul>
+        <li><a href="#isn-为什么不从-1-开始">ISN 为什么不从 1 开始</a></li>
+        <li><a href="#起始序列号-isn-如何计算">起始序列号 ISN 如何计算</a></li>
+      </ul>
+    </li>
+    <li><a href="#异常情况如何响应">异常情况如何响应</a>
+      <ul>
+        <li><a href="#server-端口没有打开">Server 端口没有打开</a></li>
+        <li><a href="#server-所在的机器都没有开机">Server 所在的机器都没有开机</a></li>
+        <li><a href="#server-宕机">Server 宕机</a></li>
+        <li><a href="#server-宕机又重启">Server 宕机又重启</a></li>
+      </ul>
+    </li>
+    <li><a href="#tcp-close-vs-shutdown">TCP close() vs shutdown()</a></li>
+    <li><a href="#大量-time_wait-状态">大量 TIME_WAIT 状态</a></li>
+    <li><a href="#什么时候发送-rst-响应">什么时候发送 RST 响应</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
