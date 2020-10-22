@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="HashMap"><meta property="og:title" content="HashMap" />
-<meta property="og:description" content="HashMap " />
+<meta property="og:description" content="HashMap get 方法如何实现的 public V get(Object key) { Node&lt;K,V&gt; e; return (e = getNode(hash(key), key)) == null ? null : e.value; } final Node&lt;K,V&gt; getNode(int hash, Object key) { Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; first, e; int n; K k; if ((tab = table) != null &amp;&amp; (n = tab.length) &gt; 0 &amp;&amp; (first = tab[(n - 1) &amp; hash]) != null) { if (first.hash == hash &amp;&amp; // always check first node  ((k = first." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/hashmap/" />
 
@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.0434fd5b0e4419a1bd009972e39091d43652d7cc043e7a6e58e51bc17fa43883.js" integrity="sha256-BDT9Ww5EGaG9AJly45CR1DZS18wEPnpuWOUbwX&#43;kOIM="></script>
+<script defer src="/en.search.min.5a9f980892c61edcbeb4631631fbab4e02d0feff1fa86c6a6d7d1ee9ce68c78f.js" integrity="sha256-Wp&#43;YCJLGHty&#43;tGMWMfurTgLQ/v8fqGxqbX0e6c5ox48="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -348,6 +348,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/programmer-interview/java/cyclicbarrier/" >
+      CyclicBarrier
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/programmer-interview/java/arraylist/" >
       ArrayList
   </a>
@@ -368,8 +378,48 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/programmer-interview/java/treemap/" >
+      TreeMap
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/programmer-interview/java/finally/" >
       基础 - finally
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/char/" >
+      char
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/java-exception/" >
+      Java 异常
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/classload/" >
+      类加载
   </a>
 
 </li>
@@ -390,6 +440,16 @@ var _hmt = _hmt || [];
 
   <a href="/docs/programmer-interview/java/kafka-high-throughput/" >
       Kafka 高吞吐量怎么实现的
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/design-seckilling/" >
+      秒杀系统设计
   </a>
 
 </li>
@@ -652,7 +712,11 @@ var _hmt = _hmt || [];
     <input type="checkbox" class="hidden" id="toc-control" />
     <aside class="hidden clearfix">
       
-  <nav id="TableOfContents"></nav>
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#get-方法如何实现的">get 方法如何实现的</a></li>
+  </ul>
+</nav>
 
 
     </aside>
@@ -662,6 +726,32 @@ var _hmt = _hmt || [];
 
       
 <article class="markdown"><h1 id="hashmap">HashMap</h1>
+<h2 id="get-方法如何实现的">get 方法如何实现的</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> V <span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>Object key<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    Node<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;</span> e<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#f92672">(</span>e <span style="color:#f92672">=</span> getNode<span style="color:#f92672">(</span>hash<span style="color:#f92672">(</span>key<span style="color:#f92672">),</span> key<span style="color:#f92672">))</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">:</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">value</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">final</span> Node<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">getNode</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> hash<span style="color:#f92672">,</span> Object key<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    Node<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;[]</span> tab<span style="color:#f92672">;</span> Node<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;</span> first<span style="color:#f92672">,</span> e<span style="color:#f92672">;</span> <span style="color:#66d9ef">int</span> n<span style="color:#f92672">;</span> K k<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">((</span>tab <span style="color:#f92672">=</span> table<span style="color:#f92672">)</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">(</span>n <span style="color:#f92672">=</span> tab<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> 0 <span style="color:#f92672">&amp;&amp;</span>
+        <span style="color:#f92672">(</span>first <span style="color:#f92672">=</span> tab<span style="color:#f92672">[(</span>n <span style="color:#f92672">-</span> 1<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;</span> hash<span style="color:#f92672">])</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>first<span style="color:#f92672">.</span><span style="color:#a6e22e">hash</span> <span style="color:#f92672">==</span> hash <span style="color:#f92672">&amp;&amp;</span> <span style="color:#75715e">// always check first node
+</span><span style="color:#75715e"></span>            <span style="color:#f92672">((</span>k <span style="color:#f92672">=</span> first<span style="color:#f92672">.</span><span style="color:#a6e22e">key</span><span style="color:#f92672">)</span> <span style="color:#f92672">==</span> key <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>key <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> key<span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>k<span style="color:#f92672">))))</span>
+            <span style="color:#66d9ef">return</span> first<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">((</span>e <span style="color:#f92672">=</span> first<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">)</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>first <span style="color:#66d9ef">instanceof</span> TreeNode<span style="color:#f92672">)</span>
+                <span style="color:#66d9ef">return</span> <span style="color:#f92672">((</span>TreeNode<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;)</span>first<span style="color:#f92672">).</span><span style="color:#a6e22e">getTreeNode</span><span style="color:#f92672">(</span>hash<span style="color:#f92672">,</span> key<span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">do</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>e<span style="color:#f92672">.</span><span style="color:#a6e22e">hash</span> <span style="color:#f92672">==</span> hash <span style="color:#f92672">&amp;&amp;</span>
+                    <span style="color:#f92672">((</span>k <span style="color:#f92672">=</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">key</span><span style="color:#f92672">)</span> <span style="color:#f92672">==</span> key <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>key <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> key<span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>k<span style="color:#f92672">))))</span>
+                    <span style="color:#66d9ef">return</span> e<span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span> <span style="color:#66d9ef">while</span> <span style="color:#f92672">((</span>e <span style="color:#f92672">=</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">)</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>首先使用 <code>(n - 1) &amp; key.hash</code> 定位到这个 <code>key</code> 应该落到 <code>table</code> 的哪一个<strong>桶</strong>里面，其中 <code>n</code> 是指 <code>table</code> 的长度。然后看这个桶里面的 <code>first</code> 元素是否是目标值，如果是，直接返回。否则看 <code>first</code> 是否属于 <code>TreeNode</code>，如果是 <code>TreeNode</code>，则调用 <code>getTreeNode</code> 方法；否则沿着 <code>e.next</code> 往下遍历，并依次检查条件 <code>key.hash == k.hash</code> 并且 <code>key.equals(k)</code>。</p>
 </article>
  
 
@@ -705,7 +795,11 @@ var _hmt = _hmt || [];
     
     <aside class="book-toc">
       
-  <nav id="TableOfContents"></nav>
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#get-方法如何实现的">get 方法如何实现的</a></li>
+  </ul>
+</nav>
 
  
     </aside>

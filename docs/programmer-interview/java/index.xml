@@ -99,6 +99,19 @@ volatile boolean sleep; while (!sleep) { countSleep(); } 底层原理 有 volati
     </item>
     
     <item>
+      <title>CyclicBarrier</title>
+      <link>https://kunzhao.org/docs/programmer-interview/java/cyclicbarrier/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/programmer-interview/java/cyclicbarrier/</guid>
+      <description>CyclicBarrier 作用 让一组线程等待某个事件(barrier)的发生。
+实现原理 在 dowait 方法中有如下计数器：
+int index = --count; if (index == 0) { // tripped  boolean ranAction = false; try { final Runnable command = barrierCommand; if (command != null) command.run(); ranAction = true; nextGeneration(); return 0; } finally { if (!ranAction) breakBarrier(); } } 其中 runGeneration 或 breakBarrier 中有如下代码片段：
+trip.signalAll(); trip 是信号量：
+/** Condition to wait on until tripped */ private final Condition trip = lock.</description>
+    </item>
+    
+    <item>
       <title>ArrayList</title>
       <link>https://kunzhao.org/docs/programmer-interview/java/arraylist/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -114,7 +127,17 @@ volatile boolean sleep; while (!sleep) { countSleep(); } 底层原理 有 volati
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/programmer-interview/java/hashmap/</guid>
-      <description>HashMap </description>
+      <description>HashMap get 方法如何实现的 public V get(Object key) { Node&amp;lt;K,V&amp;gt; e; return (e = getNode(hash(key), key)) == null ? null : e.value; } final Node&amp;lt;K,V&amp;gt; getNode(int hash, Object key) { Node&amp;lt;K,V&amp;gt;[] tab; Node&amp;lt;K,V&amp;gt; first, e; int n; K k; if ((tab = table) != null &amp;amp;&amp;amp; (n = tab.length) &amp;gt; 0 &amp;amp;&amp;amp; (first = tab[(n - 1) &amp;amp; hash]) != null) { if (first.hash == hash &amp;amp;&amp;amp; // always check first node  ((k = first.</description>
+    </item>
+    
+    <item>
+      <title>TreeMap</title>
+      <link>https://kunzhao.org/docs/programmer-interview/java/treemap/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/programmer-interview/java/treemap/</guid>
+      <description>TreeMap 如何保证有序 只需要看 put 方法的部分细节即可：
+Comparator&amp;lt;? super K&amp;gt; cpr = comparator; if (cpr != null) { do { parent = t; cmp = cpr.compare(key, t.key); if (cmp &amp;lt; 0) t = t.left; else if (cmp &amp;gt; 0) t = t.right; else return t.setValue(value); } while (t != null); } </description>
     </item>
     
     <item>
@@ -131,6 +154,33 @@ finally trumps return. 0 （3）这个方法返回的值是 10 还是 12？
 public static int getMonthsInYear() { try { return 10; } finally { return 12; } } 答案：12
 （4）执行顺序
 try{ int divideByZeroException = 5 / 0; } catch (Exception e){ System.</description>
+    </item>
+    
+    <item>
+      <title>char</title>
+      <link>https://kunzhao.org/docs/programmer-interview/java/char/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/programmer-interview/java/char/</guid>
+      <description>char char 能存储中文字符吗 在 Java 中，char 类型占 2 个字节，而且 Java 默认采用 Unicode 编码，一个 Unicode 码是 16 位，所以一个 Unicode 码占两个字节，Java 中无论汉字还是英文字母都是用 Unicode 编码来表示的。所以，在Java中，char 类型变量可以存储一个中文汉字。</description>
+    </item>
+    
+    <item>
+      <title>Java 异常</title>
+      <link>https://kunzhao.org/docs/programmer-interview/java/java-exception/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/programmer-interview/java/java-exception/</guid>
+      <description>Java 异常 异常架构图 </description>
+    </item>
+    
+    <item>
+      <title>类加载</title>
+      <link>https://kunzhao.org/docs/programmer-interview/java/classload/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/programmer-interview/java/classload/</guid>
+      <description>类加载 </description>
     </item>
     
     <item>
@@ -156,6 +206,18 @@ sendfile 读取 Customer 从 Broker 读取数据，采用 sendfile，将磁盘�
  batch.size：默认积压到 16K 就会批量发送 linger.ms：设置一定延迟来收集更多消息。默认 0ms ，即有消息就立马发送。  上述两个条件有任一条件满足，就会触发批量发送。
 数据压缩 Kafka 支持三种压缩算法：
  gzip snappy lz4  /*compressType有四种取值:none lz4 gzip snappy*/ props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, compressType); 参考  Kafka为什么吞吐量大、速度快？  </description>
+    </item>
+    
+    <item>
+      <title>秒杀系统设计</title>
+      <link>https://kunzhao.org/docs/programmer-interview/java/design-seckilling/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/programmer-interview/java/design-seckilling/</guid>
+      <description>秒杀系统设计 秒杀其实主要解决两个问题，一个是并发读，一个是并发写。并发读的核心优化理念是尽量减少用户到服务端来“读”数据，或者让他们读更少的数据；并发写的处理原则也一样，它要求我们在数据库层面独立出来一个库，做特殊的处理。另外，我们还要针对秒杀系统做一些保护，针对意料之外的情况设计兜底方案，以防止最坏的情况发生。
+秒杀系统架构原则  数据尽量少: 可以简化秒杀页面的大小，去掉不必要的页面装修效果，等等。 请求数尽量少: 减少请求数最常用的一个实践就是合并 CSS 和 JavaScript 文件，把多个 JavaScript 文件合并成一个文件，在 URL 中用逗号隔开。 路径要尽量短: 缩短访问路径有一种办法，就是多个相互强依赖的应用合并部署在一起，把远程过程调用（RPC）变成 JVM 内部之间的方法调用。 依赖要尽量少: 0 级系统要尽量减少对 1 级系统的强依赖，防止重要的系统被不重要的系统拖垮。例如支付系统是 0 级系统，而优惠券是 1 级系统的话，在极端情况下可以把优惠券给降级，防止支付系统被优惠券这个 1 级系统给拖垮。 不要有单点: 应用无状态化。  动静分离 热点数据 流量削峰 排队 答题 系统优化 配置线程数 很多多线程的场景都有一个默认配置，即 “线程数 = 2 * CPU 核数 + 1” 。除去这个配置，还有一个根据最佳实践得出来的公式：线程数 = [(线程等待时间 + 线程 CPU 时间) / 线程 CPU 时间] × CPU 数量。
+ 最好的办法是通过性能测试来发现最佳的线程数。
+ 发现 CPU 瓶颈 JProfiler 和 Yourkit 这两个工具。</description>
     </item>
     
     <item>

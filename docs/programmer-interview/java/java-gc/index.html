@@ -28,7 +28,7 @@
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.0434fd5b0e4419a1bd009972e39091d43652d7cc043e7a6e58e51bc17fa43883.js" integrity="sha256-BDT9Ww5EGaG9AJly45CR1DZS18wEPnpuWOUbwX&#43;kOIM="></script>
+<script defer src="/en.search.min.5a9f980892c61edcbeb4631631fbab4e02d0feff1fa86c6a6d7d1ee9ce68c78f.js" integrity="sha256-Wp&#43;YCJLGHty&#43;tGMWMfurTgLQ/v8fqGxqbX0e6c5ox48="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -360,6 +360,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/programmer-interview/java/cyclicbarrier/" >
+      CyclicBarrier
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/programmer-interview/java/arraylist/" >
       ArrayList
   </a>
@@ -380,8 +390,48 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/programmer-interview/java/treemap/" >
+      TreeMap
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/programmer-interview/java/finally/" >
       基础 - finally
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/char/" >
+      char
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/java-exception/" >
+      Java 异常
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/classload/" >
+      类加载
   </a>
 
 </li>
@@ -402,6 +452,16 @@ var _hmt = _hmt || [];
 
   <a href="/docs/programmer-interview/java/kafka-high-throughput/" >
       Kafka 高吞吐量怎么实现的
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/design-seckilling/" >
+      秒杀系统设计
   </a>
 
 </li>
@@ -690,6 +750,18 @@ var _hmt = _hmt || [];
         <li><a href="#parallel-old">Parallel Old</a></li>
         <li><a href="#cms">CMS</a></li>
         <li><a href="#g1">G1</a></li>
+        <li><a href="#zgc">ZGC</a></li>
+      </ul>
+    </li>
+    <li><a href="#fullgc">FullGC</a>
+      <ul>
+        <li><a href="#systemgc">System.gc()</a></li>
+      </ul>
+    </li>
+    <li><a href="#对象何时进入老年代">对象何时进入老年代</a>
+      <ul>
+        <li><a href="#老年对象达到年龄">老年对象达到年龄</a></li>
+        <li><a href="#大对象">大对象</a></li>
       </ul>
     </li>
     <li><a href="#参考">参考</a></li>
@@ -773,6 +845,15 @@ var _hmt = _hmt || [];
 <li><code>-XX:+UseParallelGC</code>：新生代 ParallelGC，老年代：Serial Old</li>
 <li><code>-XX:+UseParallelOldGC</code>：新生代 ParallelGC，老年代 ParallelOldGC</li>
 </ul>
+<p>用于控制吞吐量的两个重要参数：</p>
+<ul>
+<li><code>-XX:MaxGCPauseMills</code>: 设置最大垃圾收集停顿时间。</li>
+<li><code>-XX:GCTimeRatio</code>: 设置吞吐量大小，范围 0 ~ 100。假设这个值是 <code>n</code>，那么默认不超过 <code>1 / (1 + n)</code> 的时间百分比用于垃圾收集，<code>n</code> 默认为 <code>99</code>。</li>
+</ul>
+<p>用于控制自适应调节 GC 的参数：</p>
+<ul>
+<li><code>-XX:+UseAdaptiveSizePolicy</code>: 新生代、eden 和 survivor 的比例会动态调整。</li>
+</ul>
 <h3 id="serial-old">Serial Old</h3>
 <p><strong>老年代串行</strong>收集器 Serial Old 采用<strong>标记-整理</strong>算法，也使用单线程进行垃圾回收。使用如下参数开启 Serial Old 回收器：</p>
 <ul>
@@ -781,8 +862,36 @@ var _hmt = _hmt || [];
 <li><code>-XX:+UseParallelGC</code>：新生代采用 ParallelGC，老年代采用 Serial Old</li>
 </ul>
 <h3 id="parallel-old">Parallel Old</h3>
+<p>老年代 Parallel Old 回收器采用<strong>标记-整理</strong>算法，多线程进行垃圾回收。使用 <code>-XX:+UseParallelOldGC</code> 可以在新生代采用 Parallel，老年代采用 Parallel Old 收集器。参数 <code>-XX:ParallelGCThreads</code> 可以用于设置垃圾回收时的线程数量。</p>
+<p><img src="/images/docs/programmer-interview/java/java-gc/parallelold.png" alt=""></p>
 <h3 id="cms">CMS</h3>
+<p>CMS 是一个基于<strong>标记-清除</strong>的算法，启用 CMS 的参数是 <code>-XX:+UseConcMarkSweepGC</code>，默认启动的工作线程数是 <code>(ParallelGCThreads + 3) / 4</code>。 CMS 不会等到堆内存饱和的时候才进行垃圾回收，而是当<strong>老年代的</strong>堆内存使用率达到某个阈值 <code>-XX:CMSInitiatingOccupancyFraction</code> 的时候便开始进行回收。CMS 基于标记-清除算法，因此执行垃圾回收完毕之后，会出现大量内存碎片，造成如果需要将内存分配给较大的对象，则必须被迫进行一次垃圾回收，以换取连续的内存空间。未解决这个问题，可以使用 <code>-XX:+UseCMSCompactAtFullCollection</code> 开关，使得 CMS 垃圾收集完毕之后，进行一次内存碎片整理；<code>-XX:CMSFullGCsBeforeCompaction</code> 参数可以用于设定进行多少次 CMS 回收后，执行一次内存压缩。</p>
+<p><img src="/images/docs/programmer-interview/java/java-gc/cms.png" alt=""></p>
+<blockquote>
+<p>CMS 的代价：应用程序消耗更多的 CPU。</p>
+</blockquote>
 <h3 id="g1">G1</h3>
+<p>使用 <code>-XX:+UseG1GC</code> 可以打开 G1 收集器开关。参数 <code>-XX:MaxGCPauseMills</code> 可以调整最大停顿时间，另外一个参数 <code>-XX:ParallelGCThreads</code> 可以设置并行回收时，GC 的工作线程数量。</p>
+<blockquote>
+<p>G1 引入的目的是为了<strong>缩短处理超大堆的停顿时间</strong>。</p>
+</blockquote>
+<h3 id="zgc">ZGC</h3>
+<h2 id="fullgc">FullGC</h2>
+<p>什么情况下会触发 FullGC ?</p>
+<h3 id="systemgc">System.gc()</h3>
+<p>默认情况下(即未开启 <code>-XX:+DisableExplictGC</code> 参数的情况下)，调用 <code>System.gc()</code> 会显示触发 FullGC，同时对新生代和老年代进行回收。</p>
+<h2 id="对象何时进入老年代">对象何时进入老年代</h2>
+<h3 id="老年对象达到年龄">老年对象达到年龄</h3>
+<p>新生代的对象，每经历一次 GC，年龄加 1，当年龄的最大值<strong>最多</strong>达到 <code>MaxTenuringThreshold</code> (默认值 15) 的情况下，就可以晋升到老年代。</p>
+<blockquote>
+<p>对象的实际晋升年龄是根据 survivor 区的使用情况动态计算的。</p>
+</blockquote>
+<h3 id="大对象">大对象</h3>
+<p>新生代空间无法容纳大对象，则会直接晋升到老年代。</p>
+<p><img src="/images/docs/programmer-interview/java/java-gc/big-object.png" alt=""></p>
+<blockquote>
+<p>参数 <code>PretenureSizeThreshold</code> 可以设置对象直接晋升到老年代的阈值，单位是字节，不过只对 <code>Serial</code> 和 <code>ParNew</code> 收集器有效，默认值为 0，即不指定最大晋升大小。</p>
+</blockquote>
 <h2 id="参考">参考</h2>
 <ul>
 <li>《深入理解 Java 虚拟机》</li>
@@ -858,6 +967,18 @@ var _hmt = _hmt || [];
         <li><a href="#parallel-old">Parallel Old</a></li>
         <li><a href="#cms">CMS</a></li>
         <li><a href="#g1">G1</a></li>
+        <li><a href="#zgc">ZGC</a></li>
+      </ul>
+    </li>
+    <li><a href="#fullgc">FullGC</a>
+      <ul>
+        <li><a href="#systemgc">System.gc()</a></li>
+      </ul>
+    </li>
+    <li><a href="#对象何时进入老年代">对象何时进入老年代</a>
+      <ul>
+        <li><a href="#老年对象达到年龄">老年对象达到年龄</a></li>
+        <li><a href="#大对象">大对象</a></li>
       </ul>
     </li>
     <li><a href="#参考">参考</a></li>

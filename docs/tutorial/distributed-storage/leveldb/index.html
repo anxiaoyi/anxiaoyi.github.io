@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="leveldb"><meta property="og:title" content="leveldb" />
+<meta property="og:description" content="leveldb 编译 mkdir -p build &amp;&amp; cd build cmake -DCMAKE_BUILD_TYPE=Release .. &amp;&amp; cmake --build . 如果 Ubuntu 提示 No CMAKE_CXX_COMPILER could be found :
+sudo apt-get update &amp;&amp; sudo apt-get install build-essential 打开数据库 Options // Options to control the behavior of a database (passed to DB::Open) struct LEVELDB_EXPORT Options { // Create an Options object with default values for all fields.  Options(); // -------------------  // Parameters that affect behavior  // Comparator 用来决定 key 在 table 中的顺序." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed-storage/leveldb/" />
+
+<title>leveldb | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.5a9f980892c61edcbeb4631631fbab4e02d0feff1fa86c6a6d7d1ee9ce68c78f.js" integrity="sha256-Wp&#43;YCJLGHty&#43;tGMWMfurTgLQ/v8fqGxqbX0e6c5ox48="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 3.0 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed-storage/c_cpp/" >
+      C &amp; C&#43;&#43;
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed-storage/leveldb/"  class="active">
+      leveldb
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>leveldb</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#编译">编译</a></li>
+    <li><a href="#打开数据库">打开数据库</a>
+      <ul>
+        <li><a href="#options">Options</a></li>
+        <li><a href="#versionedit">VersionEdit</a></li>
+      </ul>
+    </li>
+    <li><a href="#put">Put</a>
+      <ul>
+        <li><a href="#writebatch">WriteBatch</a></li>
+        <li><a href="#writer">Writer</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="leveldb">leveldb</h1>
+<h2 id="编译">编译</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p build <span style="color:#f92672">&amp;&amp;</span> cd build
+cmake -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Release .. <span style="color:#f92672">&amp;&amp;</span> cmake --build .
+</code></pre></div><p>如果 <code>Ubuntu</code> 提示 <code>No CMAKE_CXX_COMPILER could be found</code> :</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo apt-get update <span style="color:#f92672">&amp;&amp;</span> sudo apt-get install build-essential
+</code></pre></div><h2 id="打开数据库">打开数据库</h2>
+<h3 id="options">Options</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c++" data-lang="c++"><span style="color:#75715e">// Options to control the behavior of a database (passed to DB::Open)
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">LEVELDB_EXPORT</span> Options {
+  <span style="color:#75715e">// Create an Options object with default values for all fields.
+</span><span style="color:#75715e"></span>  Options();
+
+  <span style="color:#75715e">// -------------------
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Parameters that affect behavior
+</span><span style="color:#75715e"></span>
+  <span style="color:#75715e">// Comparator 用来决定 key 在 table 中的顺序.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Default: a comparator that uses lexicographic byte-wise ordering
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">//
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// REQUIRES: The client must ensure that the comparator supplied
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// here has the same name and orders keys *exactly* the same as the
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// comparator provided to previous open calls on the same DB.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">const</span> Comparator<span style="color:#f92672">*</span> comparator;
+
+  <span style="color:#75715e">// If true, the database will be created if it is missing.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">bool</span> create_if_missing <span style="color:#f92672">=</span> false;
+
+  <span style="color:#75715e">// If true, an error is raised if the database already exists.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">bool</span> error_if_exists <span style="color:#f92672">=</span> false;
+
+  <span style="color:#75715e">// If true, the implementation will do aggressive checking of the
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// data it is processing and will stop early if it detects any
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// errors.  This may have unforeseen ramifications: for example, a
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// corruption of one DB entry may cause a large number of entries to
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// become unreadable or for the entire DB to become unopenable.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">bool</span> paranoid_checks <span style="color:#f92672">=</span> false;
+
+  <span style="color:#75715e">// Use the specified object to interact with the environment,
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// e.g. to read/write files, schedule background work, etc.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Default: Env::Default()
+</span><span style="color:#75715e"></span>  Env<span style="color:#f92672">*</span> env;
+
+  <span style="color:#75715e">// Any internal progress/error information generated by the db will
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// be written to info_log if it is non-null, or to a file stored
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// in the same directory as the DB contents if info_log is null.
+</span><span style="color:#75715e"></span>  Logger<span style="color:#f92672">*</span> info_log <span style="color:#f92672">=</span> <span style="color:#66d9ef">nullptr</span>;
+
+  <span style="color:#75715e">// -------------------
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Parameters that affect performance
+</span><span style="color:#75715e"></span>
+  <span style="color:#75715e">// 存储在内存中的数据 (backed by an unsorted log
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// on disk) before converting to a sorted on-disk file.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">//
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 数值较大有助于提升性能 especially during bulk loads.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Up to two write buffers may be held in memory at the same time,
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// so you may wish to adjust this parameter to control memory usage.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// 不过，数值较大也可能造成在下次打开 leveldb 数据库的时候加载时间过长
+</span><span style="color:#75715e"></span>  size_t write_buffer_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1024</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1024</span>;
+
+  <span style="color:#75715e">// DB 最多可以打开多少文件.  You may need to
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// increase this if your database has a large working set (budget
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// one open file per 2MB of working set).
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> max_open_files <span style="color:#f92672">=</span> <span style="color:#ae81ff">1000</span>;
+
+  <span style="color:#75715e">// Control over blocks (user data is stored in a set of blocks, and
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// a block is the unit of reading from disk).
+</span><span style="color:#75715e"></span>
+  <span style="color:#75715e">// If non-null, use the specified cache for blocks.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// If null, leveldb will automatically create and use an 8MB internal cache.
+</span><span style="color:#75715e"></span>  Cache<span style="color:#f92672">*</span> block_cache <span style="color:#f92672">=</span> <span style="color:#66d9ef">nullptr</span>;
+
+  <span style="color:#75715e">// Approximate size of user data packed per block.  Note that the
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// block size specified here corresponds to uncompressed data.  The
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// actual size of the unit read from disk may be smaller if
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// compression is enabled.  This parameter can be changed dynamically.
+</span><span style="color:#75715e"></span>  size_t block_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1024</span>;
+
+  <span style="color:#75715e">// Number of keys between restart points for delta encoding of keys.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// This parameter can be changed dynamically.  Most clients should
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// leave this parameter alone.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">int</span> block_restart_interval <span style="color:#f92672">=</span> <span style="color:#ae81ff">16</span>;
+
+  <span style="color:#75715e">// Leveldb will write up to this amount of bytes to a file before
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// switching to a new one.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Most clients should leave this parameter alone.  However if your
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// filesystem is more efficient with larger files, you could
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// consider increasing the value.  The downside will be longer
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// compactions and hence longer latency/performance hiccups.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Another reason to increase this parameter might be when you are
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// initially populating a large database.
+</span><span style="color:#75715e"></span>  size_t max_file_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1024</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1024</span>;
+
+  <span style="color:#75715e">// Compress blocks using the specified compression algorithm.  This
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// parameter can be changed dynamically.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">//
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Default: kSnappyCompression, which gives lightweight but fast
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// compression.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">//
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Typical speeds of kSnappyCompression on an Intel(R) Core(TM)2 2.4GHz:
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">//    ~200-500MB/s compression
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">//    ~400-800MB/s decompression
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Note that these speeds are significantly faster than most
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// persistent storage speeds, and therefore it is typically never
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// worth switching to kNoCompression.  Even if the input data is
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// incompressible, the kSnappyCompression implementation will
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// efficiently detect that and will switch to uncompressed mode.
+</span><span style="color:#75715e"></span>  CompressionType compression <span style="color:#f92672">=</span> kSnappyCompression;
+
+  <span style="color:#75715e">// EXPERIMENTAL: If true, append to existing MANIFEST and log files
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// when a database is opened.  This can significantly speed up open.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">//
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Default: currently false, but may become true later.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">bool</span> reuse_logs <span style="color:#f92672">=</span> false;
+
+  <span style="color:#75715e">// If non-null, use the specified filter policy to reduce disk reads.
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Many applications will benefit from passing the result of
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// NewBloomFilterPolicy() here.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">const</span> FilterPolicy<span style="color:#f92672">*</span> filter_policy <span style="color:#f92672">=</span> <span style="color:#66d9ef">nullptr</span>;
+};
+</code></pre></div><h3 id="versionedit">VersionEdit</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c++" data-lang="c++"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionEdit</span> {
+
+	<span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
+	 <span style="color:#66d9ef">friend</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">VersionSet</span>;
+
+	 <span style="color:#66d9ef">typedef</span> std<span style="color:#f92672">::</span>set<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">uint64_t</span><span style="color:#f92672">&gt;&gt;</span> DeletedFileSet;
+
+	 std<span style="color:#f92672">::</span>string comparator_;
+	 <span style="color:#66d9ef">uint64_t</span> log_number_;
+	 <span style="color:#66d9ef">uint64_t</span> prev_log_number_;
+	 <span style="color:#66d9ef">uint64_t</span> next_file_number_;
+	 SequenceNumber last_sequence_;
+	 <span style="color:#66d9ef">bool</span> has_comparator_;
+	 <span style="color:#66d9ef">bool</span> has_log_number_;
+	 <span style="color:#66d9ef">bool</span> has_prev_log_number_;
+	 <span style="color:#66d9ef">bool</span> has_next_file_number_;
+	 <span style="color:#66d9ef">bool</span> has_last_sequence_;
+
+	 std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, InternalKey<span style="color:#f92672">&gt;&gt;</span> compact_pointers_;
+	 DeletedFileSet deleted_files_;
+	 std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>std<span style="color:#f92672">::</span>pair<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span>, FileMetaData<span style="color:#f92672">&gt;&gt;</span> new_files_;
+
+}
+</code></pre></div><h2 id="put">Put</h2>
+<h3 id="writebatch">WriteBatch</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c++" data-lang="c++">std<span style="color:#f92672">::</span>string rep_;
+</code></pre></div><p><code>WriteBatch::rep_</code> 存储的格式如下：</p>
+<pre><code>|sequence|count|data|
+</code></pre><h3 id="writer">Writer</h3>
+<p>写入数据的时候，对记录的类型和数据计算 CRC 编码，这个编码作为 <code>buf</code> 数组的前 4 位，<code>buf</code> 数组的后 3 位依次填充上:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++">buf[<span style="color:#ae81ff">4</span>] <span style="color:#f92672">=</span> <span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">char</span><span style="color:#f92672">&gt;</span>(length <span style="color:#f92672">&amp;</span> <span style="color:#ae81ff">0xff</span>);
+buf[<span style="color:#ae81ff">5</span>] <span style="color:#f92672">=</span> <span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">char</span><span style="color:#f92672">&gt;</span>(length <span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">8</span>);
+buf[<span style="color:#ae81ff">6</span>] <span style="color:#f92672">=</span> <span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">char</span><span style="color:#f92672">&gt;</span>(t);
+</code></pre></div><p><code>buf</code> 数组的内容就是这条记录的<strong>头</strong>的内容，<code>ptr</code> 指向的是这条记录的实际数据:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// log_writer.cc
+</span><span style="color:#75715e">// Write the header and the payload
+</span><span style="color:#75715e"></span>Status s <span style="color:#f92672">=</span> dest_<span style="color:#f92672">-&gt;</span>Append(Slice(buf, kHeaderSize));
+<span style="color:#66d9ef">if</span> (s.ok()) {
+  s <span style="color:#f92672">=</span> dest_<span style="color:#f92672">-&gt;</span>Append(Slice(ptr, length));
+  <span style="color:#66d9ef">if</span> (s.ok()) {
+    s <span style="color:#f92672">=</span> dest_<span style="color:#f92672">-&gt;</span>Flush();
+  }
+}
+</code></pre></div><p><strong>头</strong>的长度为 7 位:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// log_format.h
+</span><span style="color:#75715e">// Header is checksum (4 bytes), length (2 bytes), type (1 byte).
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span> kHeaderSize <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>;
+</code></pre></div><p><code>Append</code> 内部调用了 <code>std:memcpy</code> 函数。</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#编译">编译</a></li>
+    <li><a href="#打开数据库">打开数据库</a>
+      <ul>
+        <li><a href="#options">Options</a></li>
+        <li><a href="#versionedit">VersionEdit</a></li>
+      </ul>
+    </li>
+    <li><a href="#put">Put</a>
+      <ul>
+        <li><a href="#writebatch">WriteBatch</a></li>
+        <li><a href="#writer">Writer</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="秒杀系统设计"><meta property="og:title" content="秒杀系统设计" />
+<meta property="og:description" content="秒杀系统设计 秒杀其实主要解决两个问题，一个是并发读，一个是并发写。并发读的核心优化理念是尽量减少用户到服务端来“读”数据，或者让他们读更少的数据；并发写的处理原则也一样，它要求我们在数据库层面独立出来一个库，做特殊的处理。另外，我们还要针对秒杀系统做一些保护，针对意料之外的情况设计兜底方案，以防止最坏的情况发生。
+秒杀系统架构原则  数据尽量少: 可以简化秒杀页面的大小，去掉不必要的页面装修效果，等等。 请求数尽量少: 减少请求数最常用的一个实践就是合并 CSS 和 JavaScript 文件，把多个 JavaScript 文件合并成一个文件，在 URL 中用逗号隔开。 路径要尽量短: 缩短访问路径有一种办法，就是多个相互强依赖的应用合并部署在一起，把远程过程调用（RPC）变成 JVM 内部之间的方法调用。 依赖要尽量少: 0 级系统要尽量减少对 1 级系统的强依赖，防止重要的系统被不重要的系统拖垮。例如支付系统是 0 级系统，而优惠券是 1 级系统的话，在极端情况下可以把优惠券给降级，防止支付系统被优惠券这个 1 级系统给拖垮。 不要有单点: 应用无状态化。  动静分离 热点数据 流量削峰 排队 答题 系统优化 配置线程数 很多多线程的场景都有一个默认配置，即 “线程数 = 2 * CPU 核数 &#43; 1” 。除去这个配置，还有一个根据最佳实践得出来的公式：线程数 = [(线程等待时间 &#43; 线程 CPU 时间) / 线程 CPU 时间] × CPU 数量。
+ 最好的办法是通过性能测试来发现最佳的线程数。
+ 发现 CPU 瓶颈 JProfiler 和 Yourkit 这两个工具。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/design-seckilling/" />
+
+<title>秒杀系统设计 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.5a9f980892c61edcbeb4631631fbab4e02d0feff1fa86c6a6d7d1ee9ce68c78f.js" integrity="sha256-Wp&#43;YCJLGHty&#43;tGMWMfurTgLQ/v8fqGxqbX0e6c5ox48="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/java/" >
+      Java
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/java-gc/" >
+      Java 垃圾回收器
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/multi-thread/" >
+      并发 - 多线程的实现方式
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/synchronized/" >
+      并发 - synchronized
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/threadlocal/" >
+      并发 - ThreadLocal
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/threadpool/" >
+      并发 - 线程池
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/volatile/" >
+      并发 - volatile
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/concurrenthashmap-18/" >
+      ConcurrentHashMap 1.8
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/cyclicbarrier/" >
+      CyclicBarrier
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/arraylist/" >
+      ArrayList
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/hashmap/" >
+      HashMap
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/treemap/" >
+      TreeMap
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/finally/" >
+      基础 - finally
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/char/" >
+      char
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/java-exception/" >
+      Java 异常
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/classload/" >
+      类加载
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/collections/" >
+      Java 集合类框架图
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/kafka-high-throughput/" >
+      Kafka 高吞吐量怎么实现的
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/design-seckilling/"  class="active">
+      秒杀系统设计
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/why-develop-rocketmq/" >
+      为什么阿里要自研 RocketMQ ?
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/programmer-interview/java/sentinel-vs-hystrix/" >
+      Sentinel 与 Hystrix 的对比
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/front-end/" >
+      前端
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/data-structure/" >
+      数据结构
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/design-pattern/" >
+      设计模式
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>秒杀系统设计</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#秒杀系统架构原则">秒杀系统架构原则</a></li>
+    <li><a href="#动静分离">动静分离</a></li>
+    <li><a href="#热点数据">热点数据</a></li>
+    <li><a href="#流量削峰">流量削峰</a>
+      <ul>
+        <li><a href="#排队">排队</a></li>
+        <li><a href="#答题">答题</a></li>
+      </ul>
+    </li>
+    <li><a href="#系统优化">系统优化</a>
+      <ul>
+        <li><a href="#配置线程数">配置线程数</a></li>
+        <li><a href="#发现-cpu-瓶颈">发现 CPU 瓶颈</a></li>
+      </ul>
+    </li>
+    <li><a href="#减库存">减库存</a></li>
+    <li><a href="#兜底方案">兜底方案</a>
+      <ul>
+        <li><a href="#降级">降级</a></li>
+        <li><a href="#限流">限流</a></li>
+        <li><a href="#拒绝服务">拒绝服务</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="秒杀系统设计">秒杀系统设计</h1>
+<p>秒杀其实主要解决两个问题，一个是<strong>并发读</strong>，一个是<strong>并发写</strong>。并发读的核心优化理念是尽量减少用户到服务端来“读”数据，或者让他们读更少的数据；并发写的处理原则也一样，它要求我们在数据库层面独立出来一个库，做特殊的处理。另外，我们还要针对秒杀系统做一些保护，针对意料之外的情况设计兜底方案，以防止最坏的情况发生。</p>
+<h2 id="秒杀系统架构原则">秒杀系统架构原则</h2>
+<ul>
+<li>数据尽量少: 可以简化秒杀页面的大小，去掉不必要的页面装修效果，等等。</li>
+<li>请求数尽量少: 减少请求数最常用的一个实践就是合并 CSS 和 JavaScript 文件，把多个 JavaScript 文件合并成一个文件，在 URL 中用逗号隔开。</li>
+<li>路径要尽量短: 缩短访问路径有一种办法，就是多个相互强依赖的应用合并部署在一起，把远程过程调用（RPC）变成 JVM 内部之间的方法调用。</li>
+<li>依赖要尽量少: 0 级系统要尽量减少对 1 级系统的强依赖，防止重要的系统被不重要的系统拖垮。例如支付系统是 0 级系统，而优惠券是 1 级系统的话，在极端情况下可以把优惠券给降级，防止支付系统被优惠券这个 1 级系统给拖垮。</li>
+<li>不要有单点: 应用无状态化。</li>
+</ul>
+<h2 id="动静分离">动静分离</h2>
+<h2 id="热点数据">热点数据</h2>
+<h2 id="流量削峰">流量削峰</h2>
+<h3 id="排队">排队</h3>
+<h3 id="答题">答题</h3>
+<h2 id="系统优化">系统优化</h2>
+<h3 id="配置线程数">配置线程数</h3>
+<p>很多多线程的场景都有一个默认配置，即 <strong>“线程数 = 2 * CPU 核数 + 1”</strong> 。除去这个配置，还有一个根据最佳实践得出来的公式：<strong>线程数 = [(线程等待时间 + 线程 CPU 时间) / 线程 CPU 时间] × CPU 数量</strong>。</p>
+<blockquote>
+<p>最好的办法是通过<strong>性能测试</strong>来发现最佳的线程数。</p>
+</blockquote>
+<h3 id="发现-cpu-瓶颈">发现 CPU 瓶颈</h3>
+<p>JProfiler 和 Yourkit 这两个工具。</p>
+<h2 id="减库存">减库存</h2>
+<h2 id="兜底方案">兜底方案</h2>
+<h3 id="降级">降级</h3>
+<p>当秒杀流量达到 5w/s 时，把成交记录的获取从展示 20 条降级到只展示 5 条。“从 20 改到 5”这个操作由一个<strong>开关</strong>来实现，也就是设置一个能够从开关系统动态获取的系统参数。</p>
+<h3 id="限流">限流</h3>
+<p>限流既可以是在客户端限流，也可以是在服务端限流。此外，限流的实现方式既要支持 URL 以及方法级别的限流，也要支持基于 QPS 和线程的限流。</p>
+<p>在限流的实现手段上来讲，基于 QPS 和线程数的限流应用最多，最大 QPS 很容易通过<strong>压测</strong>提前获取，例如我们的系统最高支持 1w QPS 时，可以设置 8000 来进行限流保护。线程数限流在客户端比较有效，例如在远程调用时我们设置连接池的线程数，超出这个并发线程请求，就将线程进行排队或者直接超时丢弃。</p>
+<h3 id="拒绝服务">拒绝服务</h3>
+<p>当系统负载达到一定阈值时，例如 CPU 使用率达到 90% 或者系统 load 值达到 <code>2 * CPU</code> 核数时，系统直接拒绝所有请求，这种方式是最暴力但也最有效的系统保护方式。</p>
+<blockquote>
+<p>在最前端的 <code>Nginx</code> 上设置过载保护，当机器<strong>负载</strong>达到某个值时直接拒绝 HTTP 请求并返回 503 错误码，在 Java 层同样也可以设计过载保护。</p>
+</blockquote>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#秒杀系统架构原则">秒杀系统架构原则</a></li>
+    <li><a href="#动静分离">动静分离</a></li>
+    <li><a href="#热点数据">热点数据</a></li>
+    <li><a href="#流量削峰">流量削峰</a>
+      <ul>
+        <li><a href="#排队">排队</a></li>
+        <li><a href="#答题">答题</a></li>
+      </ul>
+    </li>
+    <li><a href="#系统优化">系统优化</a>
+      <ul>
+        <li><a href="#配置线程数">配置线程数</a></li>
+        <li><a href="#发现-cpu-瓶颈">发现 CPU 瓶颈</a></li>
+      </ul>
+    </li>
+    <li><a href="#减库存">减库存</a></li>
+    <li><a href="#兜底方案">兜底方案</a>
+      <ul>
+        <li><a href="#降级">降级</a></li>
+        <li><a href="#限流">限流</a></li>
+        <li><a href="#拒绝服务">拒绝服务</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
