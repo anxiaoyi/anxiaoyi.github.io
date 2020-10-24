@@ -4,20 +4,21 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="leveldb"><meta property="og:title" content="leveldb" />
-<meta property="og:description" content="leveldb 编译 mkdir -p build &amp;&amp; cd build cmake -DCMAKE_BUILD_TYPE=Release .. &amp;&amp; cmake --build . 如果 Ubuntu 提示 No CMAKE_CXX_COMPILER could be found :
+<meta name="description" content="leveldb 源码分析与实现"><meta property="og:title" content="leveldb 源码分析与实现" />
+<meta property="og:description" content="leveldb 源码分析与实现 特性 leveldb 是一个键值对 library，它的键是有序排列的，用户也可以提供自定义的键比较器，多个操作也可以合并为一起，进行原子操作更新。如果愿意，用户也可以重写预留的函数，来将数据写入到磁盘中。
+编译 mkdir -p build &amp;&amp; cd build cmake -DCMAKE_BUILD_TYPE=Release .. &amp;&amp; cmake --build . 如果 Ubuntu 提示 No CMAKE_CXX_COMPILER could be found :
 sudo apt-get update &amp;&amp; sudo apt-get install build-essential 打开数据库 Options // Options to control the behavior of a database (passed to DB::Open) struct LEVELDB_EXPORT Options { // Create an Options object with default values for all fields.  Options(); // -------------------  // Parameters that affect behavior  // Comparator 用来决定 key 在 table 中的顺序." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed-storage/leveldb/" />
 
-<title>leveldb | 赵坤的个人网站</title>
+<title>leveldb 源码分析与实现 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.5a9f980892c61edcbeb4631631fbab4e02d0feff1fa86c6a6d7d1ee9ce68c78f.js" integrity="sha256-Wp&#43;YCJLGHty&#43;tGMWMfurTgLQ/v8fqGxqbX0e6c5ox48="></script>
+<script defer src="/en.search.min.c3673ca14279a490bed0df5b7215bc9f32271a056d08f1c55451d7bcb74f1075.js" integrity="sha256-w2c8oUJ5pJC&#43;0N9bchW8nzInGgVtCPHFVFHXvLdPEHU="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -420,7 +421,7 @@ var _hmt = _hmt || [];
         <li>
 
   <a href="/docs/tutorial/distributed-storage/leveldb/"  class="active">
-      leveldb
+      leveldb 源码分析与实现
   </a>
 
 </li>
@@ -703,7 +704,7 @@ var _hmt = _hmt || [];
     <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
-  <strong>leveldb</strong>
+  <strong>leveldb 源码分析与实现</strong>
 
   <label for="toc-control">
     <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
@@ -717,6 +718,7 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#特性">特性</a></li>
     <li><a href="#编译">编译</a></li>
     <li><a href="#打开数据库">打开数据库</a>
       <ul>
@@ -726,8 +728,23 @@ var _hmt = _hmt || [];
     </li>
     <li><a href="#put">Put</a>
       <ul>
-        <li><a href="#writebatch">WriteBatch</a></li>
-        <li><a href="#writer">Writer</a></li>
+        <li><a href="#slice">Slice</a></li>
+        <li><a href="#底层存储数据的地方">底层存储数据的地方</a></li>
+        <li><a href="#写入顺序">写入顺序</a></li>
+        <li><a href="#写-log-日志文件">写 Log 日志文件</a></li>
+        <li><a href="#写到-memtable-内存数据库中">写到 MemTable 内存数据库中</a></li>
+      </ul>
+    </li>
+    <li><a href="#get">Get</a>
+      <ul>
+        <li><a href="#读文件的过程">读文件的过程</a></li>
+        <li><a href="#memtable">MemTable</a></li>
+      </ul>
+    </li>
+    <li><a href="#delete">Delete</a></li>
+    <li><a href="#snapshot-快照">Snapshot 快照</a>
+      <ul>
+        <li><a href="#创建快照">创建快照</a></li>
       </ul>
     </li>
   </ul>
@@ -740,7 +757,9 @@ var _hmt = _hmt || [];
       </header>
 
       
-<article class="markdown"><h1 id="leveldb">leveldb</h1>
+<article class="markdown"><h1 id="leveldb-源码分析与实现">leveldb 源码分析与实现</h1>
+<h2 id="特性">特性</h2>
+<p>leveldb 是一个<strong>键值对</strong> library，它的键是<strong>有序</strong>排列的，用户也可以提供自定义的键比较器，多个操作也可以合并为一起，进行<strong>原子操作更新</strong>。如果愿意，用户也可以重写预留的函数，来将数据写入到磁盘中。</p>
 <h2 id="编译">编译</h2>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p build <span style="color:#f92672">&amp;&amp;</span> cd build
 cmake -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Release .. <span style="color:#f92672">&amp;&amp;</span> cmake --build .
@@ -884,12 +903,48 @@ cmake -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Release .. <span sty
 
 }
 </code></pre></div><h2 id="put">Put</h2>
-<h3 id="writebatch">WriteBatch</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c++" data-lang="c++">std<span style="color:#f92672">::</span>string rep_;
-</code></pre></div><p><code>WriteBatch::rep_</code> 存储的格式如下：</p>
-<pre><code>|sequence|count|data|
-</code></pre><h3 id="writer">Writer</h3>
-<p>写入数据的时候，对记录的类型和数据计算 CRC 编码，这个编码作为 <code>buf</code> 数组的前 4 位，<code>buf</code> 数组的后 3 位依次填充上:</p>
+<h3 id="slice">Slice</h3>
+<p><code>Slice</code> 的<strong>底层</strong>数据结构：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LEVELDB_EXPORT</span> Slice {
+ <span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
+  <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> data_;
+  size_t size_;
+};
+</code></pre></div><h3 id="底层存储数据的地方">底层存储数据的地方</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// db_impl.h
+</span><span style="color:#75715e"></span>MemTable<span style="color:#f92672">*</span> mem_; <span style="color:#75715e">// 缓存
+</span><span style="color:#75715e"></span>MemTable<span style="color:#f92672">*</span> imm_ <span style="color:#a6e22e">GUARDED_BY</span>(mutex_); <span style="color:#75715e">// 数据库
+</span></code></pre></div><h3 id="写入顺序">写入顺序</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// 先写到 Log 文件中
+</span><span style="color:#75715e"></span>status <span style="color:#f92672">=</span> log_<span style="color:#f92672">-&gt;</span>AddRecord(WriteBatchInternal<span style="color:#f92672">::</span>Contents(write_batch));
+<span style="color:#66d9ef">bool</span> sync_error <span style="color:#f92672">=</span> false;
+<span style="color:#66d9ef">if</span> (status.ok() <span style="color:#f92672">&amp;&amp;</span> options.sync) {
+  status <span style="color:#f92672">=</span> logfile_<span style="color:#f92672">-&gt;</span>Sync();
+  <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>status.ok()) {
+    sync_error <span style="color:#f92672">=</span> true;
+  }
+}
+
+<span style="color:#75715e">// 如果写到 Log 文件成功
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> (status.ok()) {
+  <span style="color:#75715e">// 则写到数据库中
+</span><span style="color:#75715e"></span>  status <span style="color:#f92672">=</span> WriteBatchInternal<span style="color:#f92672">::</span>InsertInto(write_batch, mem_);
+}
+</code></pre></div><h3 id="写-log-日志文件">写 Log 日志文件</h3>
+<p>日志存储在 <code>WriteBatch</code> 的 <code>std::string rep_</code> 里面，其存储的内容如下代码所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">void</span> WriteBatch<span style="color:#f92672">::</span>Put(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> value) {
+  <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>  rep_.push_back(<span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">char</span><span style="color:#f92672">&gt;</span>(kTypeValue));
+  PutLengthPrefixedSlice(<span style="color:#f92672">&amp;</span>rep_, key);
+  PutLengthPrefixedSlice(<span style="color:#f92672">&amp;</span>rep_, value);
+}
+
+<span style="color:#75715e">// coding.cc
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">PutLengthPrefixedSlice</span>(std<span style="color:#f92672">::</span>string<span style="color:#f92672">*</span> dst, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> value) {
+  PutVarint32(dst, value.size());
+  dst<span style="color:#f92672">-&gt;</span>append(value.data(), value.size());
+}
+</code></pre></div><p>写入 Log 日志的时候，对记录的类型和数据计算 CRC 编码，这个编码作为 <code>buf</code> 数组的前 4 位，<code>buf</code> 数组的后 3 位依次填充上:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++">buf[<span style="color:#ae81ff">4</span>] <span style="color:#f92672">=</span> <span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">char</span><span style="color:#f92672">&gt;</span>(length <span style="color:#f92672">&amp;</span> <span style="color:#ae81ff">0xff</span>);
 buf[<span style="color:#ae81ff">5</span>] <span style="color:#f92672">=</span> <span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">char</span><span style="color:#f92672">&gt;</span>(length <span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">8</span>);
 buf[<span style="color:#ae81ff">6</span>] <span style="color:#f92672">=</span> <span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">char</span><span style="color:#f92672">&gt;</span>(t);
@@ -908,7 +963,79 @@ buf[<span style="color:#ae81ff">6</span>] <span style="color:#f92672">=</span> <
 </span><span style="color:#75715e">// Header is checksum (4 bytes), length (2 bytes), type (1 byte).
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span> kHeaderSize <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>;
 </code></pre></div><p><code>Append</code> 内部调用了 <code>std:memcpy</code> 函数。</p>
-</article>
+<h3 id="写到-memtable-内存数据库中">写到 MemTable 内存数据库中</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">void</span> MemTable<span style="color:#f92672">::</span>Add(SequenceNumber s, ValueType type, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key,
+                   <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> value) {
+  <span style="color:#75715e">// 使用 Arena 分配内存
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> buf <span style="color:#f92672">=</span> arena_.Allocate(encoded_len);
+  <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> p <span style="color:#f92672">=</span> EncodeVarint32(buf, internal_key_size);
+
+  <span style="color:#75715e">// 将 key 拷贝到 buf 中
+</span><span style="color:#75715e"></span>  std<span style="color:#f92672">::</span>memcpy(p, key.data(), key_size);
+
+  <span style="color:#75715e">// 将 value 拷贝到 buf 中
+</span><span style="color:#75715e"></span>  std<span style="color:#f92672">::</span>memcpy(p, value.data(), val_size);
+
+  <span style="color:#75715e">// 插入到 table 中
+</span><span style="color:#75715e"></span>  table_.Insert(buf);
+}
+</code></pre></div><p>如下是 <code>std::memcpy</code> 的签名:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// Copies count bytes from the object pointed to by src to the object pointed to by dest.
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> <span style="color:#a6e22e">memcpy</span>( <span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> dest, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> src, std<span style="color:#f92672">::</span>size_t count );
+</code></pre></div><p>上述代码最后一行出现的 <code>table_.Insert(buf)</code>，此处的 <code>Table</code> 其实就是<strong>跳表</strong>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// memtable.h
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">typedef</span> SkipList<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span>, KeyComparator<span style="color:#f92672">&gt;</span> Table;
+</code></pre></div><p>因此在 <code>MemTable</code> 中分配的 <code>buf</code> 最终将会存储到<strong>跳表</strong>中。</p>
+<h2 id="get">Get</h2>
+<h3 id="读文件的过程">读文件的过程</h3>
+<p>首先查看 <code>memtable</code>，其次查看 <code>immutable memtable</code>，最后尝试从 <code>versions_-&gt;current()</code> 中获取。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// First look in the memtable, then in the immutable memtable (if any).
+</span><span style="color:#75715e"></span>LookupKey <span style="color:#a6e22e">lkey</span>(key, snapshot);
+<span style="color:#66d9ef">if</span> (mem<span style="color:#f92672">-&gt;</span>Get(lkey, value, <span style="color:#f92672">&amp;</span>s)) {
+  <span style="color:#75715e">// Done
+</span><span style="color:#75715e"></span>} <span style="color:#66d9ef">else</span> <span style="color:#a6e22e">if</span> (imm <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nullptr</span> <span style="color:#f92672">&amp;&amp;</span> imm<span style="color:#f92672">-&gt;</span>Get(lkey, value, <span style="color:#f92672">&amp;</span>s)) {
+  <span style="color:#75715e">// Done
+</span><span style="color:#75715e"></span>} <span style="color:#66d9ef">else</span> {
+  s <span style="color:#f92672">=</span> current<span style="color:#f92672">-&gt;</span>Get(options, lkey, value, <span style="color:#f92672">&amp;</span>stats);
+  have_stat_update <span style="color:#f92672">=</span> true;
+}
+</code></pre></div><h3 id="memtable">MemTable</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">bool</span> MemTable<span style="color:#f92672">::</span>Get(<span style="color:#66d9ef">const</span> LookupKey<span style="color:#f92672">&amp;</span> key, std<span style="color:#f92672">::</span>string<span style="color:#f92672">*</span> value, Status<span style="color:#f92672">*</span> s) {
+  <span style="color:#75715e">// 取出和这个 key 关联的 tag
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">uint64_t</span> tag <span style="color:#f92672">=</span> DecodeFixed64(key_ptr <span style="color:#f92672">+</span> key_length <span style="color:#f92672">-</span> <span style="color:#ae81ff">8</span>);
+  <span style="color:#66d9ef">switch</span> (<span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span>ValueType<span style="color:#f92672">&gt;</span>(tag <span style="color:#f92672">&amp;</span> <span style="color:#ae81ff">0xff</span>)) {
+    <span style="color:#75715e">// 有值
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">case</span> kTypeValue: {
+      Slice v <span style="color:#f92672">=</span> GetLengthPrefixedSlice(key_ptr <span style="color:#f92672">+</span> key_length);
+      value<span style="color:#f92672">-&gt;</span>assign(v.data(), v.size());
+      <span style="color:#66d9ef">return</span> true;
+    }
+
+    <span style="color:#75715e">// key 已经被 delete 了
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">case</span> kTypeDeletion:
+      <span style="color:#f92672">*</span>s <span style="color:#f92672">=</span> Status<span style="color:#f92672">::</span>NotFound(Slice());
+      <span style="color:#66d9ef">return</span> true;
+  }
+}
+</code></pre></div><h2 id="delete">Delete</h2>
+<p><code>Delete</code> 的底层很像 <code>Put</code> 操作:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// write_batch.cc
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Delete</span>(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key) <span style="color:#66d9ef">override</span> {
+  mem_<span style="color:#f92672">-&gt;</span>Add(sequence_, kTypeDeletion, key, Slice());
+  sequence_<span style="color:#f92672">++</span>;
+}
+</code></pre></div><p>只是 <code>key</code> 的被标记为 <code>kTypeDeletion</code> 标签了。</p>
+<h2 id="snapshot-快照">Snapshot 快照</h2>
+<h3 id="创建快照">创建快照</h3>
+<p>从 <code>VersionSet</code> 中获取最后一个序号 <code>LastSequence</code>，然后根据这最后一个序号创建一个快照:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// db_impl.cc
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> Snapshot<span style="color:#f92672">*</span> DBImpl<span style="color:#f92672">::</span>GetSnapshot() {
+  MutexLock <span style="color:#a6e22e">l</span>(<span style="color:#f92672">&amp;</span>mutex_);
+  <span style="color:#66d9ef">return</span> snapshots_.New(versions_<span style="color:#f92672">-&gt;</span>LastSequence());
+}
+</code></pre></div><p>其中 <code>versions_</code> 的定义:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++">VersionSet<span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> versions_ <span style="color:#a6e22e">GUARDED_BY</span>(mutex_);
+</code></pre></div></article>
  
 
       <footer class="book-footer">
@@ -953,6 +1080,7 @@ buf[<span style="color:#ae81ff">6</span>] <span style="color:#f92672">=</span> <
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#特性">特性</a></li>
     <li><a href="#编译">编译</a></li>
     <li><a href="#打开数据库">打开数据库</a>
       <ul>
@@ -962,8 +1090,23 @@ buf[<span style="color:#ae81ff">6</span>] <span style="color:#f92672">=</span> <
     </li>
     <li><a href="#put">Put</a>
       <ul>
-        <li><a href="#writebatch">WriteBatch</a></li>
-        <li><a href="#writer">Writer</a></li>
+        <li><a href="#slice">Slice</a></li>
+        <li><a href="#底层存储数据的地方">底层存储数据的地方</a></li>
+        <li><a href="#写入顺序">写入顺序</a></li>
+        <li><a href="#写-log-日志文件">写 Log 日志文件</a></li>
+        <li><a href="#写到-memtable-内存数据库中">写到 MemTable 内存数据库中</a></li>
+      </ul>
+    </li>
+    <li><a href="#get">Get</a>
+      <ul>
+        <li><a href="#读文件的过程">读文件的过程</a></li>
+        <li><a href="#memtable">MemTable</a></li>
+      </ul>
+    </li>
+    <li><a href="#delete">Delete</a></li>
+    <li><a href="#snapshot-快照">Snapshot 快照</a>
+      <ul>
+        <li><a href="#创建快照">创建快照</a></li>
       </ul>
     </li>
   </ul>
