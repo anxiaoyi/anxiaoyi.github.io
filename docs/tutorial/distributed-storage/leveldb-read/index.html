@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="leveldb 源码分析与实现 - 读取"><meta property="og:title" content="leveldb 源码分析与实现 - 读取" />
+<meta property="og:description" content="leveldb 源码分析与实现: 读取 读文件的过程 首先查看 memtable，其次查看 immutable memtable，最后尝试从 versions_-&gt;current() 中获取。
+// First look in the memtable, then in the immutable memtable (if any). LookupKey lkey(key, snapshot); if (mem-&gt;Get(lkey, value, &amp;s)) { // Done } else if (imm != nullptr &amp;&amp; imm-&gt;Get(lkey, value, &amp;s)) { // Done } else { s = current-&gt;Get(options, lkey, value, &amp;stats); have_stat_update = true; } MemTable // memtable.cc bool MemTable::Get(const LookupKey&amp; key, std::string* value, Status* s) { // 取出和这个 key 关联的 tag  const uint64_t tag = DecodeFixed64(key_ptr &#43; key_length - 8); switch (static_cast&lt;ValueType&gt;(tag &amp; 0xff)) { // 有值  case kTypeValue: { Slice v = GetLengthPrefixedSlice(key_ptr &#43; key_length); value-&gt;assign(v." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed-storage/leveldb-read/" />
+
+<title>leveldb 源码分析与实现 - 读取 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.cd1b5e5e5fd143b5ff81c1931d8dffbf1312415faa0dbdf2cf9c0250dc47e7a4.js" integrity="sha256-zRteXl/RQ7X/gcGTHY3/vxMSQV&#43;qDb3yz5wCUNxH56Q="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 3.0 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed-storage/c_cpp/" >
+      C &amp; C&#43;&#43;
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed-storage/leveldb/" >
+      leveldb 源码分析与实现
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed-storage/leveldb-read/"  class="active">
+      leveldb 源码分析与实现 - 读取
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>leveldb 源码分析与实现 - 读取</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#读文件的过程">读文件的过程</a></li>
+    <li><a href="#memtable">MemTable</a></li>
+    <li><a href="#immutable-memtable">Immutable MemTable</a></li>
+    <li><a href="#从当前-version-查找">从当前 Version 查找</a>
+      <ul>
+        <li><a href="#重要结构体">重要结构体</a></li>
+        <li><a href="#查找的过程">查找的过程</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="leveldb-源码分析与实现-读取">leveldb 源码分析与实现: 读取</h1>
+<h2 id="读文件的过程">读文件的过程</h2>
+<p>首先查看 <code>memtable</code>，其次查看 <code>immutable memtable</code>，最后尝试从 <code>versions_-&gt;current()</code> 中获取。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// First look in the memtable, then in the immutable memtable (if any).
+</span><span style="color:#75715e"></span>LookupKey <span style="color:#a6e22e">lkey</span>(key, snapshot);
+<span style="color:#66d9ef">if</span> (mem<span style="color:#f92672">-&gt;</span>Get(lkey, value, <span style="color:#f92672">&amp;</span>s)) {
+  <span style="color:#75715e">// Done
+</span><span style="color:#75715e"></span>} <span style="color:#66d9ef">else</span> <span style="color:#a6e22e">if</span> (imm <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nullptr</span> <span style="color:#f92672">&amp;&amp;</span> imm<span style="color:#f92672">-&gt;</span>Get(lkey, value, <span style="color:#f92672">&amp;</span>s)) {
+  <span style="color:#75715e">// Done
+</span><span style="color:#75715e"></span>} <span style="color:#66d9ef">else</span> {
+  s <span style="color:#f92672">=</span> current<span style="color:#f92672">-&gt;</span>Get(options, lkey, value, <span style="color:#f92672">&amp;</span>stats);
+  have_stat_update <span style="color:#f92672">=</span> true;
+}
+</code></pre></div><p><img src="/images/docs/tutorial/distributed-storage/leveldb/read-process.png" alt=""></p>
+<h2 id="memtable">MemTable</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// memtable.cc
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">bool</span> MemTable<span style="color:#f92672">::</span>Get(<span style="color:#66d9ef">const</span> LookupKey<span style="color:#f92672">&amp;</span> key, std<span style="color:#f92672">::</span>string<span style="color:#f92672">*</span> value, Status<span style="color:#f92672">*</span> s) {
+  <span style="color:#75715e">// 取出和这个 key 关联的 tag
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">uint64_t</span> tag <span style="color:#f92672">=</span> DecodeFixed64(key_ptr <span style="color:#f92672">+</span> key_length <span style="color:#f92672">-</span> <span style="color:#ae81ff">8</span>);
+  <span style="color:#66d9ef">switch</span> (<span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span>ValueType<span style="color:#f92672">&gt;</span>(tag <span style="color:#f92672">&amp;</span> <span style="color:#ae81ff">0xff</span>)) {
+    <span style="color:#75715e">// 有值
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">case</span> kTypeValue: {
+      Slice v <span style="color:#f92672">=</span> GetLengthPrefixedSlice(key_ptr <span style="color:#f92672">+</span> key_length);
+      value<span style="color:#f92672">-&gt;</span>assign(v.data(), v.size());
+      <span style="color:#66d9ef">return</span> true;
+    }
+
+    <span style="color:#75715e">// key 已经被 delete 了
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">case</span> kTypeDeletion:
+      <span style="color:#f92672">*</span>s <span style="color:#f92672">=</span> Status<span style="color:#f92672">::</span>NotFound(Slice());
+      <span style="color:#66d9ef">return</span> true;
+  }
+}
+</code></pre></div><h2 id="immutable-memtable">Immutable MemTable</h2>
+<p><code>imm</code> 代表的是 <strong>Immutable MemTable</strong>，意味着只能从这个 <strong>MemTable</strong> 中读取值，而不能写入值。在写入值之前，leveldb 会在适当时机，将 <code>mem_</code> 转为 <code>imm_</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>imm_ <span style="color:#f92672">=</span> mem_;
+has_imm_.store(true, std<span style="color:#f92672">::</span>memory_order_release);
+mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> MemTable(internal_comparator_);
+<span style="color:#75715e">//
+</span></code></pre></div><h2 id="从当前-version-查找">从当前 Version 查找</h2>
+<h3 id="重要结构体">重要结构体</h3>
+<p><code>FileMetaData</code> 是一个结构体:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">// version_edit.h
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">struct</span> FileMetaData {
+  FileMetaData() <span style="color:#f92672">:</span> refs(<span style="color:#ae81ff">0</span>), allowed_seeks(<span style="color:#ae81ff">1</span> <span style="color:#f92672">&lt;&lt;</span> <span style="color:#ae81ff">30</span>), file_size(<span style="color:#ae81ff">0</span>) {}
+
+  <span style="color:#66d9ef">int</span> refs;
+  <span style="color:#66d9ef">int</span> allowed_seeks;  <span style="color:#75715e">// Seeks allowed until compaction
+</span><span style="color:#75715e"></span>  uint64_t number;
+  uint64_t file_size;    <span style="color:#75715e">// File size in bytes
+</span><span style="color:#75715e"></span>  InternalKey smallest;  <span style="color:#75715e">// Smallest internal key served by table
+</span><span style="color:#75715e"></span>  InternalKey largest;   <span style="color:#75715e">// Largest internal key served by table
+</span><span style="color:#75715e"></span>};
+</code></pre></div><p><code>Rep</code> 是定义在 <code>table.cc</code> 文件中的结构体:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">struct</span> Table<span style="color:#f92672">::</span>Rep {
+  <span style="color:#f92672">~</span>Rep() {
+    delete filter;
+    delete[] filter_data;
+    delete index_block;
+  }
+
+  Options options;
+  Status status;
+  RandomAccessFile<span style="color:#f92672">*</span> file;
+  uint64_t cache_id;
+  FilterBlockReader<span style="color:#f92672">*</span> filter;
+  <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> filter_data;
+
+  BlockHandle metaindex_handle;  <span style="color:#75715e">// Handle to metaindex_block: saved from footer
+</span><span style="color:#75715e"></span>  Block<span style="color:#f92672">*</span> index_block;
+};
+</code></pre></div><h3 id="查找的过程">查找的过程</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// version_set.cc
+</span><span style="color:#75715e"></span>Status Version<span style="color:#f92672">::</span>Get(<span style="color:#66d9ef">const</span> ReadOptions<span style="color:#f92672">&amp;</span> options, <span style="color:#66d9ef">const</span> LookupKey<span style="color:#f92672">&amp;</span> k,
+                    std<span style="color:#f92672">::</span>string<span style="color:#f92672">*</span> value, GetStats<span style="color:#f92672">*</span> stats) {
+  <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>  ForEachOverlapping(state.saver.user_key, state.ikey, <span style="color:#f92672">&amp;</span>state, <span style="color:#f92672">&amp;</span>State<span style="color:#f92672">::</span>Match);
+  <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>}
+</code></pre></div><p><code>ForEachOverlapping</code> 从 <code>level-0</code> 一直向更深的 <code>level</code> 进行搜索:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// version_set.cc
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> Version<span style="color:#f92672">::</span>ForEachOverlapping(Slice user_key, Slice internal_key, <span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> arg,
+                                 <span style="color:#66d9ef">bool</span> (<span style="color:#f92672">*</span>func)(<span style="color:#66d9ef">void</span><span style="color:#f92672">*</span>, <span style="color:#66d9ef">int</span>, FileMetaData<span style="color:#f92672">*</span>)) {
+
+}
+</code></pre></div></article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#读文件的过程">读文件的过程</a></li>
+    <li><a href="#memtable">MemTable</a></li>
+    <li><a href="#immutable-memtable">Immutable MemTable</a></li>
+    <li><a href="#从当前-version-查找">从当前 Version 查找</a>
+      <ul>
+        <li><a href="#重要结构体">重要结构体</a></li>
+        <li><a href="#查找的过程">查找的过程</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

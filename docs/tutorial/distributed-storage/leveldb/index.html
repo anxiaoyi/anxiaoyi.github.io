@@ -19,7 +19,7 @@ sudo apt-get update &amp;&amp; sudo apt-get install build-essential 打开数据
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.e98d406eccbd06d2a845abab4550b3c5a0d0b7f62e7b620ea994c7b9d165a19a.js" integrity="sha256-6Y1Absy9BtKoRaurRVCzxaDQt/Yue2IOqZTHudFloZo="></script>
+<script defer src="/en.search.min.cd1b5e5e5fd143b5ff81c1931d8dffbf1312415faa0dbdf2cf9c0250dc47e7a4.js" integrity="sha256-zRteXl/RQ7X/gcGTHY3/vxMSQV&#43;qDb3yz5wCUNxH56Q="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -428,6 +428,16 @@ var _hmt = _hmt || [];
 </li>
       
     
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed-storage/leveldb-read/" >
+      leveldb 源码分析与实现 - 读取
+  </a>
+
+</li>
+      
+    
   </ul>
   
 
@@ -736,12 +746,6 @@ var _hmt = _hmt || [];
         <li><a href="#写到-memtable-内存数据库中">写到 MemTable 内存数据库中</a></li>
       </ul>
     </li>
-    <li><a href="#get">Get</a>
-      <ul>
-        <li><a href="#读文件的过程">读文件的过程</a></li>
-        <li><a href="#memtable">MemTable</a></li>
-      </ul>
-    </li>
     <li><a href="#delete">Delete</a></li>
     <li><a href="#snapshot-快照">Snapshot 快照</a>
       <ul>
@@ -754,6 +758,12 @@ var _hmt = _hmt || [];
         <li><a href="#log-logold">LOG, LOG.old</a></li>
         <li><a href="#log"><code>*.log</code></a></li>
         <li><a href="#lock">LOCK</a></li>
+      </ul>
+    </li>
+    <li><a href="#compaction">Compaction</a></li>
+    <li><a href="#版本管理">版本管理</a>
+      <ul>
+        <li><a href="#环形双端链表">环形双端链表</a></li>
       </ul>
     </li>
     <li><a href="#参考">参考</a></li>
@@ -1002,39 +1012,7 @@ buf[<span style="color:#ae81ff">6</span>] <span style="color:#f92672">=</span> <
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// memtable.h
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">typedef</span> SkipList<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span>, KeyComparator<span style="color:#f92672">&gt;</span> Table;
 </code></pre></div><p>因此在 <code>MemTable</code> 中分配的 <code>buf</code> 最终将会存储到<strong>跳表</strong>中。</p>
-<h2 id="get">Get</h2>
-<h3 id="读文件的过程">读文件的过程</h3>
-<p>首先查看 <code>memtable</code>，其次查看 <code>immutable memtable</code>，最后尝试从 <code>versions_-&gt;current()</code> 中获取。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// First look in the memtable, then in the immutable memtable (if any).
-</span><span style="color:#75715e"></span>LookupKey <span style="color:#a6e22e">lkey</span>(key, snapshot);
-<span style="color:#66d9ef">if</span> (mem<span style="color:#f92672">-&gt;</span>Get(lkey, value, <span style="color:#f92672">&amp;</span>s)) {
-  <span style="color:#75715e">// Done
-</span><span style="color:#75715e"></span>} <span style="color:#66d9ef">else</span> <span style="color:#a6e22e">if</span> (imm <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nullptr</span> <span style="color:#f92672">&amp;&amp;</span> imm<span style="color:#f92672">-&gt;</span>Get(lkey, value, <span style="color:#f92672">&amp;</span>s)) {
-  <span style="color:#75715e">// Done
-</span><span style="color:#75715e"></span>} <span style="color:#66d9ef">else</span> {
-  s <span style="color:#f92672">=</span> current<span style="color:#f92672">-&gt;</span>Get(options, lkey, value, <span style="color:#f92672">&amp;</span>stats);
-  have_stat_update <span style="color:#f92672">=</span> true;
-}
-</code></pre></div><p><img src="/images/docs/tutorial/distributed-storage/leveldb/read-process.png" alt=""></p>
-<h3 id="memtable">MemTable</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">bool</span> MemTable<span style="color:#f92672">::</span>Get(<span style="color:#66d9ef">const</span> LookupKey<span style="color:#f92672">&amp;</span> key, std<span style="color:#f92672">::</span>string<span style="color:#f92672">*</span> value, Status<span style="color:#f92672">*</span> s) {
-  <span style="color:#75715e">// 取出和这个 key 关联的 tag
-</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">uint64_t</span> tag <span style="color:#f92672">=</span> DecodeFixed64(key_ptr <span style="color:#f92672">+</span> key_length <span style="color:#f92672">-</span> <span style="color:#ae81ff">8</span>);
-  <span style="color:#66d9ef">switch</span> (<span style="color:#66d9ef">static_cast</span><span style="color:#f92672">&lt;</span>ValueType<span style="color:#f92672">&gt;</span>(tag <span style="color:#f92672">&amp;</span> <span style="color:#ae81ff">0xff</span>)) {
-    <span style="color:#75715e">// 有值
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">case</span> kTypeValue: {
-      Slice v <span style="color:#f92672">=</span> GetLengthPrefixedSlice(key_ptr <span style="color:#f92672">+</span> key_length);
-      value<span style="color:#f92672">-&gt;</span>assign(v.data(), v.size());
-      <span style="color:#66d9ef">return</span> true;
-    }
-
-    <span style="color:#75715e">// key 已经被 delete 了
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">case</span> kTypeDeletion:
-      <span style="color:#f92672">*</span>s <span style="color:#f92672">=</span> Status<span style="color:#f92672">::</span>NotFound(Slice());
-      <span style="color:#66d9ef">return</span> true;
-  }
-}
-</code></pre></div><h2 id="delete">Delete</h2>
+<h2 id="delete">Delete</h2>
 <p><code>Delete</code> 的底层很像 <code>Put</code> 操作:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// write_batch.cc
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Delete</span>(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> key) <span style="color:#66d9ef">override</span> {
@@ -1090,7 +1068,16 @@ log<span style="color:#f92672">::</span>Writer<span style="color:#f92672">*</spa
 <h3 id="lock">LOCK</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// Lock over the persistent DB state.  Non-null iff successfully acquired.
 </span><span style="color:#75715e"></span>FileLock<span style="color:#f92672">*</span> db_lock_;
-</code></pre></div><h2 id="参考">参考</h2>
+</code></pre></div><h2 id="compaction">Compaction</h2>
+<p>当内存中的 <code>MemTable</code> 达到一定大小的时候，Compaction 可以将其内容保持到<strong>磁盘</strong>中。</p>
+<p><img src="/images/docs/tutorial/distributed-storage/leveldb/minor-compaction.png" alt=""></p>
+<h2 id="版本管理">版本管理</h2>
+<h3 id="环形双端链表">环形双端链表</h3>
+<p><code>AppendVersion</code> 的过程:</p>
+<pre><code>[prev] &lt;-&gt; [dummy]
+</code></pre><p>转为:</p>
+<pre><code>[prev] &lt;-&gt; [current] &lt;-&gt; [dummy]
+</code></pre><h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://github.com/google/leveldb/blob/master/doc/impl.md">impl</a></li>
 <li><a href="https://www.cnblogs.com/haippy/archive/2011/12/04/2276064.html">数据分析与处理之二（Leveldb 实现原理）</a></li>
@@ -1157,12 +1144,6 @@ log<span style="color:#f92672">::</span>Writer<span style="color:#f92672">*</spa
         <li><a href="#写到-memtable-内存数据库中">写到 MemTable 内存数据库中</a></li>
       </ul>
     </li>
-    <li><a href="#get">Get</a>
-      <ul>
-        <li><a href="#读文件的过程">读文件的过程</a></li>
-        <li><a href="#memtable">MemTable</a></li>
-      </ul>
-    </li>
     <li><a href="#delete">Delete</a></li>
     <li><a href="#snapshot-快照">Snapshot 快照</a>
       <ul>
@@ -1175,6 +1156,12 @@ log<span style="color:#f92672">::</span>Writer<span style="color:#f92672">*</spa
         <li><a href="#log-logold">LOG, LOG.old</a></li>
         <li><a href="#log"><code>*.log</code></a></li>
         <li><a href="#lock">LOCK</a></li>
+      </ul>
+    </li>
+    <li><a href="#compaction">Compaction</a></li>
+    <li><a href="#版本管理">版本管理</a>
+      <ul>
+        <li><a href="#环形双端链表">环形双端链表</a></li>
       </ul>
     </li>
     <li><a href="#参考">参考</a></li>
