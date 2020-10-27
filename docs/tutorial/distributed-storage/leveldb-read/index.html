@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.cd1b5e5e5fd143b5ff81c1931d8dffbf1312415faa0dbdf2cf9c0250dc47e7a4.js" integrity="sha256-zRteXl/RQ7X/gcGTHY3/vxMSQV&#43;qDb3yz5wCUNxH56Q="></script>
+<script defer src="/en.search.min.0be83d45f1597621b0b1104981659ad81363b9a81abcc39852494098e73a95e1.js" integrity="sha256-C&#43;g9RfFZdiGwsRBJgWWa2BNjuagavMOYUklAmOc6leE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -734,6 +734,8 @@ var _hmt = _hmt || [];
       <ul>
         <li><a href="#重要结构体">重要结构体</a></li>
         <li><a href="#查找的过程">查找的过程</a></li>
+        <li><a href="#internalkey-比较器">InternalKey 比较器</a></li>
+        <li><a href="#filemetadata-的构建过程">FileMetaData 的构建过程</a></li>
       </ul>
     </li>
   </ul>
@@ -830,9 +832,97 @@ mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// version_set.cc
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> Version<span style="color:#f92672">::</span>ForEachOverlapping(Slice user_key, Slice internal_key, <span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> arg,
                                  <span style="color:#66d9ef">bool</span> (<span style="color:#f92672">*</span>func)(<span style="color:#66d9ef">void</span><span style="color:#f92672">*</span>, <span style="color:#66d9ef">int</span>, FileMetaData<span style="color:#f92672">*</span>)) {
+  
+  <span style="color:#75715e">// Search level-0 in order from newest to oldest.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">uint32_t</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> files_[<span style="color:#ae81ff">0</span>].size(); i<span style="color:#f92672">++</span>) {
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>  }
 
+  <span style="color:#75715e">// Search other levels.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> level <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>; level <span style="color:#f92672">&lt;</span> config<span style="color:#f92672">::</span>kNumLevels; level<span style="color:#f92672">++</span>) {
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>  }
 }
-</code></pre></div></article>
+</code></pre></div><p>从此处可以得知，<strong>每一层的文件列表</strong>都存储在 <code>files_</code> 数组中:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// version_set.h
+</span><span style="color:#75715e">// List of files per level
+</span><span style="color:#75715e"></span>std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>FileMetaData<span style="color:#f92672">*&gt;</span> files_[config<span style="color:#f92672">::</span>kNumLevels];
+</code></pre></div><h3 id="internalkey-比较器">InternalKey 比较器</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// dbformat.h
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">InternalKeyComparator</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">public</span> Comparator {
+ <span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
+  <span style="color:#66d9ef">const</span> Comparator<span style="color:#f92672">*</span> user_comparator_;
+}
+
+<span style="color:#75715e">// comparator.cc
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BytewiseComparatorImpl</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">public</span> Comparator {
+}
+
+<span style="color:#75715e">// options.cc
+</span><span style="color:#75715e"></span>Options<span style="color:#f92672">::</span>Options() <span style="color:#f92672">:</span> comparator(BytewiseComparator()), env(Env<span style="color:#f92672">::</span>Default()) {}
+</code></pre></div><p>InternalKey 比较器默认采用的是 leveldb 提供的 <code>BytewiseComparatorImpl</code> 比较器，其比较算法如下:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// comparator.cc
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">Compare</span>(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> a, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> b) <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">override</span> {
+  <span style="color:#66d9ef">return</span> a.compare(b);
+}
+
+<span style="color:#75715e">// slice.h
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">inline</span> <span style="color:#66d9ef">int</span> Slice<span style="color:#f92672">::</span>compare(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> b) <span style="color:#66d9ef">const</span> {
+  <span style="color:#66d9ef">const</span> size_t min_len <span style="color:#f92672">=</span> (size_ <span style="color:#f92672">&lt;</span> b.size_) <span style="color:#f92672">?</span> size_ : b.size_;
+  <span style="color:#66d9ef">int</span> r <span style="color:#f92672">=</span> memcmp(data_, b.data_, min_len);
+  <span style="color:#66d9ef">if</span> (r <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) {
+    <span style="color:#66d9ef">if</span> (size_ <span style="color:#f92672">&lt;</span> b.size_)
+      r <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>;
+    <span style="color:#66d9ef">else</span> <span style="color:#a6e22e">if</span> (size_ <span style="color:#f92672">&gt;</span> b.size_)
+      r <span style="color:#f92672">=</span> <span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>;
+  }
+  <span style="color:#66d9ef">return</span> r;
+}
+</code></pre></div><blockquote>
+<p><code>int memcmp ( const void * ptr1, const void * ptr2, size_t num )</code>: Compare two blocks of memory. Compares the first <code>num</code> bytes of the block of memory pointed by <code>ptr1</code> to the first <code>num</code> bytes pointed by <code>ptr2</code>, returning zero if they all match or a value different from zero representing which is greater if they do not.</p>
+</blockquote>
+<h3 id="filemetadata-的构建过程">FileMetaData 的构建过程</h3>
+<p>我们在上述代码中已经看到，每一个文件是用 <code>FileMetaData</code> 来表示的，而这个数据结构中有几个最关键的字段 <code>number</code>、<code>smallest</code>、<code>largest</code>，如下就是它们各自的赋值过程:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// db_impl.cc
+</span><span style="color:#75715e"></span>Status DBImpl<span style="color:#f92672">::</span>WriteLevel0Table(MemTable<span style="color:#f92672">*</span> mem, VersionEdit<span style="color:#f92672">*</span> edit,
+                                Version<span style="color:#f92672">*</span> base) {
+  FileMetaData meta;
+  <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>  meta.number <span style="color:#f92672">=</span> versions_<span style="color:#f92672">-&gt;</span>NewFileNumber();
+  Iterator<span style="color:#f92672">*</span> iter <span style="color:#f92672">=</span> mem<span style="color:#f92672">-&gt;</span>NewIterator();
+  <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>  s <span style="color:#f92672">=</span> BuildTable(dbname_, env_, options_, table_cache_, iter, <span style="color:#f92672">&amp;</span>meta);
+}
+
+<span style="color:#75715e">// builder.cc
+</span><span style="color:#75715e"></span>Status <span style="color:#a6e22e">BuildTable</span>(<span style="color:#66d9ef">const</span> std<span style="color:#f92672">::</span>string<span style="color:#f92672">&amp;</span> dbname, Env<span style="color:#f92672">*</span> env, <span style="color:#66d9ef">const</span> Options<span style="color:#f92672">&amp;</span> options,
+                  TableCache<span style="color:#f92672">*</span> table_cache, Iterator<span style="color:#f92672">*</span> iter, FileMetaData<span style="color:#f92672">*</span> meta) {
+  iter<span style="color:#f92672">-&gt;</span>SeekToFirst();
+  <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>  TableBuilder<span style="color:#f92672">*</span> builder <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> TableBuilder(options, file);
+  meta<span style="color:#f92672">-&gt;</span>smallest.DecodeFrom(iter<span style="color:#f92672">-&gt;</span>key());
+  Slice key;
+  <span style="color:#66d9ef">for</span> (; iter<span style="color:#f92672">-&gt;</span>Valid(); iter<span style="color:#f92672">-&gt;</span>Next()) {
+    key <span style="color:#f92672">=</span> iter<span style="color:#f92672">-&gt;</span>key();
+    builder<span style="color:#f92672">-&gt;</span>Add(key, iter<span style="color:#f92672">-&gt;</span>value());
+  }
+  <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>key.empty()) {
+    meta<span style="color:#f92672">-&gt;</span>largest.DecodeFrom(key);
+  }
+}
+</code></pre></div><p>其中 <code>InternalKey</code> 的 <code>DecodeFrom</code> 方法的定义如下所示:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">InternalKey</span> {
+ <span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
+  std<span style="color:#f92672">::</span>string rep_;
+
+ <span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
+  <span style="color:#66d9ef">bool</span> DecodeFrom(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> s) {
+    rep_.assign(s.data(), s.size());
+    <span style="color:#66d9ef">return</span> <span style="color:#f92672">!</span>rep_.empty();
+  }
+</code></pre></div><p>在此我们知道了一个文件的 <code>smallest</code> 指的是添加这个文件时候，位于内存中的 <code>mem</code> 跳表的最小 <code>key</code>，而 <code>largest</code> 则是 <code>mem</code> 跳表上的最大 <code>key</code>，<code>number</code> 则是版本集赋予的一个新的 <code>FileNumber</code>。</p>
+<p>跳表 <code>mem</code> 默认也是采用的 <code>BytewiseComparator</code> 作为元素的比较器的。</p>
+</article>
  
 
       <footer class="book-footer">
@@ -884,6 +974,8 @@ mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span>
       <ul>
         <li><a href="#重要结构体">重要结构体</a></li>
         <li><a href="#查找的过程">查找的过程</a></li>
+        <li><a href="#internalkey-比较器">InternalKey 比较器</a></li>
+        <li><a href="#filemetadata-的构建过程">FileMetaData 的构建过程</a></li>
       </ul>
     </li>
   </ul>
