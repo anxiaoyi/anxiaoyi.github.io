@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护"><meta property="og:title" content="设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护" />
+<meta property="og:description" content="设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护  笔记来自于 《Designing Data-Intensive Applications》 的第一章
+ 何为数据密集型应用程序 很多应用程序都需要用到如下和数据打交道的系统:
+ 数据库 缓存 搜索数据 &amp; 索引 流处理 批量处理  设计这样的应用程序需要考虑很多因素，在此重点关注:
+ 可靠性: 系统持续工作 可扩展: 能维持系统负载 (Load) 的增长 可维护: 多人维护  Twitter 的负载  2012 年 Tweet 平均产生的速率: 4.6k/s，峰值速率可以达到 12k/s. 用户浏览首页的这个 API 请求平均: 300k/s.  Twitter 主要的挑战在于，每个用户可以关注很多人，每个人可以被很多人关注。实现这种系统通常有两种方式:
+(1) 用户发布 Tweet 直接写入到大的 Tweet 表中即可。而用户浏览首页，需要首先查找用户关注的所有人，找到这些人发布的所有 Tweet，然后(按照时间)合并这些 Tweet:
+SELECT tweets.*, users.* FROM tweets JOIN users ON tweets.sender_id = users." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/books/ddia-chapter1/" />
+
+<title>设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.70936ed0dc48daa7a327c6b9977b82fbdfdcd1c2d2f7656a6457ff011bc99f56.js" integrity="sha256-cJNu0NxI2qejJ8a5l3uC&#43;9/c0cLS92VqZFf/ARvJn1Y="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/beauty_of_mathematics/" >
+      数学之美
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/history_of_quantum_physics/" >
+      上帝掷骰子吗
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/clean_code/" >
+      代码整洁之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the_transformation_of_enterprise_it_architecture/" >
+      企业 IT 架构转型之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/redis_5_source_code/" >
+      Redis 5 设计与源码分析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/" >
+      深度剖析 Apache Dubbo 核心技术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/everyone-is-architect/" >
+      人人都是架构师 (一)
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-art-of-readable-code/" >
+      编写可读代码的艺术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-wisdom-of-trading-stocks/" >
+      炒股的智慧
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia-chapter1/"  class="active">
+      设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia-chapter2/" >
+      设计数据密集型应用程序 - 数据模型 &amp; 查询语言
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#何为数据密集型应用程序">何为数据密集型应用程序</a></li>
+    <li><a href="#twitter-的负载">Twitter 的负载</a></li>
+    <li><a href="#hadoop-的吞吐量">Hadoop 的吞吐量</a></li>
+    <li><a href="#如何应对可扩展性">如何应对可扩展性</a></li>
+    <li><a href="#可维护性">可维护性</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="设计数据密集型应用程序---可靠--可扩展--可维护">设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护</h1>
+<blockquote>
+<p>笔记来自于 《Designing Data-Intensive Applications》 的第一章</p>
+</blockquote>
+<h2 id="何为数据密集型应用程序">何为数据密集型应用程序</h2>
+<p>很多应用程序都需要用到如下和数据打交道的系统:</p>
+<ul>
+<li>数据库</li>
+<li>缓存</li>
+<li>搜索数据 &amp; 索引</li>
+<li>流处理</li>
+<li>批量处理</li>
+</ul>
+<p>设计这样的应用程序需要考虑很多因素，在此重点关注:</p>
+<ul>
+<li>可靠性: 系统持续工作</li>
+<li>可扩展: 能维持系统负载 (Load) 的增长</li>
+<li>可维护: 多人维护</li>
+</ul>
+<h2 id="twitter-的负载">Twitter 的负载</h2>
+<ul>
+<li>2012 年 Tweet 平均产生的速率: 4.6k/s，峰值速率可以达到 12k/s.</li>
+<li>用户浏览首页的这个 API 请求平均: 300k/s.</li>
+</ul>
+<p>Twitter 主要的挑战在于，每个用户可以关注很多人，每个人可以被很多人关注。实现这种系统通常有两种方式:</p>
+<p>(1) 用户发布 Tweet 直接写入到大的 Tweet 表中即可。而用户浏览首页，需要首先查找用户关注的所有人，找到这些人发布的所有 Tweet，然后(按照时间)合并这些 Tweet:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> tweets.<span style="color:#f92672">*</span>, users.<span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> tweets
+ <span style="color:#66d9ef">JOIN</span> users <span style="color:#66d9ef">ON</span> tweets.sender_id <span style="color:#f92672">=</span> users.id
+ <span style="color:#66d9ef">JOIN</span> follows <span style="color:#66d9ef">ON</span> follows.followee_id <span style="color:#f92672">=</span> users.id
+ <span style="color:#66d9ef">WHERE</span> follows.follower_id <span style="color:#f92672">=</span> <span style="color:#66d9ef">current_user</span>
+</code></pre></div><p><img src="/images/docs/books/ddia/twitter-relation-db-impl.png" alt=""></p>
+<p>(2) 每个用户的 Timeline 都维护一个<strong>缓存</strong>。用户发布 Tweet 时，查找关注这个用户的所有人，然后将这条 Tweet 插入到这些人的 Timeline 中。这样用户浏览 Timeline 的请求，几乎不需要耗费什么代价，因为结果已经放置好了。</p>
+<p><img src="/images/docs/books/ddia/twitter-cache-impl.png" alt=""></p>
+<p>方法 (2) 的缺点是将 46k/s 写转为 345k/s 写，因为发布一条帖子，平均需要插入到 75 个关注者的 Timeline 中，更别提那些大 V 有千万的关注者，在几秒内写入这么多数据可以说是非常具有挑战性的。所以，对于 Twitter 这样的系统，<strong>每个用户的关注者的分布</strong>是一个非常核心的影响可扩展性的负载<strong>因子</strong>。你的应用程序或许有其它不同的特征参数，但是你运用上述分析原则也能分析出影响你的系统性能的<strong>关键因子</strong>。</p>
+<p>Twitter 现在的系统采用的是方法 (1) 和方法 (2) 混合在一起的方法，同时使用。</p>
+<h2 id="hadoop-的吞吐量">Hadoop 的吞吐量</h2>
+<p>Hadoop 的吞吐量是指每秒钟能处理的记录，但有时候<strong>响应时间</strong>(<strong>响应时间</strong>: 客户端衡量的；<strong>延迟</strong>: 一个请求等待多长时间被处理)是一个更好的衡量指标。你不要把响应时间看做是一个单一的值，而应该将其视为一系列可以测量的值的<strong>分布</strong>。</p>
+<p><img src="/images/docs/books/ddia/response-time-distribution.png" alt=""></p>
+<p>这偶尔高出来的响应时间可能是因为后台进程的上下文切换、TCP 包的重传、垃圾收集器的 STW、缺页中断、服务器机架的物理震动或其他原因。</p>
+<p>另外，你可能看过许多人提到<strong>平均响应时间</strong>，这并不是一个很好的衡量系统的指标，它并没有告诉你一个普通用户实际上感受到了多少 delay。更好的方法是使用 <strong>percentiles</strong>，将所有的响应时间由最快到最慢进行排序，取<strong>中位数</strong>这个数字，你可以很直观地了解到你的用户通常需要等待多长时间，这个中位数也称之为 <strong>50th percentile</strong>，有时候缩写为 <strong>p50</strong>。根据此种指标，你可以找出你的系统在极端情况下表现的有多差劲，比如改为 95th、99th、99.9th 等等。</p>
+<p>响应时间的 <strong>High percentiles</strong>，也称之为<strong>tail latencies</strong>，是一个很重要的指标，因为它直接影响用户的体验。例如，亚马逊在内部设置了 99.9th 的指标，即使只影响 1/1000 的请求，这是因为发起请求最慢的用户通常是在账户里面拥有最多数据的用户，他们购买的产品也会更多，它们是最有价值的那批用户，如何保证这批用户欢快的购物体验是极其重要的，亚马逊也注意到响应时间每增加 100ms，销售额就会降低 1%，另外一项调查表明每增加 1秒钟的响应时间，用户的购物满意度降低 16%。</p>
+<p>如果某个服务依赖了多个其他服务，那么被依赖的服务只要有一个服务的响应时间变慢，就会有相当一部分用户觉得整个系统变慢了，这称之为<strong>尾部延迟增强 (tail latency amplification)</strong>。</p>
+<p><img src="/images/docs/books/ddia/several-backend-serve-a-request.png" alt=""></p>
+<p>监控响应时间的手段有很多种，比如可以使用滚动窗口实时统计过去 10 分钟之内的所有请求的响应时间的中位数，以及不同的 percentiles 指标。比较自然的实现方式是使用一个 List 每分钟排序一次找出这些指标，效率更为高效的实现方式可以采用 forward decay、t-digest、HdrHistogram 方法。</p>
+<h2 id="如何应对可扩展性">如何应对可扩展性</h2>
+<p>设计一个每秒钟需要处理 10W 请求，每个请求 1KB 的系统，和设计一个每分钟需要处理 3 个请求，每个请求 2GB 大小的系统，其设计应该是完全不同的。</p>
+<blockquote>
+<p>银弹并不存在。</p>
+</blockquote>
+<h2 id="可维护性">可维护性</h2>
+<p>三个系统设计原则:</p>
+<ul>
+<li>Operability: Make it easy for operations teams to keep the system running smoothly.</li>
+<li>Simplicity: 新加入工程师能够比较容易地理解系统.</li>
+<li>Evolvability: 工程师能够在未来能够比较容易地改变系统.</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#何为数据密集型应用程序">何为数据密集型应用程序</a></li>
+    <li><a href="#twitter-的负载">Twitter 的负载</a></li>
+    <li><a href="#hadoop-的吞吐量">Hadoop 的吞吐量</a></li>
+    <li><a href="#如何应对可扩展性">如何应对可扩展性</a></li>
+    <li><a href="#可维护性">可维护性</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
