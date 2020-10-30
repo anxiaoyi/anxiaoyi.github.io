@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="设计数据密集型应用程序 - 存储和读取"><meta property="og:title" content="设计数据密集型应用程序 - 存储和读取" />
+<meta property="og:description" content="设计数据密集型应用程序 - 存储和读取  笔记来自于 《Designing Data-Intensive Applications》 的第三章
+ 精心选取的索引可以提升查询的速度，但是也会影响写入的速度。很多数据库系统内部会采用一种 append-only log file 文件，来记录更新了什么数据。
+Hash 索引 使用 in-memory hash map 对只进行追加写入的文件进行索引:
+如上述讨论，我们只对文件追加，但是如何防止文件大到超出磁盘空间呢？一种可行的办法是，将 log 文件切分为 segments (当一个 segment 文件达到某个大小的时候，就关闭它，然后开始往新的 segment 文件中写入)，我们可以在这些 compaction 中进行 compaction (去除对 key 的重复的历史更新，只保留最近一次的更新即可)。
+事实上，在执行 compaction (可以让 segment 文件不至于太大) 的时候，我们还可以同时 merge segments 到新的 segment 文件中，可以使用一个后台线程来执行这些操作。在执行操作的同时，我们依然可以使用旧的 segment 文件继续对外提供 read 和 write 服务。当 merge 完毕后，我们再切换到新的 segment 文件上，然后将旧的 segment 文件删除即可。
+现在每一个 segment 文件都拥有了自己的 in-memory hash table，存储了 key 到文件偏移量的映射关系。根据 key 查找值的过程，我们首先检查最近的 segment 的 hash map，如果 key 不在里面，我们就查找第二个 segment，以此类推。merge 操作本身会保证 segment 文件不至于太多，所以我们也无须查看太多的 hash map。当然在实际实现中，还是有很多问题需要考虑:" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/books/ddia-chapter3/" />
+
+<title>设计数据密集型应用程序 - 存储和读取 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.366c55f00f2870e9c52405dff440e84336e8bc206119f891451e07f8eaa7dd66.js" integrity="sha256-NmxV8A8ocOnFJAXf9EDoQzbovCBhGfiRRR4H&#43;Oqn3WY="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/beauty_of_mathematics/" >
+      数学之美
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/history_of_quantum_physics/" >
+      上帝掷骰子吗
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/clean_code/" >
+      代码整洁之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the_transformation_of_enterprise_it_architecture/" >
+      企业 IT 架构转型之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/redis_5_source_code/" >
+      Redis 5 设计与源码分析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/" >
+      深度剖析 Apache Dubbo 核心技术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/everyone-is-architect/" >
+      人人都是架构师 (一)
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-art-of-readable-code/" >
+      编写可读代码的艺术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-wisdom-of-trading-stocks/" >
+      炒股的智慧
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia-chapter1/" >
+      设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia-chapter2/" >
+      设计数据密集型应用程序 - 数据模型 &amp; 查询语言
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia-chapter3/"  class="active">
+      设计数据密集型应用程序 - 存储和读取
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>设计数据密集型应用程序 - 存储和读取</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#hash-索引">Hash 索引</a></li>
+    <li><a href="#sstables-和-lsm-trees">SSTables 和 LSM-Trees</a>
+      <ul>
+        <li><a href="#构建与维护-sstables">构建与维护 SSTables</a></li>
+        <li><a href="#lsm-tree-与-sstable">LSM-tree 与 SSTable</a></li>
+        <li><a href="#优化">优化</a></li>
+      </ul>
+    </li>
+    <li><a href="#b-trees">B-Trees</a>
+      <ul>
+        <li><a href="#使-b-tree-更为可靠">使 B-tree 更为可靠</a></li>
+        <li><a href="#优化-b-tree">优化 B-tree</a></li>
+      </ul>
+    </li>
+    <li><a href="#对比-b-tree-和-lsm-tree">对比 B-tree 和 LSM-Tree</a>
+      <ul>
+        <li><a href="#lsm-tree-的优势">LSM-tree 的优势</a></li>
+        <li><a href="#lsm-tree-的劣势">LSM-tree 的劣势</a></li>
+      </ul>
+    </li>
+    <li><a href="#其它索引结构">其它索引结构</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="设计数据密集型应用程序---存储和读取">设计数据密集型应用程序 - 存储和读取</h1>
+<blockquote>
+<p>笔记来自于 《Designing Data-Intensive Applications》 的第三章</p>
+</blockquote>
+<p>精心选取的索引可以提升查询的速度，但是也会影响写入的速度。很多数据库系统内部会采用一种 append-only log file 文件，来记录更新了什么数据。</p>
+<h2 id="hash-索引">Hash 索引</h2>
+<p>使用 in-memory hash map 对只进行<strong>追加</strong>写入的文件进行索引:</p>
+<p><img src="/images/docs/books/ddia/in-memory-hash-map-index.png" alt=""></p>
+<p>如上述讨论，我们只对文件<strong>追加</strong>，但是如何防止文件大到超出磁盘空间呢？一种可行的办法是，将 log 文件切分为 segments (当一个 segment 文件达到某个大小的时候，就关闭它，然后开始往新的 segment 文件中写入)，我们可以在这些 compaction 中进行 compaction (去除对 key 的重复的历史更新，只保留最近一次的更新即可)。</p>
+<p><img src="/images/docs/books/ddia/compaction-of-key-value-update-log.png" alt=""></p>
+<p>事实上，在执行 compaction (可以让 segment 文件不至于太大) 的时候，我们还可以同时 merge segments 到新的 segment 文件中，可以使用一个后台线程来执行这些操作。在执行操作的同时，我们依然可以使用旧的 segment 文件继续对外提供 read 和 write 服务。当 merge 完毕后，我们再切换到新的 segment 文件上，然后将旧的 segment 文件删除即可。</p>
+<p><img src="/images/docs/books/ddia/compaction-and-segment-merging-simultaneously.png" alt=""></p>
+<p>现在每一个 segment 文件都拥有了自己的 in-memory hash table，存储了 key 到文件偏移量的映射关系。根据 key 查找值的过程，我们首先检查最近的 segment 的 hash map，如果 key 不在里面，我们就查找第二个 segment，以此类推。merge 操作本身会保证 segment 文件不至于太多，所以我们也无须查看太多的 hash map。当然在实际实现中，还是有很多问题需要考虑:</p>
+<ul>
+<li>文件格式: CSV 文件格式并不是最合适的，一般采用二进制格式的文件，先存储字符串的长度，紧跟着存储字符串本身。</li>
+<li>删除记录: 如果想要删除一个键值对，那么需要对数据文件添加一个特殊的删除记录 (有时候称之为 tombstone). 当执行 merge 操作的时候，这个标记位告诉 merging 进程删除掉这个 key.</li>
+<li>崩溃恢复: 如果数据库重启了，那么 in-memory hash map 里面的数据也就丢失了。当然你可以每次在数据库重启的时候，重新读取每一个 segment 文件，重新建立建设关系，但似乎花费的时间有点长。Bitcask 采用的策略是在磁盘上存储每一个 segment 文件 hash map 的 snapshot，这样重新恢复到磁盘的时候会更快一些。</li>
+<li>部分写入: 数据库可能在写入到一半的时候崩溃。Bitcask 引入了校验码，针对这种写入可能出现问题的记录可以删除掉或者忽略掉。</li>
+<li>并发控制: 写是追加写，因此一般的实现方法是只有一个<strong>写线程</strong>。segment 文件一旦写入，就不会再做任何修改，因此<strong>并发读</strong>是没有问题的。</li>
+</ul>
+<p>只能进行追加写入的 log 文件是否有点浪费？实时证明，这样的限制有很多好处:</p>
+<ul>
+<li>Appending 和 segment merging 是顺序写操作，比随机写要快很多，尤其是在旋转驱动的磁盘上。某种程度上，及时是 SSD 磁盘，也要快一些。</li>
+<li>顺序写或者 immutable 使得并发控制和崩溃恢复容易了许多，你不用担心某个文件会出现既存储了一部分旧文件的内容，同时又存储了一些新文件的内容这种情况。</li>
+<li>归并旧的 segment 文件，避免了数据文件分片的问题。</li>
+</ul>
+<p>然而，Hash table 索引也有限制:</p>
+<ul>
+<li>Tash table 必须装载到内存中，基于磁盘的 hash map 需要太多的随机 I/O。</li>
+<li>支持范围查询并不容易，例如你不能很轻松地查找到位于 <strong>kitty00000</strong> 和 <strong>kitty99999</strong> 之间的所有 key。</li>
+</ul>
+<p>接下来，我们就讨论不受这种限制的索引结构。</p>
+<h2 id="sstables-和-lsm-trees">SSTables 和 LSM-Trees</h2>
+<p>现在，我们要求存储到 segment 文件中的 key-value 对要根据 key 排好序，这种格式的文件称之为 <strong>Sorted String Table (SSTable)</strong>。我们还要求在每一个归并好的 segment 文件中，每一个 key 仅允许出现一次 (当然，compaction 进程本身已经保证了这一点)。SSTable 相对于基于哈希索引的 segment log 文件有巨大优势:</p>
+<ul>
+<li>归并 segment 文件变得简单和高效，即使文件的超出了内存的大小。我们可以采用<strong>归并排序</strong>来突破内存的限制，只需要对比<strong>每个文件的第一个 key</strong>，然后将 lowest 的 key 拷贝到输出文件中，然后重复这个过程即可:</li>
+</ul>
+<p><img src="/images/docs/books/ddia/Merging-several-SSTable-segments.png" alt=""></p>
+<p>每一个 segment 包含的是某段时间内的所有写入数据库的值，这也意味着一个 segment 文件里的所有 values 一定比另外一个 segment 文件里的所有 values 在时间线上要更晚一些 (假设我们只是合并相邻的 segment 文件)。当多个文件都有某个 key 的时候，仅需要保存最近一次写入的，放弃其它时间段写入的旧值即可。</p>
+<ul>
+<li>假设你要查找 <code>handiwork</code> 关联的值，但是你并不知道它的值在 segment 文件中的具体的偏移量。然而，你知道 <code>handbag</code> 和 <code>handsome</code> 的偏移量，因为所有的 key 是排好序的，因此你知道 <code>handiwork</code> 位于这两个 key 之间。因此你可以从 <code>handbag</code> 这个 key 开始顺序扫描，直至找到这个 key。</li>
+</ul>
+<p><img src="/images/docs/books/ddia/ssltable-with-in-memory-index.png" alt=""></p>
+<p>你仍然需要在内存维护一个有关 key 偏移量的表，然而你不需要维护所有的，只需要维护特定的一些 (sparse) 即可，一个几 KB 大小的 segment 文件维护一个 key 的偏移量即可，因为线性扫描几 KB 速度是很快的。</p>
+<ul>
+<li>既然读请求无论如何都需要线性扫描一段范围的 key，那干脆就将这段记录归位一组，形成一个 <strong>block</strong>，在写入磁盘之前进行<strong>压缩</strong>。这样，sparse in-memory index 的每一项指向的都是压缩后的 block 的入口，不但可以节省磁盘空间，也能减少 I/O 带宽消耗。</li>
+</ul>
+<h3 id="构建与维护-sstables">构建与维护 SSTables</h3>
+<ul>
+<li>当有 write 操作的时候，将其添加到 in-memory balanced tree 数据结构中 (例如，红黑树)，这种 in-memory tree 有时候称之为 <strong>memtable</strong>.</li>
+<li>当 memtable 增长到超过某个阈值 (比如几 MB) 的时候，将其作为一个 SSTable 写入到磁盘上。接下来的 write 请求可以转到新的 memtable 上进行。</li>
+<li>当有 read 请求的时候，首先尝试在 memtable 中根据 key 查找，然后在最近一次生成的存储在磁盘上的 segment 文件中查找，然后再下一个 segment 文件中查找。</li>
+<li>在这整个过程中，后台运行着一个进行归并和 compaction 的进程，用来 combine segment 文件、丢弃已经删除的值等操作。</li>
+</ul>
+<p>上述机制运行地非常好，它只有一个问题: 当数据库崩溃的时候，最近一次的 write 写 (即已经写入到 memtable 中，但是没有写入到磁盘中的记录) 将会丢失。为了避免出现这个问题，我们可以创建一个独立的 log 文件用来记录每次新写入的记录。这个 log 文件无须有序，它唯一的目的就是为了恢复数据库。每当 memtable 写入到 SSTable 文件中后，与其相关联的 log 文件就可以丢弃了。</p>
+<h3 id="lsm-tree-与-sstable">LSM-tree 与 SSTable</h3>
+<p>这里提到的算法是 LevelDB 和 RocksDB 中提到的，Cassandra 和 HBase 中也使用了相似的存储引擎算法，它们应该都是受到 Google 的 Bigtable 论文 (引入了 SSTable 和 memtable 的概念) 所启发的。</p>
+<p>这种索引结构一开始称作 Log-Structured Merge-Tree ，在此基础上构建的存储引擎称之为 LSM 存储引擎。Elasticsearch 和 Solr 使用 Lucene 作为其索引引擎，其底层同样采用了相似的技术来存储它的 term dictionary。</p>
+<h3 id="优化">优化</h3>
+<ul>
+<li>LSM 查找不在数据库中的 key 的时候会很慢，一般采用 <strong>Bloom filters</strong> 来优化。</li>
+<li>SSTable 如何 compact 和 merge 的策略也有很多种，最常见的是 size-tiered 和 leveled compaction。 LevelDB 和 RocksDB 采用的是 leveled compaction，HBase 采用的是 size-tiered，Cassandra 两者都支持。Size-tiered compaction，新的以及比较小的 SSTable 会被合并到旧的、比较大的 SSTable 的后面；Leveled compaction，key range 会被切为比较小的 SSTable 文件，旧的数据会被移动到其它<strong>层</strong>，这是为了让 compaction 增量处理、并且使用较少的磁盘空间。</li>
+</ul>
+<p>采用 LSM-tree 之后，也支持<strong>范围查询</strong>了，因此磁盘写入是顺序的，因此写的吞吐量也是非常高的。</p>
+<h2 id="b-trees">B-Trees</h2>
+<p>B-tree 是最常见的索引结构，目前很多关系型甚至非关系型数据库底层存储索引采用的都是 B-tree 索引。</p>
+<p>B-tree 存储的 key-value 对是有序的，因此支持非常高效地范围查询。B-tree 将数据库切分为固定大小的 block 或 page，通常是 4KB 大小 (有时候更大)，每次读或者写都是以一个 page 为单位的。这种设计更多的考虑到了硬件的特性，因为磁盘就是以固定大小的 block 设计的。</p>
+<p>每一个 page 可以通过一个地址或者一个 location，来指向到这个 page，一个 page 也可以通过指针指向另外一个 page，此处说的指针不是位于内存中，而是位于磁盘上。我们就根据 page 直接的这些引用可以构建一颗 page 树:</p>
+<p><img src="/images/docs/books/ddia/lookup-key-in-b-tree.png" alt=""></p>
+<p>这棵树的的 root 节点是一个 page，这个 page 包含了几个 key 以及指向孩子节点 page 的 reference，每一个孩子又以同样的方式构建一段<strong>连续的</strong> key。最终会进入到一个包含 key 和这个 key 关联的 value 的 page 。</p>
+<p>一个 page 指向孩子 page 的 reference 的数量在 B-tree 里称之为 <strong>branching factor</strong>，在实际实现中，这个值取决于存储 reference 需要多少空间，以及一段连续 key 的范围是多大，一般而言这个数字是<strong>几百</strong>。</p>
+<p>如果想要更新某个 key 的值，那么需要首先找到这个 key 所在的 leaf page，然后更新值，然后<strong>写回到磁盘</strong>上。如果你想要添加一个新的 key，你需要找到容纳这个 key 的这段 range，然后添加这个 range 所在的 page 上，如果这个 page 的空间不足了，那么需要将其拆为两半，父 page 需要根据新的<strong>子视图</strong>的变化而随之更新。</p>
+<p><img src="/images/docs/books/ddia/growing-b-tree-by-splitting-a-page.png" alt=""></p>
+<p>B-tree 树的算法保证了树本身一直是平衡的: 一个有 n 个 key 的 B-tree 总是有 O(logn) 的深度，多数数据库用 3 层或 4 层的深度就可以容纳整个数据库本身，所以在查找数据额时候，无须追踪太多的 page reference (一个 4 层的 B-tree，每个 page 存储 4KB，branching factor 为 500，那么可以存储多达 256 TB 的数据)。</p>
+<h3 id="使-b-tree-更为可靠">使 B-tree 更为可靠</h3>
+<p>B-tree 写入 page 的这种操作不同于上述介绍到的方法，这是一种 overwritten，而非 append 的方式。</p>
+<p>为了使数据库崩溃之后不至于难以恢复，通常 B-tree 的实现会伴随着另外一个额外的位于磁盘上的数据结构: write-ahead log (WAL，也称之为 redo log)。这种一种 append-only 的文件，B-tree 的每一次修改操作更新 page 之前，必须将此种修改先写入到这个文件中。数据库的崩溃恢复，就全靠这个 log 来重新让数据恢复<strong>一致性</strong>了。</p>
+<p>更新 page 的时候也得需要考虑到<strong>并发控制</strong>的问题，这期间可能有其它几个线程正在执行<strong>查询</strong>，不保护数据的话，线程容易看到<strong>不一致</strong>的状态。这通常是使用<strong>latches (lighweight locks)</strong> 来做到的。Log-结构的索引不存在这个问题，因为在后台归并 segment 文件的时候，这些 segment 文件并不会处理查询请求。</p>
+<h3 id="优化-b-tree">优化 B-tree</h3>
+<p>B-tree 已经出现这么多年了，针对它也有许多优化技术:</p>
+<ul>
+<li>某些数据库 (例如 LMDB) 使用 copy-on-write 机制来恢复数据，而非采用 overwriting page 和维护 WAL 来恢复。某个 page 被修改之后，会被写入到一个不同的位置，parent page 也会指向这个新的 page。</li>
+<li>存储 key 的时候无须存储整个 key，可以存储 key 的缩写。尤其是在 tree 中间的那些层，它只需要提供能维系一段范围的信息就足够了。</li>
+<li>通常的实现: 一段 key 是连续的，这些 key 指向的 page 在磁盘上不一定是连续的。这样当有一个大的范围查询的时候，逐个读取这一个又一个不连续的 page 是非常低效的。许多 B-tree 在实现上都在尝试维护 leaf page 在磁盘上的有序性，尽管在 tree 增长的时候，同时维护 leaf page 的有序性，的确是一件很困难的事情。</li>
+<li>我们可以在 tree 上添加更多的指针。例如，每一个 leaf page 可以有指针指向左右兄弟 page，这样在线性扫描的时候，可以直接跳到上游或者下游，而无需从 parent page 上绕路。</li>
+<li>B-tree 的变种例如 fractal tree，引入了一些 log-structured 的想法来减少磁盘 I/O。</li>
+</ul>
+<h2 id="对比-b-tree-和-lsm-tree">对比 B-tree 和 LSM-Tree</h2>
+<p>根据经验，LSM-tree 通常写的速度非常快 (读通常比较慢，因为伴随着 comopaction，SSTable 可能分别位于不同的阶段，一次读可能就需要查询几种不同的数据结构)，而 B-tree 通常读的速度比较快。</p>
+<p>然而，一切还是得让 benchmark 的结果说话。</p>
+<h3 id="lsm-tree-的优势">LSM-tree 的优势</h3>
+<h3 id="lsm-tree-的劣势">LSM-tree 的劣势</h3>
+<h2 id="其它索引结构">其它索引结构</h2>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#hash-索引">Hash 索引</a></li>
+    <li><a href="#sstables-和-lsm-trees">SSTables 和 LSM-Trees</a>
+      <ul>
+        <li><a href="#构建与维护-sstables">构建与维护 SSTables</a></li>
+        <li><a href="#lsm-tree-与-sstable">LSM-tree 与 SSTable</a></li>
+        <li><a href="#优化">优化</a></li>
+      </ul>
+    </li>
+    <li><a href="#b-trees">B-Trees</a>
+      <ul>
+        <li><a href="#使-b-tree-更为可靠">使 B-tree 更为可靠</a></li>
+        <li><a href="#优化-b-tree">优化 B-tree</a></li>
+      </ul>
+    </li>
+    <li><a href="#对比-b-tree-和-lsm-tree">对比 B-tree 和 LSM-Tree</a>
+      <ul>
+        <li><a href="#lsm-tree-的优势">LSM-tree 的优势</a></li>
+        <li><a href="#lsm-tree-的劣势">LSM-tree 的劣势</a></li>
+      </ul>
+    </li>
+    <li><a href="#其它索引结构">其它索引结构</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

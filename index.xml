@@ -2143,7 +2143,9 @@ function refreshRem() { var docEl = doc.documentElement; var width = docEl.getBo
       
       <guid>https://kunzhao.org/docs/books/ddia-chapter2/</guid>
       <description>设计数据密集型应用程序 - 数据模型 &amp;amp; 查询语言  笔记来自于 《Designing Data-Intensive Applications》 的第二章
- 关系型模型 VS 文档模型 </description>
+ LinkedIn 的简历 简历是一种 self-contained 文档，采用 JSON 的表达方式应该会更为合适。
+JSON 示例如下:
+{ &amp;#34;user_id&amp;#34;: 251, &amp;#34;first_name&amp;#34;: &amp;#34;Bill&amp;#34;, &amp;#34;last_name&amp;#34;: &amp;#34;Gates&amp;#34;, &amp;#34;summary&amp;#34;: &amp;#34;Co-chair of the Bill &amp;amp; Melinda Gates... Active blogger.&amp;#34;, &amp;#34;region_id&amp;#34;: &amp;#34;us:91&amp;#34;, &amp;#34;industry_id&amp;#34;: 131, &amp;#34;photo_url&amp;#34;: &amp;#34;/p/7/000/253/05b/308dd6e.jpg&amp;#34;, &amp;#34;positions&amp;#34;: [ {&amp;#34;job_title&amp;#34;: &amp;#34;Co-chair&amp;#34;, &amp;#34;organization&amp;#34;: &amp;#34;Bill &amp;amp; Melinda Gates Foundation&amp;#34;}, {&amp;#34;job_title&amp;#34;: &amp;#34;Co-founder, Chairman&amp;#34;, &amp;#34;organization&amp;#34;: &amp;#34;Microsoft&amp;#34;} ], &amp;#34;education&amp;#34;: [ {&amp;#34;school_name&amp;#34;: &amp;#34;Harvard University&amp;#34;, &amp;#34;start&amp;#34;: 1973, &amp;#34;end&amp;#34;: 1975}, {&amp;#34;school_name&amp;#34;: &amp;#34;Lakeside School, Seattle&amp;#34;, &amp;#34;start&amp;#34;: null, &amp;#34;end&amp;#34;: null} ], &amp;#34;contact_info&amp;#34;: { &amp;#34;blog&amp;#34;: &amp;#34;http://thegatesnotes.</description>
     </item>
     
     <item>
@@ -2173,6 +2175,20 @@ sticky sticky 是粘性定位 (动态定位)。它依据滚动的位置动态地
  你可能会使用 ConcurrentHashMap&amp;lt;Thread, T&amp;gt;，以 Thread.currentThread() 作为 key，这完全可以。但是缺点明显：1. 处理并发问题；2. 必须有指针指向 Thraed 和 这个对象，即使 Thraed 已经结束了，可以被 GC 了。 那我们改为  Collections.synchronizedMap(new WeakHashMap&amp;lt;Thread, T&amp;gt;()) 怎样？ 可以解决 GC 问题，但是多线程问题仍然没有解决。  Java 实现的想法，没有用 &amp;lt;Thread, T&amp;gt; ，而是大概如下：
 new WeakHashMap&amp;lt;ThreadLocal,T&amp;gt;() 而事实上，在每个 Thread 内部也的确有这么一个 Map 指针：
 public class Thread implements Runnable { ThreadLocal.ThreadLocalMap threadLocals = null; } 虽然 ThreadLocalMap 并不是一个 WeakHashMap，但是它的设计类似 WeakHashMap，它的 Key 是由 Weak Reference 引用的。</description>
+    </item>
+    
+    <item>
+      <title>设计数据密集型应用程序 - 存储和读取</title>
+      <link>https://kunzhao.org/docs/books/ddia-chapter3/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/ddia-chapter3/</guid>
+      <description>设计数据密集型应用程序 - 存储和读取  笔记来自于 《Designing Data-Intensive Applications》 的第三章
+ 精心选取的索引可以提升查询的速度，但是也会影响写入的速度。很多数据库系统内部会采用一种 append-only log file 文件，来记录更新了什么数据。
+Hash 索引 使用 in-memory hash map 对只进行追加写入的文件进行索引:
+如上述讨论，我们只对文件追加，但是如何防止文件大到超出磁盘空间呢？一种可行的办法是，将 log 文件切分为 segments (当一个 segment 文件达到某个大小的时候，就关闭它，然后开始往新的 segment 文件中写入)，我们可以在这些 compaction 中进行 compaction (去除对 key 的重复的历史更新，只保留最近一次的更新即可)。
+事实上，在执行 compaction (可以让 segment 文件不至于太大) 的时候，我们还可以同时 merge segments 到新的 segment 文件中，可以使用一个后台线程来执行这些操作。在执行操作的同时，我们依然可以使用旧的 segment 文件继续对外提供 read 和 write 服务。当 merge 完毕后，我们再切换到新的 segment 文件上，然后将旧的 segment 文件删除即可。
+现在每一个 segment 文件都拥有了自己的 in-memory hash table，存储了 key 到文件偏移量的映射关系。根据 key 查找值的过程，我们首先检查最近的 segment 的 hash map，如果 key 不在里面，我们就查找第二个 segment，以此类推。merge 操作本身会保证 segment 文件不至于太多，所以我们也无须查看太多的 hash map。当然在实际实现中，还是有很多问题需要考虑:</description>
     </item>
     
     <item>
