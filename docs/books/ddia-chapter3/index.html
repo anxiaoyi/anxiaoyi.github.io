@@ -21,7 +21,7 @@ Hash 索引 使用 in-memory hash map 对只进行追加写入的文件进行索
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.366c55f00f2870e9c52405dff440e84336e8bc206119f891451e07f8eaa7dd66.js" integrity="sha256-NmxV8A8ocOnFJAXf9EDoQzbovCBhGfiRRR4H&#43;Oqn3WY="></script>
+<script defer src="/en.search.min.3710f84eb679e9cec9eb25aff11b77a345ddbd7af52ed2548a0dfff8fb2e62fd.js" integrity="sha256-NxD4TrZ56c7J6yWv8Rt3o0XdvXr1LtJUig3/&#43;PsuYv0="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -625,8 +625,19 @@ var _hmt = _hmt || [];
 <p>根据经验，LSM-tree 通常写的速度非常快 (读通常比较慢，因为伴随着 comopaction，SSTable 可能分别位于不同的阶段，一次读可能就需要查询几种不同的数据结构)，而 B-tree 通常读的速度比较快。</p>
 <p>然而，一切还是得让 benchmark 的结果说话。</p>
 <h3 id="lsm-tree-的优势">LSM-tree 的优势</h3>
+<p>B-tree 索引至少需要<strong>两次</strong>才能真正的写一份数据: 一次是写入 write-ahead log，一次是写入 B-tree 树本身 (如果 page 有分裂，那么很有可能还需要再写一次)。如果只修改了几个字节，就需要写入整个 page ，这在时间上耗费也是比较长的。一些数据库甚至需要写入两次相同的 page，以防止在断电时，出现部分更新的 page 这种情况。</p>
+<p>Log-structured 索引由于需要不停的对 SSTable 进行 compaction 和 merge，因此也是需要写入多次的。这种一次写入，却在磁盘层面引发了多次写入的现象，称之为 <strong>write apmlification (写入放大)</strong>。固态硬盘更要引起注意，因为其覆盖写入的次数是有限的。</p>
+<p>LSM-tree 之所以有<strong>更高的写吞吐量</strong>，是因为它的 <strong>write amplification</strong> 稍弱一点，也是因为其总是顺序地写入到 SSTable 文件中，而不是覆盖写。要知道，在机械硬盘上随机写是远远慢于顺序写的。</p>
+<p>LSM-tree 可压缩性更好，其比 B-tree 更能产生较小的压缩文件。在 B-tree 里，当一个 page 分裂之后，或者某一行记录无法容纳进已有的 page 里，这个 page 的部分空间是没有被利用上的。鉴于 LSM-tree 不是以 page 为单位的，并且其也会周期性的重新 SSTable 来消除分片，因此在磁盘空间利用率上更高，尤其是采用 leveled compaction 算法的 LSM-tree。</p>
+<p>在许多 SSD 上，其会在内部使用 Log-structured 算法将底层存储芯片上的随机写入转换为顺序写入，因此存储引擎写入模式的影响不太明显。但是，较低的 write amplification 和较少的碎片在 SSD 上仍然是有利的：在可用的 I/O 带宽范围内，更紧凑地表示数据，意味着可以进行更多的读写请求。</p>
 <h3 id="lsm-tree-的劣势">LSM-tree 的劣势</h3>
+<p>log-structured 的劣势在于 compaction 进程可能会影响到 read 和 write 的性能。磁盘资源总是有限的，所以可能会出现一个 read 请求需要等待磁盘完成昂贵的 compaction 操作之后才能执行。这种影响或许不是很大，但是却有着更高的 percentiles，所以有时候会发现 log-structured 存储引擎有时候响应时间特别高，相比之下，B-tree 就更为稳定一些。</p>
+<p>另外 compaction 也给磁盘带来了更高的吞吐量，有限的<strong>磁盘写带宽</strong>需要被 logging、刷新 memtable 到磁盘以及后台的 compaction 线程所共享。</p>
+<p>如果写入量比较大同时 compaction 没有进行较好配置的话，可能还会发生 <strong>compaction 速度跟不上源源不断的 write 请求的速度</strong>。这种情况下，需要待合并的 segment 文件将会越来越多直至超出磁盘可用空间，读请求因为需要检查更多的 segment 文件，所以响应时间也会变长。而一般的基于 SSTable 存储引擎的实现，在 compaction 出现问题的时候，也不会对到来的写请求做任何约束，因此你需要自己取监控这种行为。</p>
+<p>B-tree 的优势在于每一个 key 仅存在于一个索引中，log-structured 存储引擎可能有相同 key 的位于多个 segment 文件中的多份拷贝。这给予了 B-tree 作为数据库存储引擎的更为迷人的魅力: 实现事物隔离，仅需要将锁与这棵树关联起来即可。</p>
+<p>没有某种简单方便的规则来告诉您，哪种存储引擎更适合您的应用程序，因此还是很值得测试的。</p>
 <h2 id="其它索引结构">其它索引结构</h2>
+<p>B-tree 和 log-structured 索引都可以用作<strong>二级索引</strong>。</p>
 </article>
  
 
