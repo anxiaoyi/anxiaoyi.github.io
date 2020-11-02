@@ -21,7 +21,7 @@ Hash 索引 使用 in-memory hash map 对只进行追加写入的文件进行索
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.3710f84eb679e9cec9eb25aff11b77a345ddbd7af52ed2548a0dfff8fb2e62fd.js" integrity="sha256-NxD4TrZ56c7J6yWv8Rt3o0XdvXr1LtJUig3/&#43;PsuYv0="></script>
+<script defer src="/en.search.min.25302541633c95f2fa9f6e270dc644d966419a16af640373ef8d325aaa50f7fe.js" integrity="sha256-JTAlQWM8lfL6n24nDcZE2WZBmhavZANz740yWqpQ9/4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -352,6 +352,16 @@ var _hmt = _hmt || [];
 </li>
       
     
+      
+        <li>
+
+  <a href="/docs/books/ddia-chapter4/" >
+      设计数据密集型应用程序 - 编码与演化
+  </a>
+
+</li>
+      
+    
   </ul>
   
 
@@ -523,7 +533,28 @@ var _hmt = _hmt || [];
         <li><a href="#lsm-tree-的劣势">LSM-tree 的劣势</a></li>
       </ul>
     </li>
-    <li><a href="#其它索引结构">其它索引结构</a></li>
+    <li><a href="#其它索引结构">其它索引结构</a>
+      <ul>
+        <li><a href="#值存储在索引中">值存储在索引中</a></li>
+        <li><a href="#多列索引">多列索引</a></li>
+        <li><a href="#全文检索与模糊索引">全文检索与模糊索引</a></li>
+        <li><a href="#in-memory-databases">in-memory databases</a></li>
+      </ul>
+    </li>
+    <li><a href="#交易处理还是分析">交易处理还是分析？</a>
+      <ul>
+        <li><a href="#数据仓库">数据仓库</a></li>
+        <li><a href="#分析的模式-星型和雪花型">分析的模式: 星型和雪花型</a></li>
+      </ul>
+    </li>
+    <li><a href="#面向列的存储">面向列的存储</a>
+      <ul>
+        <li><a href="#列压缩">列压缩</a></li>
+        <li><a href="#列存储的顺序">列存储的顺序</a></li>
+        <li><a href="#列存储的写入">列存储的写入</a></li>
+        <li><a href="#聚合-数据立方体和物化视图">聚合: 数据立方体和物化视图</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 
@@ -638,6 +669,130 @@ var _hmt = _hmt || [];
 <p>没有某种简单方便的规则来告诉您，哪种存储引擎更适合您的应用程序，因此还是很值得测试的。</p>
 <h2 id="其它索引结构">其它索引结构</h2>
 <p>B-tree 和 log-structured 索引都可以用作<strong>二级索引</strong>。</p>
+<h3 id="值存储在索引中">值存储在索引中</h3>
+<p>索引中的 key 关联的值，key 存储实际的行，也可以是一个指向实际行地址的引用。其中，存储引用的这种方式是比较常见的，这样有多个索引存在的时候，只需要其它索引的引用也指向就可以了，而无需复制数据。</p>
+<p>在一些场景下，通过引用再定位到实际行的这种存储方式，影响了读的性能，所以直接将值存储在索引中的做法更好一些，这种索引称之为<strong>聚簇索引</strong>。例如，在 MySQL 中，<strong>主键永远是聚簇索引</strong>，二级索引指向主键索引；在 SQL Server 中，你可以手动为每个表指定一个聚簇索引。聚集索引（存储索引中的所有行数据）和非聚集索引（仅存储对索引中数据的引用）之间的折衷称为<strong>覆盖索引</strong>或包含列的索引，它将表的某些列存储在索引中。这使得一些查询可以通过单独使用索引来直接响应（在这种情况下，索引被称为<strong>覆盖查询</strong>）。</p>
+<p>与任何类型的重复数据一样，聚集索引和覆盖索引可以加快读取速度，但它们需要额外的存储空间，并且会增加写入开销。</p>
+<h3 id="多列索引">多列索引</h3>
+<p>到目前为止讨论的索引只将一个键映射到一个值。如果我们需要同时查询表的多个列（或文档中的多个字段），那么这还不够。</p>
+<p>最常见的多列索引类型称为<strong>串联索引</strong>，它通过将一列附加到另一列而将多个字段合并为一个键（索引定义指定字段串联的顺序）。这就像一本老式的纸质电话簿，它提供了从（姓，名）到电话号码的索引。由于排序顺序不同，索引可用于查找具有特定姓氏的所有人员，或具有特定姓氏组合的所有人员。但是，如果你想找到所有有特定名字的人，索引就没有用了。</p>
+<p><strong>多维空间索引</strong>是一种比较重要的多维数据查询方法。例如，一个餐馆搜索网站可能有一个包含每个餐馆的经纬度的数据库。当用户在地图上查看餐厅时，网站需要搜索用户当前正在查看的矩形地图区域内的所有餐厅。这需要一个二维范围查询，如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> restaurants <span style="color:#66d9ef">WHERE</span> latitude <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">51</span>.<span style="color:#ae81ff">4946</span> <span style="color:#66d9ef">AND</span> latitude <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">51</span>.<span style="color:#ae81ff">5079</span> 
+                            <span style="color:#66d9ef">AND</span> longitude <span style="color:#f92672">&gt;</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">1162</span> <span style="color:#66d9ef">AND</span> longitude <span style="color:#f92672">&lt;</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">1004</span>;
+</code></pre></div><p>标准的 B-tree 或 LSM-tree 索引无法有效地处理此类查询：它可以提供纬度范围内（但在任何经度）的所有餐厅，或在经度范围内的所有餐厅（但在北极和南极之间的任何地方），但不能同时提供这两个索引。</p>
+<p>一种方法是使用空间填充曲线将二维位置转换为单个数字，然后使用常规 B 树索引。更常见的是使用特殊的空间索引，如 <strong>R 树</strong>。例如，PostGIS 使用 PostgreSQL 的广义搜索树索引将地理空间索引实现为 R 树。</p>
+<p>一个有趣的想法是，<strong>多维索引不仅仅针对地理位置</strong>。例如，在一个电子商务网站上，你可以使用三维索引（红、绿、蓝）来搜索特定颜色范围的产品，或者在天气观测数据库中，你可以在（日期，温度），以便有效地搜索 2013 年的所有观测值，其中温度在25至30℃之间。如果使用一维索引，则必须扫描2013年的所有记录（不考虑温度），然后按温度过滤，反之亦然。二维索引可以同时受到时间戳和温度的限制。HyperDex 就是使用的此类技术。</p>
+<h3 id="全文检索与模糊索引">全文检索与模糊索引</h3>
+<p>到目前为止讨论的所有索引都假定您有精确的数据，并允许您查询键的精确值，或者按排序顺序查询键的值范围。他们不允许你搜索相似的键，比如拼写错误的单词。这种模糊查询需要不同的技术。</p>
+<p>例如，全文搜索引擎通常允许对一个词的搜索进行扩展，以包括该词的同义词，忽略词的语法变化，并搜索同一文档中相邻词的出现，并支持依赖于文本语言分析的各种其他功能。为了处理文档或查询中的打字错误，Lucene 能够在一定<strong>编辑距离内</strong>搜索文本（编辑距离为 1 表示添加、删除或替换了一个字母）。</p>
+<p>在 Lucene 中，内存索引是键中字符的有限状态自动机，类似于 trie 树。这种自动机可以转换成 Levenshtein 自动机，它支持在给定编辑距离内有效地搜索单词。</p>
+<p>其他的模糊搜索技术则朝着文档分类和机器学习的方向发展。</p>
+<h3 id="in-memory-databases">in-memory databases</h3>
+<p>一些内存中的键值存储（如 Memcached ）仅用于缓存，在这种情况下，如果计算机重新启动，数据丢失是可以接受的。但其他内存中数据库的目标是持久性，这可以通过特殊硬件（如电池供电的 RAM ）来实现，方法是将更改日志写入磁盘，定期将快照写入磁盘，或将内存中的状态复制到其他机器。</p>
+<p>当内存中的数据库重新启动时，它需要从磁盘或通过网络从副本重新加载其状态（除非使用了特殊的硬件）。尽管写入磁盘，但它仍然是内存中的数据库，因为磁盘只是作为一个仅附加的日志来使用，以保证持久性，而读取完全是从内存中提供的。写入磁盘也有操作上的优势：磁盘上的文件可以很容易地被外部实用程序备份、检查和分析。</p>
+<p>VoltDB、MemSQL 和 Oracle TimesTen 等产品都是具有关系模型的内存数据库，这些供应商声称，通过消除与管理磁盘上数据结构相关的所有开销，它们可以大大提高性能。RAMCloud 是一个具有持久性的开源内存键值存储（对内存中的数据和磁盘上的数据使用日志结构的方法）。Redis 和 Couchbase 通过异步写入磁盘来提供弱持久性。</p>
+<p>与直觉相反，内存中数据库的性能优势并不是因为它们不需要从磁盘读取。如果内存足够，即使是基于磁盘的存储引擎也可能永远不需要从磁盘读取数据，因为操作系统无论如何都会在内存中缓存最近使用的磁盘块。相反，它们之可以更快，是因为它们<strong>可以避免以可写入磁盘的形式对内存中的数据结构进行编码的开销</strong>。</p>
+<p>除了性能之外，内存数据库的另一个有趣的领域是提供难以用基于磁盘的索引实现的数据模型。例如，Redis 为各种数据结构（如优先级队列和集合）提供类似数据库的接口。因为它将所有数据保存在内存中，所以它的实现相对简单。</p>
+<p>最近的研究表明，内存数据库体系结构可以扩展到支持比可用内存更大的数据集，而不用担心以磁盘为中心的体系结构的开销。所谓的反缓存方法的工作原理是：当内存不足时，将最近最少使用的数据从内存逐出磁盘，并在将来再次访问时将其重新加载到内存中。这与操作系统对虚拟内存和交换文件的操作类似，但是数据库可以比操作系统更有效地管理内存，因为它可以在单个记录的粒度上工作，而不是整个内存页。不过，这种方法仍然需要索引完全能装入内存（就像本章开头的 Bitcask 示例）。</p>
+<p>如果非易失性存储器（NVM）技术得到更广泛的采用，则可能需要对存储引擎设计进行进一步的更改。目前，这是一个新的研究领域，但值得今后继续关注。</p>
+<h2 id="交易处理还是分析">交易处理还是分析？</h2>
+<p>事务不必具有 ACID（原子性、一致性、隔离性和持久性）属性。事务处理只意味着允许客户端进行低延迟的读写操作，而不是只定期运行（例如，每天运行一次）的批处理作业。</p>
+<p>OLTP(online transaction processing) 和 OLAP(online analytic processing) 的不同:</p>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>OLTP</th>
+<th>OLAP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>主要读模式</td>
+<td>每一次查询是一小部分数据集</td>
+<td>聚合大规模的数据集</td>
+</tr>
+<tr>
+<td>主要写模式</td>
+<td>随机访问</td>
+<td>Bulk import (ETL) 或事件流</td>
+</tr>
+<tr>
+<td>主要用于</td>
+<td>Web 应用的客户</td>
+<td>分析做决策</td>
+</tr>
+<tr>
+<td>数据来源</td>
+<td>最近状态的数据</td>
+<td>已发生事件的历史数据</td>
+</tr>
+<tr>
+<td>数据量</td>
+<td>GB 到 TB</td>
+<td>TB 到 PB</td>
+</tr>
+</tbody>
+</table>
+<p>一开始，事务处理和分析查询都使用相同的数据库。SQL 在这方面非常灵活：它适用于 OLTP 类型的查询和 OLAP 类型的查询。然而，在20世纪80年代末和90年代初，有一种趋势是公司停止使用其 OLTP 系统进行分析，而是在单独的数据库上运行分析。这个单独的数据库称为<strong>数据仓库</strong>。</p>
+<h3 id="数据仓库">数据仓库</h3>
+<p>数据仓库是一个独立的数据库，分析师可以查询他们心中的内容，而不会影响 OLTP 操作。数据仓库包含公司中所有不同 OLTP 系统中数据的只读副本。数据从 OLTP 数据库中提取（使用定期数据转储或连续更新流），转换为便于分析的模式，进行清理，然后加载到数据仓库中。将数据放入仓库的过程称为提取-转换-加载（ETL），如图所示。</p>
+<p><img src="/images/docs/books/ddia/etl-into-data-warehouse.png" alt=""></p>
+<p>数据仓库的数据模型通常是<strong>关系型</strong>的，因为 SQL 通常很适合分析查询。有许多图形化的数据分析工具可以生成SQL查询，可视化结果，并允许分析人员探索数据（通过诸如向下钻取、切片和分片等操作）。</p>
+<p>从表面上看，数据仓库和关系OLTP数据库看起来很相似，因为它们都有一个SQL查询接口。但是，系统的内部结构看起来可能非常不同，因为它们针对非常不同的查询进行了优化模式。很多数据库供应商现在专注于支持事务处理或分析工作负载，但不是两者都支持。</p>
+<h3 id="分析的模式-星型和雪花型">分析的模式: 星型和雪花型</h3>
+<p>星型示例:</p>
+<p><img src="/images/docs/books/ddia/star-schema.png" alt=""></p>
+<p>“星型模式”这个名字来自这样一个事实：当表关系被可视化时，<strong>事实表位于中间</strong>，被它的维度表包围；到这些表的连接就像星星一样。</p>
+<p>此模板的变体称为<strong>雪花模式</strong>，其中维度进一步细分为子维度。雪花模式比星型模式更规范化，但星型模式通常更受欢迎，因为它们更便于分析人员使用。</p>
+<h2 id="面向列的存储">面向列的存储</h2>
+<p>如果 fact 数据表中有数以万亿计的行和数 PB 的数据，那么高效地存储和查询这些数据将成为一个具有挑战性的问题。维度表通常要小得多（数百万行），因此我们将主要关注 fact 的存储。</p>
+<p>尽管 fact 表的宽度通常超过100列，但一个典型的数据仓库查询一次只能访问其中的 4 或 5 列（“SELECT”查询很少用于分析）。以如下查询为例：它访问了大量的行（在2013年的日历年中，每次有人购买水果或糖果），但它只需要访问fact_sales表的三列：date_key、product_sk和quantity。查询忽略所有其他列。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span>
+	dim_date.weekday, dim_product.category,
+	<span style="color:#66d9ef">SUM</span>(fact_sales.quantity) <span style="color:#66d9ef">AS</span> quantity_sold
+<span style="color:#66d9ef">FROM</span> fact_sales
+	<span style="color:#66d9ef">JOIN</span> dim_date <span style="color:#66d9ef">ON</span> fact_sales.date_key <span style="color:#f92672">=</span> dim_date.date_key
+	<span style="color:#66d9ef">JOIN</span> dim_product <span style="color:#66d9ef">ON</span> fact_sales.product_sk <span style="color:#f92672">=</span> dim_product.product_sk
+<span style="color:#66d9ef">WHERE</span>
+	dim_date.<span style="color:#66d9ef">year</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">2013</span> <span style="color:#66d9ef">AND</span>
+	dim_product.category <span style="color:#66d9ef">IN</span> (<span style="color:#e6db74">&#39;Fresh fruit&#39;</span>, <span style="color:#e6db74">&#39;Candy&#39;</span>)
+<span style="color:#66d9ef">GROUP</span> <span style="color:#66d9ef">BY</span>
+	dim_date.weekday, dim_product.category;
+</code></pre></div><p>如何有效地执行此查询？</p>
+<p>在大多数OLTP数据库中，存储是以面向行的方式进行的：表的一行中的所有值都是相邻存储的。它的主要劣势在于，面向行的存储引擎需要将所有这些行（每个行由 100 多个属性组成）从磁盘加载到内存中，解析它们，并过滤掉那些不满足所需条件的行。这可能需要很长时间。</p>
+<p>面向列存储的思想很简单：不要将一行中的所有值存储在一起，而是将<strong>每个列中的所有值存储在一起</strong>。如果每个列都存储在单独的文件中，则查询只需要读取和解析查询中使用的列，这样可以节省大量工作。这一原理如图所示。</p>
+<p><img src="/images/docs/books/ddia/store-relational-data-by-column.png" alt=""></p>
+<p>面向列的存储布局依赖于按相同顺序包含行的每个<strong>列文件</strong>。</p>
+<h3 id="列压缩">列压缩</h3>
+<p>除了只从磁盘加载查询所需的列之外，我们还可以通过压缩数据进一步降低对磁盘吞吐量的要求。幸运的是，面向列的存储通常非常适合于压缩。看一看上图每一列的值序列：它们通常看起来相当重复，这是压缩的一个好标志。根据列中的数据，可以使用不同的压缩技术。一种在数据仓库中特别有效的技术是<strong>位图编码</strong>，如下图所示。</p>
+<p><img src="/images/docs/books/ddia/bitmap-indexed-column.png" alt=""></p>
+<p>通常，与行数相比，列中不同值的数量很少。我们现在可以获取一个包含 n 个不同值的列，并将其转换为 n 个单独的位图：每个不同值对应一个位图，每一行对应一个位。如果行具有该值，则位为 1；如果没有，则为 0。如果 n 很小，那么这些位图可以以每行一位的形式存储。但是如果 n 更大，大多数位图中都会有很多零（我们说它们是稀疏的）。在这种情况下，位图还可以进行 run-length encoded，如图所示。这可以使列的编码非常紧凑。</p>
+<p>像这样的位图索引非常适合于数据仓库中常见的查询类型。例如:</p>
+<ul>
+<li><code>WHERE product_sk IN (30, 68, 69)</code>: 加载 <code>product_sk = 30</code>、<code>product_sk = 68</code>、<code>product_sk = 69</code> 的位图，然后这三个位图进行高效地 OR 操作即可。</li>
+<li><code>WHERE product_sk = 31 AND store_sk = 3</code>: 加载 <code>product_sk = 31</code>、<code>store_sk = 3</code> 的位图，然后对这两个位图执行 AND 操作，因为列包含的都是相同顺序的行，所以	一个列的位图的第 k 个比特位和相同行的另外一个列的位图的第 k 个比特位是相关联的。</li>
+</ul>
+<blockquote>
+<p>Bigtable 模型主要是面向行的。因为在每一个列族里面，所有列和行键是存储在一起的，并且也不使用列压缩技术。</p>
+</blockquote>
+<h3 id="列存储的顺序">列存储的顺序</h3>
+<p>在列存储中，行的存储顺序并不一定重要。最简单的方法是按插入的顺序存储它们，因为插入新行只意味着将追加到每个列文件中。但是，我们可以选择像之前对 SSTable 所做的那样，强制一个顺序，并将其用作<strong>索引</strong>机制。</p>
+<p>数据排序的时候，每次调整的都是整个一行的数据。比如说对 <code>date</code> 这一列进行排序，排序之后的这个 <code>date</code> 列中数据存储的可能是:</p>
+<pre><code>2020-01-02,2020-01-05,2020-01-07,2020-02-03,...
+</code></pre><p>那么，其他列中的数据的顺序也会随之进行调整。通过排序，可以只扫描几行即可，避免扫描所有的行来获得特定的日期范围内的记录。</p>
+<p>不同的查询受益于不同的排序，那为何不干脆直接将多种不同顺序的数据存储下来呢？反正在分布式系统中，数据终归还是要存储多份的。实际上，C-Store、Vertica 就是这么干的。</p>
+<h3 id="列存储的写入">列存储的写入</h3>
+<p>类似于 LSM 树，所有的写操作首先进入内存存储器，在那里它们被添加到一个已排序的结构中，并为写入磁盘做好准备。内存中的存储是面向行还是面向列并不重要。当累积了足够多的写操作后，它们将与磁盘上的列文件<strong>合并</strong>并批量写入新文件。这基本上就是 Vertica 所做的。</p>
+<p>查询需要同时检查磁盘上的列数据和内存中最近的写操作，并将两者结合起来。但是，查询优化器对用户隐藏了这种区别。从分析员的角度来看，通过插入、更新或删除修改的数据会立即反映在后续查询中。</p>
+<h3 id="聚合-数据立方体和物化视图">聚合: 数据立方体和物化视图</h3>
+<p>并非每个数据仓库都必须是列存储：传统的面向行的数据库和其他一些体系结构也被使用。然而，对于 ad hoc 分析查询，列式存储的速度要快得多，因此它正在迅速普及。</p>
+<p>数据仓库的另一个值得一提的方面是<strong>物化聚合</strong>。如前所述，数据仓库查询通常涉及聚合函数，如 SQL 中的 COUNT、SUM、AVG、MIN 或 MAX。如果许多不同的查询使用相同的聚合，那么每次都要对原始数据进行处理是浪费资源的。为什么不<strong>缓存</strong>一些查询最常使用的计数或总和呢？</p>
+<p>创建这种缓存的一种方法是物化视图。在关系数据模型中，它通常被定义为标准（虚拟）视图：一个类似表的对象，其内容是某个查询的结果。区别在于物化视图是查询结果的实际副本，<strong>写入磁盘</strong>，而虚拟视图只是写入查询的快捷方式。当您从虚拟视图中读取时，SQL 引擎会动态地将其展开为视图的底层查询，然后处理展开的查询。</p>
+<p>当底层数据发生变化时，需要更新物化视图，因为它是数据的非规范化副本。数据库可以自动执行此操作，但是这样的更新会使写入操作变得更昂贵，这就是为什么在 OLTP 数据库中不经常使用物化视图。在大量读取的数据仓库中，它们更有意义（它们是否真的提高了读取性能取决于具体情况）。</p>
+<p>物化视图的一个常见的特殊情况称为数据立方体或 OLAP 多维数据集。它是按不同维度分组的聚合网格。下图显示了一个示例。</p>
+<p><img src="/images/docs/books/ddia/data-cube-aggregating-summing.png" alt=""></p>
+<p>物化数据立方体的优点是某些查询变得非常快，因为它们已经被有效地预计算过了。缺点是数据立方体没有查询原始数据的灵活性。因此，大多数数据仓库都尽量保留原始数据，并且只使用数据立方体之类的聚合来提高某些查询的性能。</p>
 </article>
  
 
@@ -703,7 +858,28 @@ var _hmt = _hmt || [];
         <li><a href="#lsm-tree-的劣势">LSM-tree 的劣势</a></li>
       </ul>
     </li>
-    <li><a href="#其它索引结构">其它索引结构</a></li>
+    <li><a href="#其它索引结构">其它索引结构</a>
+      <ul>
+        <li><a href="#值存储在索引中">值存储在索引中</a></li>
+        <li><a href="#多列索引">多列索引</a></li>
+        <li><a href="#全文检索与模糊索引">全文检索与模糊索引</a></li>
+        <li><a href="#in-memory-databases">in-memory databases</a></li>
+      </ul>
+    </li>
+    <li><a href="#交易处理还是分析">交易处理还是分析？</a>
+      <ul>
+        <li><a href="#数据仓库">数据仓库</a></li>
+        <li><a href="#分析的模式-星型和雪花型">分析的模式: 星型和雪花型</a></li>
+      </ul>
+    </li>
+    <li><a href="#面向列的存储">面向列的存储</a>
+      <ul>
+        <li><a href="#列压缩">列压缩</a></li>
+        <li><a href="#列存储的顺序">列存储的顺序</a></li>
+        <li><a href="#列存储的写入">列存储的写入</a></li>
+        <li><a href="#聚合-数据立方体和物化视图">聚合: 数据立方体和物化视图</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 
