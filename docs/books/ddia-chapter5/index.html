@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="设计数据密集型应用程序 - Replication"><meta property="og:title" content="设计数据密集型应用程序 - Replication" />
+<meta property="og:description" content="设计数据密集型应用程序 - Replication Replication 就是将相同数据的拷贝防止在多个通过网络连接在一起的机器上。
+为什么需要 Replication  让数据在地理位置上更靠近用户 部分数据坏掉的时候，系统依然能持续工作 可伸缩，增加机器即可增加吞吐量  如果你需要 replication 的数据不发生变化，那么 replication 的过程是及其简单的，你只需拷贝到其它各个机器上，然后你的任务就完成了。然而 replication 最难的地方也就在这个地方，如何处理变化的数据？接下来就介绍三种常见的处理 replication 中数据变化的算法: single-leader、multi-leader、leaderless。
+Leaders 和 Followers 每一个存储一份数据库拷贝的节点称之为: replica。每一个 replica 都需要处理写数据的操作，久而久之，每一个节点之间存储的数据也就不再一致了。解决这种问题最常见的办法就是: leader-based replication (active/passive 或 master-slave replication)，它的工作原理如下:
+ 其中某个 replica 被指定为 leader (master 或 primary)，客户端想要写数据，那么必须将它们的写数据的请求发送给 leader，然后 leader 随后写入到自己的本地磁盘中。 其余的 replica 称之为 follower (read replicas, slaves, secondaries, hot standbys)，当 leader 写入数据到本地磁盘的时候，同时将数据改变的部分作为 replication log 或者 change stream 发送给它的 followers。每一个 follower 根据收到的 log 按照和 leader 处理不同写操作之间的相同的顺序，来更新它自己本地的数据。 当一个客户端想要读取数据的时候，它可以发送读请求给 leader 或者任意一个 follower。但是写请求的话只能发送给 leader。  这种模式的 replication 内置在许多数据库中，例如: PostgreSQL、MySQL、Oracle Data Guard、SQL Server 的 AlwaysOn Availability Groups，甚至在许多非关系型数据库中也有它的身影，例如: MongoDB、RethinkDB、Espresso，这种模式也局限于数据库，像消息中间件 Kafka 和 RabbitMQ 高可用的队列都依赖它，一些网络文件系统和 replicated block devices 例如 DRBD 也是同样的道理。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/books/ddia-chapter5/" />
+
+<title>设计数据密集型应用程序 - Replication | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.8966a6b5dc86b165fb475f8b8d3562943b5d11f3e33e88f225fa2b345a39ff4c.js" integrity="sha256-iWamtdyGsWX7R1&#43;LjTVilDtdEfPjPojyJforNFo5/0w="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/beauty_of_mathematics/" >
+      数学之美
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/history_of_quantum_physics/" >
+      上帝掷骰子吗
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/clean_code/" >
+      代码整洁之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the_transformation_of_enterprise_it_architecture/" >
+      企业 IT 架构转型之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/redis_5_source_code/" >
+      Redis 5 设计与源码分析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/" >
+      深度剖析 Apache Dubbo 核心技术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/everyone-is-architect/" >
+      人人都是架构师 (一)
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-art-of-readable-code/" >
+      编写可读代码的艺术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-wisdom-of-trading-stocks/" >
+      炒股的智慧
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia-chapter1/" >
+      设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia-chapter2/" >
+      设计数据密集型应用程序 - 数据模型 &amp; 查询语言
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia-chapter3/" >
+      设计数据密集型应用程序 - 存储和读取
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia-chapter4/" >
+      设计数据密集型应用程序 - 编码与演化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia-chapter5/"  class="active">
+      设计数据密集型应用程序 - Replication
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>设计数据密集型应用程序 - Replication</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#为什么需要-replication">为什么需要 Replication</a></li>
+    <li><a href="#leaders-和-followers">Leaders 和 Followers</a></li>
+    <li><a href="#同步和异步-replication">同步和异步 Replication</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="设计数据密集型应用程序---replication">设计数据密集型应用程序 - Replication</h1>
+<p><strong>Replication</strong> 就是将相同数据的拷贝防止在多个通过网络连接在一起的机器上。</p>
+<h2 id="为什么需要-replication">为什么需要 Replication</h2>
+<ul>
+<li>让数据在地理位置上更靠近用户</li>
+<li>部分数据坏掉的时候，系统依然能持续工作</li>
+<li>可伸缩，增加机器即可增加吞吐量</li>
+</ul>
+<p>如果你需要 replication 的数据不发生变化，那么 replication 的过程是及其简单的，你只需拷贝到其它各个机器上，然后你的任务就完成了。然而 replication 最难的地方也就在这个地方，如何处理变化的数据？接下来就介绍三种常见的处理 replication 中数据变化的算法: single-leader、multi-leader、leaderless。</p>
+<h2 id="leaders-和-followers">Leaders 和 Followers</h2>
+<p>每一个存储一份数据库拷贝的节点称之为: <strong>replica</strong>。每一个 replica 都需要处理<strong>写数据</strong>的操作，久而久之，每一个节点之间存储的数据也就不再一致了。解决这种问题最常见的办法就是: leader-based replication (active/passive 或 master-slave replication)，它的工作原理如下:</p>
+<ul>
+<li>其中某个 replica 被指定为 leader (master 或 primary)，客户端想要<strong>写数据</strong>，那么必须将它们的写数据的请求发送给 leader，然后 leader 随后写入到自己的本地磁盘中。</li>
+<li>其余的 replica 称之为 follower (read replicas, slaves, secondaries, hot standbys)，当 leader 写入数据到本地磁盘的时候，同时将数据改变的部分作为 replication log 或者 change stream 发送给它的 followers。每一个 follower 根据收到的 log 按照和 leader 处理<strong>不同写操作</strong>之间的<strong>相同的顺序</strong>，来更新它自己本地的数据。</li>
+<li>当一个客户端想要读取数据的时候，它可以发送读请求给 leader 或者任意一个 follower。但是写请求的话只能发送给 leader。</li>
+</ul>
+<p><img src="/images/docs/books/ddia/leader-based-replication.png" alt=""></p>
+<p>这种模式的 replication 内置在许多数据库中，例如: PostgreSQL、MySQL、Oracle Data Guard、SQL Server 的 AlwaysOn Availability Groups，甚至在许多非关系型数据库中也有它的身影，例如: MongoDB、RethinkDB、Espresso，这种模式也局限于数据库，像消息中间件 Kafka 和 RabbitMQ 高可用的队列都依赖它，一些网络文件系统和 replicated block devices 例如 DRBD 也是同样的道理。</p>
+<h2 id="同步和异步-replication">同步和异步 Replication</h2>
+<p>replication 数据的过程可以分为同步或者异步。如下图所示，follower 1 配置为<strong>同步</strong>的，leader 等待 follower 1 确认它收到了 log 之后，才向 client 反馈更新成功；而被配置为异步的 follower 2 则无须这一步，leader 可以直接反馈更新成功。</p>
+<p><img src="/images/docs/books/ddia/leader-based-sync-async.png" alt=""></p>
+<p>显然在 leader 响应 OK 与 follower 2 接受并处理完毕 write 请求之间是存在延迟的，尽管多数数据库系统的 replication 的过程是非常快的，然而这个时间的上限谁也并没有保证。follower 可能刚刚重启、follower 系统满负载了、leader 到 follower 之间的网络出现故障了等等，都有可能导致 follower 的数据落后 leader 1分钟或者多分钟。</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#为什么需要-replication">为什么需要 Replication</a></li>
+    <li><a href="#leaders-和-followers">Leaders 和 Followers</a></li>
+    <li><a href="#同步和异步-replication">同步和异步 Replication</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
