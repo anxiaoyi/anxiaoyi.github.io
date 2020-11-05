@@ -19,7 +19,7 @@ Leaders 和 Followers 每一个存储一份数据库拷贝的节点称之为: re
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.8966a6b5dc86b165fb475f8b8d3562943b5d11f3e33e88f225fa2b345a39ff4c.js" integrity="sha256-iWamtdyGsWX7R1&#43;LjTVilDtdEfPjPojyJforNFo5/0w="></script>
+<script defer src="/en.search.min.81552375595af4a52c8e6522d1b21233d998cc0e66a8e72f6ae8f33a0b3b0a60.js" integrity="sha256-gVUjdVla9KUsjmUi0bISM9mYzA5mqOcvaujzOgs7CmA="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -524,6 +524,21 @@ var _hmt = _hmt || [];
     <li><a href="#为什么需要-replication">为什么需要 Replication</a></li>
     <li><a href="#leaders-和-followers">Leaders 和 Followers</a></li>
     <li><a href="#同步和异步-replication">同步和异步 Replication</a></li>
+    <li><a href="#配备新的-follower">配备新的 follower</a></li>
+    <li><a href="#处理节点中断">处理节点中断</a>
+      <ul>
+        <li><a href="#follower-失败-赶快恢复">follower 失败: 赶快恢复</a></li>
+        <li><a href="#leader-失败-故障转移">leader 失败: 故障转移</a></li>
+      </ul>
+    </li>
+    <li><a href="#实现-replication-log">实现 replication log</a>
+      <ul>
+        <li><a href="#面向语句的-replication">面向语句的 replication</a></li>
+        <li><a href="#逻辑基于行-的-log-replication">逻辑(基于行) 的 log replication</a></li>
+        <li><a href="#基于触发的-replication">基于触发的 replication</a></li>
+      </ul>
+    </li>
+    <li><a href="#复制延迟问题">复制延迟问题</a></li>
   </ul>
 </nav>
 
@@ -556,6 +571,69 @@ var _hmt = _hmt || [];
 <p>replication 数据的过程可以分为同步或者异步。如下图所示，follower 1 配置为<strong>同步</strong>的，leader 等待 follower 1 确认它收到了 log 之后，才向 client 反馈更新成功；而被配置为异步的 follower 2 则无须这一步，leader 可以直接反馈更新成功。</p>
 <p><img src="/images/docs/books/ddia/leader-based-sync-async.png" alt=""></p>
 <p>显然在 leader 响应 OK 与 follower 2 接受并处理完毕 write 请求之间是存在延迟的，尽管多数数据库系统的 replication 的过程是非常快的，然而这个时间的上限谁也并没有保证。follower 可能刚刚重启、follower 系统满负载了、leader 到 follower 之间的网络出现故障了等等，都有可能导致 follower 的数据落后 leader 1分钟或者多分钟。</p>
+<p>同步 replication 的优势在于 follower 总能保持和 leader 实时的一致性的数据，如果 leader 突然不可用了，我们可以确保数据在 follower 上仍然是可用的。缺点在于如果 follower 出现了问题，比如 crash 了，网络故障了，写这个操作就没办法进行下去了，leader 此刻必须阻塞等待 replica 变为可用状态才能继续处理其他 write 操作。</p>
+<p>所以，维持整个系统的所有 replica 一致性状态是不切实际的。实际上，如果你在数据库中启用了同步 replication，它通常是指指定一个 follower 变为同步的，其它的 follower 依然是异步的，如果同步的 follower 变得不可用或者速度变慢，那么某一个异步的 follower 将会晋升为同步的 follower，这保证了总是有两个节点 leader 和一个 follower 始终维持最新的数据。这种配置有时候也称之为 <strong>semi-synchronous</strong>。</p>
+<p>通常，leader-based replication 被配置为全部是异步的，如果 leader 一旦失败不可恢复，那么所有的还未同步给 follower 节点的写数据将会丢失，这也就意味着写不保证一定写成功。它的优势在于即使所有的 follower 都不可用，leader 依然可以处理写请求。</p>
+<blockquote>
+<p>对于异步 replication 来说，leader 失败后的数据丢失是很严重的，所以当前也有针对其不丢失数据同时提供良好性能和可用性的方法。例如链 replication ，其是同步复制的一个变种，它已经成功应用在 Microsoft Azure Storage 系统中。</p>
+</blockquote>
+<h2 id="配备新的-follower">配备新的 follower</h2>
+<ul>
+<li>定时对 leader 的数据库构建快照。</li>
+<li>将快照拷贝到 follower 机器上。</li>
+<li>follower 连接上 leader，请求所有自快照到最新版本之间变更的数据，这就需要快照本身关联到 leader 的 replication log 的一个精确的位置上。PostgreSQL 称之为 log sequence number，MySQL 称之为 binlog coordinates。</li>
+<li>当 follower 处理完自 snapshot 创建之后堆积的数据变化后，我们称它追赶上了 leader。接下来，它继续处理来自 leader 发送过来的 log 即可。</li>
+</ul>
+<h2 id="处理节点中断">处理节点中断</h2>
+<p>我们的目标是在单个节点发生故障的情况下，保持系统作为一个整体运行，并使节点中断的影响尽可能小。</p>
+<h3 id="follower-失败-赶快恢复">follower 失败: 赶快恢复</h3>
+<p>follower 每次收到 log 之后，都会先记录在本地磁盘中，所以当它恢复之后也能很快知道它发生故障时正在处理的最后一个事务，它可以继续连接上 leader，然后请求在这之间发生的数据变更的 log ，当它应用这些 log 后，也就追上了 leader，意味着可以继续像之前一样继续接受数据流了。</p>
+<h3 id="leader-失败-故障转移">leader 失败: 故障转移</h3>
+<p>leader 失败后: 某一个 follower 被提拔为 leader，客户端需要将 write 请求发送至新的 leader，其它 follower 需要从新的 leader 消费数据，这个过程称之为 failover (故障转移)。</p>
+<p>failover 既可以自动执行，也可以手动执行，一个自动执行的 failover 包含如下步骤:</p>
+<ul>
+<li>检测 leader 是否失败了。多数都是使用<strong>超时时间</strong>来检测节点是否存活。</li>
+<li>选择新的 leader。这可以通过一个选举过程来完成（在这种过程中，leader 是由剩余副本的大多数选择的），也可以由先前选择的控制器节点指定新的 leader。leader 的最佳人选通常是具有最新数据更改的副本（以尽量减少数据丢失）。让所有节点都同意一个新的 leader 是一个共识问题。</li>
+<li>重新配置系统以使用新的领导者。client 现在需要将他们的写请求发送给新的 leader 。如果原来的 leader 恢复了，它可能仍然相信自己是 leader，却没有意识到其他 replicas 已经迫使它下台了。系统需要确保旧的 leader 成为 follower，并识别新的 leader。</li>
+</ul>
+<p>故障切换充满了风险：</p>
+<ul>
+<li>如果采用的是异步 replication，那么新推选出来的 leader 可能还没有接收完所有的 old leader 在失败前发送的写请求。如果前一个 leader 又回来了，那么应该如何协调？新的 leader 同样可能收到写请求。最常见的做法是，直接丢弃 old leader 未被 replicated 的写请求，但这可能和客户端的高可用性原则相违背。</li>
+<li>如果数据库之外的其他存储系统需要和数据库内容进行协调，丢弃写请求则是非常危险的行为。</li>
+<li>某些情况下，可能出现两个节点都认为自己是 leader 的情况，这称之为 split brain。这是及其危险的，如果二者均接受到了写的请求，而又没有其他进程去协调，那么数据有可能出现混乱或者丢失。作为一种安全保护，部分系统在检测到出现了两个 leader 的时候，会强制性关闭某个 leader，但是如果设计的不好的话，也可能会出现两个 leader 都被关闭的尴尬状态。</li>
+<li>宣告 leader 死亡的合适的超时时间是多久？时间久一点的意味着久一点才能恢复，时间短一点的，会造成不必要的故障切换，占用不必要的网络带宽和系统资源。</li>
+</ul>
+<p>这些问题并没有简单的方法来去解决。鉴于此，部分系统默认需要手动进行故障切换，即使它本身能够支持自动鼓掌切换。</p>
+<h2 id="实现-replication-log">实现 replication log</h2>
+<h3 id="面向语句的-replication">面向语句的 replication</h3>
+<p>最简单的是，将每次需要执行的语句 (statement) 的 log 发送给 follower。在关系型数据库中，每一次的 INSERT、UPDATE、DELETE 等语句需要发送给 follower，follower 需要解析并处理这些语句。这种方式听起来还可以，然而还是有一些情况会出现问题:</p>
+<ul>
+<li>某些语句调用了 <code>NOW()</code> 或者 <code>RAND()</code> 这样的函数，每次得到的都是不同的数值，应该如何同步过去？</li>
+<li>如果语句使用了自增列，或者他们依赖数据中已有的数据进行判断 (UPDATE &hellip; WHERE 某些条件)，他们就必须在每一个 replica 上严格按照顺序执行，否则就可能产生不同的结果，这显然不利于并发事务的执行。</li>
+<li>有副作用的语句 (触发器、存储过程、用户自定义函数等) 可能在不同节点上会造成不同的副作用，除非这种副作用是明确的，能提前预测到的。</li>
+</ul>
+<p>解决这些问题是可能的，例如，当记录语句时，leader 可以用一个固定的返回值替换任何不确定的函数调用，以便 follower 都获得相同的值。但是，由于存在太多的边缘情况，现在通常首选其他复制方法。</p>
+<p>基于语句的复制在 5.1 版之前的MySQL中使用。由于它非常紧凑，所以现在仍然使用它，但是默认情况下，如果语句中存在任何不确定性，MySQL 现在会切换到<strong>基于行的复制</strong>。</p>
+<p><strong>预写日志 (WAL)</strong></p>
+<p>WAL 中的内容: <strong>哪一块磁盘的哪几个字节的数据被修改了</strong>，这使得 WAL 日志和存储引擎关联到一起了。如果数据库将存储格式换为另外一个版本，那么不太可能运行不同的数据库软件。</p>
+<p>如果复制协议允许 follower 使用更新的软件版本与 leader 相比，您可以执行数据库软件的零停机升级，方法是先升级 follower，然后执行故障转移，使升级的节点之一成为新的leader。如果复制协议不允许这种版本不匹配，就像 WAL-shipping 的情况一样，这种升级需要停机。</p>
+<h3 id="逻辑基于行-的-log-replication">逻辑(基于行) 的 log replication</h3>
+<p>另一种方法是对复制和存储使用不同的日志格式引擎，它允许复制日志与存储引擎内部分离。这种复制日志称为<strong>逻辑日志</strong>，以区别于存储引擎的（物理）数据表示。</p>
+<p>关系数据库的逻辑日志通常是一系列记录，以行的粒度描述对数据库表的写入：</p>
+<ul>
+<li>对于 INSERT 的行，日志包含所有列的新值。</li>
+<li>对于 DELETE 的行，日志包含的信息足以唯一标识已删除的行。通常这是主键，但如果表上没有主键，则需要记录所有列的旧值。</li>
+<li>对于 UPDATE 的行，日志包含足够的信息来唯一标识更新的行，以及所有列的新值（或至少是更改的所有列的新值）。</li>
+</ul>
+<p>一个修改多行的事务会生成多个这样的日志记录，后面跟着一个指示事务已提交的记录。MySQL的 binlog（当配置为使用基于行的复制时）使用的就是这种方法。</p>
+<p>由于逻辑日志与存储引擎内部分离，因此可以更容易地保持向后兼容，从而允许 leader 和 follower 运行不同版本的数据库软件，甚至不同的存储引擎。</p>
+<p>逻辑日志格式也更易于外部应用程序解析。如果要将数据库的内容发送到外部系统（如用于脱机分析的数据仓库或用于构建自定义索引和缓存）的话，此特性非常有用。这种技术称为变更数据捕获。</p>
+<h3 id="基于触发的-replication">基于触发的 replication</h3>
+<p>到目前为止描述的复制方法是由数据库系统实现的，不涉及任何应用程序代码。在许多情况下，这正是您想要的，但有些情况下需要更大的灵活性。例如，如果您只想复制数据的一个子集，或者想从一种数据库复制到另一种数据库，或者需要冲突解决逻辑，则可能需要将复制向上移动到应用程序层。</p>
+<p>一些工具，如 Oracle GoldenGate，可以通过读取数据库日志使数据更改对应用程序可用。另一种方法是使用许多关系数据库中可用的特性：触发器和存储过程。</p>
+<p>触发器允许您注册在数据库系统中发生数据更改（写入事务）时自动执行的自定义应用程序代码。可以把它从一个外部进程读成一个独立的进程，这个进程可以从这个进程中读出来。然后，该外部进程可以应用任何必要的应用程序逻辑，并将数据更改复制到另一个系统。例如，Oracle的 Databus 和 Postgres 的 Bucardo 都是这样工作的。</p>
+<p>基于触发器的复制通常比其他复制方法的开销更大，而且比数据库的内置复制更容易出现错误和限制。然而，由于其灵活性，它仍然是有用的。</p>
+<h2 id="复制延迟问题">复制延迟问题</h2>
 </article>
  
 
@@ -604,6 +682,21 @@ var _hmt = _hmt || [];
     <li><a href="#为什么需要-replication">为什么需要 Replication</a></li>
     <li><a href="#leaders-和-followers">Leaders 和 Followers</a></li>
     <li><a href="#同步和异步-replication">同步和异步 Replication</a></li>
+    <li><a href="#配备新的-follower">配备新的 follower</a></li>
+    <li><a href="#处理节点中断">处理节点中断</a>
+      <ul>
+        <li><a href="#follower-失败-赶快恢复">follower 失败: 赶快恢复</a></li>
+        <li><a href="#leader-失败-故障转移">leader 失败: 故障转移</a></li>
+      </ul>
+    </li>
+    <li><a href="#实现-replication-log">实现 replication log</a>
+      <ul>
+        <li><a href="#面向语句的-replication">面向语句的 replication</a></li>
+        <li><a href="#逻辑基于行-的-log-replication">逻辑(基于行) 的 log replication</a></li>
+        <li><a href="#基于触发的-replication">基于触发的 replication</a></li>
+      </ul>
+    </li>
+    <li><a href="#复制延迟问题">复制延迟问题</a></li>
   </ul>
 </nav>
 
