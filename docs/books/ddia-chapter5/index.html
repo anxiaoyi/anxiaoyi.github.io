@@ -19,7 +19,7 @@ Leaders 和 Followers 每一个存储一份数据库拷贝的节点称之为: re
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.d53dfcc5fa51352afccf0ba9212db067ad9649ada2312e480f6e3ebd864eafcf.js" integrity="sha256-1T38xfpRNSr8zwupIS2wZ62WSa2iMS5ID24&#43;vYZOr88="></script>
+<script defer src="/en.search.min.a125429020ba8ec0592492598cad222717bd0ab1c4013f68a5d4fd33c3c7cd5a.js" integrity="sha256-oSVCkCC6jsBZJJJZjK0iJxe9CrHEAT9opdT9M8PHzVo="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -559,6 +559,12 @@ var _hmt = _hmt || [];
         <li><a href="#仲裁一致性的限制">仲裁一致性的限制</a></li>
       </ul>
     </li>
+    <li><a href="#sloppy-quorums-and-hinted-handoff">sloppy quorums and hinted handoff</a>
+      <ul>
+        <li><a href="#多个数据中心的操作">多个数据中心的操作</a></li>
+      </ul>
+    </li>
+    <li><a href="#检测并发写">检测并发写</a></li>
   </ul>
 </nav>
 
@@ -817,6 +823,31 @@ var _hmt = _hmt || [];
 </ul>
 <p>因此，尽管 quorums 看起来保证读返回最新的写入值，但实际上并不简单。Dynamo 风格的数据库通常针对能够容忍最终一致性的用例进行优化。参数 <code>w</code> 和 <code>r</code> 允许您调整读取过时值的概率，但最好不要将它们作为绝对保证。</p>
 <p>特别是，您通常得不到“复制延迟的问题”中讨论的保证（读写、单调读或一致前缀读），因此前面提到的异常可能会出现在应用程序中。更强有力的担保通常需要<strong>事务</strong>或<strong>协商一致</strong>。</p>
+<p><strong>检测落后</strong></p>
+<p>从操作的角度来看，<strong>监视数据库是否返回最新结果非常重要</strong>。即使您的应用程序可以容忍过时的读取，您也需要了解复制的运行状况。如果它严重落后，它应该警告您，以便您可以调查原因（例如，网络中的问题或节点过载）。</p>
+<p>通常情况下，您可以将基于复制的度量标准暴露到基于复制的系统中。这是可能的，因为写入操作以相同的顺序应用于主节点和从节点，并且每个节点在复制日志中都有一个位置（它在本地应用的写入数）。通过从 Leader 的当前位置减去 Follower 的当前位置，可以测量复制延迟的量。</p>
+<p>但是，在采用无 Leader 复制的系统中，写入的应用顺序没有固定的顺序，这使得监视更加困难。此外，如果数据库只使用读取修复（不使用反熵），则某个值过期了多久是没有上限的。如果仅偶尔读取值，则过时副本返回的值可能为特别老的。</p>
+<p>对于如何测量无 Leader 复制的数据库的陈旧性，以及根据参数 <code>n</code>、<code>w</code> 和 <code>r</code> 预测预期的过时读取百分比，这里有一些论文研究。不幸的是，这还不是常见的实践，但最好在数据库的标准度量集合中包含过时度量。最终的一致性是故意含糊的保证，但对于可操作性来说，能够量化“最终”是很重要的。</p>
+<h2 id="sloppy-quorums-and-hinted-handoff">sloppy quorums and hinted handoff</h2>
+<p>数据库，配置一个较为合适的 quorum 值，可以在无需快速失败的情况下，容忍单个节点的故障。单个节点处理速度变慢也是能容忍的，因为无需等待 <code>n</code> 个节点都给予响应，只需 <code>w</code> 或 <code>r</code> 个节点响应了就可以了。这些特征使得无 Leader 复制的数据库，特别适合需要更高的可靠性和更低的延迟，以及能容忍偶然的过时读取的场景。</p>
+<p>然而，quorum 也不是那么容易就容忍故障的。网络故障可以轻而易举地切断一个客户端与后台大量的数据库节点之间的连接。尽管数据库节点依然存活，其它客户端也能连接上，但是对于这个节点而言，这大量的数据库节点就宛若 down 掉了似的。在这种情况下，可能剩余的数据库节点少于 <code>w</code> 或 <code>r</code> 个，所以此客户端永远无法达成一个 quorum 连接的数量。</p>
+<p>在一个大型集群中（节点数明显多于 <code>n</code> 个），客户机很可能在网络中断期间连接到某些数据库节点，而不是连接到需要为特定值聚集仲裁的节点。在这种情况下，数据库设计者面临着一种权衡：</p>
+<ul>
+<li>当冲裁节点数量少于 <code>w</code> 或 <code>r</code> 个的时候，我们要对于所有的请求都返回错误吗？</li>
+<li>又或者我们应该对于写请求全盘接受，并将它们写入某些节点，这些节点是可访问的，但不在通常存在该值的 <code>n</code> 个节点中？</li>
+</ul>
+<p>后者称之为 <strong>sloppy quorum (草率的大多数)</strong>: 读和写仍然需要 <code>r</code> 和 <code>w</code> 个成功的响应，但是，这些节点可以包括不在指定的 <code>n</code> 个 “home” 节点中的节点。以此类推，如果你把自己锁在门外，你可能会敲邻居的门，问你是否可以暂时呆在他们的沙发上。</p>
+<p>一旦网络中断被修复，任何一个节点临时代表另一个节点接受的写操作都会被发送到相应的 “home” 节点。这被称之为 <strong>hinted handoff (暗示的交接)</strong> (一旦你再次找到房子的钥匙，你的邻居会礼貌地让你从他们的沙发上下来回家)。</p>
+<p>Sloppy quorums 对于增加<strong>写可靠性</strong>是非常有用的: 只要有任何 <code>w</code> 节点可用，数据库就可以接受写操作。但是，这意味着即使 <code>w + r &gt; n</code>，也不能确定要读取键的最新值，因为最新的值可能已临时写入 <code>n</code> 个节点以外的某些节点。</p>
+<p>因此，sloppy quorum 实际上根本不是传统意义上的法定人数。这只是<strong>持久性</strong>的保证，即数据存储在 <code>w</code> 节点的某个地方。在提示的切换完成之前，不能保证对 <code>r</code> 节点的读取会看到它。</p>
+<p>Sloppy quorum 在 Dynamo 实现中一般是可选的。在 Riak 中默认被启用，在 Cassandra 和 Voldemort 中它们被默认禁止。</p>
+<h3 id="多个数据中心的操作">多个数据中心的操作</h3>
+<p>我们以前讨论过将跨数据中心复制作为多 Leader 复制的一个用例。无 Leader 复制也适用于多数据中心操作，因为它被设计为能够容忍冲突的并发写入、网络中断和延迟峰值。</p>
+<p>Cassandra 和 Voldemort 在正常的无领导模型中实现了他们的多数据中心支持：复制副本的数量 <code>n</code> 包括所有数据中心中的节点，并且在配置中，您可以指定每个数据中心中需要多少个 <code>n</code> 个副本。客户机的每次写入都被发送到所有副本，不管数据中心如何，客户机通常只等待来自其<strong>本地数据中心内的节点仲裁的确认</strong>，这样它就不会受到跨数据中心链路上的延迟和中断的影响。对其他数据中心的高延迟写入通常配置为<strong>异步</strong>进行，尽管配置中有一些灵活性。</p>
+<p>Riak 将客户机和数据库节点之间的所有通信保持在一个数据中心的本地，因此 <code>n</code> 描述了一个数据中心内的副本数量。数据库集群之间的跨数据中心复制在后台异步进行，其方式类似于多 Leader 复制。</p>
+<h2 id="检测并发写">检测并发写</h2>
+<p>Dynamo 风格的数据库允许多个客户端同时写入同一个 Key，这意味着即使使用严格的 quorum，也会发生冲突。</p>
+<p>事件会以不同的顺序到达不同的节点，是因为<strong>网络延迟和部分失败</strong>的原因。</p>
 </article>
  
 
@@ -900,6 +931,12 @@ var _hmt = _hmt || [];
         <li><a href="#仲裁一致性的限制">仲裁一致性的限制</a></li>
       </ul>
     </li>
+    <li><a href="#sloppy-quorums-and-hinted-handoff">sloppy quorums and hinted handoff</a>
+      <ul>
+        <li><a href="#多个数据中心的操作">多个数据中心的操作</a></li>
+      </ul>
+    </li>
+    <li><a href="#检测并发写">检测并发写</a></li>
   </ul>
 </nav>
 
