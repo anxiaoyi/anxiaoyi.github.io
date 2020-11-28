@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="设计数据密集型应用程序 - 数据模型 &amp; 查询语言"><meta property="og:title" content="设计数据密集型应用程序 - 数据模型 &amp; 查询语言" />
+<meta property="og:description" content="设计数据密集型应用程序 - 数据模型 &amp; 查询语言  笔记来自于 《Designing Data-Intensive Applications》 的第二章
+ LinkedIn 的简历 简历是一种 self-contained 文档，采用 JSON 的表达方式应该会更为合适。
+JSON 示例如下:
+{ &#34;user_id&#34;: 251, &#34;first_name&#34;: &#34;Bill&#34;, &#34;last_name&#34;: &#34;Gates&#34;, &#34;summary&#34;: &#34;Co-chair of the Bill &amp; Melinda Gates... Active blogger.&#34;, &#34;region_id&#34;: &#34;us:91&#34;, &#34;industry_id&#34;: 131, &#34;photo_url&#34;: &#34;/p/7/000/253/05b/308dd6e.jpg&#34;, &#34;positions&#34;: [ {&#34;job_title&#34;: &#34;Co-chair&#34;, &#34;organization&#34;: &#34;Bill &amp; Melinda Gates Foundation&#34;}, {&#34;job_title&#34;: &#34;Co-founder, Chairman&#34;, &#34;organization&#34;: &#34;Microsoft&#34;} ], &#34;education&#34;: [ {&#34;school_name&#34;: &#34;Harvard University&#34;, &#34;start&#34;: 1973, &#34;end&#34;: 1975}, {&#34;school_name&#34;: &#34;Lakeside School, Seattle&#34;, &#34;start&#34;: null, &#34;end&#34;: null} ], &#34;contact_info&#34;: { &#34;blog&#34;: &#34;http://thegatesnotes." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/books/ddia/ddia-chapter2/" />
+
+<title>设计数据密集型应用程序 - 数据模型 &amp; 查询语言 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.8f15a830c843f820dab8ab37dd53d1d14f9172cde2d3904334c63f3ec743cdd4.js" integrity="sha256-jxWoMMhD&#43;CDauKs33VPR0U&#43;Rcs3i05BDNMY/PsdDzdQ="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/beauty_of_mathematics/" >
+      数学之美
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/history_of_quantum_physics/" >
+      上帝掷骰子吗
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/clean_code/" >
+      代码整洁之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the_transformation_of_enterprise_it_architecture/" >
+      企业 IT 架构转型之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/redis_5_source_code/" >
+      Redis 5 设计与源码分析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/" >
+      深度剖析 Apache Dubbo 核心技术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/everyone-is-architect/" >
+      人人都是架构师 (一)
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-art-of-readable-code/" >
+      编写可读代码的艺术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-wisdom-of-trading-stocks/" >
+      炒股的智慧
+  </a>
+
+</li>
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/ddia/" >
+      设计数据密集型应用程序
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter1/" >
+      设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter2/"  class="active">
+      设计数据密集型应用程序 - 数据模型 &amp; 查询语言
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter3/" >
+      设计数据密集型应用程序 - 存储和读取
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter4/" >
+      设计数据密集型应用程序 - 编码与演化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter5/" >
+      设计数据密集型应用程序 - Replication
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter6/" >
+      设计数据密集型应用程序 - Partitioning
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter7/" >
+      设计数据密集型应用程序 - 事务
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>设计数据密集型应用程序 - 数据模型 &amp; 查询语言</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#linkedin-的简历">LinkedIn 的简历</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="设计数据密集型应用程序---数据模型--查询语言">设计数据密集型应用程序 - 数据模型 &amp; 查询语言</h1>
+<blockquote>
+<p>笔记来自于 《Designing Data-Intensive Applications》 的第二章</p>
+</blockquote>
+<h2 id="linkedin-的简历">LinkedIn 的简历</h2>
+<p>简历是一种 self-contained 文档，采用 JSON 的表达方式应该会更为合适。</p>
+<p><img src="/images/docs/books/ddia/linkedin-resume.png" alt=""></p>
+<p>JSON 示例如下:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JSON" data-lang="JSON">{
+	 <span style="color:#f92672">&#34;user_id&#34;</span>: <span style="color:#ae81ff">251</span>,
+	 <span style="color:#f92672">&#34;first_name&#34;</span>: <span style="color:#e6db74">&#34;Bill&#34;</span>,
+	 <span style="color:#f92672">&#34;last_name&#34;</span>: <span style="color:#e6db74">&#34;Gates&#34;</span>,
+	 <span style="color:#f92672">&#34;summary&#34;</span>: <span style="color:#e6db74">&#34;Co-chair of the Bill &amp; Melinda Gates... Active blogger.&#34;</span>,
+	 <span style="color:#f92672">&#34;region_id&#34;</span>: <span style="color:#e6db74">&#34;us:91&#34;</span>,
+	 <span style="color:#f92672">&#34;industry_id&#34;</span>: <span style="color:#ae81ff">131</span>,
+	 <span style="color:#f92672">&#34;photo_url&#34;</span>: <span style="color:#e6db74">&#34;/p/7/000/253/05b/308dd6e.jpg&#34;</span>,
+	 <span style="color:#f92672">&#34;positions&#34;</span>: [
+	     {<span style="color:#f92672">&#34;job_title&#34;</span>: <span style="color:#e6db74">&#34;Co-chair&#34;</span>, <span style="color:#f92672">&#34;organization&#34;</span>: <span style="color:#e6db74">&#34;Bill &amp; Melinda Gates Foundation&#34;</span>},
+	     {<span style="color:#f92672">&#34;job_title&#34;</span>: <span style="color:#e6db74">&#34;Co-founder, Chairman&#34;</span>, <span style="color:#f92672">&#34;organization&#34;</span>: <span style="color:#e6db74">&#34;Microsoft&#34;</span>}
+	 ],
+	 <span style="color:#f92672">&#34;education&#34;</span>: [
+	     {<span style="color:#f92672">&#34;school_name&#34;</span>: <span style="color:#e6db74">&#34;Harvard University&#34;</span>, <span style="color:#f92672">&#34;start&#34;</span>: <span style="color:#ae81ff">1973</span>, <span style="color:#f92672">&#34;end&#34;</span>: <span style="color:#ae81ff">1975</span>},
+	     {<span style="color:#f92672">&#34;school_name&#34;</span>: <span style="color:#e6db74">&#34;Lakeside School, Seattle&#34;</span>, <span style="color:#f92672">&#34;start&#34;</span>: <span style="color:#66d9ef">null</span>, <span style="color:#f92672">&#34;end&#34;</span>: <span style="color:#66d9ef">null</span>}
+	 ],
+	 <span style="color:#f92672">&#34;contact_info&#34;</span>: {
+	     <span style="color:#f92672">&#34;blog&#34;</span>: <span style="color:#e6db74">&#34;http://thegatesnotes.com&#34;</span>,
+	     <span style="color:#f92672">&#34;twitter&#34;</span>: <span style="color:#e6db74">&#34;http://twitter.com/BillGates&#34;</span>
+	 }
+}
+</code></pre></div><p>在简历中，存在很多一对多的关系，这种关系构成了树的结构，采用 JSON 可以简化这种表达:</p>
+<p><img src="/images/docs/books/ddia/one-to-many-json-tree.png" alt=""></p>
+<p>在简历中也需要多对多的关系:</p>
+<p><img src="/images/docs/books/ddia/company-in-resume.png" alt=""></p>
+<p>扩展简历的多对多关系:</p>
+<p><img src="/images/docs/books/ddia/extending-resume-with-many-to-many.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#linkedin-的简历">LinkedIn 的简历</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>设计数据密集型应用程序 on 赵坤的个人网站</title>
+    <link>https://kunzhao.org/docs/books/ddia/</link>
+    <description>Recent content in 设计数据密集型应用程序 on 赵坤的个人网站</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    
+	<atom:link href="https://kunzhao.org/docs/books/ddia/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护</title>
+      <link>https://kunzhao.org/docs/books/ddia/ddia-chapter1/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/ddia/ddia-chapter1/</guid>
+      <description>设计数据密集型应用程序 - 可靠 &amp;amp; 可扩展 &amp;amp; 可维护  笔记来自于 《Designing Data-Intensive Applications》 的第一章
+ 何为数据密集型应用程序 很多应用程序都需要用到如下和数据打交道的系统:
+ 数据库 缓存 搜索数据 &amp;amp; 索引 流处理 批量处理  设计这样的应用程序需要考虑很多因素，在此重点关注:
+ 可靠性: 系统持续工作 可扩展: 能维持系统负载 (Load) 的增长 可维护: 多人维护  Twitter 的负载  2012 年 Tweet 平均产生的速率: 4.6k/s，峰值速率可以达到 12k/s. 用户浏览首页的这个 API 请求平均: 300k/s.  Twitter 主要的挑战在于，每个用户可以关注很多人，每个人可以被很多人关注。实现这种系统通常有两种方式:
+(1) 用户发布 Tweet 直接写入到大的 Tweet 表中即可。而用户浏览首页，需要首先查找用户关注的所有人，找到这些人发布的所有 Tweet，然后(按照时间)合并这些 Tweet:
+SELECT tweets.*, users.* FROM tweets JOIN users ON tweets.sender_id = users.</description>
+    </item>
+    
+    <item>
+      <title>设计数据密集型应用程序 - 数据模型 &amp; 查询语言</title>
+      <link>https://kunzhao.org/docs/books/ddia/ddia-chapter2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/ddia/ddia-chapter2/</guid>
+      <description>设计数据密集型应用程序 - 数据模型 &amp;amp; 查询语言  笔记来自于 《Designing Data-Intensive Applications》 的第二章
+ LinkedIn 的简历 简历是一种 self-contained 文档，采用 JSON 的表达方式应该会更为合适。
+JSON 示例如下:
+{ &amp;#34;user_id&amp;#34;: 251, &amp;#34;first_name&amp;#34;: &amp;#34;Bill&amp;#34;, &amp;#34;last_name&amp;#34;: &amp;#34;Gates&amp;#34;, &amp;#34;summary&amp;#34;: &amp;#34;Co-chair of the Bill &amp;amp; Melinda Gates... Active blogger.&amp;#34;, &amp;#34;region_id&amp;#34;: &amp;#34;us:91&amp;#34;, &amp;#34;industry_id&amp;#34;: 131, &amp;#34;photo_url&amp;#34;: &amp;#34;/p/7/000/253/05b/308dd6e.jpg&amp;#34;, &amp;#34;positions&amp;#34;: [ {&amp;#34;job_title&amp;#34;: &amp;#34;Co-chair&amp;#34;, &amp;#34;organization&amp;#34;: &amp;#34;Bill &amp;amp; Melinda Gates Foundation&amp;#34;}, {&amp;#34;job_title&amp;#34;: &amp;#34;Co-founder, Chairman&amp;#34;, &amp;#34;organization&amp;#34;: &amp;#34;Microsoft&amp;#34;} ], &amp;#34;education&amp;#34;: [ {&amp;#34;school_name&amp;#34;: &amp;#34;Harvard University&amp;#34;, &amp;#34;start&amp;#34;: 1973, &amp;#34;end&amp;#34;: 1975}, {&amp;#34;school_name&amp;#34;: &amp;#34;Lakeside School, Seattle&amp;#34;, &amp;#34;start&amp;#34;: null, &amp;#34;end&amp;#34;: null} ], &amp;#34;contact_info&amp;#34;: { &amp;#34;blog&amp;#34;: &amp;#34;http://thegatesnotes.</description>
+    </item>
+    
+    <item>
+      <title>设计数据密集型应用程序 - 存储和读取</title>
+      <link>https://kunzhao.org/docs/books/ddia/ddia-chapter3/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/ddia/ddia-chapter3/</guid>
+      <description>设计数据密集型应用程序 - 存储和读取  笔记来自于 《Designing Data-Intensive Applications》 的第三章
+ 精心选取的索引可以提升查询的速度，但是也会影响写入的速度。很多数据库系统内部会采用一种 append-only log file 文件，来记录更新了什么数据。
+Hash 索引 使用 in-memory hash map 对只进行追加写入的文件进行索引:
+如上述讨论，我们只对文件追加，但是如何防止文件大到超出磁盘空间呢？一种可行的办法是，将 log 文件切分为 segments (当一个 segment 文件达到某个大小的时候，就关闭它，然后开始往新的 segment 文件中写入)，我们可以在这些 compaction 中进行 compaction (去除对 key 的重复的历史更新，只保留最近一次的更新即可)。
+事实上，在执行 compaction (可以让 segment 文件不至于太大) 的时候，我们还可以同时 merge segments 到新的 segment 文件中，可以使用一个后台线程来执行这些操作。在执行操作的同时，我们依然可以使用旧的 segment 文件继续对外提供 read 和 write 服务。当 merge 完毕后，我们再切换到新的 segment 文件上，然后将旧的 segment 文件删除即可。
+现在每一个 segment 文件都拥有了自己的 in-memory hash table，存储了 key 到文件偏移量的映射关系。根据 key 查找值的过程，我们首先检查最近的 segment 的 hash map，如果 key 不在里面，我们就查找第二个 segment，以此类推。merge 操作本身会保证 segment 文件不至于太多，所以我们也无须查看太多的 hash map。当然在实际实现中，还是有很多问题需要考虑:</description>
+    </item>
+    
+    <item>
+      <title>设计数据密集型应用程序 - 编码与演化</title>
+      <link>https://kunzhao.org/docs/books/ddia/ddia-chapter4/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/ddia/ddia-chapter4/</guid>
+      <description>设计数据密集型应用程序 - 编码与演化  笔记来自于 《Designing Data-Intensive Applications》 的第四章
+ JSON 的二进制编码 { &amp;#34;userName&amp;#34;: &amp;#34;Martin&amp;#34;, &amp;#34;favoriteNumber&amp;#34;: 1337, &amp;#34;interests&amp;#34;: [&amp;#34;daydreaming&amp;#34;, &amp;#34;hacking&amp;#34;] } MessagePack, a binary encoding for JSON.
+第一个字节 0x83 表示接下来将会是一个对象，第二个字节 0xa8，表示接下来是一个字符串。
+Thrift 和 Protocol Buffers Protocol Buffers 是由 Google 开发的，Thrift 是有 Facebook 开发的，二者均需要使用一个 schema 来帮助编码。在 Thrift 世界中，对上述 JSON 的编码，需要首先使用 Thrift IDL 来描述 schema:
+struct Person { 1: required string userName, 2: optional i64 favoriteNumber, 3: optional list&amp;lt;string&amp;gt; interests } Protocol Buffers 中定义的 schema 如下所示:</description>
+    </item>
+    
+    <item>
+      <title>设计数据密集型应用程序 - Replication</title>
+      <link>https://kunzhao.org/docs/books/ddia/ddia-chapter5/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/ddia/ddia-chapter5/</guid>
+      <description>设计数据密集型应用程序 - Replication Replication 就是将相同数据的拷贝防止在多个通过网络连接在一起的机器上。
+为什么需要 Replication  让数据在地理位置上更靠近用户 部分数据坏掉的时候，系统依然能持续工作 可伸缩，增加机器即可增加吞吐量  如果你需要 replication 的数据不发生变化，那么 replication 的过程是及其简单的，你只需拷贝到其它各个机器上，然后你的任务就完成了。然而 replication 最难的地方也就在这个地方，如何处理变化的数据？接下来就介绍三种常见的处理 replication 中数据变化的算法: single-leader、multi-leader、leaderless。
+Leaders 和 Followers 每一个存储一份数据库拷贝的节点称之为: replica。每一个 replica 都需要处理写数据的操作，久而久之，每一个节点之间存储的数据也就不再一致了。解决这种问题最常见的办法就是: leader-based replication (active/passive 或 master-slave replication)，它的工作原理如下:
+ 其中某个 replica 被指定为 leader (master 或 primary)，客户端想要写数据，那么必须将它们的写数据的请求发送给 leader，然后 leader 随后写入到自己的本地磁盘中。 其余的 replica 称之为 follower (read replicas, slaves, secondaries, hot standbys)，当 leader 写入数据到本地磁盘的时候，同时将数据改变的部分作为 replication log 或者 change stream 发送给它的 followers。每一个 follower 根据收到的 log 按照和 leader 处理不同写操作之间的相同的顺序，来更新它自己本地的数据。 当一个客户端想要读取数据的时候，它可以发送读请求给 leader 或者任意一个 follower。但是写请求的话只能发送给 leader。  这种模式的 replication 内置在许多数据库中，例如: PostgreSQL、MySQL、Oracle Data Guard、SQL Server 的 AlwaysOn Availability Groups，甚至在许多非关系型数据库中也有它的身影，例如: MongoDB、RethinkDB、Espresso，这种模式也局限于数据库，像消息中间件 Kafka 和 RabbitMQ 高可用的队列都依赖它，一些网络文件系统和 replicated block devices 例如 DRBD 也是同样的道理。</description>
+    </item>
+    
+    <item>
+      <title>设计数据密集型应用程序 - Partitioning</title>
+      <link>https://kunzhao.org/docs/books/ddia/ddia-chapter6/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/ddia/ddia-chapter6/</guid>
+      <description>设计数据密集型应用程序 - Partitioning  在上一章中，我们讨论了复制，即在不同的节点上拥有相同数据的多个副本。对于非常大的数据集或非常高的查询吞吐量，这是不够的：我们需要将数据分成多个分区，也称为分片。
+ 通常，分区的定义方式是，每一条数据（每个记录、行或文档）只属于一个分区。实现这一点有多种方法，我们将在本章中深入讨论。实际上，每个分区都是自己的小数据库，尽管数据库可能支持同时接触多个分区的操作。
+想要分区数据的主要原因是可伸缩性。不同的分区可以放在一个无共享集群中的不同节点。因此，大型数据集可以分布在多个磁盘上，查询负载可以分布在多个处理器上。
+对于在单个分区上操作的查询，每个节点都可以独立地为自己的分区执行查询，因此可以通过添加更多的节点来扩展查询吞吐量。大型、复杂的查询可以跨多个节点并行化，尽管这会变得非常困难。
+分区数据库在20世纪80年代由 Teradata 和 Tandem NonStop SQL[1] 等产品开创，最近又被 NoSQL 数据库和基于 Hadoop 的数据仓库重新发现。有些系统是为事务性工作负载而设计的，而其他系统则是为分析而设计的：这种差异会影响系统的优化方式，但是分区的基本原理适用于这两种工作负载。
+在这一章中，我们将首先了解划分大型数据集的不同方法，并观察数据索引与分区之间的交互作用。然后我们将讨论负载均衡，如果您想在集群中添加或删除节点，这是必需的。最后，我们将概述数据库如何将请求路由到正确的分区并执行查询。
+分区和复制 每个分区通常与复制节点的多个副本合并存储。尽管每个记录的容错性可能仍属于一个不同的节点，但这意味着每个记录的容错性仍然不同。
+一个节点可以存储多个分区。如果使用主从复制模型，分区和复制的组合可以如下图所示。每个分区的 Leader 被分配给一个节点，它的跟随者被分配给其他节点。每个节点可能是某些分区的 Leader 节点和其他分区的跟随节点。
+我们在第5章中讨论的关于数据库复制的所有内容都同样适用于分区的复制。分区方案的选择主要与复制方案的选择无关，因此在本章中我们将保持简单，而忽略复制。
+键值对数据的分区 假设你有大量的数据，你想对它进行分区。如何决定在哪些节点上存储哪些记录？
+我们分区的目标是将数据和查询负载均匀地分布在节点上。如果每个节点都得到公平的共享，那么理论上10个节点应该能够处理10倍于单个节点的数据量和10倍的读写吞吐量（暂时忽略复制）。
+如果分区不公平，使得一些分区比其他分区拥有更多的数据或查询，我们称之为倾斜分区。倾斜的存在使得分区变得更少有效。在一个极端的情况是，所有的负载都可能在一个分区上结束，因此10个节点中有9个是空闲的，而您的瓶颈是单个繁忙的节点。具有不成比例的高负载的分区称为热点。
+避免热点的最简单方法是将记录随机分配给节点。这样可以将数据均匀地分布在各个节点上，但它有一个很大的缺点：当您试图读取一个特定的项时，您无法知道它在哪个节点上，所以必须并行地查询所有节点。
+我们可以做得更好。现在我们假设您有一个简单的键值数据模型，在这个模型中，您总是通过主键访问记录。例如，在一本老式的纸质百科全书中，您按标题查找条目；由于所有条目都是按标题字母顺序排序的，因此您可以很快找到要查找的条目。
+根据键的范围分区 分区的一种方法是给每个分区分配一个连续的键范围（从最小值到最大值），就像纸质百科全书一样。如果知道范围之间的边界，就可以很容易地确定哪个分区包含给定的键。如果您还知道哪个分区分配给哪个节点，那么您可以直接向适当的节点提出请求（或者，对于百科全书，从书架上挑选正确的书）。
+键的范围不一定均匀分布，因为数据可能不均匀分布。例如，在图6-2中，卷1包含以A和B开头的单词，而第12卷包含以T、U、V、X、Y和Z开头的单词。如果字母表中每两个字母有一个卷，则某些卷会比其他的大得多。为了使数据均匀分布，分区边界需要与数据相适应。
+分区边界可以由管理员手动选择，也可以由数据库自动选择（我们将在第209页的“重新平衡分区”中更详细地讨论分区边界的选择）。Bigtable、它的开源等价HBase[2，3]、reinstdb和2.4[4]之前的MongoDB都使用这种分区策略。
+在每个分区中，我们可以按排序顺序保存键（参见第76页的“SSTables和LSMTrees”）。这样做的优点是范围扫描很容易，您可以将键视为一个连接索引，以便在一个查询中获取多个相关记录（请参阅第87页的“多列索引”）。例如，考虑一个存储来自传感器网络的数据的应用程序，其中的键是测量的时间戳（年-月-日-时-分-秒）。在这种情况下，范围扫描非常有用，因为它们可以让你很容易地获取某个月的所有读数。
+但是，键范围划分的缺点是某些访问模式可能导致热点。如果键是时间戳，则分区对应于时间范围，例如，每天一个分区。不幸的是，由于我们在测量时将数据从传感器写入数据库，所以所有的写入操作最终都会转到同一个分区（今天的分区），这样分区就可以在其他分区空闲的情况下进行写操作[5]。
+为了避免传感器数据库中的这个问题，您需要使用时间戳以外的东西作为 Key 的第一个元素。例如，您可以在每个时间戳前面加上传感器名称，以便首先按传感器名称，然后按时间进行分区。假设有多个传感器同时处于活动状态，那么写入负载最终将更加均匀地分布在各个分区上。现在，当您想要在一个时间范围内获取多个传感器的值时，需要对每个传感器名称执行单独的范围查询。
+根据键的 Hash 进行分区 由于存在倾斜和热点的风险，许多分布式数据存储使用哈希函数来确定给定 Key 的分区。
+一个好的散列函数接受倾斜的数据并使其均匀分布。假设您有一个32位哈希函数，它接受一个字符串。无论何时给它一个新字符串，它都会返回一个介于0和232-1之间的随机数。即使输入字符串非常相似，它们的哈希值也均匀地分布在这个数字范围内。
+出于分区的目的，散列函数不需要加密性强：例如，Cassandra 和 MongoDB 使用 MD5，而 Voldemort 使用 Fowler–Noll–Vo 函数。许多编程语言都内置了简单的哈希函数（因为它们用于哈希表），但是它们可能不适合分区：例如，在 Java 中 Object.hashCode（）和 Ruby 的 Object# 哈希，同一个键在不同的进程中可能有不同的哈希值[6]。
+一旦你有了一个合适的 Key 哈希函数，你就可以为每个分区分配一个哈希范围（而不是一个Key范围），哈希在分区范围内的每个 Key 都将存储在该分区中。如图6-3所示。</description>
+    </item>
+    
+    <item>
+      <title>设计数据密集型应用程序 - 事务</title>
+      <link>https://kunzhao.org/docs/books/ddia/ddia-chapter7/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/ddia/ddia-chapter7/</guid>
+      <description>设计数据密集型应用程序 - 事务  一些作者声称，一般的两阶段提交由于其带来的性能或可用性问题，支持起来过于昂贵。我们认为，最好让应用程序程序员在瓶颈出现时处理由于过度使用事务而导致的性能问题，而不是总是围绕缺少事务进行编码。 &amp;mdash; James Corbett et al., Spanner: Google’s Globally-Distributed Database (2012)
+ 在数据系统的严酷现实中，很多事情都会出错：
+ 数据库软件或硬件可能随时发生故障（包括在写入操作的中间）。 应用程序可能随时崩溃（包括一系列操作的中途）。 网络中断可能会意外地切断应用程序与数据库的连接，或断开一个数据库节点与另一个数据库节点的连接。 多个客户端可能同时写入数据库，覆盖彼此的更改。 客户端可能会读取没有意义的数据，因为它只更新了一部分。 客户端之间的竞争条件可能会导致令人惊讶的错误。  为了可靠，系统必须处理这些故障，并确保它们不会导致整个系统的灾难性故障。然而，实现容错机制需要大量的工作。它需要仔细考虑所有可能出错的地方，并进行大量测试以确保解决方案能够实际工作。
+几十年来，事务一直是简化这些问题的首选机制。事务是应用程序将多个读写操作组合到一个逻辑单元中的一种方法。从概念上讲，事务中的所有读写操作都作为一个操作执行：要么整个事务成功（commit），要么失败（abort，rollback）。如果失败，应用程序可以安全地重试。有了事务，应用程序的错误处理就变得简单多了，因为它不需要担心部分失败，也就是说，有些操作成功，有些操作失败（无论什么原因）。
+如果你花了数年时间处理事务，它们可能看起来很明显，但我们不应该认为它们是理所当然的。事务不是自然规律；创建事务的目的是为了简化访问数据库的应用程序的编程模型。通过使用事务，应用程序可以自由地忽略某些潜在的错误场景和并发问题，因为数据库会处理它们（我们称之为安全保证）。
+并不是每个应用程序都需要事务，有时削弱事务性保证或完全放弃事务性保证有好处（例如，为了获得更高的性能或更高的可用性）。一些安全属性可以在没有事务的情况下实现。
+你如何判断你是否需要事务？为了回答这个问题，我们首先需要确切地了解事务可以提供什么样的安全保障，以及与之相关的成本。虽然乍一看事务似乎很简单，但实际上有许多微妙但重要的细节在起作用。
+在本章中，我们将研究许多可能出错的例子，并探索数据库用来防范这些问题的算法。我们将特别深入到并发控制领域，讨论可能发生的各种竞争条件，以及数据库如何实现隔离级别，如读提交、快照隔离和串行化。
+本章适用于单节点和分布式数据库；在第8章中，我们将重点讨论仅在分布式系统中出现的特定挑战。
+事务的模糊概念 现在几乎所有的关系型数据库和一些非关系型数据库都支持事务。其中大多数都遵循ibmsystemr在1975年引入的样式，第一个SQL数据库[1，2，3]。虽然一些实现细节有所改变，但40年来，总体思路基本不变：MySQL、PostgreSQL、Oracle、sqlserver等的事务支持与systemr惊人地相似。
+在21世纪末，非关系（NoSQL）数据库开始流行起来。他们希望通过提供新的数据模型（见第2章）和默认的复制（第5章）和分区（第6章）来改善关系现状。事务是这场运动的主要牺牲品：许多新一代数据库完全放弃了事务，或者重新定义了这个词来描述一组比以前理解的要弱得多的保证[4]。
+随着这种新的分布式数据库的大肆宣传，人们普遍认为事务是可伸缩性的对立面，任何大型系统都必须放弃事务，以保持良好的性能和高可用性[5,6]。另一方面，事务性保证有时由数据库供应商提出，作为“严肃的应用程序”和“有价值的数据”的基本要求。
+事实并非如此简单：与其他技术设计选择一样，事务有其优势和局限性。为了理解这些权衡，让我们详细介绍事务在正常操作和各种极端（但现实）情况下可以提供的保证。
+ACID 的意义 事务提供的安全保证通常用众所周知的缩写ACID来描述，它代表原子性、一致性、隔离性和持久性。它是1983年由Theo Härder和Andreas Reuter[7]创造的，目的是为了在数据库。
+但是在实践中，一个数据库的ACID实现并不等同于另一个数据库的实现。例如，正如我们将要看到的，孤立的含义有很多模棱两可的地方。高层次的想法是正确的，但魔鬼在于细节。今天，当一个系统声称“符合ACID”时，你还不清楚到底能得到什么样的保证。不幸的是，ACID已经成为一个市场术语。
+（不符合ACID标准的系统有时称为BASE，它代表基本可用、软状态和最终一致性[9]。这甚至比ACID的定义更模糊。似乎对base唯一合理的定义是“not ACID”；也就是说，它几乎可以表示任何你想要的东西。）
+让我们深入研究原子性、一致性、隔离性和持久性的定义，因为这将使我们完善我们对事务的概念。
+（1）原子性
+一般来说，原子是指不能分解成更小的东西零件。零件在计算机的不同分支中，单词的意思是相似但又微妙不同的东西。例如，在多线程编程中，如果一个线程执行原子操作，这意味着另一个线程不可能看到该操作的一半finishedresult。系统只能处于操作前或操作后的状态，而不是介于两者之间的状态。
+相比之下，在ACID环境中，原子性与并发性无关。它没有描述如果多个进程试图同时访问同一个数据会发生什么，因为这是在字母I下的隔离（参见第225页的“隔离”）。
+相反，ACID原子性描述的是，如果客户机想要进行多个写操作，但在处理了一些写入操作之后发生了错误，例如，进程崩溃、网络连接中断、磁盘已满或违反了某些完整性约束。如果写入操作被组合到一个atomic transaction中，并且由于错误而无法完成（提交）事务，则事务将中止，数据库必须放弃或撤消迄今为止在该事务中所做的任何写入操作。
+如果没有原子性，如果在进行多次更改的过程中发生了错误，则很难知道哪些更改已生效，哪些更改没有生效。应用程序可以重试，但这有可能使同一更改发生两次，从而导致重复或不正确的数据。原子性简化了这个问题：如果一个事务被中止，应用程序可以确保它没有改变任何东西，所以它可以安全地被中止重试过了。
+ACID原子性的定义特性是能够在出错时中止事务并放弃该事务中的所有写操作。也许可终止性比原子性更好，但我们还是坚持原子性，因为这是一个常用的词。
+（2）一致性
+“一致性”这个词严重超载：
+ 在第5章中，我们讨论了副本一致性以及异步复制系统中出现的最终一致性问题（请参阅第161页的“复制延迟问题”）。 一致哈希是一些系统用于重新平衡的分区方法（请参阅第204页的“一致哈希”）。 在CAP定理（见第9章）中，一致性一词用于表示线性化（见324页的“线性化能力”）。 在ACID的上下文中，一致性是指数据库处于“良好状态”的特定于应用程序的概念  不幸的是，同一个词至少有四种不同的意思。
+ACID一致性的思想是关于数据的某些陈述（不变量）必须始终为真-例如，在一个会计系统中，所有账户的贷方和借方必须总是平衡的。如果事务以根据这些不变量有效的adatabase开始，并且事务期间的任何写入都保持有效性，那么您可以确保这些不变量始终是满意。
+不过，这种一致性的思想依赖于应用程序的不变量概念，并且由应用程序负责定义它的事务处理是正确的，以便保留一致性。这不是数据库可以保证的：如果你写的坏数据违反了你的不变量，数据库不能阻止你。（数据库可以检查某些特定类型的不变量，例如使用foreignkey约束或唯一性约束。但是，一般情况下，应用程序会定义哪些数据有效或无效，而数据库只存储这些数据。）
+原子性、隔离性和持久性是数据库的属性，而一致性（在 ACID 意义上）是应用程序的属性。为了实现一致性，应用程序可能会重新连接数据库的原子性和隔离属性，但这并不仅仅取决于数据库。因此，字母C并不真的属于ACID。
+（3）隔离
+大多数数据库同时由多个客户机访问。如果他们在读写数据库的不同部分，这是没有问题的，但是如果他们访问相同的数据库记录，你可能会遇到并发问题（竞争条件）。
+假设您有两个客户机同时递增存储在数据库中的计数器。每个客户机需要读取当前值，添加1，然后将新值写回（假设数据库中没有内置任何增量操作）。在图7-1中，计数器应该从42增加到44，因为发生了两个增量，但实际上由于竞争条件，它只增加到43。</description>
+    </item>
+    
+  </channel>
+</rss>

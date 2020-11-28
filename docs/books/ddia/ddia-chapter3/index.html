@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="设计数据密集型应用程序 - 存储和读取"><meta property="og:title" content="设计数据密集型应用程序 - 存储和读取" />
+<meta property="og:description" content="设计数据密集型应用程序 - 存储和读取  笔记来自于 《Designing Data-Intensive Applications》 的第三章
+ 精心选取的索引可以提升查询的速度，但是也会影响写入的速度。很多数据库系统内部会采用一种 append-only log file 文件，来记录更新了什么数据。
+Hash 索引 使用 in-memory hash map 对只进行追加写入的文件进行索引:
+如上述讨论，我们只对文件追加，但是如何防止文件大到超出磁盘空间呢？一种可行的办法是，将 log 文件切分为 segments (当一个 segment 文件达到某个大小的时候，就关闭它，然后开始往新的 segment 文件中写入)，我们可以在这些 compaction 中进行 compaction (去除对 key 的重复的历史更新，只保留最近一次的更新即可)。
+事实上，在执行 compaction (可以让 segment 文件不至于太大) 的时候，我们还可以同时 merge segments 到新的 segment 文件中，可以使用一个后台线程来执行这些操作。在执行操作的同时，我们依然可以使用旧的 segment 文件继续对外提供 read 和 write 服务。当 merge 完毕后，我们再切换到新的 segment 文件上，然后将旧的 segment 文件删除即可。
+现在每一个 segment 文件都拥有了自己的 in-memory hash table，存储了 key 到文件偏移量的映射关系。根据 key 查找值的过程，我们首先检查最近的 segment 的 hash map，如果 key 不在里面，我们就查找第二个 segment，以此类推。merge 操作本身会保证 segment 文件不至于太多，所以我们也无须查看太多的 hash map。当然在实际实现中，还是有很多问题需要考虑:" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/books/ddia/ddia-chapter3/" />
+
+<title>设计数据密集型应用程序 - 存储和读取 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.8f15a830c843f820dab8ab37dd53d1d14f9172cde2d3904334c63f3ec743cdd4.js" integrity="sha256-jxWoMMhD&#43;CDauKs33VPR0U&#43;Rcs3i05BDNMY/PsdDzdQ="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/beauty_of_mathematics/" >
+      数学之美
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/history_of_quantum_physics/" >
+      上帝掷骰子吗
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/clean_code/" >
+      代码整洁之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the_transformation_of_enterprise_it_architecture/" >
+      企业 IT 架构转型之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/redis_5_source_code/" >
+      Redis 5 设计与源码分析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/" >
+      深度剖析 Apache Dubbo 核心技术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/everyone-is-architect/" >
+      人人都是架构师 (一)
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-art-of-readable-code/" >
+      编写可读代码的艺术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-wisdom-of-trading-stocks/" >
+      炒股的智慧
+  </a>
+
+</li>
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/ddia/" >
+      设计数据密集型应用程序
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter1/" >
+      设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter2/" >
+      设计数据密集型应用程序 - 数据模型 &amp; 查询语言
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter3/"  class="active">
+      设计数据密集型应用程序 - 存储和读取
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter4/" >
+      设计数据密集型应用程序 - 编码与演化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter5/" >
+      设计数据密集型应用程序 - Replication
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter6/" >
+      设计数据密集型应用程序 - Partitioning
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter7/" >
+      设计数据密集型应用程序 - 事务
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>设计数据密集型应用程序 - 存储和读取</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#hash-索引">Hash 索引</a></li>
+    <li><a href="#sstables-和-lsm-trees">SSTables 和 LSM-Trees</a>
+      <ul>
+        <li><a href="#构建与维护-sstables">构建与维护 SSTables</a></li>
+        <li><a href="#lsm-tree-与-sstable">LSM-tree 与 SSTable</a></li>
+        <li><a href="#优化">优化</a></li>
+      </ul>
+    </li>
+    <li><a href="#b-trees">B-Trees</a>
+      <ul>
+        <li><a href="#使-b-tree-更为可靠">使 B-tree 更为可靠</a></li>
+        <li><a href="#优化-b-tree">优化 B-tree</a></li>
+      </ul>
+    </li>
+    <li><a href="#对比-b-tree-和-lsm-tree">对比 B-tree 和 LSM-Tree</a>
+      <ul>
+        <li><a href="#lsm-tree-的优势">LSM-tree 的优势</a></li>
+        <li><a href="#lsm-tree-的劣势">LSM-tree 的劣势</a></li>
+      </ul>
+    </li>
+    <li><a href="#其它索引结构">其它索引结构</a>
+      <ul>
+        <li><a href="#值存储在索引中">值存储在索引中</a></li>
+        <li><a href="#多列索引">多列索引</a></li>
+        <li><a href="#全文检索与模糊索引">全文检索与模糊索引</a></li>
+        <li><a href="#in-memory-databases">in-memory databases</a></li>
+      </ul>
+    </li>
+    <li><a href="#交易处理还是分析">交易处理还是分析？</a>
+      <ul>
+        <li><a href="#数据仓库">数据仓库</a></li>
+        <li><a href="#分析的模式-星型和雪花型">分析的模式: 星型和雪花型</a></li>
+      </ul>
+    </li>
+    <li><a href="#面向列的存储">面向列的存储</a>
+      <ul>
+        <li><a href="#列压缩">列压缩</a></li>
+        <li><a href="#列存储的顺序">列存储的顺序</a></li>
+        <li><a href="#列存储的写入">列存储的写入</a></li>
+        <li><a href="#聚合-数据立方体和物化视图">聚合: 数据立方体和物化视图</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="设计数据密集型应用程序---存储和读取">设计数据密集型应用程序 - 存储和读取</h1>
+<blockquote>
+<p>笔记来自于 《Designing Data-Intensive Applications》 的第三章</p>
+</blockquote>
+<p>精心选取的索引可以提升查询的速度，但是也会影响写入的速度。很多数据库系统内部会采用一种 append-only log file 文件，来记录更新了什么数据。</p>
+<h2 id="hash-索引">Hash 索引</h2>
+<p>使用 in-memory hash map 对只进行<strong>追加</strong>写入的文件进行索引:</p>
+<p><img src="/images/docs/books/ddia/in-memory-hash-map-index.png" alt=""></p>
+<p>如上述讨论，我们只对文件<strong>追加</strong>，但是如何防止文件大到超出磁盘空间呢？一种可行的办法是，将 log 文件切分为 segments (当一个 segment 文件达到某个大小的时候，就关闭它，然后开始往新的 segment 文件中写入)，我们可以在这些 compaction 中进行 compaction (去除对 key 的重复的历史更新，只保留最近一次的更新即可)。</p>
+<p><img src="/images/docs/books/ddia/compaction-of-key-value-update-log.png" alt=""></p>
+<p>事实上，在执行 compaction (可以让 segment 文件不至于太大) 的时候，我们还可以同时 merge segments 到新的 segment 文件中，可以使用一个后台线程来执行这些操作。在执行操作的同时，我们依然可以使用旧的 segment 文件继续对外提供 read 和 write 服务。当 merge 完毕后，我们再切换到新的 segment 文件上，然后将旧的 segment 文件删除即可。</p>
+<p><img src="/images/docs/books/ddia/compaction-and-segment-merging-simultaneously.png" alt=""></p>
+<p>现在每一个 segment 文件都拥有了自己的 in-memory hash table，存储了 key 到文件偏移量的映射关系。根据 key 查找值的过程，我们首先检查最近的 segment 的 hash map，如果 key 不在里面，我们就查找第二个 segment，以此类推。merge 操作本身会保证 segment 文件不至于太多，所以我们也无须查看太多的 hash map。当然在实际实现中，还是有很多问题需要考虑:</p>
+<ul>
+<li>文件格式: CSV 文件格式并不是最合适的，一般采用二进制格式的文件，先存储字符串的长度，紧跟着存储字符串本身。</li>
+<li>删除记录: 如果想要删除一个键值对，那么需要对数据文件添加一个特殊的删除记录 (有时候称之为 tombstone). 当执行 merge 操作的时候，这个标记位告诉 merging 进程删除掉这个 key.</li>
+<li>崩溃恢复: 如果数据库重启了，那么 in-memory hash map 里面的数据也就丢失了。当然你可以每次在数据库重启的时候，重新读取每一个 segment 文件，重新建立建设关系，但似乎花费的时间有点长。Bitcask 采用的策略是在磁盘上存储每一个 segment 文件 hash map 的 snapshot，这样重新恢复到磁盘的时候会更快一些。</li>
+<li>部分写入: 数据库可能在写入到一半的时候崩溃。Bitcask 引入了校验码，针对这种写入可能出现问题的记录可以删除掉或者忽略掉。</li>
+<li>并发控制: 写是追加写，因此一般的实现方法是只有一个<strong>写线程</strong>。segment 文件一旦写入，就不会再做任何修改，因此<strong>并发读</strong>是没有问题的。</li>
+</ul>
+<p>只能进行追加写入的 log 文件是否有点浪费？实时证明，这样的限制有很多好处:</p>
+<ul>
+<li>Appending 和 segment merging 是顺序写操作，比随机写要快很多，尤其是在旋转驱动的磁盘上。某种程度上，及时是 SSD 磁盘，也要快一些。</li>
+<li>顺序写或者 immutable 使得并发控制和崩溃恢复容易了许多，你不用担心某个文件会出现既存储了一部分旧文件的内容，同时又存储了一些新文件的内容这种情况。</li>
+<li>归并旧的 segment 文件，避免了数据文件分片的问题。</li>
+</ul>
+<p>然而，Hash table 索引也有限制:</p>
+<ul>
+<li>Tash table 必须装载到内存中，基于磁盘的 hash map 需要太多的随机 I/O。</li>
+<li>支持范围查询并不容易，例如你不能很轻松地查找到位于 <strong>kitty00000</strong> 和 <strong>kitty99999</strong> 之间的所有 key。</li>
+</ul>
+<p>接下来，我们就讨论不受这种限制的索引结构。</p>
+<h2 id="sstables-和-lsm-trees">SSTables 和 LSM-Trees</h2>
+<p>现在，我们要求存储到 segment 文件中的 key-value 对要根据 key 排好序，这种格式的文件称之为 <strong>Sorted String Table (SSTable)</strong>。我们还要求在每一个归并好的 segment 文件中，每一个 key 仅允许出现一次 (当然，compaction 进程本身已经保证了这一点)。SSTable 相对于基于哈希索引的 segment log 文件有巨大优势:</p>
+<ul>
+<li>归并 segment 文件变得简单和高效，即使文件的超出了内存的大小。我们可以采用<strong>归并排序</strong>来突破内存的限制，只需要对比<strong>每个文件的第一个 key</strong>，然后将 lowest 的 key 拷贝到输出文件中，然后重复这个过程即可:</li>
+</ul>
+<p><img src="/images/docs/books/ddia/Merging-several-SSTable-segments.png" alt=""></p>
+<p>每一个 segment 包含的是某段时间内的所有写入数据库的值，这也意味着一个 segment 文件里的所有 values 一定比另外一个 segment 文件里的所有 values 在时间线上要更晚一些 (假设我们只是合并相邻的 segment 文件)。当多个文件都有某个 key 的时候，仅需要保存最近一次写入的，放弃其它时间段写入的旧值即可。</p>
+<ul>
+<li>假设你要查找 <code>handiwork</code> 关联的值，但是你并不知道它的值在 segment 文件中的具体的偏移量。然而，你知道 <code>handbag</code> 和 <code>handsome</code> 的偏移量，因为所有的 key 是排好序的，因此你知道 <code>handiwork</code> 位于这两个 key 之间。因此你可以从 <code>handbag</code> 这个 key 开始顺序扫描，直至找到这个 key。</li>
+</ul>
+<p><img src="/images/docs/books/ddia/ssltable-with-in-memory-index.png" alt=""></p>
+<p>你仍然需要在内存维护一个有关 key 偏移量的表，然而你不需要维护所有的，只需要维护特定的一些 (sparse) 即可，一个几 KB 大小的 segment 文件维护一个 key 的偏移量即可，因为线性扫描几 KB 速度是很快的。</p>
+<ul>
+<li>既然读请求无论如何都需要线性扫描一段范围的 key，那干脆就将这段记录归位一组，形成一个 <strong>block</strong>，在写入磁盘之前进行<strong>压缩</strong>。这样，sparse in-memory index 的每一项指向的都是压缩后的 block 的入口，不但可以节省磁盘空间，也能减少 I/O 带宽消耗。</li>
+</ul>
+<h3 id="构建与维护-sstables">构建与维护 SSTables</h3>
+<ul>
+<li>当有 write 操作的时候，将其添加到 in-memory balanced tree 数据结构中 (例如，红黑树)，这种 in-memory tree 有时候称之为 <strong>memtable</strong>.</li>
+<li>当 memtable 增长到超过某个阈值 (比如几 MB) 的时候，将其作为一个 SSTable 写入到磁盘上。接下来的 write 请求可以转到新的 memtable 上进行。</li>
+<li>当有 read 请求的时候，首先尝试在 memtable 中根据 key 查找，然后在最近一次生成的存储在磁盘上的 segment 文件中查找，然后再下一个 segment 文件中查找。</li>
+<li>在这整个过程中，后台运行着一个进行归并和 compaction 的进程，用来 combine segment 文件、丢弃已经删除的值等操作。</li>
+</ul>
+<p>上述机制运行地非常好，它只有一个问题: 当数据库崩溃的时候，最近一次的 write 写 (即已经写入到 memtable 中，但是没有写入到磁盘中的记录) 将会丢失。为了避免出现这个问题，我们可以创建一个独立的 log 文件用来记录每次新写入的记录。这个 log 文件无须有序，它唯一的目的就是为了恢复数据库。每当 memtable 写入到 SSTable 文件中后，与其相关联的 log 文件就可以丢弃了。</p>
+<h3 id="lsm-tree-与-sstable">LSM-tree 与 SSTable</h3>
+<p>这里提到的算法是 LevelDB 和 RocksDB 中提到的，Cassandra 和 HBase 中也使用了相似的存储引擎算法，它们应该都是受到 Google 的 Bigtable 论文 (引入了 SSTable 和 memtable 的概念) 所启发的。</p>
+<p>这种索引结构一开始称作 Log-Structured Merge-Tree ，在此基础上构建的存储引擎称之为 LSM 存储引擎。Elasticsearch 和 Solr 使用 Lucene 作为其索引引擎，其底层同样采用了相似的技术来存储它的 term dictionary。</p>
+<h3 id="优化">优化</h3>
+<ul>
+<li>LSM 查找不在数据库中的 key 的时候会很慢，一般采用 <strong>Bloom filters</strong> 来优化。</li>
+<li>SSTable 如何 compact 和 merge 的策略也有很多种，最常见的是 size-tiered 和 leveled compaction。 LevelDB 和 RocksDB 采用的是 leveled compaction，HBase 采用的是 size-tiered，Cassandra 两者都支持。Size-tiered compaction，新的以及比较小的 SSTable 会被合并到旧的、比较大的 SSTable 的后面；Leveled compaction，key range 会被切为比较小的 SSTable 文件，旧的数据会被移动到其它<strong>层</strong>，这是为了让 compaction 增量处理、并且使用较少的磁盘空间。</li>
+</ul>
+<p>采用 LSM-tree 之后，也支持<strong>范围查询</strong>了，因此磁盘写入是顺序的，因此写的吞吐量也是非常高的。</p>
+<h2 id="b-trees">B-Trees</h2>
+<p>B-tree 是最常见的索引结构，目前很多关系型甚至非关系型数据库底层存储索引采用的都是 B-tree 索引。</p>
+<p>B-tree 存储的 key-value 对是有序的，因此支持非常高效地范围查询。B-tree 将数据库切分为固定大小的 block 或 page，通常是 4KB 大小 (有时候更大)，每次读或者写都是以一个 page 为单位的。这种设计更多的考虑到了硬件的特性，因为磁盘就是以固定大小的 block 设计的。</p>
+<p>每一个 page 可以通过一个地址或者一个 location，来指向到这个 page，一个 page 也可以通过指针指向另外一个 page，此处说的指针不是位于内存中，而是位于磁盘上。我们就根据 page 直接的这些引用可以构建一颗 page 树:</p>
+<p><img src="/images/docs/books/ddia/lookup-key-in-b-tree.png" alt=""></p>
+<p>这棵树的的 root 节点是一个 page，这个 page 包含了几个 key 以及指向孩子节点 page 的 reference，每一个孩子又以同样的方式构建一段<strong>连续的</strong> key。最终会进入到一个包含 key 和这个 key 关联的 value 的 page 。</p>
+<p>一个 page 指向孩子 page 的 reference 的数量在 B-tree 里称之为 <strong>branching factor</strong>，在实际实现中，这个值取决于存储 reference 需要多少空间，以及一段连续 key 的范围是多大，一般而言这个数字是<strong>几百</strong>。</p>
+<p>如果想要更新某个 key 的值，那么需要首先找到这个 key 所在的 leaf page，然后更新值，然后<strong>写回到磁盘</strong>上。如果你想要添加一个新的 key，你需要找到容纳这个 key 的这段 range，然后添加这个 range 所在的 page 上，如果这个 page 的空间不足了，那么需要将其拆为两半，父 page 需要根据新的<strong>子视图</strong>的变化而随之更新。</p>
+<p><img src="/images/docs/books/ddia/growing-b-tree-by-splitting-a-page.png" alt=""></p>
+<p>B-tree 树的算法保证了树本身一直是平衡的: 一个有 n 个 key 的 B-tree 总是有 O(logn) 的深度，多数数据库用 3 层或 4 层的深度就可以容纳整个数据库本身，所以在查找数据额时候，无须追踪太多的 page reference (一个 4 层的 B-tree，每个 page 存储 4KB，branching factor 为 500，那么可以存储多达 256 TB 的数据)。</p>
+<h3 id="使-b-tree-更为可靠">使 B-tree 更为可靠</h3>
+<p>B-tree 写入 page 的这种操作不同于上述介绍到的方法，这是一种 overwritten，而非 append 的方式。</p>
+<p>为了使数据库崩溃之后不至于难以恢复，通常 B-tree 的实现会伴随着另外一个额外的位于磁盘上的数据结构: write-ahead log (WAL，也称之为 redo log)。这种一种 append-only 的文件，B-tree 的每一次修改操作更新 page 之前，必须将此种修改先写入到这个文件中。数据库的崩溃恢复，就全靠这个 log 来重新让数据恢复<strong>一致性</strong>了。</p>
+<p>更新 page 的时候也得需要考虑到<strong>并发控制</strong>的问题，这期间可能有其它几个线程正在执行<strong>查询</strong>，不保护数据的话，线程容易看到<strong>不一致</strong>的状态。这通常是使用<strong>latches (lighweight locks)</strong> 来做到的。Log-结构的索引不存在这个问题，因为在后台归并 segment 文件的时候，这些 segment 文件并不会处理查询请求。</p>
+<h3 id="优化-b-tree">优化 B-tree</h3>
+<p>B-tree 已经出现这么多年了，针对它也有许多优化技术:</p>
+<ul>
+<li>某些数据库 (例如 LMDB) 使用 copy-on-write 机制来恢复数据，而非采用 overwriting page 和维护 WAL 来恢复。某个 page 被修改之后，会被写入到一个不同的位置，parent page 也会指向这个新的 page。</li>
+<li>存储 key 的时候无须存储整个 key，可以存储 key 的缩写。尤其是在 tree 中间的那些层，它只需要提供能维系一段范围的信息就足够了。</li>
+<li>通常的实现: 一段 key 是连续的，这些 key 指向的 page 在磁盘上不一定是连续的。这样当有一个大的范围查询的时候，逐个读取这一个又一个不连续的 page 是非常低效的。许多 B-tree 在实现上都在尝试维护 leaf page 在磁盘上的有序性，尽管在 tree 增长的时候，同时维护 leaf page 的有序性，的确是一件很困难的事情。</li>
+<li>我们可以在 tree 上添加更多的指针。例如，每一个 leaf page 可以有指针指向左右兄弟 page，这样在线性扫描的时候，可以直接跳到上游或者下游，而无需从 parent page 上绕路。</li>
+<li>B-tree 的变种例如 fractal tree，引入了一些 log-structured 的想法来减少磁盘 I/O。</li>
+</ul>
+<h2 id="对比-b-tree-和-lsm-tree">对比 B-tree 和 LSM-Tree</h2>
+<p>根据经验，LSM-tree 通常写的速度非常快 (读通常比较慢，因为伴随着 comopaction，SSTable 可能分别位于不同的阶段，一次读可能就需要查询几种不同的数据结构)，而 B-tree 通常读的速度比较快。</p>
+<p>然而，一切还是得让 benchmark 的结果说话。</p>
+<h3 id="lsm-tree-的优势">LSM-tree 的优势</h3>
+<p>B-tree 索引至少需要<strong>两次</strong>才能真正的写一份数据: 一次是写入 write-ahead log，一次是写入 B-tree 树本身 (如果 page 有分裂，那么很有可能还需要再写一次)。如果只修改了几个字节，就需要写入整个 page ，这在时间上耗费也是比较长的。一些数据库甚至需要写入两次相同的 page，以防止在断电时，出现部分更新的 page 这种情况。</p>
+<p>Log-structured 索引由于需要不停的对 SSTable 进行 compaction 和 merge，因此也是需要写入多次的。这种一次写入，却在磁盘层面引发了多次写入的现象，称之为 <strong>write apmlification (写入放大)</strong>。固态硬盘更要引起注意，因为其覆盖写入的次数是有限的。</p>
+<p>LSM-tree 之所以有<strong>更高的写吞吐量</strong>，是因为它的 <strong>write amplification</strong> 稍弱一点，也是因为其总是顺序地写入到 SSTable 文件中，而不是覆盖写。要知道，在机械硬盘上随机写是远远慢于顺序写的。</p>
+<p>LSM-tree 可压缩性更好，其比 B-tree 更能产生较小的压缩文件。在 B-tree 里，当一个 page 分裂之后，或者某一行记录无法容纳进已有的 page 里，这个 page 的部分空间是没有被利用上的。鉴于 LSM-tree 不是以 page 为单位的，并且其也会周期性的重新 SSTable 来消除分片，因此在磁盘空间利用率上更高，尤其是采用 leveled compaction 算法的 LSM-tree。</p>
+<p>在许多 SSD 上，其会在内部使用 Log-structured 算法将底层存储芯片上的随机写入转换为顺序写入，因此存储引擎写入模式的影响不太明显。但是，较低的 write amplification 和较少的碎片在 SSD 上仍然是有利的：在可用的 I/O 带宽范围内，更紧凑地表示数据，意味着可以进行更多的读写请求。</p>
+<h3 id="lsm-tree-的劣势">LSM-tree 的劣势</h3>
+<p>log-structured 的劣势在于 compaction 进程可能会影响到 read 和 write 的性能。磁盘资源总是有限的，所以可能会出现一个 read 请求需要等待磁盘完成昂贵的 compaction 操作之后才能执行。这种影响或许不是很大，但是却有着更高的 percentiles，所以有时候会发现 log-structured 存储引擎有时候响应时间特别高，相比之下，B-tree 就更为稳定一些。</p>
+<p>另外 compaction 也给磁盘带来了更高的吞吐量，有限的<strong>磁盘写带宽</strong>需要被 logging、刷新 memtable 到磁盘以及后台的 compaction 线程所共享。</p>
+<p>如果写入量比较大同时 compaction 没有进行较好配置的话，可能还会发生 <strong>compaction 速度跟不上源源不断的 write 请求的速度</strong>。这种情况下，需要待合并的 segment 文件将会越来越多直至超出磁盘可用空间，读请求因为需要检查更多的 segment 文件，所以响应时间也会变长。而一般的基于 SSTable 存储引擎的实现，在 compaction 出现问题的时候，也不会对到来的写请求做任何约束，因此你需要自己取监控这种行为。</p>
+<p>B-tree 的优势在于每一个 key 仅存在于一个索引中，log-structured 存储引擎可能有相同 key 的位于多个 segment 文件中的多份拷贝。这给予了 B-tree 作为数据库存储引擎的更为迷人的魅力: 实现事物隔离，仅需要将锁与这棵树关联起来即可。</p>
+<p>没有某种简单方便的规则来告诉您，哪种存储引擎更适合您的应用程序，因此还是很值得测试的。</p>
+<h2 id="其它索引结构">其它索引结构</h2>
+<p>B-tree 和 log-structured 索引都可以用作<strong>二级索引</strong>。</p>
+<h3 id="值存储在索引中">值存储在索引中</h3>
+<p>索引中的 key 关联的值，key 存储实际的行，也可以是一个指向实际行地址的引用。其中，存储引用的这种方式是比较常见的，这样有多个索引存在的时候，只需要其它索引的引用也指向就可以了，而无需复制数据。</p>
+<p>在一些场景下，通过引用再定位到实际行的这种存储方式，影响了读的性能，所以直接将值存储在索引中的做法更好一些，这种索引称之为<strong>聚簇索引</strong>。例如，在 MySQL 中，<strong>主键永远是聚簇索引</strong>，二级索引指向主键索引；在 SQL Server 中，你可以手动为每个表指定一个聚簇索引。聚集索引（存储索引中的所有行数据）和非聚集索引（仅存储对索引中数据的引用）之间的折衷称为<strong>覆盖索引</strong>或包含列的索引，它将表的某些列存储在索引中。这使得一些查询可以通过单独使用索引来直接响应（在这种情况下，索引被称为<strong>覆盖查询</strong>）。</p>
+<p>与任何类型的重复数据一样，聚集索引和覆盖索引可以加快读取速度，但它们需要额外的存储空间，并且会增加写入开销。</p>
+<h3 id="多列索引">多列索引</h3>
+<p>到目前为止讨论的索引只将一个键映射到一个值。如果我们需要同时查询表的多个列（或文档中的多个字段），那么这还不够。</p>
+<p>最常见的多列索引类型称为<strong>串联索引</strong>，它通过将一列附加到另一列而将多个字段合并为一个键（索引定义指定字段串联的顺序）。这就像一本老式的纸质电话簿，它提供了从（姓，名）到电话号码的索引。由于排序顺序不同，索引可用于查找具有特定姓氏的所有人员，或具有特定姓氏组合的所有人员。但是，如果你想找到所有有特定名字的人，索引就没有用了。</p>
+<p><strong>多维空间索引</strong>是一种比较重要的多维数据查询方法。例如，一个餐馆搜索网站可能有一个包含每个餐馆的经纬度的数据库。当用户在地图上查看餐厅时，网站需要搜索用户当前正在查看的矩形地图区域内的所有餐厅。这需要一个二维范围查询，如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> restaurants <span style="color:#66d9ef">WHERE</span> latitude <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">51</span>.<span style="color:#ae81ff">4946</span> <span style="color:#66d9ef">AND</span> latitude <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">51</span>.<span style="color:#ae81ff">5079</span> 
+                            <span style="color:#66d9ef">AND</span> longitude <span style="color:#f92672">&gt;</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">1162</span> <span style="color:#66d9ef">AND</span> longitude <span style="color:#f92672">&lt;</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">1004</span>;
+</code></pre></div><p>标准的 B-tree 或 LSM-tree 索引无法有效地处理此类查询：它可以提供纬度范围内（但在任何经度）的所有餐厅，或在经度范围内的所有餐厅（但在北极和南极之间的任何地方），但不能同时提供这两个索引。</p>
+<p>一种方法是使用空间填充曲线将二维位置转换为单个数字，然后使用常规 B 树索引。更常见的是使用特殊的空间索引，如 <strong>R 树</strong>。例如，PostGIS 使用 PostgreSQL 的广义搜索树索引将地理空间索引实现为 R 树。</p>
+<p>一个有趣的想法是，<strong>多维索引不仅仅针对地理位置</strong>。例如，在一个电子商务网站上，你可以使用三维索引（红、绿、蓝）来搜索特定颜色范围的产品，或者在天气观测数据库中，你可以在（日期，温度），以便有效地搜索 2013 年的所有观测值，其中温度在25至30℃之间。如果使用一维索引，则必须扫描2013年的所有记录（不考虑温度），然后按温度过滤，反之亦然。二维索引可以同时受到时间戳和温度的限制。HyperDex 就是使用的此类技术。</p>
+<h3 id="全文检索与模糊索引">全文检索与模糊索引</h3>
+<p>到目前为止讨论的所有索引都假定您有精确的数据，并允许您查询键的精确值，或者按排序顺序查询键的值范围。他们不允许你搜索相似的键，比如拼写错误的单词。这种模糊查询需要不同的技术。</p>
+<p>例如，全文搜索引擎通常允许对一个词的搜索进行扩展，以包括该词的同义词，忽略词的语法变化，并搜索同一文档中相邻词的出现，并支持依赖于文本语言分析的各种其他功能。为了处理文档或查询中的打字错误，Lucene 能够在一定<strong>编辑距离内</strong>搜索文本（编辑距离为 1 表示添加、删除或替换了一个字母）。</p>
+<p>在 Lucene 中，内存索引是键中字符的有限状态自动机，类似于 trie 树。这种自动机可以转换成 Levenshtein 自动机，它支持在给定编辑距离内有效地搜索单词。</p>
+<p>其他的模糊搜索技术则朝着文档分类和机器学习的方向发展。</p>
+<h3 id="in-memory-databases">in-memory databases</h3>
+<p>一些内存中的键值存储（如 Memcached ）仅用于缓存，在这种情况下，如果计算机重新启动，数据丢失是可以接受的。但其他内存中数据库的目标是持久性，这可以通过特殊硬件（如电池供电的 RAM ）来实现，方法是将更改日志写入磁盘，定期将快照写入磁盘，或将内存中的状态复制到其他机器。</p>
+<p>当内存中的数据库重新启动时，它需要从磁盘或通过网络从副本重新加载其状态（除非使用了特殊的硬件）。尽管写入磁盘，但它仍然是内存中的数据库，因为磁盘只是作为一个仅附加的日志来使用，以保证持久性，而读取完全是从内存中提供的。写入磁盘也有操作上的优势：磁盘上的文件可以很容易地被外部实用程序备份、检查和分析。</p>
+<p>VoltDB、MemSQL 和 Oracle TimesTen 等产品都是具有关系模型的内存数据库，这些供应商声称，通过消除与管理磁盘上数据结构相关的所有开销，它们可以大大提高性能。RAMCloud 是一个具有持久性的开源内存键值存储（对内存中的数据和磁盘上的数据使用日志结构的方法）。Redis 和 Couchbase 通过异步写入磁盘来提供弱持久性。</p>
+<p>与直觉相反，内存中数据库的性能优势并不是因为它们不需要从磁盘读取。如果内存足够，即使是基于磁盘的存储引擎也可能永远不需要从磁盘读取数据，因为操作系统无论如何都会在内存中缓存最近使用的磁盘块。相反，它们之可以更快，是因为它们<strong>可以避免以可写入磁盘的形式对内存中的数据结构进行编码的开销</strong>。</p>
+<p>除了性能之外，内存数据库的另一个有趣的领域是提供难以用基于磁盘的索引实现的数据模型。例如，Redis 为各种数据结构（如优先级队列和集合）提供类似数据库的接口。因为它将所有数据保存在内存中，所以它的实现相对简单。</p>
+<p>最近的研究表明，内存数据库体系结构可以扩展到支持比可用内存更大的数据集，而不用担心以磁盘为中心的体系结构的开销。所谓的反缓存方法的工作原理是：当内存不足时，将最近最少使用的数据从内存逐出磁盘，并在将来再次访问时将其重新加载到内存中。这与操作系统对虚拟内存和交换文件的操作类似，但是数据库可以比操作系统更有效地管理内存，因为它可以在单个记录的粒度上工作，而不是整个内存页。不过，这种方法仍然需要索引完全能装入内存（就像本章开头的 Bitcask 示例）。</p>
+<p>如果非易失性存储器（NVM）技术得到更广泛的采用，则可能需要对存储引擎设计进行进一步的更改。目前，这是一个新的研究领域，但值得今后继续关注。</p>
+<h2 id="交易处理还是分析">交易处理还是分析？</h2>
+<p>事务不必具有 ACID（原子性、一致性、隔离性和持久性）属性。事务处理只意味着允许客户端进行低延迟的读写操作，而不是只定期运行（例如，每天运行一次）的批处理作业。</p>
+<p>OLTP(online transaction processing) 和 OLAP(online analytic processing) 的不同:</p>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>OLTP</th>
+<th>OLAP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>主要读模式</td>
+<td>每一次查询是一小部分数据集</td>
+<td>聚合大规模的数据集</td>
+</tr>
+<tr>
+<td>主要写模式</td>
+<td>随机访问</td>
+<td>Bulk import (ETL) 或事件流</td>
+</tr>
+<tr>
+<td>主要用于</td>
+<td>Web 应用的客户</td>
+<td>分析做决策</td>
+</tr>
+<tr>
+<td>数据来源</td>
+<td>最近状态的数据</td>
+<td>已发生事件的历史数据</td>
+</tr>
+<tr>
+<td>数据量</td>
+<td>GB 到 TB</td>
+<td>TB 到 PB</td>
+</tr>
+</tbody>
+</table>
+<p>一开始，事务处理和分析查询都使用相同的数据库。SQL 在这方面非常灵活：它适用于 OLTP 类型的查询和 OLAP 类型的查询。然而，在20世纪80年代末和90年代初，有一种趋势是公司停止使用其 OLTP 系统进行分析，而是在单独的数据库上运行分析。这个单独的数据库称为<strong>数据仓库</strong>。</p>
+<h3 id="数据仓库">数据仓库</h3>
+<p>数据仓库是一个独立的数据库，分析师可以查询他们心中的内容，而不会影响 OLTP 操作。数据仓库包含公司中所有不同 OLTP 系统中数据的只读副本。数据从 OLTP 数据库中提取（使用定期数据转储或连续更新流），转换为便于分析的模式，进行清理，然后加载到数据仓库中。将数据放入仓库的过程称为提取-转换-加载（ETL），如图所示。</p>
+<p><img src="/images/docs/books/ddia/etl-into-data-warehouse.png" alt=""></p>
+<p>数据仓库的数据模型通常是<strong>关系型</strong>的，因为 SQL 通常很适合分析查询。有许多图形化的数据分析工具可以生成SQL查询，可视化结果，并允许分析人员探索数据（通过诸如向下钻取、切片和分片等操作）。</p>
+<p>从表面上看，数据仓库和关系OLTP数据库看起来很相似，因为它们都有一个SQL查询接口。但是，系统的内部结构看起来可能非常不同，因为它们针对非常不同的查询进行了优化模式。很多数据库供应商现在专注于支持事务处理或分析工作负载，但不是两者都支持。</p>
+<h3 id="分析的模式-星型和雪花型">分析的模式: 星型和雪花型</h3>
+<p>星型示例:</p>
+<p><img src="/images/docs/books/ddia/star-schema.png" alt=""></p>
+<p>“星型模式”这个名字来自这样一个事实：当表关系被可视化时，<strong>事实表位于中间</strong>，被它的维度表包围；到这些表的连接就像星星一样。</p>
+<p>此模板的变体称为<strong>雪花模式</strong>，其中维度进一步细分为子维度。雪花模式比星型模式更规范化，但星型模式通常更受欢迎，因为它们更便于分析人员使用。</p>
+<h2 id="面向列的存储">面向列的存储</h2>
+<p>如果 fact 数据表中有数以万亿计的行和数 PB 的数据，那么高效地存储和查询这些数据将成为一个具有挑战性的问题。维度表通常要小得多（数百万行），因此我们将主要关注 fact 的存储。</p>
+<p>尽管 fact 表的宽度通常超过100列，但一个典型的数据仓库查询一次只能访问其中的 4 或 5 列（“SELECT”查询很少用于分析）。以如下查询为例：它访问了大量的行（在2013年的日历年中，每次有人购买水果或糖果），但它只需要访问fact_sales表的三列：date_key、product_sk和quantity。查询忽略所有其他列。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span>
+	dim_date.weekday, dim_product.category,
+	<span style="color:#66d9ef">SUM</span>(fact_sales.quantity) <span style="color:#66d9ef">AS</span> quantity_sold
+<span style="color:#66d9ef">FROM</span> fact_sales
+	<span style="color:#66d9ef">JOIN</span> dim_date <span style="color:#66d9ef">ON</span> fact_sales.date_key <span style="color:#f92672">=</span> dim_date.date_key
+	<span style="color:#66d9ef">JOIN</span> dim_product <span style="color:#66d9ef">ON</span> fact_sales.product_sk <span style="color:#f92672">=</span> dim_product.product_sk
+<span style="color:#66d9ef">WHERE</span>
+	dim_date.<span style="color:#66d9ef">year</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">2013</span> <span style="color:#66d9ef">AND</span>
+	dim_product.category <span style="color:#66d9ef">IN</span> (<span style="color:#e6db74">&#39;Fresh fruit&#39;</span>, <span style="color:#e6db74">&#39;Candy&#39;</span>)
+<span style="color:#66d9ef">GROUP</span> <span style="color:#66d9ef">BY</span>
+	dim_date.weekday, dim_product.category;
+</code></pre></div><p>如何有效地执行此查询？</p>
+<p>在大多数OLTP数据库中，存储是以面向行的方式进行的：表的一行中的所有值都是相邻存储的。它的主要劣势在于，面向行的存储引擎需要将所有这些行（每个行由 100 多个属性组成）从磁盘加载到内存中，解析它们，并过滤掉那些不满足所需条件的行。这可能需要很长时间。</p>
+<p>面向列存储的思想很简单：不要将一行中的所有值存储在一起，而是将<strong>每个列中的所有值存储在一起</strong>。如果每个列都存储在单独的文件中，则查询只需要读取和解析查询中使用的列，这样可以节省大量工作。这一原理如图所示。</p>
+<p><img src="/images/docs/books/ddia/store-relational-data-by-column.png" alt=""></p>
+<p>面向列的存储布局依赖于按相同顺序包含行的每个<strong>列文件</strong>。</p>
+<h3 id="列压缩">列压缩</h3>
+<p>除了只从磁盘加载查询所需的列之外，我们还可以通过压缩数据进一步降低对磁盘吞吐量的要求。幸运的是，面向列的存储通常非常适合于压缩。看一看上图每一列的值序列：它们通常看起来相当重复，这是压缩的一个好标志。根据列中的数据，可以使用不同的压缩技术。一种在数据仓库中特别有效的技术是<strong>位图编码</strong>，如下图所示。</p>
+<p><img src="/images/docs/books/ddia/bitmap-indexed-column.png" alt=""></p>
+<p>通常，与行数相比，列中不同值的数量很少。我们现在可以获取一个包含 n 个不同值的列，并将其转换为 n 个单独的位图：每个不同值对应一个位图，每一行对应一个位。如果行具有该值，则位为 1；如果没有，则为 0。如果 n 很小，那么这些位图可以以每行一位的形式存储。但是如果 n 更大，大多数位图中都会有很多零（我们说它们是稀疏的）。在这种情况下，位图还可以进行 run-length encoded，如图所示。这可以使列的编码非常紧凑。</p>
+<p>像这样的位图索引非常适合于数据仓库中常见的查询类型。例如:</p>
+<ul>
+<li><code>WHERE product_sk IN (30, 68, 69)</code>: 加载 <code>product_sk = 30</code>、<code>product_sk = 68</code>、<code>product_sk = 69</code> 的位图，然后这三个位图进行高效地 OR 操作即可。</li>
+<li><code>WHERE product_sk = 31 AND store_sk = 3</code>: 加载 <code>product_sk = 31</code>、<code>store_sk = 3</code> 的位图，然后对这两个位图执行 AND 操作，因为列包含的都是相同顺序的行，所以	一个列的位图的第 k 个比特位和相同行的另外一个列的位图的第 k 个比特位是相关联的。</li>
+</ul>
+<blockquote>
+<p>Bigtable 模型主要是面向行的。因为在每一个列族里面，所有列和行键是存储在一起的，并且也不使用列压缩技术。</p>
+</blockquote>
+<h3 id="列存储的顺序">列存储的顺序</h3>
+<p>在列存储中，行的存储顺序并不一定重要。最简单的方法是按插入的顺序存储它们，因为插入新行只意味着将追加到每个列文件中。但是，我们可以选择像之前对 SSTable 所做的那样，强制一个顺序，并将其用作<strong>索引</strong>机制。</p>
+<p>数据排序的时候，每次调整的都是整个一行的数据。比如说对 <code>date</code> 这一列进行排序，排序之后的这个 <code>date</code> 列中数据存储的可能是:</p>
+<pre><code>2020-01-02,2020-01-05,2020-01-07,2020-02-03,...
+</code></pre><p>那么，其他列中的数据的顺序也会随之进行调整。通过排序，可以只扫描几行即可，避免扫描所有的行来获得特定的日期范围内的记录。</p>
+<p>不同的查询受益于不同的排序，那为何不干脆直接将多种不同顺序的数据存储下来呢？反正在分布式系统中，数据终归还是要存储多份的。实际上，C-Store、Vertica 就是这么干的。</p>
+<h3 id="列存储的写入">列存储的写入</h3>
+<p>类似于 LSM 树，所有的写操作首先进入内存存储器，在那里它们被添加到一个已排序的结构中，并为写入磁盘做好准备。内存中的存储是面向行还是面向列并不重要。当累积了足够多的写操作后，它们将与磁盘上的列文件<strong>合并</strong>并批量写入新文件。这基本上就是 Vertica 所做的。</p>
+<p>查询需要同时检查磁盘上的列数据和内存中最近的写操作，并将两者结合起来。但是，查询优化器对用户隐藏了这种区别。从分析员的角度来看，通过插入、更新或删除修改的数据会立即反映在后续查询中。</p>
+<h3 id="聚合-数据立方体和物化视图">聚合: 数据立方体和物化视图</h3>
+<p>并非每个数据仓库都必须是列存储：传统的面向行的数据库和其他一些体系结构也被使用。然而，对于 ad hoc 分析查询，列式存储的速度要快得多，因此它正在迅速普及。</p>
+<p>数据仓库的另一个值得一提的方面是<strong>物化聚合</strong>。如前所述，数据仓库查询通常涉及聚合函数，如 SQL 中的 COUNT、SUM、AVG、MIN 或 MAX。如果许多不同的查询使用相同的聚合，那么每次都要对原始数据进行处理是浪费资源的。为什么不<strong>缓存</strong>一些查询最常使用的计数或总和呢？</p>
+<p>创建这种缓存的一种方法是物化视图。在关系数据模型中，它通常被定义为标准（虚拟）视图：一个类似表的对象，其内容是某个查询的结果。区别在于物化视图是查询结果的实际副本，<strong>写入磁盘</strong>，而虚拟视图只是写入查询的快捷方式。当您从虚拟视图中读取时，SQL 引擎会动态地将其展开为视图的底层查询，然后处理展开的查询。</p>
+<p>当底层数据发生变化时，需要更新物化视图，因为它是数据的非规范化副本。数据库可以自动执行此操作，但是这样的更新会使写入操作变得更昂贵，这就是为什么在 OLTP 数据库中不经常使用物化视图。在大量读取的数据仓库中，它们更有意义（它们是否真的提高了读取性能取决于具体情况）。</p>
+<p>物化视图的一个常见的特殊情况称为数据立方体或 OLAP 多维数据集。它是按不同维度分组的聚合网格。下图显示了一个示例。</p>
+<p><img src="/images/docs/books/ddia/data-cube-aggregating-summing.png" alt=""></p>
+<p>物化数据立方体的优点是某些查询变得非常快，因为它们已经被有效地预计算过了。缺点是数据立方体没有查询原始数据的灵活性。因此，大多数数据仓库都尽量保留原始数据，并且只使用数据立方体之类的聚合来提高某些查询的性能。</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#hash-索引">Hash 索引</a></li>
+    <li><a href="#sstables-和-lsm-trees">SSTables 和 LSM-Trees</a>
+      <ul>
+        <li><a href="#构建与维护-sstables">构建与维护 SSTables</a></li>
+        <li><a href="#lsm-tree-与-sstable">LSM-tree 与 SSTable</a></li>
+        <li><a href="#优化">优化</a></li>
+      </ul>
+    </li>
+    <li><a href="#b-trees">B-Trees</a>
+      <ul>
+        <li><a href="#使-b-tree-更为可靠">使 B-tree 更为可靠</a></li>
+        <li><a href="#优化-b-tree">优化 B-tree</a></li>
+      </ul>
+    </li>
+    <li><a href="#对比-b-tree-和-lsm-tree">对比 B-tree 和 LSM-Tree</a>
+      <ul>
+        <li><a href="#lsm-tree-的优势">LSM-tree 的优势</a></li>
+        <li><a href="#lsm-tree-的劣势">LSM-tree 的劣势</a></li>
+      </ul>
+    </li>
+    <li><a href="#其它索引结构">其它索引结构</a>
+      <ul>
+        <li><a href="#值存储在索引中">值存储在索引中</a></li>
+        <li><a href="#多列索引">多列索引</a></li>
+        <li><a href="#全文检索与模糊索引">全文检索与模糊索引</a></li>
+        <li><a href="#in-memory-databases">in-memory databases</a></li>
+      </ul>
+    </li>
+    <li><a href="#交易处理还是分析">交易处理还是分析？</a>
+      <ul>
+        <li><a href="#数据仓库">数据仓库</a></li>
+        <li><a href="#分析的模式-星型和雪花型">分析的模式: 星型和雪花型</a></li>
+      </ul>
+    </li>
+    <li><a href="#面向列的存储">面向列的存储</a>
+      <ul>
+        <li><a href="#列压缩">列压缩</a></li>
+        <li><a href="#列存储的顺序">列存储的顺序</a></li>
+        <li><a href="#列存储的写入">列存储的写入</a></li>
+        <li><a href="#聚合-数据立方体和物化视图">聚合: 数据立方体和物化视图</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
