@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="设计数据密集型应用程序 - 一致性和共识"><meta property="og:title" content="设计数据密集型应用程序 - 一致性和共识" />
+<meta property="og:description" content="设计数据密集型应用程序 - 一致性和共识  本章我们看下场景的算法或协议是如何构建 fault-tolerant 分布式系统的。
+ 一致性保证 多数 replicated 数据库提供了 最终一致性，但是并未强调需要等待多久才会达成一致。
+线性化 线性化系统，一个 Client 写入，其他 Client 立即可以读取到最新的值。图 9-1 展示的是非线性的系统：
+什么让那个系统线性化？ 读请求和写请求同时发出，那么返回的可能是最新值也可能是旧值，如图 9-2 所示，x 可以是寄存器里面的值，也可以是 key-value store 里面的某个键，也可以是关系型数据库的某一行，文档数据库的某一个文档：
+如何使其线性化？必须添加限制：某个 Client 读取返回 1 的时候，随后的读取也必须都返回 1，即使 write 操作还没有完成：
+我们可以进一步精简，如图 9-4:
+图 9-4 ，我们在 read 和 write 之外增加了新的操作：cas(x, v_old, v_new) =&gt; r。记录下所有请求和响应，看是否位于一个合法的顺序的线上面，可以检测是否是线性化的。
+依赖线性化 哪些系统必须依赖线性化？
+ single-leader 依靠锁来选举 leader，这个锁的实现必须是线性化的。 数据库中某条记录是唯一的，必须依赖线性化。 跨通道时序依赖，message queue 必须快于 storage service，否则可能看到的是旧的图片、或看不到图片，因为使用的是两个 Channel。  实现线性化系统 线性化：对外表现就好像只有一份数据，并且所有操作都是原子的。使一个系统 fault-tolerant 的最常见的方式是 replication：
+ Single-leader replication: 如果所有 read 都从 leader 或者已经追上 leader 的 follower 读取的话，那么他们自然是线性化的。 一致性算法：一致性协议提供了防止脑裂和陈旧的副本的方法，这正是 ZooKeeper 和 etcd 所做的。 Multi-leader replication: 肯定是非线性化的，因为数据会被异步的同步到其他节点上。 Leaderless replication：大概率也是非线性  线性化与法定人数 (w &#43; r &gt; n)" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/books/ddia/ddia-chapter9/" />
+
+<title>设计数据密集型应用程序 - 一致性和共识 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.dfdd0d35b55ef76940a4e82a4cff97380d55559df0be469689db4a4c91053f77.js" integrity="sha256-390NNbVe92lApOgqTP&#43;XOA1VVZ3wvkaWidtKTJEFP3c="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/beauty_of_mathematics/" >
+      数学之美
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/history_of_quantum_physics/" >
+      上帝掷骰子吗
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/clean_code/" >
+      代码整洁之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the_transformation_of_enterprise_it_architecture/" >
+      企业 IT 架构转型之道
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/redis_5_source_code/" >
+      Redis 5 设计与源码分析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/" >
+      深度剖析 Apache Dubbo 核心技术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/everyone-is-architect/" >
+      人人都是架构师 (一)
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-art-of-readable-code/" >
+      编写可读代码的艺术
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/the-wisdom-of-trading-stocks/" >
+      炒股的智慧
+  </a>
+
+</li>
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/ddia/" >
+      设计数据密集型应用程序
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter1/" >
+      设计数据密集型应用程序 - 可靠 &amp; 可扩展 &amp; 可维护
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter2/" >
+      设计数据密集型应用程序 - 数据模型 &amp; 查询语言
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter3/" >
+      设计数据密集型应用程序 - 存储和读取
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter4/" >
+      设计数据密集型应用程序 - 编码与演化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter5/" >
+      设计数据密集型应用程序 - Replication
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter6/" >
+      设计数据密集型应用程序 - Partitioning
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter7/" >
+      设计数据密集型应用程序 - 事务
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter8/" >
+      设计数据密集型应用程序 - 分布式系统的难点
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/books/ddia/ddia-chapter9/"  class="active">
+      设计数据密集型应用程序 - 一致性和共识
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>设计数据密集型应用程序 - 一致性和共识</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#一致性保证">一致性保证</a></li>
+    <li><a href="#线性化">线性化</a>
+      <ul>
+        <li><a href="#什么让那个系统线性化">什么让那个系统线性化？</a></li>
+        <li><a href="#依赖线性化">依赖线性化</a></li>
+        <li><a href="#实现线性化系统">实现线性化系统</a></li>
+        <li><a href="#线性化的代价">线性化的代价</a></li>
+      </ul>
+    </li>
+    <li><a href="#顺序保证">顺序保证</a></li>
+    <li><a href="#分布式事务和共识">分布式事务和共识</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="设计数据密集型应用程序---一致性和共识">设计数据密集型应用程序 - 一致性和共识</h1>
+<blockquote>
+<p>本章我们看下场景的算法或协议是如何构建 fault-tolerant 分布式系统的。</p>
+</blockquote>
+<h2 id="一致性保证">一致性保证</h2>
+<p>多数 replicated 数据库提供了 <strong>最终一致性</strong>，但是并未强调需要等待多久才会达成一致。</p>
+<h2 id="线性化">线性化</h2>
+<p>线性化系统，一个 Client 写入，其他 Client 立即可以读取到最新的值。图 9-1 展示的是非线性的系统：</p>
+<p><img src="/images/docs/books/ddia/Snipaste_2020-12-02_14-19-21.png" alt=""></p>
+<h3 id="什么让那个系统线性化">什么让那个系统线性化？</h3>
+<p>读请求和写请求同时发出，那么返回的可能是最新值也可能是旧值，如图 9-2 所示，<code>x</code> 可以是寄存器里面的值，也可以是 key-value store 里面的某个键，也可以是关系型数据库的某一行，文档数据库的某一个文档：</p>
+<p><img src="/images/docs/books/ddia/Snipaste_2020-12-02_14-23-54.png" alt=""></p>
+<p>如何使其线性化？必须添加限制：某个 Client 读取返回 1 的时候，随后的读取也必须都返回 1，即使 write 操作还没有完成：</p>
+<p><img src="/images/docs/books/ddia/Snipaste_2020-12-02_14-27-20.png" alt=""></p>
+<p>我们可以进一步精简，如图 9-4:</p>
+<p><img src="/images/docs/books/ddia/Snipaste_2020-12-02_22-49-53.png" alt=""></p>
+<p>图 9-4 ，我们在 read 和 write 之外增加了新的操作：<code>cas(x, v_old, v_new) =&gt; r</code>。记录下所有请求和响应，看是否位于一个合法的顺序的线上面，可以检测是否是线性化的。</p>
+<h3 id="依赖线性化">依赖线性化</h3>
+<p>哪些系统必须依赖线性化？</p>
+<ul>
+<li>single-leader 依靠锁来选举 leader，这个锁的实现必须是<strong>线性化</strong>的。</li>
+<li>数据库中<strong>某条记录是唯一的</strong>，必须依赖<strong>线性化</strong>。</li>
+<li>跨通道时序依赖，message queue 必须快于 storage service，否则可能看到的是旧的图片、或看不到图片，因为使用的是两个 Channel。</li>
+</ul>
+<p><img src="/images/docs/books/ddia/Snipaste_2020-12-02_23-02-36.png" alt=""></p>
+<h3 id="实现线性化系统">实现线性化系统</h3>
+<p>线性化：对外表现就好像只有一份数据，并且所有操作都是原子的。使一个系统 fault-tolerant 的最常见的方式是 replication：</p>
+<ul>
+<li>Single-leader replication: 如果所有 read 都从 leader 或者已经追上 leader 的 follower 读取的话，那么他们自然是线性化的。</li>
+<li>一致性算法：一致性协议提供了<strong>防止脑裂和陈旧的副本</strong>的方法，这正是 ZooKeeper 和 etcd 所做的。</li>
+<li>Multi-leader replication: 肯定是非线性化的，因为数据会被<strong>异步的</strong>同步到其他节点上。</li>
+<li>Leaderless replication：大概率也是非线性</li>
+</ul>
+<p><strong>线性化与法定人数 (<code>w + r &gt; n</code>)</strong></p>
+<p><img src="/images/docs/books/ddia/Snipaste_2020-12-02_23-13-46.png" alt=""></p>
+<h3 id="线性化的代价">线性化的代价</h3>
+<p><img src="/images/docs/books/ddia/Snipaste_2020-12-02_23-16-14.png" alt=""></p>
+<p><strong>CAP 理论</strong></p>
+<p>任何线性化数据库都有这个问题，不管如何实现：</p>
+<ul>
+<li>如果你的系统需要<strong>线性化</strong>，出现网络错误，必须返回错误，或者等待网络自动修复</li>
+<li>无需线性化，那么可以继续处理，系统仍然可用，但不是线性化的，所以此种系统更能忍受网络的问题，这就是证明的 CAP 理论。</li>
+</ul>
+<blockquote>
+<p>CAP 更好的叫法：Consistent or Available when Partitioned</p>
+</blockquote>
+<p><strong>线性化与网络延迟</strong></p>
+<p>许多系统都不提供线性化，因为它们主要为了增加<strong>性能</strong>，而非 fault-tolerance。</p>
+<h2 id="顺序保证">顺序保证</h2>
+<h2 id="分布式事务和共识">分布式事务和共识</h2>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#一致性保证">一致性保证</a></li>
+    <li><a href="#线性化">线性化</a>
+      <ul>
+        <li><a href="#什么让那个系统线性化">什么让那个系统线性化？</a></li>
+        <li><a href="#依赖线性化">依赖线性化</a></li>
+        <li><a href="#实现线性化系统">实现线性化系统</a></li>
+        <li><a href="#线性化的代价">线性化的代价</a></li>
+      </ul>
+    </li>
+    <li><a href="#顺序保证">顺序保证</a></li>
+    <li><a href="#分布式事务和共识">分布式事务和共识</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

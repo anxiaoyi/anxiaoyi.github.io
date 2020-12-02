@@ -176,5 +176,23 @@ ACID一致性的思想是关于数据的某些陈述（不变量）必须始终�
  纠错码允许通过通信信道准确传输数字数据，例如由于无线网络上的无线电干扰，这种通信信道偶尔会出错一些[12]。 IP（Internet协议）不可靠：它可能会丢弃，延迟，重复或重新排序数据包。 TCP（传输控制协议）提供了更可靠的 IP上的传输层：它确保丢失的数据包被重新传输，重复数据被消除以及数据包按照发送的顺序重新组装。  尽管系统可能比其基础部分更可靠，但始终可以限制其可靠性。例如，纠错码可以处理少量的单位错误，但是如果您的信号被干扰淹没，则可以通过通信通道获取多少数据就受到了根本的限制[13]。 TCP可以向您隐藏数据包丢失，重复和重新排序的过程，但是它不能神奇地消除网络中的延迟。</description>
     </item>
     
+    <item>
+      <title>设计数据密集型应用程序 - 一致性和共识</title>
+      <link>https://kunzhao.org/docs/books/ddia/ddia-chapter9/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/books/ddia/ddia-chapter9/</guid>
+      <description>设计数据密集型应用程序 - 一致性和共识  本章我们看下场景的算法或协议是如何构建 fault-tolerant 分布式系统的。
+ 一致性保证 多数 replicated 数据库提供了 最终一致性，但是并未强调需要等待多久才会达成一致。
+线性化 线性化系统，一个 Client 写入，其他 Client 立即可以读取到最新的值。图 9-1 展示的是非线性的系统：
+什么让那个系统线性化？ 读请求和写请求同时发出，那么返回的可能是最新值也可能是旧值，如图 9-2 所示，x 可以是寄存器里面的值，也可以是 key-value store 里面的某个键，也可以是关系型数据库的某一行，文档数据库的某一个文档：
+如何使其线性化？必须添加限制：某个 Client 读取返回 1 的时候，随后的读取也必须都返回 1，即使 write 操作还没有完成：
+我们可以进一步精简，如图 9-4:
+图 9-4 ，我们在 read 和 write 之外增加了新的操作：cas(x, v_old, v_new) =&amp;gt; r。记录下所有请求和响应，看是否位于一个合法的顺序的线上面，可以检测是否是线性化的。
+依赖线性化 哪些系统必须依赖线性化？
+ single-leader 依靠锁来选举 leader，这个锁的实现必须是线性化的。 数据库中某条记录是唯一的，必须依赖线性化。 跨通道时序依赖，message queue 必须快于 storage service，否则可能看到的是旧的图片、或看不到图片，因为使用的是两个 Channel。  实现线性化系统 线性化：对外表现就好像只有一份数据，并且所有操作都是原子的。使一个系统 fault-tolerant 的最常见的方式是 replication：
+ Single-leader replication: 如果所有 read 都从 leader 或者已经追上 leader 的 follower 读取的话，那么他们自然是线性化的。 一致性算法：一致性协议提供了防止脑裂和陈旧的副本的方法，这正是 ZooKeeper 和 etcd 所做的。 Multi-leader replication: 肯定是非线性化的，因为数据会被异步的同步到其他节点上。 Leaderless replication：大概率也是非线性  线性化与法定人数 (w + r &amp;gt; n)</description>
+    </item>
+    
   </channel>
 </rss>
