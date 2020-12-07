@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Oracle 教程"><meta property="og:title" content="Oracle 教程" />
+<meta property="og:description" content="Oracle 教程 select 语句  语句文本的书写不区分大小写。（但字符串在作为值的时候要注意大小写） 连接操作符：  select lastname || &#39;work in&#39; || department_id from tablename; 过滤数据 DISTINCT column_1、column_2、column_3 共同决定一条唯一的记录：
+SELECT DISTINCT column_1, column_2, column_3 FROM table_name; FETCH Oracle 没有 LIMIT，使用 FETCH 实现相同效果：
+SELECT product_name, quantity FROM inventories INNER JOIN products USING (product_id) ORDER BY quantity DESC FETCH NEXT 5 ROWS ONLY; 更多语法：
+ FETCH FIRST 5 PERCENT ROWS ONLY：返回前 5% 百分比 OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY: 跳过前 10 条，返回下 10 条  IN WHERE salesman_id IN (54, 55, 56) WHERE status IN (&#39;Pending&#39;, &#39;Canceled&#39;) WHERE status NOT IN (&#39;Shipped&#39;, &#39;Canceled&#39;) BETWEEN WHERE order_date BETWEEN DATE &#39;2016-12-01&#39; AND DATE &#39;2016-12-31&#39; WHERE standard_cost NOT BETWEEN 500 AND 600 LIKE  %: 匹配字符串的 0 或者任意多字符 _: 匹配一个字符  WHERE last_name LIKE &#39;St%&#39; IS NULL  NULL 和 &#39;&#39;、0 是不同的。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/posts/oracle-tutorial/" />
+<meta property="article:published_time" content="2020-12-05T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-12-05T00:00:00+00:00" />
+<title>Oracle 教程 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.a97095262070cdb05e65c6f44aed857434007f1d94b6f28867245289630ae326.js" integrity="sha256-qXCVJiBwzbBeZcb0Su2FdDQAfx2UtvKIZyRSiWMK4yY="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Oracle 教程</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#select-语句">select 语句</a></li>
+    <li><a href="#过滤数据">过滤数据</a>
+      <ul>
+        <li><a href="#distinct"><code>DISTINCT</code></a></li>
+        <li><a href="#fetch"><code>FETCH</code></a></li>
+        <li><a href="#in"><code>IN</code></a></li>
+        <li><a href="#between"><code>BETWEEN</code></a></li>
+        <li><a href="#like"><code>LIKE</code></a></li>
+        <li><a href="#is-null"><code>IS NULL</code></a></li>
+      </ul>
+    </li>
+    <li><a href="#join">JOIN</a>
+      <ul>
+        <li><a href="#inner-join"><code>INNER JOIN</code></a></li>
+        <li><a href="#left-join"><code>LEFT JOIN</code></a></li>
+      </ul>
+    </li>
+    <li><a href="#修改数据">修改数据</a>
+      <ul>
+        <li><a href="#insert">INSERT</a></li>
+        <li><a href="#update">UPDATE</a></li>
+        <li><a href="#delete">DELETE</a></li>
+      </ul>
+    </li>
+    <li><a href="#表结构">表结构</a>
+      <ul>
+        <li><a href="#create-table">CREATE TABLE</a></li>
+        <li><a href="#alter-table">ALTER TABLE</a></li>
+        <li><a href="#drop-table">DROP TABLE</a></li>
+        <li><a href="#truncate-table">TRUNCATE TABLE</a></li>
+      </ul>
+    </li>
+    <li><a href="#数据类型">数据类型</a>
+      <ul>
+        <li><a href="#number">NUMBER</a></li>
+        <li><a href="#float">FLOAT</a></li>
+        <li><a href="#char">CHAR</a></li>
+        <li><a href="#nchar">NCHAR</a></li>
+        <li><a href="#varchar2">VARCHAR2</a></li>
+        <li><a href="#nvarchar2">NVARCHAR2</a></li>
+        <li><a href="#date">DATE</a></li>
+        <li><a href="#timestamp">TIMESTAMP</a></li>
+        <li><a href="#timestamp-with-time-zone">TIMESTAMP WITH TIME ZONE</a></li>
+      </ul>
+    </li>
+    <li><a href="#约束">约束</a>
+      <ul>
+        <li><a href="#主键">主键</a></li>
+        <li><a href="#not-null-约束">NOT NULL 约束</a></li>
+        <li><a href="#unique-约束">UNIQUE 约束</a></li>
+      </ul>
+    </li>
+    <li><a href="#索引">索引</a>
+      <ul>
+        <li><a href="#创建索引">创建索引</a></li>
+        <li><a href="#删除索引">删除索引</a></li>
+        <li><a href="#创建唯一索引">创建唯一索引</a></li>
+      </ul>
+    </li>
+    <li><a href="#函数">函数</a>
+      <ul>
+        <li><a href="#date-函数">Date 函数</a></li>
+        <li><a href="#string-函数">String 函数</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  <h1>
+    <a href="/posts/oracle-tutorial/">Oracle 教程</a>
+  </h1>
+  
+
+<div>
+
+  <h5>December 5, 2020</h5>
+
+
+
+  
+  <div>
+    , 
+  </div>
+  
+
+  
+  <div>
+    
+        <a href="/tags/oracle/">Oracle</a>
+  </div>
+  
+
+
+</div>
+
+
+  <p><h1 id="oracle-教程">Oracle 教程</h1>
+<h2 id="select-语句">select 语句</h2>
+<ul>
+<li>语句文本的书写<strong>不区分大小写</strong>。（但字符串在作为值的时候要注意大小写）</li>
+<li>连接操作符：</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> lastname <span style="color:#f92672">||</span> <span style="color:#e6db74">&#39;work in&#39;</span> <span style="color:#f92672">||</span> department_id <span style="color:#66d9ef">from</span> tablename;
+</code></pre></div><h2 id="过滤数据">过滤数据</h2>
+<h3 id="distinct"><code>DISTINCT</code></h3>
+<p><code>column_1</code>、<code>column_2</code>、<code>column_3</code> 共同决定一条<strong>唯一</strong>的记录：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">DISTINCT</span> column_1, column_2, column_3 <span style="color:#66d9ef">FROM</span> <span style="color:#66d9ef">table_name</span>;
+</code></pre></div><h3 id="fetch"><code>FETCH</code></h3>
+<p>Oracle 没有 <code>LIMIT</code>，使用 <code>FETCH</code> 实现相同效果：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> product_name, quantity 
+<span style="color:#66d9ef">FROM</span> inventories
+<span style="color:#66d9ef">INNER</span> <span style="color:#66d9ef">JOIN</span> products <span style="color:#66d9ef">USING</span> (product_id)
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> quantity <span style="color:#66d9ef">DESC</span>
+<span style="color:#66d9ef">FETCH</span> <span style="color:#66d9ef">NEXT</span> <span style="color:#ae81ff">5</span> <span style="color:#66d9ef">ROWS</span> <span style="color:#66d9ef">ONLY</span>;
+</code></pre></div><p>更多语法：</p>
+<ul>
+<li><code>FETCH FIRST 5 PERCENT ROWS ONLY</code>：返回前 5% 百分比</li>
+<li><code>OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY</code>: 跳过前 10 条，返回下 10 条</li>
+</ul>
+<h3 id="in"><code>IN</code></h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">WHERE</span> salesman_id <span style="color:#66d9ef">IN</span> (<span style="color:#ae81ff">54</span>, <span style="color:#ae81ff">55</span>, <span style="color:#ae81ff">56</span>)
+<span style="color:#66d9ef">WHERE</span> status <span style="color:#66d9ef">IN</span> (<span style="color:#e6db74">&#39;Pending&#39;</span>, <span style="color:#e6db74">&#39;Canceled&#39;</span>)
+<span style="color:#66d9ef">WHERE</span> status <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">IN</span> (<span style="color:#e6db74">&#39;Shipped&#39;</span>, <span style="color:#e6db74">&#39;Canceled&#39;</span>)
+</code></pre></div><h3 id="between"><code>BETWEEN</code></h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">WHERE</span> order_date <span style="color:#66d9ef">BETWEEN</span> DATE <span style="color:#e6db74">&#39;2016-12-01&#39;</span> <span style="color:#66d9ef">AND</span> DATE <span style="color:#e6db74">&#39;2016-12-31&#39;</span>
+<span style="color:#66d9ef">WHERE</span> standard_cost <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">BETWEEN</span> <span style="color:#ae81ff">500</span> <span style="color:#66d9ef">AND</span> <span style="color:#ae81ff">600</span>
+</code></pre></div><h3 id="like"><code>LIKE</code></h3>
+<ul>
+<li><code>%</code>: 匹配字符串的 0 或者任意多字符</li>
+<li><code>_</code>: 匹配<strong>一个</strong>字符</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">WHERE</span> last_name <span style="color:#66d9ef">LIKE</span> <span style="color:#e6db74">&#39;St%&#39;</span>
+</code></pre></div><h3 id="is-null"><code>IS NULL</code></h3>
+<blockquote>
+<p><code>NULL</code> 和 <code>''</code>、<code>0</code> 是不同的。</p>
+</blockquote>
+<p>字符串函数：</p>
+<ul>
+<li><code>UPPER( last_name )</code>: 转为大写</li>
+<li><code>LOWER( last_name )</code>: 转为小写</li>
+</ul>
+<h2 id="join">JOIN</h2>
+<h3 id="inner-join"><code>INNER JOIN</code></h3>
+<p>两张表都有相同的列：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> orders <span style="color:#66d9ef">INNER</span> <span style="color:#66d9ef">JOIN</span> order_items <span style="color:#66d9ef">ON</span>
+order_items.order_id <span style="color:#f92672">=</span> orders.order_id
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> order_date <span style="color:#66d9ef">DESC</span>;
+</code></pre></div><p>也可以用 <code>ON</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> orders 
+<span style="color:#66d9ef">INNER</span> <span style="color:#66d9ef">JOIN</span> order_items <span style="color:#66d9ef">USING</span> (order_id)
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> order_date <span style="color:#66d9ef">DESC</span>;
+</code></pre></div><h3 id="left-join"><code>LEFT JOIN</code></h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> order_id, status, first_name, last_name
+<span style="color:#66d9ef">FROM</span> orders 
+<span style="color:#66d9ef">LEFT</span> <span style="color:#66d9ef">JOIN</span> employees <span style="color:#66d9ef">ON</span> employee_id <span style="color:#f92672">=</span> salesman_id
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> order_date <span style="color:#66d9ef">DESC</span>;
+</code></pre></div><h2 id="修改数据">修改数据</h2>
+<h3 id="insert">INSERT</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> discounts(discount_name, amount, start_date, expired_date)
+<span style="color:#66d9ef">VALUES</span> (<span style="color:#e6db74">&#39;Summer Promotion&#39;</span>, <span style="color:#ae81ff">9</span>.<span style="color:#ae81ff">5</span>, DATE <span style="color:#e6db74">&#39;2017-05-01&#39;</span>, DATE <span style="color:#e6db74">&#39;2017-08-31&#39;</span>);
+</code></pre></div><h3 id="update">UPDATE</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">UPDATE</span> parts
+<span style="color:#66d9ef">SET</span> lead_time <span style="color:#f92672">=</span> <span style="color:#ae81ff">30</span>, cost <span style="color:#f92672">=</span> <span style="color:#ae81ff">120</span>, status <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+<span style="color:#66d9ef">WHERE</span> part_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>;
+</code></pre></div><h3 id="delete">DELETE</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">DELETE</span> <span style="color:#66d9ef">FROM</span> sales <span style="color:#66d9ef">WHERE</span> order_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
+</code></pre></div><p>删除所有行：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">DELETE</span> <span style="color:#66d9ef">FROM</span> sales;
+</code></pre></div><h2 id="表结构">表结构</h2>
+<h3 id="create-table">CREATE TABLE</h3>
+<p>在 <code>ot</code> schema 中创建一个新的表 <code>persons</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> ot.persons(
+    person_id NUMBER <span style="color:#66d9ef">GENERATED</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">AS</span> <span style="color:#66d9ef">IDENTITY</span>,
+    first_name VARCHAR2(<span style="color:#ae81ff">50</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+    last_name VARCHAR2(<span style="color:#ae81ff">50</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+    <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span>(person_id)
+);
+</code></pre></div><p><code>GENERATED BY DEFAULT AS IDENTITY</code> 告诉 Oracle 插入的时候，自动为 <code>person_id</code> 生成一个新的 ID</p>
+<h3 id="alter-table">ALTER TABLE</h3>
+<p>新增列：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">ALTER</span> <span style="color:#66d9ef">TABLE</span> persons 
+<span style="color:#66d9ef">ADD</span> birthdate DATE <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>;
+</code></pre></div><p>新增多个列：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">ALTER</span> <span style="color:#66d9ef">TABLE</span> persons 
+<span style="color:#66d9ef">ADD</span> (
+    phone VARCHAR(<span style="color:#ae81ff">20</span>),
+    email VARCHAR(<span style="color:#ae81ff">100</span>)
+);
+</code></pre></div><p>修改列：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">ALTER</span> <span style="color:#66d9ef">TABLE</span> persons <span style="color:#66d9ef">MODIFY</span> birthdate DATE <span style="color:#66d9ef">NULL</span>;
+</code></pre></div><p>删除列：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">ALTER</span> <span style="color:#66d9ef">TABLE</span> persons
+<span style="color:#66d9ef">DROP</span>
+  <span style="color:#66d9ef">COLUMN</span> birthdate;
+</code></pre></div><p>删除多个列：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">ALTER</span> <span style="color:#66d9ef">TABLE</span> persons
+<span style="color:#66d9ef">DROP</span>
+  ( email, phone );
+</code></pre></div><p>重命名列：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">ALTER</span> <span style="color:#66d9ef">TABLE</span> persons 
+<span style="color:#66d9ef">RENAME</span> <span style="color:#66d9ef">COLUMN</span> first_name <span style="color:#66d9ef">TO</span> forename;
+</code></pre></div><h3 id="drop-table">DROP TABLE</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">DROP</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#66d9ef">schema_name</span>.<span style="color:#66d9ef">table_name</span>
+[<span style="color:#66d9ef">CASCADE</span> <span style="color:#66d9ef">CONSTRAINTS</span> <span style="color:#f92672">|</span> PURGE];
+</code></pre></div><ul>
+<li>PURGE: 释放空间，无法回滚</li>
+</ul>
+<h3 id="truncate-table">TRUNCATE TABLE</h3>
+<p>比 <code>DELETE FROM table_name</code> 能够更快速的<strong>删除所有行</strong>的语句：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">TRUNCATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#66d9ef">schema_name</span>.<span style="color:#66d9ef">table_name</span>
+[<span style="color:#66d9ef">CASCADE</span>]
+[[ <span style="color:#66d9ef">PRESERVE</span> <span style="color:#f92672">|</span> PURGE] MATERIALIZED <span style="color:#66d9ef">VIEW</span> LOG ]]
+[[ <span style="color:#66d9ef">DROP</span> <span style="color:#f92672">|</span> REUSE]] <span style="color:#66d9ef">STORAGE</span> ]
+</code></pre></div><h2 id="数据类型">数据类型</h2>
+<h3 id="number">NUMBER</h3>
+<p>NUMBER 的定义：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">NUMBER[(<span style="color:#66d9ef">precision</span> [, <span style="color:#66d9ef">scale</span>])]
+</code></pre></div><p>precision 的范围：1 ~ 38，scale 的范围：-84 ~ 127。1234.56 的 precision 是 6，scale 是 2，所以存储这个数字需要定义为：<code>NUMBER(6, 2)</code>，示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> number_demo ( 
+    number_value NUMERIC(<span style="color:#ae81ff">6</span>, <span style="color:#ae81ff">2</span>) 
+);
+
+<span style="color:#75715e">-- 抛出错误
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> number_demo <span style="color:#66d9ef">VALUES</span>(<span style="color:#f92672">-</span><span style="color:#ae81ff">10000</span>);
+</code></pre></div><h3 id="float">FLOAT</h3>
+<p>FLOAT 的最大精度是 126：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">FLOAT(p)
+</code></pre></div><p>示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> float_demo (
+    f1 FLOAT(<span style="color:#ae81ff">1</span>),
+    f2 FLOAT(<span style="color:#ae81ff">4</span>),
+    f3 FLOAT(<span style="color:#ae81ff">7</span>)
+);
+
+<span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> float_demo(f1, f2, f3) <span style="color:#66d9ef">VALUES</span>(<span style="color:#ae81ff">1</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">1</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">1</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">3</span>);
+</code></pre></div><h3 id="char">CHAR</h3>
+<p>可以存储固定长度的，1 - 2000 字节的字符串，定义如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">CHAR(<span style="color:#66d9ef">length</span> BYTE)
+CHAR(<span style="color:#66d9ef">length</span> CHAR)
+</code></pre></div><p>如果没有指定 <code>BYTE</code> 或者 <code>CHAR</code>，那么 Oracle 默认使用 <code>BYTE</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 10 字节
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> t (
+    x CHAR(<span style="color:#ae81ff">10</span>),
+    y VARCHAR2(<span style="color:#ae81ff">10</span>)
+);
+</code></pre></div><h3 id="nchar">NCHAR</h3>
+<p>存储固定长度的 Unicode 字符串，NCHAR 的字符集只能是 <code>AL16UTF16</code> 或 <code>UTF8</code>，示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> nchar_demo (
+    description <span style="color:#66d9ef">NCHAR</span>(<span style="color:#ae81ff">10</span>)
+); 
+</code></pre></div><p>NCHAR 最多存储 2000 字节。</p>
+<h3 id="varchar2">VARCHAR2</h3>
+<p>存储可变长度的 1 - 4000 字节的字符串，定义：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">VARCHAR2(max_size BYTE)
+VARCHAR2(max_size CHAR)
+</code></pre></div><p>默认使用 <code>BYTE</code>。在 Oracle 12C，VARCHAR2 最多指定的大小为 32767 。</p>
+<h3 id="nvarchar2">NVARCHAR2</h3>
+<p>存储可变长度的 Unicode 字符串：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> nvarchar2_demo (
+    description NVARCHAR2(<span style="color:#ae81ff">50</span>)
+);
+</code></pre></div><p>能存储多少个字符，取决于当前国籍字符集。</p>
+<h3 id="date">DATE</h3>
+<p>Oracle 用固定的 7 字节存储 <code>DATE</code> 类型，精确到<strong>秒</strong>。</p>
+<p>默认日期格式化是 <code>DD-MON-YY</code> 格式，返回当前日期：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 01-AUG-17
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> sysdate <span style="color:#66d9ef">FROM</span> dual;
+</code></pre></div><p>改变默认的日期格式：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">ALTER</span> <span style="color:#66d9ef">SESSION</span> <span style="color:#66d9ef">SET</span> NLS_DATE_FORMAT <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;YYYY-MM-DD&#39;</span>;
+<span style="color:#75715e">-- 2017-08-01
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> sysdate <span style="color:#66d9ef">FROM</span> dual;
+</code></pre></div><p><code>DATE</code> 转为字符串（格式化日期）：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- August 1, 2017
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span>
+  TO_CHAR( SYSDATE, <span style="color:#e6db74">&#39;FMMonth DD, YYYY&#39;</span> )
+<span style="color:#66d9ef">FROM</span>
+  dual;
+</code></pre></div><p>字符串转为 <code>DATE</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 01-AUG-17
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span>
+  TO_DATE( <span style="color:#e6db74">&#39;August 01, 2017&#39;</span>, <span style="color:#e6db74">&#39;MONTH DD, YYYY&#39;</span> )
+<span style="color:#66d9ef">FROM</span>
+  dual;
+</code></pre></div><p>除了使用 <code>TO_DATE</code> 函数，也可以使用 <code>DATE '2017-08-01'</code> 来转为 DATE literal，不过这个是不包含 TIME 的。</p>
+<h3 id="timestamp">TIMESTAMP</h3>
+<p>存储带小数点的秒，默认是 6 位小数点，定义 2 位的小数点如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">started_at TMESTAMP(<span style="color:#ae81ff">2</span>),
+</code></pre></div><p>像下面这样指定 TIMESTAMP literal ：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">TIMESTAMP</span> <span style="color:#e6db74">&#39;1999-12-31 23:59:59.10&#39;</span>
+</code></pre></div><p>插入当前时间戳：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> logs (
+    message,
+    logged_at
+) <span style="color:#66d9ef">VALUES</span> (
+    <span style="color:#e6db74">&#39;User root logged in successfully&#39;</span>,
+    <span style="color:#66d9ef">LOCALTIMESTAMP</span>(<span style="color:#ae81ff">2</span>)
+);
+</code></pre></div><p>格式化时间戳：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> message,
+    TO_CHAR(logged_at, <span style="color:#e6db74">&#39;MONTH DD, YYYY &#34;at&#34; HH24:MI&#39;</span>)
+<span style="color:#66d9ef">FROM</span> logs;
+</code></pre></div><p>提前 TIMESTAMP 的各个部分：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> 
+    message,
+    <span style="color:#66d9ef">EXTRACT</span>(<span style="color:#66d9ef">year</span> <span style="color:#66d9ef">FROM</span> logged_at) <span style="color:#66d9ef">year</span>,
+    <span style="color:#66d9ef">EXTRACT</span>(<span style="color:#66d9ef">month</span> <span style="color:#66d9ef">FROM</span> logged_at) <span style="color:#66d9ef">month</span>,
+    <span style="color:#66d9ef">EXTRACT</span>(<span style="color:#66d9ef">day</span> <span style="color:#66d9ef">FROM</span> logged_at) <span style="color:#66d9ef">day</span>,
+    <span style="color:#66d9ef">EXTRACT</span>(hour <span style="color:#66d9ef">FROM</span> logged_at) hour,
+    <span style="color:#66d9ef">EXTRACT</span>(<span style="color:#66d9ef">minute</span> <span style="color:#66d9ef">FROM</span> logged_at) <span style="color:#66d9ef">minute</span>,
+    <span style="color:#66d9ef">EXTRACT</span>(<span style="color:#66d9ef">second</span> <span style="color:#66d9ef">FROM</span> logged_at) <span style="color:#66d9ef">second</span>
+<span style="color:#66d9ef">FROM</span> 
+    logs;
+</code></pre></div><h3 id="timestamp-with-time-zone">TIMESTAMP WITH TIME ZONE</h3>
+<p>存储 TIMESTAMP 和 Timeout Zone 数据，示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">TIMESTAMP</span> <span style="color:#e6db74">&#39;2017-08-09 07:00:00 -7:00&#39;</span>
+</code></pre></div><p>创建含有 TIMESTAMP WITH TIME ZONE 的<strong>表</strong>示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> logs
+(
+	log_id      NUMBER <span style="color:#66d9ef">GENERATED</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">AS</span> <span style="color:#66d9ef">IDENTITY</span>,
+	log_message VARCHAR2(<span style="color:#ae81ff">255</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+	created_at  <span style="color:#66d9ef">TIMESTAMP</span> <span style="color:#66d9ef">WITH</span> TIME <span style="color:#66d9ef">ZONE</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,  
+	<span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span>(log_id)
+);
+</code></pre></div><p>插入当前时间戳：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 数据库自动取出当前的 TIME ZONE
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> logs(log_message, created_at)
+<span style="color:#66d9ef">VALUES</span>(<span style="color:#e6db74">&#39;Insert a timestamp&#39;</span>,<span style="color:#66d9ef">TIMESTAMP</span> <span style="color:#e6db74">&#39;2017-08-08 2:00:00&#39;</span>);
+</code></pre></div><p>插入当前时间戳：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> logs(log_message, created_at)
+<span style="color:#66d9ef">VALUES</span>(<span style="color:#e6db74">&#39;Use current_timestamp function&#39;</span>,<span style="color:#66d9ef">CURRENT_TIMESTAMP</span>);
+</code></pre></div><h2 id="约束">约束</h2>
+<h3 id="主键">主键</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> purchase_order_items (
+    po_nr NUMBER <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+    item_nr NUMBER <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+    product_id NUMBER <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,  
+    quantity NUMBER <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+    purchase_unit NUMBER <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+    buy_price NUMBER (<span style="color:#ae81ff">9</span>,<span style="color:#ae81ff">2</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+    delivery_date DATE,
+    <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span> (po_nr, item_nr)
+);
+</code></pre></div><h3 id="not-null-约束">NOT NULL 约束</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> surcharges (
+  surcharge_id NUMBER <span style="color:#66d9ef">GENERATED</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">AS</span> <span style="color:#66d9ef">IDENTITY</span>,
+  surcharge_name VARCHAR2(<span style="color:#ae81ff">255</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+  amount NUMBER(<span style="color:#ae81ff">9</span>,<span style="color:#ae81ff">2</span>),
+  <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span> (surcharge_id)
+);
+</code></pre></div><h3 id="unique-约束">UNIQUE 约束</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#66d9ef">table_name</span> (
+    ...
+    <span style="color:#66d9ef">column_name</span> data_type <span style="color:#66d9ef">CONSTRAINT</span> unique_constraint_name <span style="color:#66d9ef">UNIQUE</span>
+    ...
+);
+</code></pre></div><p>多个列的 UNIQUE 约束：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#66d9ef">table_name</span> (
+    ...
+    column_name1 data_type,
+    column_name2 data_type,
+    ...,
+    <span style="color:#66d9ef">CONSTRAINT</span> unique_constraint_name <span style="color:#66d9ef">UNIQUE</span>(column_name1, column_name2)
+);
+</code></pre></div><h2 id="索引">索引</h2>
+<h3 id="创建索引">创建索引</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">INDEX</span> members_last_name_i 
+<span style="color:#66d9ef">ON</span> members(last_name);
+</code></pre></div><p>查询索引：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> 
+    index_name, 
+    index_type, 
+    visibility, 
+    status 
+<span style="color:#66d9ef">FROM</span> 
+    all_indexes
+<span style="color:#66d9ef">WHERE</span> 
+    <span style="color:#66d9ef">table_name</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;MEMBERS&#39;</span>;
+</code></pre></div><p>在多个列上创建索引：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">INDEX</span> members_name_i
+<span style="color:#66d9ef">ON</span> members(last_name,first_name);
+</code></pre></div><h3 id="删除索引">删除索引</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">DROP</span> <span style="color:#66d9ef">INDEX</span> members_name_i;
+</code></pre></div><h3 id="创建唯一索引">创建唯一索引</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">UNIQUE</span> <span style="color:#66d9ef">INDEX</span> members_email_i
+<span style="color:#66d9ef">ON</span> members(email);
+</code></pre></div><h2 id="函数">函数</h2>
+<h3 id="date-函数">Date 函数</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Example</th>
+<th>Result</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADD_MONTHS</td>
+<td>ADD_MONTHS( DATE &lsquo;2016-02-29&rsquo;, 1 )</td>
+<td>31-MAR-16</td>
+<td>Add a number of months (n) to a date and return the same day which is n of months away.</td>
+</tr>
+<tr>
+<td>CURRENT_DATE</td>
+<td>SELECT CURRENT_DATE FROM dual</td>
+<td>06-AUG-2017 19:43:44</td>
+<td>Return the current date and time in the session time zone</td>
+</tr>
+<tr>
+<td>CURRENT_TIMESTAMP</td>
+<td>SELECT CURRENT_TIMESTAMP FROM dual</td>
+<td>06-AUG-17 08.26.52.742000000 PM -07:00</td>
+<td>Return the current date and time with time zone in the session time zone</td>
+</tr>
+<tr>
+<td>DBTIMEZONE</td>
+<td>SELECT DBTIMEZONE FROM dual;</td>
+<td>-07:00</td>
+<td>Get the current database time zone</td>
+</tr>
+<tr>
+<td>EXTRACT</td>
+<td>EXTRACT(YEAR FROM SYSDATE)</td>
+<td>2017</td>
+<td>Extract a value of a date time field e.g., YEAR, MONTH, DAY, … from a date time value.</td>
+</tr>
+<tr>
+<td>FROM_TZ</td>
+<td>FROM_TZ(TIMESTAMP &lsquo;2017-08-08 08:09:10&rsquo;, &lsquo;-09:00&rsquo;)</td>
+<td>08-AUG-17 08.09.10.000000000 AM -07:00</td>
+<td>Convert a timestamp and a time zone to a TIMESTAMP WITH TIME ZONE value</td>
+</tr>
+<tr>
+<td>LAST_DAY</td>
+<td>LAST_DAY(DATE &lsquo;2016-02-01&rsquo;)</td>
+<td>29-FEB-16</td>
+<td>Gets the last day of the month of a specified date.</td>
+</tr>
+<tr>
+<td>LOCALTIMESTAMP</td>
+<td>SELECT LOCALTIMESTAMP FROM dual</td>
+<td>06-AUG-17</td>
+<td>08.26.52.742000000 PM</td>
+</tr>
+<tr>
+<td>MONTHS_BETWEEN</td>
+<td>MONTHS_BETWEEN( DATE &lsquo;2017-07-01&rsquo;, DATE &lsquo;2017-01-01&rsquo; )</td>
+<td>6</td>
+<td>Return the number of months between two dates.</td>
+</tr>
+<tr>
+<td>NEW_TIME</td>
+<td>NEW_TIME( TO_DATE( &lsquo;08-07-2017 01:30:45&rsquo;, &lsquo;MM-DD-YYYY HH24:MI:SS&rsquo; ), &lsquo;AST&rsquo;, &lsquo;PST&rsquo; )</td>
+<td>06-AUG-2017 21:30:45</td>
+<td>Convert a date in one time zone to another</td>
+</tr>
+<tr>
+<td>NEXT_DAY</td>
+<td>NEXT_DAY( DATE &lsquo;2000-01-01&rsquo;, &lsquo;SUNDAY&rsquo; )</td>
+<td>02-JAN-00</td>
+<td>Get the first weekday that is later than a specified date.</td>
+</tr>
+<tr>
+<td>ROUND</td>
+<td>ROUND(DATE &lsquo;2017-07-16&rsquo;, &lsquo;MM&rsquo;)</td>
+<td>01-AUG-17</td>
+<td>Return a date rounded to a specific unit of measure.</td>
+</tr>
+<tr>
+<td>SESSIONTIMEZONE</td>
+<td>SELECT SESSIONTIMEZONE FROM dual;</td>
+<td>-07:00</td>
+<td>Get the session time zone</td>
+</tr>
+<tr>
+<td>SYSDATE</td>
+<td>SYSDATE</td>
+<td>01-AUG-17</td>
+<td>Return the current system date and time of the operating system where the Oracle Database resides.</td>
+</tr>
+<tr>
+<td>SYSTIMESTAMP</td>
+<td>SELECT SYSTIMESTAMP FROM dual;</td>
+<td>01-AUG-17 01.33.57.929000000 PM -07:00</td>
+<td>Return the system date and time that includes fractional seconds and time zone.</td>
+</tr>
+<tr>
+<td>TO_CHAR</td>
+<td>TO_CHAR( DATE'2017-01-01&rsquo;, &lsquo;DL&rsquo; )</td>
+<td>Sunday, January 01, 2017</td>
+<td>Convert a DATE or an INTERVAL value to a character string in a specified format.</td>
+</tr>
+<tr>
+<td>TO_DATE</td>
+<td>TO_DATE( &lsquo;01 Jan 2017&rsquo;, &lsquo;DD MON YYYY&rsquo; )</td>
+<td>01-JAN-17</td>
+<td>Convert a date which is in the character string to a DATE value.</td>
+</tr>
+<tr>
+<td>TRUNC</td>
+<td>TRUNC(DATE &lsquo;2017-07-16&rsquo;, &lsquo;MM&rsquo;)</td>
+<td>01-JUL-17</td>
+<td>Return a date truncated to a specific unit of measure.</td>
+</tr>
+<tr>
+<td>TZ_OFFSET</td>
+<td>TZ_OFFSET( &lsquo;Europe/London&rsquo; )</td>
+<td>+01:00</td>
+<td>Get time zone offset of a time zone name from UTC</td>
+</tr>
+</tbody>
+</table>
+<h3 id="string-函数">String 函数</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Example</th>
+<th>Result</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ASCII</td>
+<td>ASCII(‘A’)</td>
+<td>65</td>
+<td>Returns an ASCII code value of a character.</td>
+</tr>
+<tr>
+<td>CHR</td>
+<td>CHR(’65’)</td>
+<td>‘A’</td>
+<td>Converts a numeric value to its corresponding ASCII character.</td>
+</tr>
+<tr>
+<td>CONCAT</td>
+<td>CONCAT(‘A’,’BC’)</td>
+<td>‘ABC’</td>
+<td>Concatenate two strings and return the combined string.</td>
+</tr>
+<tr>
+<td>CONVERT</td>
+<td>CONVERT( ‘Ä Ê Í’, ‘US7ASCII’, ‘WE8ISO8859P1’ )</td>
+<td>‘A E I’</td>
+<td>Convert a character string from one character set to another.</td>
+</tr>
+<tr>
+<td>DUMP</td>
+<td>DUMP(‘A’)</td>
+<td>Typ=96 Len=1: 65</td>
+<td>Return a string value (VARCHAR2) that includes the datatype code, length measured in bytes, and internal representation of a specified expression.</td>
+</tr>
+<tr>
+<td>INITCAP</td>
+<td>INITCAP(‘hi  there’)</td>
+<td>‘Hi There’</td>
+<td>Converts the first character in each word in a specified string to uppercase and the rest to lowercase.</td>
+</tr>
+<tr>
+<td>INSTR</td>
+<td>INSTR( ‘This is a playlist’, ‘is’)</td>
+<td>3</td>
+<td>Search for a substring and return the location of the substring in a string</td>
+</tr>
+<tr>
+<td>LENGTH</td>
+<td>LENGTH(‘ABC’)</td>
+<td>3</td>
+<td>Return the number of characters (or length) of a specified string</td>
+</tr>
+<tr>
+<td>LOWER</td>
+<td>LOWER(‘Abc’)</td>
+<td>‘abc’</td>
+<td>Return a string with all characters converted to lowercase.</td>
+</tr>
+<tr>
+<td>LPAD</td>
+<td>LPAD(‘ABC’,5,’*’)</td>
+<td>‘**ABC’	Return a string that is left-padded with the specified characters to a certain length.</td>
+<td></td>
+</tr>
+<tr>
+<td>LTRIM</td>
+<td>LTRIM(‘ ABC ‘)</td>
+<td>‘ABC</td>
+<td>‘	Remove spaces or other specified characters in a set from the left end of a string.</td>
+</tr>
+<tr>
+<td>REGEXP_COUNT</td>
+<td>REGEXP_COUNT(‘1 2 3 abc’,’\d’)</td>
+<td>3</td>
+<td>Return the number of times a pattern occurs in a string.</td>
+</tr>
+<tr>
+<td>REGEXP_INSTR</td>
+<td>REGEXP_INSTR( ‘Y2K problem’,’\d+’)</td>
+<td>2</td>
+<td>Return the position of a pattern in a string.</td>
+</tr>
+<tr>
+<td>REGEXP_LIKE</td>
+<td>REGEXP_LIKE( ‘Year of 2017′,’\d+’ )</td>
+<td>true</td>
+<td>Match a string based on a regular expression pattern.</td>
+</tr>
+<tr>
+<td>REGEXP_REPLACE</td>
+<td>REGEXP_REPLACE( ‘Year of 2017′,’\d+’, ‘Dragon’ )</td>
+<td>‘Year of Dragon’</td>
+<td>Replace substring in a string by a new substring using a regular expression.</td>
+</tr>
+<tr>
+<td>REGEXP_SUBSTR</td>
+<td>REGEXP_SUBSTR( ‘Number 10’, ‘\d+’ )</td>
+<td>10</td>
+<td>Extract substrings from a string using a pattern of a regular expression.</td>
+</tr>
+<tr>
+<td>REPLACE</td>
+<td>REPLACE(‘JACK AND JOND’,’J’,’BL’);</td>
+<td>‘BLACK AND BLOND’</td>
+<td>Replace all occurrences of a substring by another substring in a string.</td>
+</tr>
+<tr>
+<td>RPAD</td>
+<td>RPAD(‘ABC’,5,’*’)</td>
+<td>‘ABC**’</td>
+<td>Return a string that is right-padded with the specified characters to a certain length.</td>
+</tr>
+<tr>
+<td>RTRIM</td>
+<td>RTRIM(‘ ABC ‘)</td>
+<td>‘ ABC’</td>
+<td>Remove all spaces or specified character in a set from the right end of a string.</td>
+</tr>
+<tr>
+<td>SOUNDEX</td>
+<td>SOUNDEX(‘sea’)</td>
+<td>‘S000’</td>
+<td>Return a phonetic representation of a specified string.</td>
+</tr>
+<tr>
+<td>SUBSTR</td>
+<td>SUBSTR(‘Oracle Substring’, 1, 6 )</td>
+<td>‘Oracle’</td>
+<td>Extract a substring from a string.</td>
+</tr>
+<tr>
+<td>TRANSLATE</td>
+<td>TRANSLATE(‘12345’, ‘143’, ‘bx’)</td>
+<td>‘b2x5’	Replace all occurrences of characters by other characters in a string.</td>
+<td></td>
+</tr>
+<tr>
+<td>TRIM</td>
+<td>TRIM(‘ ABC ‘)</td>
+<td>‘ABC’</td>
+<td>Remove the space character or other specified characters either from the start or end of a string.</td>
+</tr>
+<tr>
+<td>UPPER</td>
+<td>UPPER(‘Abc’)</td>
+<td>‘ABC’</td>
+<td>Convert all characters in a specified string to uppercase.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://www.oracletutorial.com/oracle-basics/">Oracle Basics</a></li>
+</ul>
+</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#select-语句">select 语句</a></li>
+    <li><a href="#过滤数据">过滤数据</a>
+      <ul>
+        <li><a href="#distinct"><code>DISTINCT</code></a></li>
+        <li><a href="#fetch"><code>FETCH</code></a></li>
+        <li><a href="#in"><code>IN</code></a></li>
+        <li><a href="#between"><code>BETWEEN</code></a></li>
+        <li><a href="#like"><code>LIKE</code></a></li>
+        <li><a href="#is-null"><code>IS NULL</code></a></li>
+      </ul>
+    </li>
+    <li><a href="#join">JOIN</a>
+      <ul>
+        <li><a href="#inner-join"><code>INNER JOIN</code></a></li>
+        <li><a href="#left-join"><code>LEFT JOIN</code></a></li>
+      </ul>
+    </li>
+    <li><a href="#修改数据">修改数据</a>
+      <ul>
+        <li><a href="#insert">INSERT</a></li>
+        <li><a href="#update">UPDATE</a></li>
+        <li><a href="#delete">DELETE</a></li>
+      </ul>
+    </li>
+    <li><a href="#表结构">表结构</a>
+      <ul>
+        <li><a href="#create-table">CREATE TABLE</a></li>
+        <li><a href="#alter-table">ALTER TABLE</a></li>
+        <li><a href="#drop-table">DROP TABLE</a></li>
+        <li><a href="#truncate-table">TRUNCATE TABLE</a></li>
+      </ul>
+    </li>
+    <li><a href="#数据类型">数据类型</a>
+      <ul>
+        <li><a href="#number">NUMBER</a></li>
+        <li><a href="#float">FLOAT</a></li>
+        <li><a href="#char">CHAR</a></li>
+        <li><a href="#nchar">NCHAR</a></li>
+        <li><a href="#varchar2">VARCHAR2</a></li>
+        <li><a href="#nvarchar2">NVARCHAR2</a></li>
+        <li><a href="#date">DATE</a></li>
+        <li><a href="#timestamp">TIMESTAMP</a></li>
+        <li><a href="#timestamp-with-time-zone">TIMESTAMP WITH TIME ZONE</a></li>
+      </ul>
+    </li>
+    <li><a href="#约束">约束</a>
+      <ul>
+        <li><a href="#主键">主键</a></li>
+        <li><a href="#not-null-约束">NOT NULL 约束</a></li>
+        <li><a href="#unique-约束">UNIQUE 约束</a></li>
+      </ul>
+    </li>
+    <li><a href="#索引">索引</a>
+      <ul>
+        <li><a href="#创建索引">创建索引</a></li>
+        <li><a href="#删除索引">删除索引</a></li>
+        <li><a href="#创建唯一索引">创建唯一索引</a></li>
+      </ul>
+    </li>
+    <li><a href="#函数">函数</a>
+      <ul>
+        <li><a href="#date-函数">Date 函数</a></li>
+        <li><a href="#string-函数">String 函数</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
