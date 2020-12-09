@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="微服务无损扩容"><meta property="og:title" content="微服务无损扩容" />
+<meta property="og:description" content="微服务无损扩容 技术挑战  拆分的不好，热点数据节点成为瓶颈 数据迁移、路由改变，能否让业务没有感知 扩容失败，如何回滚? 整个过程，如何维持数据一致性?  如何拆分 业务设计表的时候，需要决定哪个键是 shardkey
+如何让业务没有感知 时间点如凌晨自动切换；也可以让业务根据实际情况判断，人工切换
+整个过程如何高可用    新建数据同步 (sync、async) 关系    持续进行数据校验，计算延时差，小于某个阈值，比如 5 秒    小于阈值后，有请求进来，拒绝掉，让业务去重试，业务的响应时间可能有秒级影响，不过整个持续时间很短。数据很快追上来，这个时候原子修改路由，路由切换好了，就可以重新接受请求了    慢慢地延迟删除冗余数据，防止 IO 波动过大    分布式事务  操作同一个节点，使用普通事务 操作多个节点，使用两阶段提交  参考  腾讯会议核心数据库TDSQL，如何做到快速无损在线扩容?  " />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/posts/lossless-expansion/" />
+<meta property="article:published_time" content="2020-12-09T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-12-09T00:00:00+00:00" />
+<title>微服务无损扩容 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.c9c7d09125208f45ba615a2688957841c6ac7800b6477e2c231b298174dfdb0c.js" integrity="sha256-ycfQkSUgj0W6YVomiJV4QcaseAC2R34sIxspgXTf2ww="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>微服务无损扩容</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#技术挑战">技术挑战</a></li>
+    <li><a href="#如何拆分">如何拆分</a></li>
+    <li><a href="#如何让业务没有感知">如何让业务没有感知</a></li>
+    <li><a href="#整个过程如何高可用">整个过程如何高可用</a></li>
+    <li><a href="#分布式事务">分布式事务</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  <h1>
+    <a href="/posts/lossless-expansion/">微服务无损扩容</a>
+  </h1>
+  
+
+<div>
+
+  <h5>December 9, 2020</h5>
+
+
+
+  
+  <div>
+    
+  </div>
+  
+
+  
+  <div>
+    
+  </div>
+  
+
+
+</div>
+
+
+  <p><h1 id="微服务无损扩容">微服务无损扩容</h1>
+<h2 id="技术挑战">技术挑战</h2>
+<ul>
+<li>拆分的不好，热点数据节点成为瓶颈</li>
+<li>数据迁移、路由改变，能否让业务没有感知</li>
+<li>扩容失败，如何回滚? 整个过程，如何维持数据一致性?</li>
+</ul>
+<h2 id="如何拆分">如何拆分</h2>
+<p>业务设计表的时候，需要决定哪个键是 shardkey</p>
+<h2 id="如何让业务没有感知">如何让业务没有感知</h2>
+<p>时间点如凌晨自动切换；也可以让业务根据实际情况判断，人工切换</p>
+<h2 id="整个过程如何高可用">整个过程如何高可用</h2>
+<ul>
+<li>
+<ol>
+<li>新建数据同步 (<code>sync</code>、<code>async</code>) 关系</li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li>持续进行数据校验，计算延时差，小于某个阈值，比如 5 秒</li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li>小于阈值后，有请求进来，拒绝掉，让业务去重试，业务的响应时间可能有秒级影响，不过整个持续时间很短。数据很快追上来，这个时候原子修改路由，路由切换好了，就可以重新接受请求了</li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li>慢慢地延迟删除冗余数据，防止 IO 波动过大</li>
+</ol>
+</li>
+</ul>
+<h2 id="分布式事务">分布式事务</h2>
+<ul>
+<li>操作同一个节点，使用普通事务</li>
+<li>操作多个节点，使用两阶段提交</li>
+</ul>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://cloud.tencent.com/developer/inventory/334/article/1624784">腾讯会议核心数据库TDSQL，如何做到快速无损在线扩容?</a></li>
+</ul>
+</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#技术挑战">技术挑战</a></li>
+    <li><a href="#如何拆分">如何拆分</a></li>
+    <li><a href="#如何让业务没有感知">如何让业务没有感知</a></li>
+    <li><a href="#整个过程如何高可用">整个过程如何高可用</a></li>
+    <li><a href="#分布式事务">分布式事务</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
