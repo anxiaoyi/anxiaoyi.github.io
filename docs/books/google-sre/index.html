@@ -33,7 +33,7 @@ DNS 返回多个 A 记录，客户端随机选择。有两个问题：
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.84684390bd1a222f7af4f9a04e69161a3fd53cabef889a8281b296a5659635cd.js" integrity="sha256-hGhDkL0aIi969PmgTmkWGj/VPKvviJqCgbKWpWWWNc0="></script>
+<script defer src="/en.search.min.d0a626f513b0c2334e879165e75f046be379a2a7009d4fbf6a28bf1bd1c617d4.js" integrity="sha256-0KYm9ROwwjNOh5Fl518Ea&#43;N5oqcAnU&#43;/aii/G9HGF9Q="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -523,6 +523,9 @@ var _hmt = _hmt || [];
   <ul>
     <li><a href="#前端服务器的负载均衡">前端服务器的负载均衡</a></li>
     <li><a href="#数据中心内部的负载均衡系统">数据中心内部的负载均衡系统</a></li>
+    <li><a href="#应对过载">应对过载</a></li>
+    <li><a href="#处理连锁故障">处理连锁故障</a></li>
+    <li><a href="#管理关键状态利用分布式共识来提高可靠性">管理关键状态：利用分布式共识来提高可靠性</a></li>
   </ul>
 </nav>
 
@@ -585,6 +588,62 @@ var _hmt = _hmt || [];
 <li>跛脚鸭状态：明确要求客户端停止发送请求</li>
 </ul>
 <p>跛脚鸭状态的 Backend 会广播给所有客户端，但是那些没有建立连接的客户端呢？Google 的 RPC 框架中，未建立 TCP 连接的客户端也会定期发送 UDP 心跳。</p>
+<blockquote>
+<p>(1) <strong>如何限制客户端所能连接的 Backend 的个数 ？</strong></p>
+</blockquote>
+<ul>
+<li><strong>随机选择</strong>，每次把后端可用的 <code>shuffle</code> 一下，缺点：负载不均衡</li>
+<li><strong>确定性算法</strong>，每个后端接受同样数量的连接</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">subset</span>(backends, client_id, subset_size):
+    subset_count <span style="color:#f92672">=</span> len(backends) <span style="color:#f92672">/</span> subset_size
+
+    round <span style="color:#f92672">=</span> client_id <span style="color:#f92672">/</span> subset_count
+    random<span style="color:#f92672">.</span>seed(round)
+    random<span style="color:#f92672">.</span>shuffle(backends)
+
+    subset_id <span style="color:#f92672">=</span> client_id <span style="color:#f92672">%</span> subset_count
+
+    start <span style="color:#f92672">=</span> subset_id <span style="color:#f92672">*</span> subset_size
+    <span style="color:#66d9ef">return</span> backends[start:start <span style="color:#f92672">+</span> subset_size]s
+</code></pre></div><blockquote>
+<p>(2) <strong>如何进行负载均衡 ?</strong></p>
+</blockquote>
+<ul>
+<li><strong>round robin</strong>: 负载效果很差，因为请求处理成本不同 (<strong>所有客户端不会以相同的速率发送请求</strong>)，机器物理差异，其他性能因素 (<strong>坏邻居</strong>、<strong>任务重启</strong>)</li>
+<li><strong>最闲轮询</strong>: 效果很差，客户端对每个后端的了解仅仅是它自己发送请求的一个情况</li>
+</ul>
+<p><img src="/images/docs/books/google-sre/Snipaste_2020-12-20_16-31-34.png" alt=""></p>
+<ul>
+<li><strong>加权轮询</strong>: 每个后端有一个能力值，实践中效果比较好</li>
+</ul>
+<h2 id="应对过载">应对过载</h2>
+<blockquote>
+<p>(1) <strong>如何让客户端自己限流?</strong></p>
+</blockquote>
+<p><img src="/images/docs/books/google-sre/Snipaste_2020-12-20_16-37-59.png" alt=""></p>
+<ul>
+<li><code>requests</code>: 发出的请求数量</li>
+<li><code>accepts</code>: 后端任务接受的请求数量</li>
+<li><code>K</code> 越小，节流算法越激进，一般推荐 <code>K = 2</code></li>
+</ul>
+<blockquote>
+<p>(2) <strong>划分重要性</strong></p>
+</blockquote>
+<p>最重要、重要、可丢弃的，RPC 可以携带传递这些信息</p>
+<blockquote>
+<p>(3) <strong>客户端何时重试?</strong></p>
+</blockquote>
+<p>请求头包含<strong>重试计数器</strong>元信息，避免<strong>级联重试</strong>。</p>
+<h2 id="处理连锁故障">处理连锁故障</h2>
+<h2 id="管理关键状态利用分布式共识来提高可靠性">管理关键状态：利用分布式共识来提高可靠性</h2>
+<p>几个案例：</p>
+<ul>
+<li>脑裂问题: 两组服务器，每组一个 leader 一个 follower，两组 leader 接受不到心跳，互相 kill 对方，结果可能同时为主，也可能都关闭。</li>
+<li>需要人工干预的灾备切换</li>
+<li>集群出现网络分区，两个分区各自选举出了一个 leader，同时接受 write 和 delete</li>
+</ul>
+<p>上述所有问题应采用**分布式共识算法 (ZooKeeper、Consul、etcd)**来解决。</p>
 <hr>
 <p>当连接闲置时间过长时，RPC 框架应将其转换为 UDP。</p>
 </article>
@@ -634,6 +693,9 @@ var _hmt = _hmt || [];
   <ul>
     <li><a href="#前端服务器的负载均衡">前端服务器的负载均衡</a></li>
     <li><a href="#数据中心内部的负载均衡系统">数据中心内部的负载均衡系统</a></li>
+    <li><a href="#应对过载">应对过载</a></li>
+    <li><a href="#处理连锁故障">处理连锁故障</a></li>
+    <li><a href="#管理关键状态利用分布式共识来提高可靠性">管理关键状态：利用分布式共识来提高可靠性</a></li>
   </ul>
 </nav>
 

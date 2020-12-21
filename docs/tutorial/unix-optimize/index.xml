@@ -62,5 +62,20 @@ Linux 内核支持四种 I/O 调度算法，分别是 NONE、NOOP、CFQ 以及 D
  NONE，不使用 I/O 调度算法 NOOP，先入先出 CFQ（Completely Fair Scheduler），为每个进程维护了一个 I/O 调度队列，并按照时间片来均匀分布每个进程的 I/O 请求 DeadLine，分别为读、写请求创建了不同的 I/O 队列，可以提高机械磁盘的吞吐量，并确保达到最终期限（deadline）的请求被优先处理  每块磁盘 I/O 性能 $ iostat -d -x 1 Linux 5.4.0-42-generic (zk) 2020年09月02日 _x86_64_	(4 CPU) Device r/s rkB/s rrqm/s %rrqm r_await rareq-sz w/s wkB/s wrqm/s %wrqm w_await wareq-sz d/s dkB/s drqm/s %drqm d_await dareq-sz aqu-sz %util loop0 0.</description>
     </item>
     
+    <item>
+      <title>Linux 零拷贝</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-optimize/zero-copy/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-optimize/zero-copy/</guid>
+      <description>Linux 零拷贝 为什么需要零拷贝  传统 read，write I/O 接口，数据拷贝的好处：通过中间缓存的机制，**减少磁盘 I/O **的操作 拷贝的坏处：大量数据的拷贝，用户态和内核态的频繁切换，会消耗大量的 CPU 资源，严重影响数据传输的性能  什么是零拷贝 零拷贝就是这个问题的一个解决方案，通过尽量避免拷贝操作来缓解 CPU 的压力。Linux 下常见的零拷贝技术可以分为两大类：一是针对特定场景，去掉不必要的拷贝；二是去优化整个拷贝的过程。由此看来，零拷贝并没有真正做到“0”拷贝，它更多是一种思想，很多的零拷贝技术都是基于这个思想去做的优化。
+零拷贝的几种方法 原始数据拷贝操作 在介绍之前，先看看 Linux 原始的数据拷贝操作是怎样的。如下图，假如一个应用需要从某个磁盘文件中读取内容通过网络发出去，像这样：
+while((n = read(diskfd, buf, BUF_SIZE)) &amp;gt; 0) write(sockfd, buf , n); 那么整个过程就需要经历：
+ 1）read 将数据从磁盘文件通过 DMA 等方式拷贝到内核开辟的缓冲区； 2）数据从内核缓冲区复制到用户态缓冲区； 3）write 将数据从用户态缓冲区复制到内核协议栈开辟的 socket 缓冲区； 4）数据从 socket 缓冲区通过 DMA 拷贝到网卡上发出去。  可见，整个过程发生了至少四次数据拷贝，其中两次是 DMA 与硬件通讯来完成，CPU 不直接参与，去掉这两次，仍然有两次 CPU 数据拷贝操作。
+方法一：用户态直接 I/O 这种方法可以使应用程序或者运行在用户态下的库函数直接访问硬件设备，数据直接跨过内核进行传输，内核在整个数据传输过程除了会进行必要的虚拟存储配置工作之外，不参与其他任何工作，这种方式能够直接绕过内核，极大提高了性能。
+缺陷：
+ 1）这种方法只能适用于那些不需要内核缓冲区处理的应用程序，这些应用程序通常在进程地址空间有自己的数据缓存机制，称为自缓存应用程序，如数据库管理系统就是一个代表。 2）这种方法直接操作磁盘 I/O，由于 CPU 和磁盘 I/O 之间的执行时间差距，会造成资源的浪费，解决这个问题需要和异步 I/O 结合使用。  方法二：mmap 这种方法，使用 mmap 来代替 read，可以减少一次拷贝操作，如下：</description>
+    </item>
+    
   </channel>
 </rss>

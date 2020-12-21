@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Java 类加载"><meta property="og:title" content="Java 类加载" />
+<meta property="og:description" content="Java 类加载 类加载的过程 参考：《深入理解 Java 虚拟机》
+JVM 把 Class 文件加载到内存，然后进行校验、准备、解析、初始化，最终形成可以使用的 Java 类型，这就是类加载机制。其中，校验、准备、解析这三个阶段，放在一起是链接阶段。
+ 【加载】二进制字节流可以从 JAR、WAR、网络、运行时动态生成（动态代理）、JSP生成。 【验证】文件格式、元数据（信息语义）、字节码验证（类型转换是否有效、跳转指令不会跳到方法体以外的地方去）、符号引用验证 【准备】static final 变量赋值、各个基本数据类型的默认值 【解析】常量池内的符号引用（用符号描述引用目标）替换为直接引用（直接指向目标的指针） 【初始化】编译器收集 static 块、类变量的赋值放到 () 方法中  加载器类型  Bootstrap ClassLoader：加载 JAVA_HOME/lib、或者 -Xbootclasspath，并且是按照名字识别的，如 rt.jar Extension ClassLoader：JAVA_HOME/lib/ext、或者 java.ext.dirs 系统变量 Application ClassLoader：加载用户 ClassPath 上的类库  类加载器之间的层次关系，称之为双亲委派模型。如果一个类收到类加载请求，那么会首先委派给父类，父类反馈无法完成，自己才进行加载。
+何时初始化  遇到 new、getstatic、putstatic、invokestatic 这 4 条字节码指令。对应的是 new 一个对象、读取静态字段、设置静态字段（字段没有被 final 修饰，否则在编译器就已经将结果放在常量池了）、调用一个类的静态方法。 java.lang.reflect 进行反射。 初始化 A 类，其父类没有被初始化。 虚拟机启动时，包含 main() 方法的这个类  // 不会导致子类初始化 println(SubClass.parentStaticValue); // 不会初始化 SuperClass SuperClass[] sca = new SuperClass[10]; // 不会导致 ConstClass 初始化 println(ConstClass." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/classloader/" />
+
+<title>Java 类加载 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.d0a626f513b0c2334e879165e75f046be379a2a7009d4fbf6a28bf1bd1c617d4.js" integrity="sha256-0KYm9ROwwjNOh5Fl518Ea&#43;N5oqcAnU&#43;/aii/G9HGF9Q="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/stream/" >
+      Stream 编程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/date-time/" >
+      Java Date 和 Time
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/classloader/"  class="active">
+      Java 类加载
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Java 类加载</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#类加载的过程">类加载的过程</a>
+      <ul>
+        <li><a href="#加载器类型">加载器类型</a></li>
+      </ul>
+    </li>
+    <li><a href="#何时初始化">何时初始化</a></li>
+    <li><a href="#静态变量何时加载">静态变量何时加载</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="java-类加载">Java 类加载</h1>
+<h2 id="类加载的过程">类加载的过程</h2>
+<p>参考：《深入理解 Java 虚拟机》</p>
+<p>JVM 把 Class 文件加载到内存，然后进行校验、准备、解析、初始化，最终形成可以使用的 Java 类型，这就是类加载机制。其中，<strong>校验、准备、解析这三个阶段，放在一起是链接阶段</strong>。</p>
+<ul>
+<li>【加载】二进制字节流可以从 JAR、WAR、网络、运行时动态生成（动态代理）、JSP生成。</li>
+<li>【验证】文件格式、元数据（信息语义）、字节码验证（类型转换是否有效、跳转指令不会跳到方法体以外的地方去）、符号引用验证</li>
+<li>【准备】static final 变量赋值、各个基本数据类型的默认值</li>
+<li>【解析】常量池内的符号引用（用符号描述引用目标）替换为直接引用（直接指向目标的指针）</li>
+<li>【初始化】编译器收集 static 块、类变量的赋值放到 <!-- raw HTML omitted -->() 方法中</li>
+</ul>
+<h3 id="加载器类型">加载器类型</h3>
+<ul>
+<li><code>Bootstrap ClassLoader</code>：加载 <code>JAVA_HOME/lib</code>、或者 <code>-Xbootclasspath</code>，并且是按照名字识别的，如 rt.jar</li>
+<li><code>Extension ClassLoader</code>：<code>JAVA_HOME/lib/ext</code>、或者 <code>java.ext.dirs</code> 系统变量</li>
+<li><code>Application ClassLoader</code>：加载用户 <code>ClassPath</code> 上的类库</li>
+</ul>
+<p>类加载器之间的层次关系，称之为<strong>双亲委派模型</strong>。如果一个类收到类加载请求，那么会首先委派给父类，父类反馈无法完成，自己才进行加载。</p>
+<h2 id="何时初始化">何时初始化</h2>
+<ul>
+<li>遇到 <code>new</code>、<code>getstatic</code>、<code>putstatic</code>、<code>invokestatic</code> 这 4 条字节码指令。对应的是 new 一个对象、读取静态字段、设置静态字段（字段没有被 <code>final</code> 修饰，否则在编译器就已经将结果放在常量池了）、调用一个类的静态方法。</li>
+<li><code>java.lang.reflect</code> 进行反射。</li>
+<li>初始化 A 类，其父类没有被初始化。</li>
+<li>虚拟机启动时，包含 <code>main()</code> 方法的这个类</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 不会导致子类初始化
+</span><span style="color:#75715e"></span>println<span style="color:#f92672">(</span>SubClass<span style="color:#f92672">.</span><span style="color:#a6e22e">parentStaticValue</span><span style="color:#f92672">);</span>
+
+<span style="color:#75715e">// 不会初始化 SuperClass
+</span><span style="color:#75715e"></span>SuperClass<span style="color:#f92672">[]</span> sca <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> SuperClass<span style="color:#f92672">[</span>10<span style="color:#f92672">];</span>
+
+<span style="color:#75715e">// 不会导致 ConstClass 初始化
+</span><span style="color:#75715e"></span>println<span style="color:#f92672">(</span>ConstClass<span style="color:#f92672">.</span><span style="color:#a6e22e">staticFinalValue</span><span style="color:#f92672">);</span>
+</code></pre></div><h2 id="静态变量何时加载">静态变量何时加载</h2>
+<ul>
+<li><code>static final</code>: 编译器优化这种常量，然后将这个值直接内嵌到 bytecode 里面</li>
+<li><code>static</code>: 随着这个类的加载而加载</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#类加载的过程">类加载的过程</a>
+      <ul>
+        <li><a href="#加载器类型">加载器类型</a></li>
+      </ul>
+    </li>
+    <li><a href="#何时初始化">何时初始化</a></li>
+    <li><a href="#静态变量何时加载">静态变量何时加载</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

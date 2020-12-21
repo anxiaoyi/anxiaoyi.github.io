@@ -7,11 +7,14 @@
 <meta name="description" content="架构"><meta property="og:title" content="架构" />
 <meta property="og:description" content="架构 随着微服务的流行，服务和服务之间的稳定性变得越来越重要。Sentinel 是面向分布式服务架构的流量控制组件，主要以流量为切入点，从限流、流量整形、熔断降级、系统负载保护、热点防护等多个维度来帮助开发者保障微服务的稳定性。
 有关 Sentinel 更为详细的使用文档和介绍请移至 Sentinel Github Wiki。
-主要特性 流量控制 流量控制在网络传输中是一个常用的概念，它用于调整网络包的发送数据。然而，从系统稳定性角度考虑，在处理请求的速度上，也有非常多的讲究。任意时间到来的请求往往是随机不可控的，而系统的处理能力是有限的。我们需要根据系统的处理能力对流量进行控制。Sentinel 作为一个调配器，可以根据需要把随机的请求调整成合适的形状，如下图所示：
-熔断降级 除了流量控制以外，及时对调用链路中的不稳定因素进行熔断也是 Sentinel 的使命之一。由于调用关系的复杂性，如果调用链路中的某个资源出现了不稳定，可能会导致请求发生堆积，进而导致级联错误。
-网关限流 Sentinel 支持对 Spring Cloud Gateway、Zuul 等主流的 API Gateway 进行限流。
-架构 另外一幅更为漂亮的图：
-可扩展性 开源生态 参考  Sentinel Wiki  " />
+ 单机和分布式区别
+ 限流分为单机和分布式两种，单机限流是指限定当前进程里面的某个代码片段的 QPS 或者 并发线程数 或者 整个机器负载指数，一旦超出规则配置的数值就会抛出异常或者返回 false。我把这里的被限流的代码片段称为「临界区」。
+而分布式则需要另启一个集中的发票服务器，这个服务器针对每个指定的资源每秒只会生成一定量的票数，在执行临界区的代码之前先去集中的发票服务领票，如果领成功了就可以执行，否则就会抛出限流异常。所以分布式限流代价较高，需要多一次网络读写操作。
+ 规则控制
+ 在实际的项目中，规则应该需要支持动态配置。这就需要有一个规则配置源，它可以是 Redis、Zookeeper 等数据库，还需要有一个规则变更通知机制和规则配置后台，允许管理人员可以在后台动态配置规则并实时下发到业务服务器进行控制。
+有一些规则源存储不支持事件通知机制，比如关系数据库，Sentinel 也提供了定时刷新规则，比如每隔几秒来刷新内存里面的限流规则。下面是 redis 规则源定义
+// redis 地址 RedisConnectionConfig redisConf = new RedisConnectionConfig(&#34;localhost&#34;, 6379, 1000); // 反序列化算法 Converter&lt;String, List&lt;FlowRule&gt;&gt; converter = r -&gt; JSON.parseArray(r, FlowRule.class); // 定义规则源，包含全量和增量部分 // 全量是一个字符串key，增量是 pubsub channel key ReadableDataSource&lt;String, List&lt;FlowRule&gt;&gt; redisDataSource = new RedisDataSource&lt;List&lt;FlowRule&gt;&gt;(redisConf, &#34;app_key&#34;, &#34;app_pubsub_key&#34;, converter); FlowRuleManager.register2Property(redisDataSource.getProperty());  健康状态上报与检查
+ 接入 Sentinel 的应用服务器需要将自己的限流状态上报到 Dashboard，这样就可以在后台实时呈现所有服务的限流状态。Sentinel 使用拉模型来上报状态，它在当前进程注册了一个 HTTP 服务，Dashboard 会定时来访问这个 HTTP 服务来获取每个服务进程的健康状况和限流信息。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/sentinel/architecture/" />
 
@@ -22,7 +25,7 @@
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.84684390bd1a222f7af4f9a04e69161a3fd53cabef889a8281b296a5659635cd.js" integrity="sha256-hGhDkL0aIi969PmgTmkWGj/VPKvviJqCgbKWpWWWNc0="></script>
+<script defer src="/en.search.min.d0a626f513b0c2334e879165e75f046be379a2a7009d4fbf6a28bf1bd1c617d4.js" integrity="sha256-0KYm9ROwwjNOh5Fl518Ea&#43;N5oqcAnU&#43;/aii/G9HGF9Q="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -834,6 +837,90 @@ var _hmt = _hmt || [];
 <article class="markdown"><h1 id="架构">架构</h1>
 <p>随着微服务的流行，服务和服务之间的稳定性变得越来越重要。Sentinel 是面向分布式服务架构的流量控制组件，主要以流量为切入点，从<strong>限流、流量整形、熔断降级、系统负载保护、热点防护</strong>等多个维度来帮助开发者保障微服务的稳定性。</p>
 <p>有关 Sentinel 更为详细的使用文档和介绍请移至 <a href="https://github.com/alibaba/Sentinel/wiki">Sentinel Github Wiki</a>。</p>
+<blockquote>
+<p><strong>单机和分布式区别</strong></p>
+</blockquote>
+<p>限流分为单机和分布式两种，<strong>单机限流</strong>是指限定当前进程里面的某个代码片段的 QPS 或者 并发线程数 或者 整个机器负载指数，一旦超出规则配置的数值就会抛出异常或者返回 false。我把这里的被限流的代码片段称为「临界区」。</p>
+<p>而分布式则需要另启一个集中的<strong>发票服务器</strong>，这个服务器针对每个指定的资源每秒只会生成一定量的票数，在执行临界区的代码之前先去集中的发票服务领票，如果领成功了就可以执行，否则就会抛出限流异常。所以分布式限流代价较高，需要多一次网络读写操作。</p>
+<p><img src="/images/docs/tutorial/sentinel/architecture/20201221104035.png" alt=""></p>
+<blockquote>
+<p><strong>规则控制</strong></p>
+</blockquote>
+<p>在实际的项目中，<strong>规则应该需要支持动态配置</strong>。这就需要有一个规则配置源，它可以是 Redis、Zookeeper 等数据库，还需要有一个规则变更通知机制和规则配置后台，允许管理人员可以在后台动态配置规则并实时下发到业务服务器进行控制。</p>
+<p><img src="/images/docs/tutorial/sentinel/architecture/20201221105647.png" alt=""></p>
+<p>有一些规则源存储不支持事件通知机制，比如关系数据库，Sentinel 也提供了<strong>定时刷新</strong>规则，比如每隔几秒来刷新内存里面的限流规则。下面是 redis 规则源定义</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// redis 地址
+</span><span style="color:#75715e"></span>RedisConnectionConfig redisConf <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> RedisConnectionConfig<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;localhost&#34;</span><span style="color:#f92672">,</span> 6379<span style="color:#f92672">,</span> 1000<span style="color:#f92672">);</span>
+<span style="color:#75715e">// 反序列化算法
+</span><span style="color:#75715e"></span>Converter<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> List<span style="color:#f92672">&lt;</span>FlowRule<span style="color:#f92672">&gt;&gt;</span> converter <span style="color:#f92672">=</span> r <span style="color:#f92672">-&gt;</span> JSON<span style="color:#f92672">.</span><span style="color:#a6e22e">parseArray</span><span style="color:#f92672">(</span>r<span style="color:#f92672">,</span> FlowRule<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">);</span>
+<span style="color:#75715e">// 定义规则源，包含全量和增量部分
+</span><span style="color:#75715e">// 全量是一个字符串key，增量是 pubsub channel key
+</span><span style="color:#75715e"></span>ReadableDataSource<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> List<span style="color:#f92672">&lt;</span>FlowRule<span style="color:#f92672">&gt;&gt;</span> redisDataSource <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> RedisDataSource<span style="color:#f92672">&lt;</span>List<span style="color:#f92672">&lt;</span>FlowRule<span style="color:#f92672">&gt;&gt;(</span>redisConf<span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;app_key&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;app_pubsub_key&#34;</span><span style="color:#f92672">,</span> converter<span style="color:#f92672">);</span>
+
+FlowRuleManager<span style="color:#f92672">.</span><span style="color:#a6e22e">register2Property</span><span style="color:#f92672">(</span>redisDataSource<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">());</span>
+</code></pre></div><blockquote>
+<p><strong>健康状态上报与检查</strong></p>
+</blockquote>
+<p>接入 Sentinel 的应用服务器需要将自己的限流状态上报到 Dashboard，这样就可以在后台实时呈现所有服务的限流状态。Sentinel 使用拉模型来上报状态，它在当前进程注册了一个 HTTP 服务，Dashboard 会定时来访问这个 HTTP 服务来获取每个服务进程的健康状况和限流信息。</p>
+<p><img src="/images/docs/tutorial/sentinel/architecture/v2-76351f75720d2d0f7865940f4f356462_r.png" alt=""></p>
+<p>Sentinel 需要将<strong>服务的地址</strong>以心跳包的形式上报给 Dashboard，如此 Dashboard 才知道每个服务进程的 HTTP 健康服务的具体地址。如果进程下线了，心跳包就停止了，那么对应的地址信息也会过期，如此 Dashboard 就能准实时知道当前的有效进程服务列表。</p>
+<p>当前版本开源的 Dashboard 不具备持久化能力，当管理员在后台修改了规则时，它会直接通过 HTTP 健康服务地址来同步服务限流规则直接控制具体服务进程。如果应用重启，规则将自动重置。如果你希望通过 Redis 来持久化规则源，那就需要自己定制 Dashboard。定制不难，实现它内置的持久化接口即可。</p>
+<blockquote>
+<p><strong>分布式限流</strong></p>
+</blockquote>
+<p>前面我们说到分布式限流需要另起一个 Ticket Server，由它来分发 Ticket，能够获取到 Ticket 的请求才可以允许执行临界区代码，Ticket 服务器也需要提供规则输入源。</p>
+<p><img src="/images/docs/tutorial/sentinel/architecture/v2-c6a13aa05059d09eb46f0b315b8eda10_r.png" alt=""></p>
+<p><strong>Ticket Server 是单点的</strong>，如果 Ticket Server 挂掉了，应用服务器限流将自动退化为本地模式。</p>
+<blockquote>
+<p><strong>热点限流</strong></p>
+</blockquote>
+<p>还有一种特殊的动态限流规则，用于<strong>限制动态的热点资源</strong>。内部采用 LRU 算法计算出 top n 热点资源，然后对 top n 的资源进行限流，同时还提供特殊资源特殊对待的参数设置。</p>
+<p>比如在下面的例子中限定了同一个用户的访问频次，同时也限定了同一本书的访问频次，但是对于某个特殊用户和某个特殊的书进行了特殊的频次设置。</p>
+<p><img src="/images/docs/tutorial/sentinel/architecture/v2-4c8333562f1eac421197102aa1cf2a2c_r.jpg" alt=""></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">ParamFlowRule ruleUser <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ParamFlowRule<span style="color:#f92672">();</span>
+<span style="color:#75715e">// 同样的 userId QPS 不得超过 10
+</span><span style="color:#75715e"></span>ruleUser<span style="color:#f92672">.</span><span style="color:#a6e22e">setParamIdx</span><span style="color:#f92672">(</span>0<span style="color:#f92672">).</span><span style="color:#a6e22e">setCount</span><span style="color:#f92672">(</span>10<span style="color:#f92672">);</span>
+<span style="color:#75715e">// qianwp用户特殊对待，QPS 上限是 100
+</span><span style="color:#75715e"></span>ParamFlowItem uitem <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ParamFlowItem<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;qianwp&#34;</span><span style="color:#f92672">,</span> 100<span style="color:#f92672">,</span> String<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">);</span>
+ruleUser<span style="color:#f92672">.</span><span style="color:#a6e22e">setParamFlowItemList</span><span style="color:#f92672">(</span>Collections<span style="color:#f92672">.</span><span style="color:#a6e22e">singletonList</span><span style="color:#f92672">(</span>uitem<span style="color:#f92672">));</span>
+
+ParamFlowRule ruleBook <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ParamFlowRule<span style="color:#f92672">();</span>
+<span style="color:#75715e">// 同样的 bookId QPS 不得超过 20
+</span><span style="color:#75715e"></span>ruleBook<span style="color:#f92672">.</span><span style="color:#a6e22e">setParamIdx</span><span style="color:#f92672">(</span>1<span style="color:#f92672">).</span><span style="color:#a6e22e">setCount</span><span style="color:#f92672">(</span>20<span style="color:#f92672">);</span>
+<span style="color:#75715e">// redis 的书特殊对待，QPS 上限是 100
+</span><span style="color:#75715e"></span>ParamFlowItem bitem <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ParamFlowItem<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;redis&#34;</span><span style="color:#f92672">,</span> 100<span style="color:#f92672">,</span> String<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">);</span>
+ruleBook<span style="color:#f92672">.</span><span style="color:#a6e22e">setParamFlowItemList</span><span style="color:#f92672">(</span>Collections<span style="color:#f92672">.</span><span style="color:#a6e22e">singletonList</span><span style="color:#f92672">(</span>item<span style="color:#f92672">));</span>
+
+<span style="color:#75715e">// 加载规则
+</span><span style="color:#75715e"></span>List<span style="color:#f92672">&lt;</span>ParamFlowRule<span style="color:#f92672">&gt;</span> rules <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ArrayList<span style="color:#f92672">&lt;&gt;();</span>
+rules<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>ruleUser<span style="color:#f92672">);</span>
+rules<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>ruleBook<span style="color:#f92672">);</span>
+ParamFlowRuleManager<span style="color:#f92672">.</span><span style="color:#a6e22e">loadRules</span><span style="color:#f92672">(</span>rules<span style="color:#f92672">)</span><span style="color:#960050;background-color:#1e0010">；</span>
+
+<span style="color:#75715e">// userId的用户访问bookId的书
+</span><span style="color:#75715e"></span>Entry entry <span style="color:#f92672">=</span> Sphu<span style="color:#f92672">.</span><span style="color:#a6e22e">entry</span><span style="color:#f92672">(</span>key<span style="color:#f92672">,</span> EntryType<span style="color:#f92672">.</span><span style="color:#a6e22e">IN</span><span style="color:#f92672">,</span> 1<span style="color:#f92672">,</span> userId<span style="color:#f92672">,</span> bookId<span style="color:#f92672">);</span>
+</code></pre></div><p>热点限流的难点在于如何<strong>统计定长滑动窗口时间内的热点资源的访问量</strong>，Sentinel 设计了一个特别的数据结构叫 LeapArray，内部有较为复杂的算法设计后续需要单独分析。</p>
+<blockquote>
+<p><strong>系统自适应限流 —— 过载保护</strong></p>
+</blockquote>
+<p>当系统的负载较高时，为了避免系统被洪水般的请求冲垮，需要对当前的系统进行限流保护。保护的方式是逐步限制 QPS，观察到系统负载恢复后，再逐渐放开 QPS，如果系统的负载又下降了，就再逐步降低 QPS。如此达到一种动态的平衡，这里面涉及到一个特殊的保持平衡的算法。系统的负载指数存在一个问题，它取自操作系统负载的 load1 参数，load1 参数更新的实时性不足，从 load1 超标到恢复的过程存在一个较长的过渡时间，如果使用一刀切方案，在这段恢复时间内阻止任何请求，待 load1 恢复后又立即放开请求，势必会导致<strong>负载的大起大落，服务处理的时断时开</strong>。为此作者将 TCP 拥塞控制算法的思想移植到这里实现了系统平滑的过载保护功能。这个算法很精巧，代码实现并不复杂，效果却是非常显著。</p>
+<p>算法定义了一个稳态公式，稳态一旦打破，系统负载就会出现波动。算法的本质就是当稳态被打破时，通过持续调整相关参数来重新建立稳态。</p>
+<p><img src="/images/docs/tutorial/sentinel/architecture/v2-b17f2ec9a24ba7f9703d04bc4429c674_r.jpg" alt=""></p>
+<p>稳态公式很简单：<code>ThreadNum * (1/ResponseTime) = QPS</code>，这个公式很好理解，就是系统的 <code>QPS</code> 等于线程数乘以单个线程每秒可以执行的请求数量。系统会实时采样统计所有临界区的 <code>QPS</code> 和 <code>ResponseTime</code>，就可以计算出相应的稳态并发线程数。当负载超标时，通过判定当前的线程数是否超出稳态线程数就可以明确是否需要拒绝当前的请求。</p>
+<p>定义自适应限流规则需要提供多个参数:</p>
+<ul>
+<li>系统的负载水平线，超过这个值时触发过载保护功能</li>
+<li>当过载保护超标时，允许的最大线程数、最长响应时间和最大 QPS，可以不设置</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">List<span style="color:#f92672">&lt;</span>SystemRule<span style="color:#f92672">&gt;</span> rules <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ArrayList<span style="color:#f92672">&lt;</span>SystemRule<span style="color:#f92672">&gt;();</span>
+SystemRule rule <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> SystemRule<span style="color:#f92672">();</span>
+rule<span style="color:#f92672">.</span><span style="color:#a6e22e">setHighestSystemLoad</span><span style="color:#f92672">(</span>3<span style="color:#f92672">.</span><span style="color:#a6e22e">0</span><span style="color:#f92672">);</span>
+rule<span style="color:#f92672">.</span><span style="color:#a6e22e">setAvgRt</span><span style="color:#f92672">(</span>10<span style="color:#f92672">);</span>
+rule<span style="color:#f92672">.</span><span style="color:#a6e22e">setQps</span><span style="color:#f92672">(</span>20<span style="color:#f92672">);</span>
+rule<span style="color:#f92672">.</span><span style="color:#a6e22e">setMaxThread</span><span style="color:#f92672">(</span>10<span style="color:#f92672">);</span>
+rules<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>rule<span style="color:#f92672">);</span>
+SystemRuleManager<span style="color:#f92672">.</span><span style="color:#a6e22e">loadRules</span><span style="color:#f92672">(</span>Collections<span style="color:#f92672">.</span><span style="color:#a6e22e">singletonList</span><span style="color:#f92672">(</span>rule<span style="color:#f92672">));</span>
+</code></pre></div><p>从代码中也可以看出系统自适应限流规则不需要定义资源名称，因为它是全局的规则，会自动应用到所有的临界区。如果当负载超标时，所有临界区资源将一起勒紧裤腰带渡过难关。</p>
 <h2 id="主要特性">主要特性</h2>
 <p><img src="/images/docs/tutorial/sentinel/architecture/feature.png" alt=""></p>
 <h3 id="流量控制">流量控制</h3>
@@ -856,6 +943,7 @@ var _hmt = _hmt || [];
 <h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://github.com/alibaba/Sentinel/wiki">Sentinel Wiki</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/53641388">阿里巴巴开源限流系统 Sentinel 全解析</a></li>
 </ul>
 </article>
  

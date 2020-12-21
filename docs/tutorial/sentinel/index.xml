@@ -18,11 +18,14 @@
       <guid>https://kunzhao.org/docs/tutorial/sentinel/architecture/</guid>
       <description>架构 随着微服务的流行，服务和服务之间的稳定性变得越来越重要。Sentinel 是面向分布式服务架构的流量控制组件，主要以流量为切入点，从限流、流量整形、熔断降级、系统负载保护、热点防护等多个维度来帮助开发者保障微服务的稳定性。
 有关 Sentinel 更为详细的使用文档和介绍请移至 Sentinel Github Wiki。
-主要特性 流量控制 流量控制在网络传输中是一个常用的概念，它用于调整网络包的发送数据。然而，从系统稳定性角度考虑，在处理请求的速度上，也有非常多的讲究。任意时间到来的请求往往是随机不可控的，而系统的处理能力是有限的。我们需要根据系统的处理能力对流量进行控制。Sentinel 作为一个调配器，可以根据需要把随机的请求调整成合适的形状，如下图所示：
-熔断降级 除了流量控制以外，及时对调用链路中的不稳定因素进行熔断也是 Sentinel 的使命之一。由于调用关系的复杂性，如果调用链路中的某个资源出现了不稳定，可能会导致请求发生堆积，进而导致级联错误。
-网关限流 Sentinel 支持对 Spring Cloud Gateway、Zuul 等主流的 API Gateway 进行限流。
-架构 另外一幅更为漂亮的图：
-可扩展性 开源生态 参考  Sentinel Wiki  </description>
+ 单机和分布式区别
+ 限流分为单机和分布式两种，单机限流是指限定当前进程里面的某个代码片段的 QPS 或者 并发线程数 或者 整个机器负载指数，一旦超出规则配置的数值就会抛出异常或者返回 false。我把这里的被限流的代码片段称为「临界区」。
+而分布式则需要另启一个集中的发票服务器，这个服务器针对每个指定的资源每秒只会生成一定量的票数，在执行临界区的代码之前先去集中的发票服务领票，如果领成功了就可以执行，否则就会抛出限流异常。所以分布式限流代价较高，需要多一次网络读写操作。
+ 规则控制
+ 在实际的项目中，规则应该需要支持动态配置。这就需要有一个规则配置源，它可以是 Redis、Zookeeper 等数据库，还需要有一个规则变更通知机制和规则配置后台，允许管理人员可以在后台动态配置规则并实时下发到业务服务器进行控制。
+有一些规则源存储不支持事件通知机制，比如关系数据库，Sentinel 也提供了定时刷新规则，比如每隔几秒来刷新内存里面的限流规则。下面是 redis 规则源定义
+// redis 地址 RedisConnectionConfig redisConf = new RedisConnectionConfig(&amp;#34;localhost&amp;#34;, 6379, 1000); // 反序列化算法 Converter&amp;lt;String, List&amp;lt;FlowRule&amp;gt;&amp;gt; converter = r -&amp;gt; JSON.parseArray(r, FlowRule.class); // 定义规则源，包含全量和增量部分 // 全量是一个字符串key，增量是 pubsub channel key ReadableDataSource&amp;lt;String, List&amp;lt;FlowRule&amp;gt;&amp;gt; redisDataSource = new RedisDataSource&amp;lt;List&amp;lt;FlowRule&amp;gt;&amp;gt;(redisConf, &amp;#34;app_key&amp;#34;, &amp;#34;app_pubsub_key&amp;#34;, converter); FlowRuleManager.register2Property(redisDataSource.getProperty());  健康状态上报与检查
+ 接入 Sentinel 的应用服务器需要将自己的限流状态上报到 Dashboard，这样就可以在后台实时呈现所有服务的限流状态。Sentinel 使用拉模型来上报状态，它在当前进程注册了一个 HTTP 服务，Dashboard 会定时来访问这个 HTTP 服务来获取每个服务进程的健康状况和限流信息。</description>
     </item>
     
     <item>
