@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="服务治理"><meta property="og:title" content="服务治理" />
+<meta property="og:description" content="服务治理 企业治理：对企业 IT 的问题梳理、改进、优化，IT 治理是为业务服务的，涉及到了组织、管理效能、架构、基础资源、应用、数据等治理。
+ SOA 治理，技术栈太重
+  推荐的微服务工程组织模式
+  DevOps 最核心的工作就是构建标准化、规范化和自动化的研发流水线或工具链，实现计划、设计、开发、测试、发布和运维的紧密协同。
+ DevOps 通常包含如下工作：
+ 测试用例管理 测试环境管理 自动化持续构建 (CI) 持续部署 (CD) 发布管理 负载测试 应用系统监控 反馈管理  微服务架构 代理模式 Spring Cloud 使用 Zuul 组件实现代理网关。
+缺点：
+ 网络上多了一次请求，比直连模式慢 网关存在单点隐患  直连模式 缺点：
+ 服务方、调用方耦合性较强  边车模式 弱耦合 SDK 微服务框架，将直连模式的 SDK 拆分出来，以独立进程和微服务应用部署在同一个操作系统中，使其免受技术选型和开发语言的限制，业界称之为 ServiceMesh。
+直连模式架构  服务提供方的 SDK 做了什么?
+ 将业务逻辑封装成一个远程服务，然后暴露出去。Java 普遍采用的手段是：
+ Instrumentation 字节码替换技术 InvocationHandler 动态代理技术，生成代理类，让代理类来负责远程请求的解析匹配和本地真实服务的调用。   服务调用放的 SDK 做了什么?" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/it-govern/" />
+
+<title>服务治理 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.12c875b2b6db7d789597624d57ec711898df382b7b366d57042988b4dde190bd.js" integrity="sha256-Esh1srbbfXiVl2JNV&#43;xxGJjfOCt7Nm1XBCmItN3hkL0="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/it-govern/"  class="active">
+      服务治理
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>服务治理</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#微服务架构">微服务架构</a>
+      <ul>
+        <li><a href="#代理模式">代理模式</a></li>
+        <li><a href="#直连模式">直连模式</a></li>
+        <li><a href="#边车模式">边车模式</a></li>
+        <li><a href="#直连模式架构">直连模式架构</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="服务治理">服务治理</h1>
+<p>企业治理：对企业 IT 的问题梳理、改进、优化，IT 治理是为业务服务的，涉及到了组织、管理效能、架构、基础资源、应用、数据等治理。</p>
+<blockquote>
+<p>SOA 治理，技术栈太重</p>
+</blockquote>
+<p><img src="/images/docs/tutorial/distributed/it-govern/soa.jpg" alt=""></p>
+<blockquote>
+<p>推荐的微服务工程组织模式</p>
+</blockquote>
+<p><img src="/images/docs/tutorial/distributed/it-govern/standlone-project.jpg" alt=""></p>
+<blockquote>
+<p>DevOps 最核心的工作就是构建标准化、规范化和自动化的研发流水线或工具链，实现计划、设计、开发、测试、发布和运维的紧密协同。</p>
+</blockquote>
+<p>DevOps 通常包含如下工作：</p>
+<ul>
+<li>测试用例管理</li>
+<li>测试环境管理</li>
+<li>自动化持续构建 (CI)</li>
+<li>持续部署 (CD)</li>
+<li>发布管理</li>
+<li>负载测试</li>
+<li>应用系统监控</li>
+<li>反馈管理</li>
+</ul>
+<h2 id="微服务架构">微服务架构</h2>
+<h3 id="代理模式">代理模式</h3>
+<p><img src="/images/docs/tutorial/distributed/it-govern/proxy_mode.jpg" alt=""></p>
+<p>Spring Cloud 使用 Zuul 组件实现代理网关。</p>
+<p>缺点：</p>
+<ul>
+<li>网络上多了一次请求，比直连模式慢</li>
+<li>网关存在单点隐患</li>
+</ul>
+<h3 id="直连模式">直连模式</h3>
+<p><img src="/images/docs/tutorial/distributed/it-govern/direct_mode.jpg" alt=""></p>
+<p>缺点：</p>
+<ul>
+<li>服务方、调用方耦合性较强</li>
+</ul>
+<h3 id="边车模式">边车模式</h3>
+<p><img src="/images/docs/tutorial/distributed/it-govern/sidecar_mode.jpg" alt=""></p>
+<p>弱耦合 SDK 微服务框架，将直连模式的 SDK 拆分出来，以独立进程和微服务应用部署在同一个操作系统中，使其免受技术选型和开发语言的限制，业界称之为 ServiceMesh。</p>
+<h3 id="直连模式架构">直连模式架构</h3>
+<blockquote>
+<p>服务提供方的 SDK 做了什么?</p>
+</blockquote>
+<p><strong>将业务逻辑封装成一个远程服务，然后暴露出去</strong>。Java 普遍采用的手段是：</p>
+<ul>
+<li>Instrumentation 字节码替换技术</li>
+<li>InvocationHandler 动态代理技术，生成代理类，让代理类来负责远程请求的解析匹配和本地真实服务的调用。</li>
+</ul>
+<blockquote>
+<p>服务调用放的 SDK 做了什么?</p>
+</blockquote>
+<p><strong>通过接口或标识生成一个代理对象，通过这个代理对象实现对本地请求的接入</strong>。采用的手段一般是：</p>
+<ul>
+<li>IoC 动态注入</li>
+</ul>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://book.douban.com/subject/35092430/">微服务治理：体系、架构及实践</a></li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#微服务架构">微服务架构</a>
+      <ul>
+        <li><a href="#代理模式">代理模式</a></li>
+        <li><a href="#直连模式">直连模式</a></li>
+        <li><a href="#边车模式">边车模式</a></li>
+        <li><a href="#直连模式架构">直连模式架构</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
