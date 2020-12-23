@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="服务管控"><meta property="og:title" content="服务管控" />
+<meta property="og:description" content="服务管控 服务负载 随机策略 各个服务器处理能力不同，处理性能弱的会被打趴。可以加上权重：
+collection = {A: 5, B:2, C:2, D:1}(1) 策略1
+{A,A,A,A,A,B,B,C,C,D}
+random.nextInt(10) 缺点就是这个 collection 集合可能会比较大，内存占用大
+(2) 策略2
+权重换算成长度，先算出总长度，然后再计算出一个偏移量
+totalWeight = sum(collection) offset = random.nextInt(totalWeight) 缺点就是选取的时候，需要遍历集合，复杂度 O(n)
+轮询策略 如果各个节点权重一致：
+[total_request_count &#43; 1] % node_count 如果权重不同，
+collection = {A: 5, B:2, C:2, D:1}那么，最高的权重是 5：
+[total_request_count &#43; 1] % maxWeight = currentWeight那么 [currentWeight, maxWeight] 就是可用的权重范围。
+一致性 Hash 策略 节点数少，节点变动，大量键发生波动，造成数据倾斜，因此可以引入虚拟节点，每个节点通过引入编号计算多个 Hash 值，模拟多个虚拟节点。
+限流 漏桶算法 算法类似于餐厅排号就餐，整个餐厅所能容纳的顾客数量是有限的，有出才能有进。
+Semaphore sem = new Semaphore(30); if (sem." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/service-control/" />
+
+<title>服务管控 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
+
+
+<script defer src="/en.search.min.9d20587692ac68362f6c0d8fa4604d0a1e1a494ed2f85674279f98bde4614052.js" integrity="sha256-nSBYdpKsaDYvbA2PpGBNCh4aSU7S&#43;FZ0J5&#43;YveRhQFI="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/it-govern/" >
+      服务治理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-measurement/" >
+      服务度量
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-control/"  class="active">
+      服务管控
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      👉招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>服务管控</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#服务负载">服务负载</a>
+      <ul>
+        <li><a href="#随机策略">随机策略</a></li>
+        <li><a href="#轮询策略">轮询策略</a></li>
+        <li><a href="#一致性-hash-策略">一致性 Hash 策略</a></li>
+      </ul>
+    </li>
+    <li><a href="#限流">限流</a>
+      <ul>
+        <li><a href="#漏桶算法">漏桶算法</a></li>
+        <li><a href="#令牌桶算法">令牌桶算法</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="服务管控">服务管控</h1>
+<h2 id="服务负载">服务负载</h2>
+<h3 id="随机策略">随机策略</h3>
+<p>各个服务器处理能力不同，处理性能弱的会被打趴。可以加上权重：</p>
+<pre><code>collection = {A: 5, B:2, C:2, D:1}
+</code></pre><p>(1) 策略1</p>
+<p>{A,A,A,A,A,B,B,C,C,D}</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">random<span style="color:#f92672">.</span><span style="color:#a6e22e">nextInt</span><span style="color:#f92672">(</span>10<span style="color:#f92672">)</span>
+</code></pre></div><p>缺点就是这个 collection 集合可能会比较大，内存占用大</p>
+<p>(2) 策略2</p>
+<p>权重换算成长度，先算出总长度，然后再计算出一个偏移量</p>
+<p><img src="/images/docs/tutorial/distributed/service-control/offset_weight.jpg" alt=""></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">totalWeight <span style="color:#f92672">=</span> sum<span style="color:#f92672">(</span>collection<span style="color:#f92672">)</span>
+offset <span style="color:#f92672">=</span> random<span style="color:#f92672">.</span><span style="color:#a6e22e">nextInt</span><span style="color:#f92672">(</span>totalWeight<span style="color:#f92672">)</span>
+</code></pre></div><p>缺点就是选取的时候，需要遍历集合，复杂度 O(n)</p>
+<h3 id="轮询策略">轮询策略</h3>
+<p>如果各个节点权重一致：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#f92672">[</span>total_request_count <span style="color:#f92672">+</span> 1<span style="color:#f92672">]</span> <span style="color:#f92672">%</span> node_count
+</code></pre></div><p>如果权重不同，</p>
+<pre><code>collection = {A: 5, B:2, C:2, D:1}
+</code></pre><p>那么，最高的权重是 5：</p>
+<pre><code>[total_request_count + 1] % maxWeight = currentWeight
+</code></pre><p>那么 <code>[currentWeight, maxWeight]</code> 就是可用的权重范围。</p>
+<p><img src="/images/docs/tutorial/distributed/service-control/round_robin_weight.jpg" alt=""></p>
+<h3 id="一致性-hash-策略">一致性 Hash 策略</h3>
+<p>节点数少，节点变动，大量键发生波动，造成数据倾斜，因此可以引入虚拟节点，每个节点通过引入编号计算多个 Hash 值，模拟多个<strong>虚拟节点</strong>。</p>
+<h2 id="限流">限流</h2>
+<h3 id="漏桶算法">漏桶算法</h3>
+<p>算法类似于餐厅排号就餐，整个餐厅所能容纳的顾客数量是有限的，有出才能有进。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Semaphore sem <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Semaphore<span style="color:#f92672">(</span>30<span style="color:#f92672">);</span>
+
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>sem<span style="color:#f92672">.</span><span style="color:#a6e22e">getQueueLength</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span> <span style="color:#75715e">// 有排队，直接拒绝服务
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+    sem<span style="color:#f92672">.</span><span style="color:#a6e22e">acquire</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>InterruptedException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    e<span style="color:#f92672">.</span><span style="color:#a6e22e">printStackTrace</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
+    sem<span style="color:#f92672">.</span><span style="color:#a6e22e">release</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="令牌桶算法">令牌桶算法</h3>
+<p>系统以恒定速度往桶里面放令牌，请求需要从桶里获取令牌才能处理。</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#服务负载">服务负载</a>
+      <ul>
+        <li><a href="#随机策略">随机策略</a></li>
+        <li><a href="#轮询策略">轮询策略</a></li>
+        <li><a href="#一致性-hash-策略">一致性 Hash 策略</a></li>
+      </ul>
+    </li>
+    <li><a href="#限流">限流</a>
+      <ul>
+        <li><a href="#漏桶算法">漏桶算法</a></li>
+        <li><a href="#令牌桶算法">令牌桶算法</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
