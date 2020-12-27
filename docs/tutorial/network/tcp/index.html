@@ -5,10 +5,15 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="TCP"><meta property="og:title" content="TCP" />
-<meta property="og:description" content="TCP TCP 头 三次握手 四次挥手 起始序列号 ISN ISN 为什么不从 1 开始 client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成数据错误)。
-起始序列号 ISN 如何计算 起始 ISN 是基于时钟的，每 4 毫秒加一，转一圈要 4.55 个小时。
-TCP 初始化序列号不能设置为一个固定值，因为这样容易被攻击者猜出后续序列号，从而遭到攻击。 RFC1948 中提出了一个较好的初始化序列号 ISN 随机生成算法。
-ISN = M &#43; F (localhost, localport, remotehost, remoteport) M 是一个计时器，这个计时器每隔 4 毫秒加 1。F 是一个 Hash 算法，根据源 IP、目的 IP、源端口、目的端口生成一个随机数值。要保证 Hash 算法不能被外部轻易推算得出，用 MD5 算法是一个比较好的选择。" />
+<meta property="og:description" content="TCP TCP 头 三次握手  三次握手恰好可以保证 Client 和 Server 对自己的发送、接受能力做了一次确认。
+ 四次挥手 TIME_WAIT 状态的设计  为什么不直接进入 CLOSED 状态，而是中间有一个 TIME_WAIT 状态 ?
+ 4元组 (客户端 IP、客户端 Port、服务器 IP、服务器 Port)，无法区分出新连接还是老连接，这会导致老连接上的数据包会串到新的连接上来。
+TCP/IP 定义了一个值 MSL，表示数据包在网络上最长逗留时间，默认是 120s。连接保持在 TIME_WAIT 状态，再等待 2 × MSL 时间就可以进入 CLOSED 状态了，防止串数据。
+ 为什么是两倍的 MSL ?
+ 因为上图第 4 次发送的数据包，服务器是否收到是不确定的。而如果服务器没有收到，那么服务器会重新发送第三次的数据包。所以整个的时间，最长是两个 MSL。
+ 为何服务器收到第 4 个 ACK 之后，立刻进入 CLOSED 状态，而不是也进入 TIME_WAIT 状态 ?
+ 没有必要，因为客户端处于 TIME_WAIT 状态，意味着四元组代表的这个连接要到 2 × MSL 时间之后才能重新启用，服务器即使想要立即连接也无法实现。
+起始序列号 ISN ISN 为什么不从 1 开始 client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成数据错误)。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/network/tcp/" />
 
@@ -19,7 +24,7 @@ ISN = M &#43; F (localhost, localport, remotehost, remoteport) M 是一个计时
 <link rel="stylesheet" href="/book.min.a04069c4ba149e24630fa6fbc98cd4da6e386beb4688b0aae5809dbb5660cd77.css" integrity="sha256-oEBpxLoUniRjD6b7yYzU2m44a&#43;tGiLCq5YCdu1ZgzXc=">
 
 
-<script defer src="/en.search.min.9a97f06f6165dc805cda8a8cf41b70a310b5b295fa1df4b3b86bf8ce7c33ec9a.js" integrity="sha256-mpfwb2Fl3IBc2oqM9BtwoxC1spX6HfSzuGv4znwz7Jo="></script>
+<script defer src="/en.search.min.d5ee1f0f3677b7cd9d3cd3e5a49dbb391d91261b784c496f0f4e195d9b15fa68.js" integrity="sha256-1e4fDzZ3t82dPNPlpJ27OR2RJht4TElvD04ZXZsV&#43;mg="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -86,7 +91,7 @@ var _hmt = _hmt || [];
       
 
   <a href="/docs/tutorial/" >
-      💡教程
+      💡 教程
   </a>
 
 
@@ -594,7 +599,7 @@ var _hmt = _hmt || [];
       
 
   <a href="/docs/tutorial/distributed/" >
-      分布式系统教程
+      分布式系统与架构设计
   </a>
 
 
@@ -629,34 +634,8 @@ var _hmt = _hmt || [];
     
       
 
-  <a href="/docs/hire/" >
-      👉招聘
-  </a>
-
-
-    
-
-    
-
-
-
-
-
-
-  </li>
-
-
-      
-    
-      
-        
-
-  <li >
-    
-      
-
-  <a href="/docs/it-zone/" >
-      IT 圈
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
   </a>
 
 
@@ -707,32 +686,6 @@ var _hmt = _hmt || [];
     
       
 
-  <a href="/docs/javascript/" >
-      JavaScript 专栏
-  </a>
-
-
-    
-
-    
-
-
-
-
-
-
-  </li>
-
-
-      
-    
-      
-        
-
-  <li >
-    
-      
-
   <a href="/docs/books/" >
       书籍
   </a>
@@ -759,8 +712,60 @@ var _hmt = _hmt || [];
     
       
 
-  <a href="/docs/programmer-interview/" >
-      👍 程序员面试题
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
   </a>
 
 
@@ -895,7 +900,11 @@ var _hmt = _hmt || [];
   <ul>
     <li><a href="#tcp-头">TCP 头</a></li>
     <li><a href="#三次握手">三次握手</a></li>
-    <li><a href="#四次挥手">四次挥手</a></li>
+    <li><a href="#四次挥手">四次挥手</a>
+      <ul>
+        <li><a href="#time_wait-状态的设计">TIME_WAIT 状态的设计</a></li>
+      </ul>
+    </li>
     <li><a href="#起始序列号-isn">起始序列号 ISN</a>
       <ul>
         <li><a href="#isn-为什么不从-1-开始">ISN 为什么不从 1 开始</a></li>
@@ -931,9 +940,26 @@ var _hmt = _hmt || [];
 <h2 id="tcp-头">TCP 头</h2>
 <p><img src="/images/docs/tutorial/network/tcp/tcp-header.png" alt=""></p>
 <h2 id="三次握手">三次握手</h2>
+<blockquote>
+<p>三次握手恰好可以保证 Client 和 Server 对自己的发送、接受能力<strong>做了一次确认</strong>。</p>
+</blockquote>
 <p><img src="/images/docs/tutorial/network/tcp/three-way-hand-shake.png" alt=""></p>
 <h2 id="四次挥手">四次挥手</h2>
 <p><img src="/images/docs/tutorial/network/tcp/four-way-disconnect.png" alt=""></p>
+<h3 id="time_wait-状态的设计">TIME_WAIT 状态的设计</h3>
+<blockquote>
+<p>为什么不直接进入 CLOSED 状态，而是中间有一个 TIME_WAIT 状态 ?</p>
+</blockquote>
+<p>4元组 (客户端 IP、客户端 Port、服务器 IP、服务器 Port)，无法区分出新连接还是老连接，这会导致<strong>老连接上的数据包会串到新的连接上</strong>来。</p>
+<p>TCP/IP 定义了一个值 MSL，表示数据包在网络上<strong>最长逗留时间</strong>，默认是 120s。连接保持在 TIME_WAIT 状态，再等待 2 × MSL 时间就可以进入 CLOSED 状态了，防止串数据。</p>
+<blockquote>
+<p>为什么是两倍的 MSL ?</p>
+</blockquote>
+<p>因为上图第 4 次发送的数据包，服务器是否收到是不确定的。而如果服务器没有收到，那么服务器会重新发送第三次的数据包。所以整个的时间，最长是两个 MSL。</p>
+<blockquote>
+<p>为何服务器收到第 4 个 ACK 之后，立刻进入 CLOSED 状态，而不是也进入 TIME_WAIT 状态 ?</p>
+</blockquote>
+<p><strong>没有必要</strong>，因为客户端处于 TIME_WAIT 状态，意味着四元组代表的这个连接要到 2 × MSL 时间之后才能重新启用，服务器即使想要立即连接也无法实现。</p>
 <h2 id="起始序列号-isn">起始序列号 ISN</h2>
 <h3 id="isn-为什么不从-1-开始">ISN 为什么不从 1 开始</h3>
 <p>client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成<strong>数据错误</strong>)。</p>
@@ -1057,7 +1083,11 @@ net.core.wmem_max <span style="color:#f92672">=</span> <span style="color:#ae81f
   <ul>
     <li><a href="#tcp-头">TCP 头</a></li>
     <li><a href="#三次握手">三次握手</a></li>
-    <li><a href="#四次挥手">四次挥手</a></li>
+    <li><a href="#四次挥手">四次挥手</a>
+      <ul>
+        <li><a href="#time_wait-状态的设计">TIME_WAIT 状态的设计</a></li>
+      </ul>
+    </li>
     <li><a href="#起始序列号-isn">起始序列号 ISN</a>
       <ul>
         <li><a href="#isn-为什么不从-1-开始">ISN 为什么不从 1 开始</a></li>

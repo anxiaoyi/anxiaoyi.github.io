@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>分布式系统教程 on 赵坤的个人网站</title>
+    <title>分布式系统与架构设计 on 赵坤的个人网站</title>
     <link>https://kunzhao.org/docs/tutorial/distributed/</link>
-    <description>Recent content in 分布式系统教程 on 赵坤的个人网站</description>
+    <description>Recent content in 分布式系统与架构设计 on 赵坤的个人网站</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     
@@ -81,6 +81,24 @@ Semaphore sem = new Semaphore(30); if (sem.</description>
       <guid>https://kunzhao.org/docs/tutorial/distributed/deep-govern/</guid>
       <description>体系的深度治理 服务分层与业务中台 DevOps DevOps 工具生态 脱颖而出的工具：
  持续集成工具和工具流引擎：Jenkins 环境隔离&amp;amp;构建：Docker Iaas、Paas、Cloud 基础设施即代码 版本管理工具：Git 协同开发工具：Jira  </description>
+    </item>
+    
+    <item>
+      <title>分布式事务解决方案汇总</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/transaction/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/transaction/</guid>
+      <description>分布式事务解决方案汇总  如何保证转账这个操作在两个系统中同时成功呢？
+ 2PC 每个参与者要实现三个接口：Prepare、Commit、Rollback 三个接口，这就是 XA 协议。
+主要的缺点就是：
+ 性能问题 事务执行到中间，事务协调者宕机，整个事务处于悬而不决的状态。 一个参与者超时了，那么其它参与者应该提交还是回滚呢？ 2PC 主要用在两个数据库之间，而非两个系统之间。   3PC 只是解决了宕机问题，本质上和 2PC 没有区别，不再赘述。
+ 消息中间件-最终一致性 消息中间件本身如 Kafka 不提供事务消息功能，那么解决步骤如下：
+ 系统 A 增加一张消息表，消息写入到消息表中和 DB1 的扣钱操作放到一个数据库的事务里，保证原子性。 系统 A 后台程序源源不断地将消息表中的消息传送给消息中间件，失败了也尝试重传。 系统 B 通过消息中间件的 ACK 机制，明确自己是否消费成功。 系统 B 增加判重表，记录处理成功的消息 ID 和消息中间件对应的 offset，实现业务幂等性，应对重复消费问题；如果业务本身有业务数据，可以判断是否重复，那么就无需这个判重表。  消息中间件如 RocketMQ 本身提供事务消息：
+RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认的消息，回调给发送方，询问这条消息是要发送出去，还是取消。发送方根据自己的业务数，知道这条消息是应该发送出去 (DB 更新成功)，还是应该取消 (DB 更新失败)。
+RocketMQ 最大的改变就是把 &amp;ldquo;扫描消息表&amp;rdquo; 这件事不让业务方做，而是让消息中间件完成。
+无论什么 MQ，如果消费端一直消费失败，那么是要需要自动回滚整个流程？答案是需要人工介入，更加可靠，更加简单，发生概率极低。
+TCC 支付宝提出了 TCC，是为了解决 SOA 系统中的分布式事务问题，这是一个应用层面的 2PC 协议。</description>
     </item>
     
   </channel>

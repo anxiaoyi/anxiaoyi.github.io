@@ -1275,6 +1275,24 @@ public class MessageStoreConfig { private String messageDelayLevel = &amp;#34;1s
     </item>
     
     <item>
+      <title>分布式事务解决方案汇总</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/transaction/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/transaction/</guid>
+      <description>分布式事务解决方案汇总  如何保证转账这个操作在两个系统中同时成功呢？
+ 2PC 每个参与者要实现三个接口：Prepare、Commit、Rollback 三个接口，这就是 XA 协议。
+主要的缺点就是：
+ 性能问题 事务执行到中间，事务协调者宕机，整个事务处于悬而不决的状态。 一个参与者超时了，那么其它参与者应该提交还是回滚呢？ 2PC 主要用在两个数据库之间，而非两个系统之间。   3PC 只是解决了宕机问题，本质上和 2PC 没有区别，不再赘述。
+ 消息中间件-最终一致性 消息中间件本身如 Kafka 不提供事务消息功能，那么解决步骤如下：
+ 系统 A 增加一张消息表，消息写入到消息表中和 DB1 的扣钱操作放到一个数据库的事务里，保证原子性。 系统 A 后台程序源源不断地将消息表中的消息传送给消息中间件，失败了也尝试重传。 系统 B 通过消息中间件的 ACK 机制，明确自己是否消费成功。 系统 B 增加判重表，记录处理成功的消息 ID 和消息中间件对应的 offset，实现业务幂等性，应对重复消费问题；如果业务本身有业务数据，可以判断是否重复，那么就无需这个判重表。  消息中间件如 RocketMQ 本身提供事务消息：
+RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认的消息，回调给发送方，询问这条消息是要发送出去，还是取消。发送方根据自己的业务数，知道这条消息是应该发送出去 (DB 更新成功)，还是应该取消 (DB 更新失败)。
+RocketMQ 最大的改变就是把 &amp;ldquo;扫描消息表&amp;rdquo; 这件事不让业务方做，而是让消息中间件完成。
+无论什么 MQ，如果消费端一直消费失败，那么是要需要自动回滚整个流程？答案是需要人工介入，更加可靠，更加简单，发生概率极低。
+TCC 支付宝提出了 TCC，是为了解决 SOA 系统中的分布式事务问题，这是一个应用层面的 2PC 协议。</description>
+    </item>
+    
+    <item>
       <title>深度剖析 Apache Dubbo 核心技术</title>
       <link>https://kunzhao.org/docs/books/in-depth_analysis_of_the_core_technology_of_apache_dubbo/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1403,10 +1421,15 @@ plugins: [ // plugins 的配置  // html-webpack-plugin  // 功能：默认会�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/network/tcp/</guid>
-      <description>TCP TCP 头 三次握手 四次挥手 起始序列号 ISN ISN 为什么不从 1 开始 client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成数据错误)。
-起始序列号 ISN 如何计算 起始 ISN 是基于时钟的，每 4 毫秒加一，转一圈要 4.55 个小时。
-TCP 初始化序列号不能设置为一个固定值，因为这样容易被攻击者猜出后续序列号，从而遭到攻击。 RFC1948 中提出了一个较好的初始化序列号 ISN 随机生成算法。
-ISN = M + F (localhost, localport, remotehost, remoteport) M 是一个计时器，这个计时器每隔 4 毫秒加 1。F 是一个 Hash 算法，根据源 IP、目的 IP、源端口、目的端口生成一个随机数值。要保证 Hash 算法不能被外部轻易推算得出，用 MD5 算法是一个比较好的选择。</description>
+      <description>TCP TCP 头 三次握手  三次握手恰好可以保证 Client 和 Server 对自己的发送、接受能力做了一次确认。
+ 四次挥手 TIME_WAIT 状态的设计  为什么不直接进入 CLOSED 状态，而是中间有一个 TIME_WAIT 状态 ?
+ 4元组 (客户端 IP、客户端 Port、服务器 IP、服务器 Port)，无法区分出新连接还是老连接，这会导致老连接上的数据包会串到新的连接上来。
+TCP/IP 定义了一个值 MSL，表示数据包在网络上最长逗留时间，默认是 120s。连接保持在 TIME_WAIT 状态，再等待 2 × MSL 时间就可以进入 CLOSED 状态了，防止串数据。
+ 为什么是两倍的 MSL ?
+ 因为上图第 4 次发送的数据包，服务器是否收到是不确定的。而如果服务器没有收到，那么服务器会重新发送第三次的数据包。所以整个的时间，最长是两个 MSL。
+ 为何服务器收到第 4 个 ACK 之后，立刻进入 CLOSED 状态，而不是也进入 TIME_WAIT 状态 ?
+ 没有必要，因为客户端处于 TIME_WAIT 状态，意味着四元组代表的这个连接要到 2 × MSL 时间之后才能重新启用，服务器即使想要立即连接也无法实现。
+起始序列号 ISN ISN 为什么不从 1 开始 client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成数据错误)。</description>
     </item>
     
     <item>
