@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="副本一致性算法"><meta property="og:title" content="副本一致性算法" />
+<meta property="og:description" content="副本一致性算法 Paxos Raft  Raft 之所以会出现，主要是因为 Paxos 晦涩难懂，大家表示很难看懂。
+  Paxos 可以多点写入，无需选举 Leader，每个节点都可以接受写请求。虽然为了避免活锁问题，Multi Paxos 可以选举一个 Leader，但是也不是强制执行的，允许同一时间有多个 Leader 同时存在。多点写入，这增加了复杂度。 Raft 只能单点写入 任意时刻只能有一个有效的 Leader，只能 Leader 接受写请求，Leader 同步给超过半数的 Follower  日志结构  index: 日志的顺序编号，如 1、2、3、4 &hellip; term: 写入日志的 Leader 所在的任期、轮数，其他地方称之为 epoch commitIndex: 这条日志被复制到了多数的机器上 lastApplied: 哪些日志已经回放到了状态机   term 只会单调递增，日志的顺序满足: 后一条日志的 term &gt;= 前一条日志的 term
+ term 作用 (1) 防止脑裂
+网络分区恢复，存在两个 Leader，旧 Leader 向 Follower 发送数据，Follower 知道它的 term = 4，就知道它是过期的 Leader，于是拒绝执行写入，同时反馈给老的 Leader，你已经过期了。
+(2) term 如何一直递增?" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/multi-replica-consistency/" />
+
+<title>副本一致性算法 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.57a64cffd7ec58616b77aa5ce68452808e995ae67ce5098611303079f22ab82a.css" integrity="sha256-V6ZM/9fsWGFrd6pc5oRSgI6ZWuZ85QmGETAwefIquCo=">
+
+
+<script defer src="/en.search.min.b82714ee00416992dbcaa2adebc77de96633a6293c753d04e19188118e8825bc.js" integrity="sha256-uCcU7gBBaZLbyqKt68d96WYzpik8dT0E4ZGIEY6IJbw="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/it-govern/" >
+      服务治理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-measurement/" >
+      服务度量
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-control/" >
+      服务管控
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/apm/" >
+      APM 及调用链跟踪
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/deep-govern/" >
+      体系的深度治理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/transaction/" >
+      分布式事务解决方案汇总
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/multi-replica-consistency/"  class="active">
+      副本一致性算法
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>副本一致性算法</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#paxos">Paxos</a></li>
+    <li><a href="#raft">Raft</a>
+      <ul>
+        <li><a href="#日志结构">日志结构</a></li>
+        <li><a href="#term-作用">term 作用</a></li>
+      </ul>
+    </li>
+    <li><a href="#zab">ZAB</a>
+      <ul>
+        <li><a href="#replicated-state-machine-vs-primary-backup-system">Replicated State Machine Vs. Primary-Backup System</a></li>
+      </ul>
+    </li>
+    <li><a href="#三种算法对比">三种算法对比</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="副本一致性算法">副本一致性算法</h1>
+<p><img src="/images/docs/tutorial/distributed/multi-replica-consistency/Snipaste_2020-12-28_21-39-51.png" alt=""></p>
+<h2 id="paxos">Paxos</h2>
+<h2 id="raft">Raft</h2>
+<blockquote>
+<p>Raft 之所以会出现，主要是因为 Paxos 晦涩难懂，大家表示很难看懂。</p>
+</blockquote>
+<ul>
+<li>Paxos 可以多点写入，无需选举 Leader，每个节点都可以接受写请求。虽然为了避免活锁问题，Multi Paxos 可以选举一个 Leader，但是也不是强制执行的，允许同一时间有多个 Leader 同时存在。<strong>多点写入</strong>，这增加了复杂度。</li>
+<li>Raft 只能<strong>单点写入</strong></li>
+<li><strong>任意时刻只能有一个有效的 Leader</strong>，只能 Leader 接受写请求，Leader 同步给超过半数的 Follower</li>
+</ul>
+<h3 id="日志结构">日志结构</h3>
+<p><img src="/images/docs/tutorial/distributed/multi-replica-consistency/Snipaste_2020-12-28_22-18-42.png" alt=""></p>
+<ul>
+<li><code>index</code>: 日志的顺序编号，如 1、2、3、4 &hellip;</li>
+<li><code>term</code>: 写入日志的 Leader 所在的<strong>任期、轮数</strong>，其他地方称之为 <code>epoch</code></li>
+<li><code>commitIndex</code>: 这条日志<strong>被复制到了</strong>多数的机器上</li>
+<li><code>lastApplied</code>: 哪些日志已经<strong>回放到了状态机</strong></li>
+</ul>
+<blockquote>
+<p>term 只会单调递增，日志的顺序满足: 后一条日志的 term &gt;= 前一条日志的 term</p>
+</blockquote>
+<h3 id="term-作用">term 作用</h3>
+<p>(1) <strong>防止脑裂</strong></p>
+<p><img src="/images/docs/tutorial/distributed/multi-replica-consistency/Snipaste_2020-12-28_22-29-16.png" alt=""></p>
+<p>网络分区恢复，存在两个 Leader，旧 Leader 向 Follower 发送数据，Follower 知道它的 term = 4，就知道它是过期的 Leader，于是拒绝执行写入，同时反馈给老的 Leader，你已经过期了。</p>
+<p>(2) term 如何一直递增?</p>
+<p>每个节点都保存了一个 term 的值，那么 term 比较小的节点是否会被选为 Leader ? 答案是不会。因为选举的时候，是要多数同意，意味着一定有一个节点保存了最新的 term 的值，而选举的时候，是<strong>选日志最新的节点作为 Leader</strong>。</p>
+<h2 id="zab">ZAB</h2>
+<h3 id="replicated-state-machine-vs-primary-backup-system">Replicated State Machine Vs. Primary-Backup System</h3>
+<ul>
+<li>Replicated State Machine: 记录的是持久化的请求序列</li>
+<li>Primary-Backup System: 记录的是持久化的数据的状态变化</li>
+</ul>
+<p>Paxos 和 Raft 用的是前者，ZAB 用的是后者。</p>
+<h2 id="三种算法对比">三种算法对比</h2>
+<p><img src="/images/docs/tutorial/distributed/multi-replica-consistency/Snipaste_2020-12-28_22-45-52.png" alt=""></p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#paxos">Paxos</a></li>
+    <li><a href="#raft">Raft</a>
+      <ul>
+        <li><a href="#日志结构">日志结构</a></li>
+        <li><a href="#term-作用">term 作用</a></li>
+      </ul>
+    </li>
+    <li><a href="#zab">ZAB</a>
+      <ul>
+        <li><a href="#replicated-state-machine-vs-primary-backup-system">Replicated State Machine Vs. Primary-Backup System</a></li>
+      </ul>
+    </li>
+    <li><a href="#三种算法对比">三种算法对比</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

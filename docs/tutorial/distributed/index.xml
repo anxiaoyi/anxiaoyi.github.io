@@ -5,11 +5,7 @@
     <link>https://kunzhao.org/docs/tutorial/distributed/</link>
     <description>Recent content in 分布式系统与架构设计 on 赵坤的个人网站</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>zh-cn</language>
-    
-	<atom:link href="https://kunzhao.org/docs/tutorial/distributed/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <language>zh-cn</language><atom:link href="https://kunzhao.org/docs/tutorial/distributed/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>服务治理</title>
       <link>https://kunzhao.org/docs/tutorial/distributed/it-govern/</link>
@@ -99,6 +95,19 @@ RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认�
 RocketMQ 最大的改变就是把 &amp;ldquo;扫描消息表&amp;rdquo; 这件事不让业务方做，而是让消息中间件完成。
 无论什么 MQ，如果消费端一直消费失败，那么是要需要自动回滚整个流程？答案是需要人工介入，更加可靠，更加简单，发生概率极低。
 TCC 支付宝提出了 TCC，是为了解决 SOA 系统中的分布式事务问题，这是一个应用层面的 2PC 协议。</description>
+    </item>
+    
+    <item>
+      <title>副本一致性算法</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/multi-replica-consistency/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/multi-replica-consistency/</guid>
+      <description>副本一致性算法 Paxos Raft  Raft 之所以会出现，主要是因为 Paxos 晦涩难懂，大家表示很难看懂。
+  Paxos 可以多点写入，无需选举 Leader，每个节点都可以接受写请求。虽然为了避免活锁问题，Multi Paxos 可以选举一个 Leader，但是也不是强制执行的，允许同一时间有多个 Leader 同时存在。多点写入，这增加了复杂度。 Raft 只能单点写入 任意时刻只能有一个有效的 Leader，只能 Leader 接受写请求，Leader 同步给超过半数的 Follower  日志结构  index: 日志的顺序编号，如 1、2、3、4 &amp;hellip; term: 写入日志的 Leader 所在的任期、轮数，其他地方称之为 epoch commitIndex: 这条日志被复制到了多数的机器上 lastApplied: 哪些日志已经回放到了状态机   term 只会单调递增，日志的顺序满足: 后一条日志的 term &amp;gt;= 前一条日志的 term
+ term 作用 (1) 防止脑裂
+网络分区恢复，存在两个 Leader，旧 Leader 向 Follower 发送数据，Follower 知道它的 term = 4，就知道它是过期的 Leader，于是拒绝执行写入，同时反馈给老的 Leader，你已经过期了。
+(2) term 如何一直递增?</description>
     </item>
     
   </channel>

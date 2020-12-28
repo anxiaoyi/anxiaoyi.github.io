@@ -6,11 +6,7 @@
     <description>Recent content in 首页 on 赵坤的个人网站</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Wed, 09 Dec 2020 00:00:00 +0000</lastBuildDate>
-    
-	<atom:link href="https://kunzhao.org/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <lastBuildDate>Wed, 09 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://kunzhao.org/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>微服务无损扩容</title>
       <link>https://kunzhao.org/posts/lossless-expansion/</link>
@@ -360,6 +356,20 @@ DefaultMQProducer producer = new DefaultMQProducer(); producer.start(); 现在�
       <guid>https://kunzhao.org/docs/tutorial/java/stream/</guid>
       <description>Stream 编程 String[] Stream Arrays.stream(lines.split(&amp;#34;\\s+&amp;#34;)) .map(String::toUpperCase) .toArray(String[]::new) Integer[] 或 int[] stream int[] num = {1, 2, 3, 4, 5}; Integer[] result = Arrays.stream(num) .map(x -&amp;gt; x * 2) .boxed() .toArray(Integer[]::new); int[]
 Stream&amp;lt;Integer&amp;gt; stream = Stream.of(1, 2, 3, 4, 5); int[] result = stream.map2Int(x -&amp;gt; x).toArray(); </description>
+    </item>
+    
+    <item>
+      <title>事务实现原理</title>
+      <link>https://kunzhao.org/docs/tutorial/database/transaction-internal/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/transaction-internal/</guid>
+      <description>事务实现原理 Redo Log  A: 要么不执行，要么完全执行，宕机重启已执行的要回滚 C: 主键不为空、参照完整性等 I: 如果全是串行执行，也不需要隔离，所以和并发有关 D: 数据不能丢  C 一致性 C 由各种规则约束实现，比较简单。
+Write-Ahead Log 先在内存中提交事务，然后写 Write-Ahead Log，然后后台把数据异步刷到磁盘。在 InnoDB 中，Write-Ahead Log 是 Redo Log。事务提交之后，Redo Log 先写入到内存的 Redo Log Buffer 中，然后异步刷到磁盘上的 Redo Log 。
+InnoDB 关键参数 innodb_flush_log_at_trx_commit 控制刷盘策略：
+ 0: 每秒刷一次 (默认) 1: 提交一个事务，就刷一次 2: 不刷盘，根据 innodb_flush_log_at_timeout 设置的值决定刷盘频率  Redo Log 逻辑与物理结构  为什么 Redo Log Block 是 512 字节?
+ 因为早期的磁盘，一个扇区是存储 512 字节数据。
+ 为什么 Redo Log 循坏使用?</description>
     </item>
     
     <item>
@@ -1378,6 +1388,19 @@ DNS 层次结构  根 DNS 服务器 ：返回顶级域 DNS 服务器的 IP 地�
  扩容 动静分离 缓存 服务降级 限流  限流 常见算法：
  令牌桶，Nginx 限流模块用的是这个：限制的是流量的平均流入速率，允许一定程度上的突发流量。 漏桶：限制的是流出速率，并且这个速率还是保持不变的，不允许突发流量。  Nginx 限流 http { # 每个 IP 的 session 空间大小 limit_zone one $binary_remote_addr 20m; # 每个 IP 每秒允许发起的请求数 limit_req_zone $binary_remote_addr zone=req_one:20m rate=10r/s; # 每个 IP 能够发起的并发连接数 limit_conn one 10; # 缓存还没有来得及处理的请求 limit_req zone=req_one burst=100; } 消峰  活动分时段 答题验证  高并发读 &amp;ldquo;马某出轨王某&amp;rdquo;、&amp;ldquo;iPhone SE 2020 发布&amp;rdquo; 等这种热点新闻的 key 会始终落在同一个缓存节点上，分布式缓存一定会出现单点瓶颈，其资源连接容易瞬间耗尽。有如下两种方案解决这个问题：
  基于 Redis 的集群多写多读方案。  多写如何保持一致性：将 Key 配置在 ZooKeeper，客户端监听 ZNode，一旦变化，全量更新本地持有的 Key   LocalCache 结合 Redis 集群的多级 Cache 方案。  LocalCache 拉取下来的商品数量有 5 个，但是实际上只有 4 个了，怎么解决？对于这种读场景，允许接受一定程度上的数据脏读，最终扣减库存的时候再提示商品已经售罄即可。    实时热点自动发现 交易系统产生的相关数据、上游系统中埋点上报的数据这两个，异步写入日志，对日志进行次数统计和热点分析</description>
+    </item>
+    
+    <item>
+      <title>副本一致性算法</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/multi-replica-consistency/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/multi-replica-consistency/</guid>
+      <description>副本一致性算法 Paxos Raft  Raft 之所以会出现，主要是因为 Paxos 晦涩难懂，大家表示很难看懂。
+  Paxos 可以多点写入，无需选举 Leader，每个节点都可以接受写请求。虽然为了避免活锁问题，Multi Paxos 可以选举一个 Leader，但是也不是强制执行的，允许同一时间有多个 Leader 同时存在。多点写入，这增加了复杂度。 Raft 只能单点写入 任意时刻只能有一个有效的 Leader，只能 Leader 接受写请求，Leader 同步给超过半数的 Follower  日志结构  index: 日志的顺序编号，如 1、2、3、4 &amp;hellip; term: 写入日志的 Leader 所在的任期、轮数，其他地方称之为 epoch commitIndex: 这条日志被复制到了多数的机器上 lastApplied: 哪些日志已经回放到了状态机   term 只会单调递增，日志的顺序满足: 后一条日志的 term &amp;gt;= 前一条日志的 term
+ term 作用 (1) 防止脑裂
+网络分区恢复，存在两个 Leader，旧 Leader 向 Follower 发送数据，Follower 知道它的 term = 4，就知道它是过期的 Leader，于是拒绝执行写入，同时反馈给老的 Leader，你已经过期了。
+(2) term 如何一直递增?</description>
     </item>
     
     <item>
@@ -3632,7 +3655,7 @@ $(&amp;#39;p&amp;#39;).click(event =&amp;gt; console.log(&amp;#39;这个事件�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/programmer-interview/front-end/repaint-reflow/</guid>
-      <description>重绘和重排 网页渲染  &amp;ldquo;生成布局&amp;rdquo;（flow）和&amp;quot;绘制&amp;rdquo;（paint）这两步，合称为&amp;quot;渲染&amp;rdquo;（render）。
+      <description>重绘和重排 网页渲染  &amp;ldquo;生成布局&amp;rdquo;（flow）和&amp;quot;绘制&amp;quot;（paint）这两步，合称为&amp;quot;渲染&amp;quot;（render）。
  重绘 repint 重绘：某种操作改变了某个元素的外观，但并未改变这个元素的布局，从而需要重新绘制。例如对 outline、visibility、background、color 的改变。重绘不一定会引起重排。
 重排/回流 reflow 重排/回流：某种操作改变了某个元素、网页的一部分或整个网页的布局，其对于性能的影响更为严重。重排必会导致重绘。
 重排触发机制 重排发生的根本原理就是元素的几何属性发生了改变，那么我们就从能够改变元素几何属性的角度入手
