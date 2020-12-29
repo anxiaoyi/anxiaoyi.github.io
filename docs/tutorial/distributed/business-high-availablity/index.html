@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="业务高可用方案"><meta property="og:title" content="业务高可用方案" />
+<meta property="og:description" content="业务高可用方案 应对机房断电、火灾、城市地震、水灾等极端情况，就需要异地多活架构。
+跨城异地和同城异区 银行存款余额、支付宝余额无法做到跨城异地多活。例如，挖掘机挖断光缆后，广州机房和北京机房是不是可以同时转出去1W元？因此只能做同城异区架构(应对机房级别故障)。
+ 跨城异地和同城异区，是完全两套不同的架构。距离数字上的变化，量变引起了质变，架构复杂度大大提升，网络传输速度降低，中间不可控因素增多。上述这些问题，同城异区也会遇到，但是概率小很多，而且同城异区还可以搭建多套互联通道，成本可控，搭建同城异区，架构上可以将两个机房当作本地机房来设计，无需额外考虑。
+ 跨城异地多活  优先实现核心业务的异地多活架构 异地多活理论上就不可能很快，物理因素决定的，因此只同步核心业务的数据，保证最终一致性，不保证实时一致性 多种手段同步数据：消息队列、B 中心本机读取失败再去 A 中心读取一次、重新生成数据方式、数据库同步等 只保证大部分用户的异地多活：异地多活无法保证 100% 的业务可用  异地多活设计步骤  业务分级，挑选核心业务：访问量大的业务、核心业务、产生大量收入的业务 数据分类：数据量、数据是否必须唯一 (例如用户 ID)、实时性、可丢失性 (session)、可恢复性 数据同步方案：MySQL 数据同步、消息队列同步、重复生成 异常处理：避免整体业务不可用、修正异常数据、弥补用户损失  通过多个通道同步的方式，来进行异常处理：
+ 一个走公网，一个走内网 数据可以重复覆盖  通过同步和访问结合方案的设计，来进行异常处理：
+ 接口走公网，同步走内网 数据有路由规则 优先读取本地数据，然后再通过接口访问  接口级故障应对  核心思想：优先保证核心业务，优先保证绝大部分用户。
+ 异地多活架构应对系统级别故障，另外一种常见的是接口级别的故障 (访问超时、异常、响应缓慢)。
+具体措施：降级 (应对系统自身故障)、熔断 (应对依赖的外部系统故障)、限流 (性能压测确定阈值)、排队 (限流的变种)
+参考  《从零开始学架构 : 照着做，你也能成为架构师》  " />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/business-high-availablity/" />
+
+<title>业务高可用方案 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.57a64cffd7ec58616b77aa5ce68452808e995ae67ce5098611303079f22ab82a.css" integrity="sha256-V6ZM/9fsWGFrd6pc5oRSgI6ZWuZ85QmGETAwefIquCo=">
+
+
+<script defer src="/en.search.min.44ff6f120be2c05e230086102200b1632e9b85aa5b865b94d7d633b3a93ce8b5.js" integrity="sha256-RP9vEgviwF4jAIYQIgCxYy6bhapbhluU19Yzs6k86LU="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/it-govern/" >
+      服务治理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-measurement/" >
+      服务度量
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-control/" >
+      服务管控
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/apm/" >
+      APM 及调用链跟踪
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/deep-govern/" >
+      体系的深度治理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/transaction/" >
+      分布式事务解决方案汇总
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/multi-replica-consistency/" >
+      副本一致性算法
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/storage-high-availablity/" >
+      存储高可用方案
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/business-high-availablity/"  class="active">
+      业务高可用方案
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>业务高可用方案</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#跨城异地和同城异区">跨城异地和同城异区</a></li>
+    <li><a href="#跨城异地多活">跨城异地多活</a></li>
+    <li><a href="#异地多活设计步骤">异地多活设计步骤</a></li>
+    <li><a href="#接口级故障应对">接口级故障应对</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="业务高可用方案">业务高可用方案</h1>
+<p>应对机房断电、火灾、城市地震、水灾等极端情况，就需要<strong>异地多活</strong>架构。</p>
+<h2 id="跨城异地和同城异区">跨城异地和同城异区</h2>
+<p>银行存款余额、支付宝余额<strong>无法做到</strong>跨城异地多活。例如，挖掘机挖断光缆后，广州机房和北京机房是不是可以同时转出去1W元？因此只能做<strong>同城异区</strong>架构(应对机房级别故障)。</p>
+<blockquote>
+<p>跨城异地和同城异区，是完全两套不同的架构。距离数字上的变化，<strong>量变引起了质变</strong>，架构复杂度大大提升，网络传输速度降低，中间不可控因素增多。上述这些问题，同城异区也会遇到，但是概率小很多，而且同城异区还可以搭建多套互联通道，成本可控，搭建同城异区，架构上可以将两个机房当作本地机房来设计，无需额外考虑。</p>
+</blockquote>
+<h2 id="跨城异地多活">跨城异地多活</h2>
+<ul>
+<li>优先实现<strong>核心业务</strong>的异地多活架构</li>
+<li>异地多活理论上就不可能很快，物理因素决定的，因此只同步核心业务的数据，保证<strong>最终一致性</strong>，不保证实时一致性</li>
+<li>多种手段同步数据：消息队列、B 中心本机读取失败再去 A 中心读取一次、重新生成数据方式、数据库同步等</li>
+<li>只保证<strong>大部分用户</strong>的异地多活：异地多活无法保证 100% 的业务可用</li>
+</ul>
+<h2 id="异地多活设计步骤">异地多活设计步骤</h2>
+<ul>
+<li>业务分级，挑选核心业务：访问量大的业务、核心业务、产生大量收入的业务</li>
+<li>数据分类：数据量、数据是否必须唯一 (例如用户 ID)、实时性、可丢失性 (session)、可恢复性</li>
+<li>数据同步方案：MySQL 数据同步、消息队列同步、重复生成</li>
+<li>异常处理：避免整体业务不可用、修正异常数据、弥补用户损失</li>
+</ul>
+<p>通过多个通道同步的方式，来进行异常处理：</p>
+<ul>
+<li>一个走公网，一个走内网</li>
+<li>数据可以重复覆盖</li>
+</ul>
+<p><img src="/images/docs/tutorial/distributed/business-high-availablity/Snipaste_2020-12-29_23-07-37.png" alt=""></p>
+<p>通过<strong>同步和访问结合方案</strong>的设计，来进行异常处理：</p>
+<ul>
+<li>接口走公网，同步走内网</li>
+<li>数据有路由规则</li>
+<li>优先读取本地数据，然后再通过接口访问</li>
+</ul>
+<p><img src="/images/docs/tutorial/distributed/business-high-availablity/Snipaste_2020-12-29_23-09-02.png" alt=""></p>
+<h2 id="接口级故障应对">接口级故障应对</h2>
+<blockquote>
+<p>核心思想：优先<strong>保证核心</strong>业务，优先<strong>保证绝大部分</strong>用户。</p>
+</blockquote>
+<p>异地多活架构应对系统级别故障，另外一种常见的是<strong>接口级别的</strong>故障 (访问超时、异常、响应缓慢)。</p>
+<p>具体措施：降级 (应对系统自身故障)、熔断 (应对依赖的外部系统故障)、限流 (性能压测确定阈值)、排队 (限流的变种)</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://book.douban.com/subject/30335935/">《从零开始学架构 : 照着做，你也能成为架构师》</a></li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#跨城异地和同城异区">跨城异地和同城异区</a></li>
+    <li><a href="#跨城异地多活">跨城异地多活</a></li>
+    <li><a href="#异地多活设计步骤">异地多活设计步骤</a></li>
+    <li><a href="#接口级故障应对">接口级故障应对</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1456,6 +1456,20 @@ TCP/IP 定义了一个值 MSL，表示数据包在网络上最长逗留时间，
     </item>
     
     <item>
+      <title>存储高可用方案</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/storage-high-availablity/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/storage-high-availablity/</guid>
+      <description>存储高可用方案 数据如何复制 主备复制 最简单的复制方案就是主备复制，MySQL、Redis、MongoDB 都提供了这种复制方案。
+缺点：故障的时候，需要人工干预，硬件上有浪费。适合于内部的后台管理系统。
+主从复制  从意味着是要干活的，也就是从节点提供读的能力，主提供了读写能力。
+ 缺点：故障的时候，需要人工干预。一般适用于写少读多的业务。
+主备倒换/主从倒换 主主复制 因为数据必须满足可以双向复制，因此适合临时性、可丢失、可覆盖的数据场景
+数据集群 参考  从零开始学架构 : 照着做，你也能成为架构师  </description>
+    </item>
+    
+    <item>
       <title>编写可读代码的艺术</title>
       <link>https://kunzhao.org/docs/books/the-art-of-readable-code/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1504,6 +1518,23 @@ git checkout user2/i18n git rebase master # 如果有冲突，则需要解决冲
       
       <guid>https://kunzhao.org/docs/tutorial/network/udp/</guid>
       <description>UDP UDP 头 与 TCP 区别  无连接 不保证不丢失、不保证按序到达 基于数据报，一个一个发，一个一个收 无拥塞控制，让我发，我就发，管它洪水滔天 无状态服务  应用场景  需要资源少，网络情况较好的内网，或者对于丢包不敏感的应用 不需要一对一沟通建立连接，可以广播的应用: DHCP 处理速度快、低时延、可以容忍少数丢包 Quick UDP Internet Connections: Google 提出的，降低通信时延 流媒体协议，有的帧比较重要，有的不重要 实时游戏。游戏玩家多，服务器却不多，而维护 TCP 需要一些数据结构 IoT 物联网 4G 网络，数据流量上网的数据面对的协议 GTP-U 就是基于 UDP 的  </description>
+    </item>
+    
+    <item>
+      <title>业务高可用方案</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/business-high-availablity/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/business-high-availablity/</guid>
+      <description>业务高可用方案 应对机房断电、火灾、城市地震、水灾等极端情况，就需要异地多活架构。
+跨城异地和同城异区 银行存款余额、支付宝余额无法做到跨城异地多活。例如，挖掘机挖断光缆后，广州机房和北京机房是不是可以同时转出去1W元？因此只能做同城异区架构(应对机房级别故障)。
+ 跨城异地和同城异区，是完全两套不同的架构。距离数字上的变化，量变引起了质变，架构复杂度大大提升，网络传输速度降低，中间不可控因素增多。上述这些问题，同城异区也会遇到，但是概率小很多，而且同城异区还可以搭建多套互联通道，成本可控，搭建同城异区，架构上可以将两个机房当作本地机房来设计，无需额外考虑。
+ 跨城异地多活  优先实现核心业务的异地多活架构 异地多活理论上就不可能很快，物理因素决定的，因此只同步核心业务的数据，保证最终一致性，不保证实时一致性 多种手段同步数据：消息队列、B 中心本机读取失败再去 A 中心读取一次、重新生成数据方式、数据库同步等 只保证大部分用户的异地多活：异地多活无法保证 100% 的业务可用  异地多活设计步骤  业务分级，挑选核心业务：访问量大的业务、核心业务、产生大量收入的业务 数据分类：数据量、数据是否必须唯一 (例如用户 ID)、实时性、可丢失性 (session)、可恢复性 数据同步方案：MySQL 数据同步、消息队列同步、重复生成 异常处理：避免整体业务不可用、修正异常数据、弥补用户损失  通过多个通道同步的方式，来进行异常处理：
+ 一个走公网，一个走内网 数据可以重复覆盖  通过同步和访问结合方案的设计，来进行异常处理：
+ 接口走公网，同步走内网 数据有路由规则 优先读取本地数据，然后再通过接口访问  接口级故障应对  核心思想：优先保证核心业务，优先保证绝大部分用户。
+ 异地多活架构应对系统级别故障，另外一种常见的是接口级别的故障 (访问超时、异常、响应缓慢)。
+具体措施：降级 (应对系统自身故障)、熔断 (应对依赖的外部系统故障)、限流 (性能压测确定阈值)、排队 (限流的变种)
+参考  《从零开始学架构 : 照着做，你也能成为架构师》  </description>
     </item>
     
     <item>
