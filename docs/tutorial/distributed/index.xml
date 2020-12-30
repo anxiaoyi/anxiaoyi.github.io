@@ -141,5 +141,28 @@ TCC 支付宝提出了 TCC，是为了解决 SOA 系统中的分布式事务问�
 参考  《从零开始学架构 : 照着做，你也能成为架构师》  </description>
     </item>
     
+    <item>
+      <title>高并发设计方案</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/high-concurrency/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/high-concurrency/</guid>
+      <description>高并发设计方案 高并发读 高并发读的设计思路主要是：加缓存 (Redis、MySQL 的 Slave、CDN)、并发读 (异步 RPC、Google 提出的冗余请求)、重写轻读、提前计算好多个表的关联查询 (定时计算、实时计算)、CQRS (Command Query Responsibility Separation 读写分离)
+Google 的冗余请求是指：客户端首先发送一个请求，并等待服务器返回，如果一定时间内未返回，则马上给另外一台服务器发送同样的请求，客户端等待第一个响应到达之后，终止其他请求的处理。这个一定的时间是指：95% 请求的响应时间。
+微博的重写轻读方案：
+每个人的收件箱是存储在内存中的，需要为这个队列 (Redis 的 &amp;lt;key, list&amp;gt; 实现) 设置一个上限，比如 Twitter 设置的上限是 800。
+超出 800 的微博放到 MySQL 中，可以按照 user_id、time 等同时进行分片，然后可以再引入二级索引表：&amp;lt;user_id, month, count&amp;gt; 来查询某个用户在某个月份发表的微博的总数量，根据这个表可以快速定位到 offset = 5000 的微博发生在哪个月份，也就是数据库的分片。
+至于粉丝数量比较大的，可以读的时候实时聚合，或者叫做拉。
+一个人关注的人当中，有的人是推给他的，有的人是需要去拉的，需要聚合两者，再按时间排序，然后分页显示，这就是推拉结合。
+读写分离的典型架构：
+高并发写 一般采用的思路就是：数据分片 (分库分表)、任务分片 (Map/Reduce、Tomcat 1+N+M)、异步化 (通过队列发送短信验证码)、串行化+多进程单线程+异步I/O
+发送短信验证码是异步的：
+广告系统的扣费是异步化的：
+LSM 树是异步落盘，提高写入性能的：
+Pipeline 也属于异步化，Leader 一批批地处理消息：
+容量规划  机器数量怎么计算?
+ 机器数 = 预估总流量/单机容量  分母是预估(通过历史数据估算，过去24小时的调用量分布，取其中的峰值，再乘以一个系数，比如2倍、3倍)的值 分子通过压力测试得到  必须使用峰值测算，不能用均值，虽然持续时间短，可是没办法，的确需要这么多台机器，这也正是云计算 (弹性计算) 要解决的问题。</description>
+    </item>
+    
   </channel>
 </rss>

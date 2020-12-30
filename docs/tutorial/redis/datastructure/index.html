@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Redis 数据结构"><meta property="og:title" content="Redis 数据结构" />
+<meta property="og:description" content="Redis 数据结构 字符串 struct SDS&lt;T&gt; { T capacity; // 数组容量  T len; // 数组长度  byte flags; // 特殊标识位，不理睬它  byte[] content; // 数组内容 } 字典 struct RedisDb { dict* dict; // all keys key=&gt;value  dict* expires; // all expired keys key=&gt;long(timestamp)  ... } struct zset { dict *dict; // all values value=&gt;score  zskiplist *zsl; } dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后进行渐进式搬迁，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新的 hashtable 取而代之。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/datastructure/" />
+
+<title>Redis 数据结构 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.57a64cffd7ec58616b77aa5ce68452808e995ae67ce5098611303079f22ab82a.css" integrity="sha256-V6ZM/9fsWGFrd6pc5oRSgI6ZWuZ85QmGETAwefIquCo=">
+
+
+<script defer src="/en.search.min.237a84c999de79031eae10c366067070db9deacbac2a7e0d7a57194adaf8c494.js" integrity="sha256-I3qEyZneeQMerhDDZgZwcNud6susKn4NelcZStr4xJQ="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/datastructure/"  class="active">
+      Redis 数据结构
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Redis 数据结构</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#字符串">字符串</a></li>
+    <li><a href="#字典">字典</a></li>
+    <li><a href="#压缩列表">压缩列表</a></li>
+    <li><a href="#位图">位图</a></li>
+    <li><a href="#hyperloglog">HyperLogLog</a></li>
+    <li><a href="#redis-40-布隆过滤器">Redis 4.0 布隆过滤器</a></li>
+    <li><a href="#redis-40-redis-cell-漏斗限流模块">Redis 4.0 redis-cell 漏斗限流模块</a></li>
+    <li><a href="#redis-32-geohash-地理位置">Redis 3.2 GeoHash 地理位置</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="redis-数据结构">Redis 数据结构</h1>
+<h2 id="字符串">字符串</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">struct</span> SDS<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> {
+  T capacity; <span style="color:#75715e">// 数组容量
+</span><span style="color:#75715e"></span>  T len; <span style="color:#75715e">// 数组长度
+</span><span style="color:#75715e"></span>  byte flags; <span style="color:#75715e">// 特殊标识位，不理睬它
+</span><span style="color:#75715e"></span>  byte[] content; <span style="color:#75715e">// 数组内容
+</span><span style="color:#75715e"></span>}
+</code></pre></div><h2 id="字典">字典</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">struct</span> RedisDb {
+    dict<span style="color:#f92672">*</span> dict; <span style="color:#75715e">// all keys  key=&gt;value
+</span><span style="color:#75715e"></span>    dict<span style="color:#f92672">*</span> expires; <span style="color:#75715e">// all expired keys key=&gt;long(timestamp)
+</span><span style="color:#75715e"></span>    ...
+}
+
+<span style="color:#66d9ef">struct</span> zset {
+    dict <span style="color:#f92672">*</span>dict; <span style="color:#75715e">// all values  value=&gt;score
+</span><span style="color:#75715e"></span>    zskiplist <span style="color:#f92672">*</span>zsl;
+}
+</code></pre></div><p>dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后进行<strong>渐进式搬迁</strong>，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新的 hashtable 取而代之。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">struct</span> dict {
+    ...
+    dictht ht[<span style="color:#ae81ff">2</span>];
+}
+</code></pre></div><h2 id="压缩列表">压缩列表</h2>
+<p>Redis 为了节约内存空间使用，<code>zset</code> 和 <code>hash</code> 容器对象在<strong>元素个数较少</strong>的时候，采用压缩列表 (ziplist) 进行存储。压缩列表是一块连续的内存空间，元素之间紧挨着存储，没有任何冗余空隙。</p>
+<h2 id="位图">位图</h2>
+<p>在我们平时开发过程中，会有一些 <strong>bool 型数据</strong>需要存取，比如用户一年的签到记录，签了是 1，没签是 0，要记录 365 天。如果使用普通的 key/value，每个用户要记录 365 个，当用户上亿的时候，需要的存储空间是惊人的。</p>
+<p>为了解决这个问题，Redis 提供了位图数据结构，这样每天的签到记录只占据一个位，365 天就是 365 个位，46 个字节 (一个稍长一点的字符串) 就可以完全容纳下，这就大大节约了存储空间。</p>
+<p>Redis 的位数组是自动扩展，如果设置了某个偏移位置超出了现有的内容范围，就会自动将位数组进行零扩充。</p>
+<h2 id="hyperloglog">HyperLogLog</h2>
+<p>统计网站的 UV (同一个用户一天之内的多次访问请求只能计数一次，这就要求每一个网页请求都需要带上用户的 ID，无论是登陆用户还是未登陆用户都需要一个唯一 ID 来标识)，如果使用 Set 会占据太多空间，Redis 提供了 HyperLogLog 数据结构就是用来解决这种统计问题的。HyperLogLog 提供<strong>不精确的去重计数方案</strong>，虽然不精确但是也不是非常不精确，标准误差是 0.81%，这样的精确度已经可以满足上面的 UV 统计需求了。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">127.0.0.1:6379&gt; pfadd codehole user1
+127.0.0.1:6379&gt; pfadd codehole user2
+127.0.0.1:6379&gt; pfcount codehole
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+</code></pre></div><h2 id="redis-40-布隆过滤器">Redis 4.0 布隆过滤器</h2>
+<p>新闻客户端推荐系统如何实现推送去重的？当用户量很大，每个用户看过的新闻又很多的情况下，从每个用户的历史记录里进行筛选，过滤掉那些已经存在的记录，推荐系统的去重工作在性能上跟的上么？</p>
+<blockquote>
+<p>当布隆过滤器说某个值存在时，这个值可能不存在；当它说不存在时，那就肯定不存在。</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">127.0.0.1:6379&gt; bf.add codehole user1
+127.0.0.1:6379&gt; bf.add codehole user2
+127.0.0.1:6379&gt; bf.exists codehole user1
+<span style="color:#ae81ff">1</span>
+</code></pre></div><h2 id="redis-40-redis-cell-漏斗限流模块">Redis 4.0 redis-cell 漏斗限流模块</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">&gt; cl.throttle zk:reply <span style="color:#ae81ff">15</span> <span style="color:#ae81ff">30</span> <span style="color:#ae81ff">60</span> <span style="color:#ae81ff">1</span>
+                ▲     ▲  ▲  ▲  ▲
+                |     |  |  |  └───── need <span style="color:#ae81ff">1</span> quota <span style="color:#f92672">(</span>可选参数，默认值也是1<span style="color:#f92672">)</span>
+                |     |  └──┴─────── <span style="color:#ae81ff">30</span> operations / <span style="color:#ae81ff">60</span> seconds 这是漏水速率
+                |     └───────────── <span style="color:#ae81ff">15</span> capacity 这是漏斗容量
+                └─────────────────── key
+</code></pre></div><h2 id="redis-32-geohash-地理位置">Redis 3.2 GeoHash 地理位置</h2>
+<blockquote>
+<p>如何快速查询附近的人 ?</p>
+</blockquote>
+<p>业界比较通用的地理位置距离排序算法是 GeoHash 算法，Redis 也使用 GeoHash 算法。GeoHash 算法将二维的经纬度数据映射到一维的整数，这样所有的元素都将在挂载到一条线上，距离靠近的二维坐标映射到一维后的点之间距离也会很接近。当我们想要计算「附近的人时」，首先将目标位置映射到这条线上，然后在这个一维的线上获取附近的点就行了。</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#字符串">字符串</a></li>
+    <li><a href="#字典">字典</a></li>
+    <li><a href="#压缩列表">压缩列表</a></li>
+    <li><a href="#位图">位图</a></li>
+    <li><a href="#hyperloglog">HyperLogLog</a></li>
+    <li><a href="#redis-40-布隆过滤器">Redis 4.0 布隆过滤器</a></li>
+    <li><a href="#redis-40-redis-cell-漏斗限流模块">Redis 4.0 redis-cell 漏斗限流模块</a></li>
+    <li><a href="#redis-32-geohash-地理位置">Redis 3.2 GeoHash 地理位置</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
