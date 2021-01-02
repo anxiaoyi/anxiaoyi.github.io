@@ -6,11 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="HTTPS"><meta property="og:title" content="HTTPS" />
 <meta property="og:description" content="HTTPS 为什么出现 HTTPS 防止 敏感数据 (银行卡号、账号密码等) 被劫持。HTTPS 会对 HTTP 的请求和响应进行加密，因此即使劫持，攻击者看到的也都是一些随机的字符串。
+SSL/TLS 双向非对称加密  Client 和 Server 把自己的公钥公开出去，各自保留自己的私钥。
+ 客户端 (PubA、PriA) 给服务器 (PubB、PriB) 发送消息的过程如下：
+// 私钥签名，再用服务器的公钥加密 let sign = PriA(msg) let encryption = PubB(sign) Client --encryption--&gt; Server 服务器接受客户端消息的过程：
+// 私钥解密，再用客户端的公钥验证签名 PubA(unEncryption(PriB, encryption), &#39;验证签名&#39;)  签名和验签：私钥签名，公钥验签，目的防篡改。 加密和解密：公钥加密，私钥解密，目的防止第三方拦截偷听。  单向非对称加密  互联网上，只能 Client 验证 Server，因此只有服务器提供一对公钥和私钥即可。
+ 当然，如果是银行网银，那么也有验证每个客户端的合法性，给用户发的 U 盘，就包含了客户端的公钥和私钥对，用的是双向非对称加密。
+SSL/TLS 的原理就是，先单向非对称加密，然后再对称加密：
 RSA 应用场景 （1）加密
 Bob 想要给 Alice 发送 &ldquo;Hello Alice!&rdquo; 这个信息：
- 公钥加密 私钥解密  （2）数字签名
- 私钥签名 公钥验证  HTTPS 握手 CA 证书验证过程 抓包可以抓到吗 可以。
-参考  Public-key cryptography  " />
+ 公钥加密 私钥解密  （2）数字签名" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/network/https/" />
 
@@ -21,7 +25,7 @@ Bob 想要给 Alice 发送 &ldquo;Hello Alice!&rdquo; 这个信息：
 <link rel="stylesheet" href="/book.min.57a64cffd7ec58616b77aa5ce68452808e995ae67ce5098611303079f22ab82a.css" integrity="sha256-V6ZM/9fsWGFrd6pc5oRSgI6ZWuZ85QmGETAwefIquCo=">
 
 
-<script defer src="/en.search.min.237a84c999de79031eae10c366067070db9deacbac2a7e0d7a57194adaf8c494.js" integrity="sha256-I3qEyZneeQMerhDDZgZwcNud6susKn4NelcZStr4xJQ="></script>
+<script defer src="/en.search.min.39190e248a24385939583557837084e6358a94703eb1f2f460bee86ea85116ac.js" integrity="sha256-ORkOJIokOFk5WDVXg3CE5jWKlHA&#43;sfL0YL7obqhRFqw="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -948,9 +952,12 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#为什么出现-https">为什么出现 HTTPS</a></li>
-    <li><a href="#rsa">RSA</a>
+    <li><a href="#ssltls">SSL/TLS</a>
       <ul>
-        <li><a href="#应用场景">应用场景</a></li>
+        <li><a href="#双向非对称加密">双向非对称加密</a></li>
+        <li><a href="#单向非对称加密">单向非对称加密</a></li>
+        <li><a href="#rsa-应用场景">RSA 应用场景</a></li>
+        <li><a href="#如何保证公钥传输不被中间人劫持">如何保证公钥传输不被中间人劫持?</a></li>
       </ul>
     </li>
     <li><a href="#https-握手">HTTPS 握手</a></li>
@@ -970,8 +977,33 @@ var _hmt = _hmt || [];
 <article class="markdown"><h1 id="https">HTTPS</h1>
 <h2 id="为什么出现-https">为什么出现 HTTPS</h2>
 <p>防止 <strong>敏感数据 (银行卡号、账号密码等)</strong> 被劫持。HTTPS 会对 HTTP 的请求和响应进行加密，因此即使劫持，攻击者看到的也都是一些随机的字符串。</p>
-<h2 id="rsa">RSA</h2>
-<h3 id="应用场景">应用场景</h3>
+<h2 id="ssltls">SSL/TLS</h2>
+<h3 id="双向非对称加密">双向非对称加密</h3>
+<blockquote>
+<p>Client 和 Server 把自己的公钥公开出去，各自保留自己的私钥。</p>
+</blockquote>
+<p>客户端 (PubA、PriA) 给服务器 (PubB、PriB) 发送消息的过程如下：</p>
+<pre><code>// 私钥签名，再用服务器的公钥加密
+let sign = PriA(msg)
+let encryption = PubB(sign)
+Client --encryption--&gt; Server
+</code></pre><p>服务器接受客户端消息的过程：</p>
+<pre><code>// 私钥解密，再用客户端的公钥验证签名
+PubA(unEncryption(PriB, encryption), '验证签名')
+</code></pre><ul>
+<li>签名和验签：私钥签名，公钥验签，目的防篡改。</li>
+<li>加密和解密：公钥加密，私钥解密，目的防止第三方拦截偷听。</li>
+</ul>
+<p><img src="/images/docs/tutorial/network/https/Snipaste_2021-01-02_17-45-07.png" alt=""></p>
+<h3 id="单向非对称加密">单向非对称加密</h3>
+<blockquote>
+<p>互联网上，只能 <code>Client</code> 验证 <code>Server</code>，因此只有服务器提供一对<strong>公钥和私钥</strong>即可。</p>
+</blockquote>
+<p><img src="/images/docs/tutorial/network/https/Snipaste_2021-01-02_17-42-12.png" alt=""></p>
+<p>当然，如果是银行网银，那么也有验证每个客户端的合法性，给用户发的 U 盘，就包含了客户端的公钥和私钥对，用的是双向非对称加密。</p>
+<p>SSL/TLS 的原理就是，<strong>先单向非对称加密，然后再对称加密</strong>：</p>
+<p><img src="/images/docs/tutorial/network/https/Snipaste_2021-01-02_17-46-45.png" alt=""></p>
+<h3 id="rsa-应用场景">RSA 应用场景</h3>
 <p>（1）<strong>加密</strong></p>
 <p>Bob 想要给 Alice 发送 &ldquo;Hello Alice!&rdquo; 这个信息：</p>
 <ul>
@@ -985,6 +1017,21 @@ var _hmt = _hmt || [];
 <li>公钥验证</li>
 </ul>
 <p><img src="/images/docs/tutorial/network/https/800px-Private_key_signing.svg.png" alt=""></p>
+<h3 id="如何保证公钥传输不被中间人劫持">如何保证公钥传输不被中间人劫持?</h3>
+<p>引入中间机构 CA，服务器把公钥发送给客户端的时候，不是直接发送公钥，而是发送公钥对应的<strong>证书</strong>。</p>
+<blockquote>
+<p>证书是如何来的？</p>
+</blockquote>
+<p><img src="/images/docs/tutorial/network/https/Snipaste_2021-01-02_17-54-00.png" alt=""></p>
+<blockquote>
+<p>客户端如何验证服务器的证书？</p>
+</blockquote>
+<p>用 CA 给的公钥 (公钥在网络上，谁都可以知道)，解密证书的签名，解密成功，Hash 对的上，就证明公钥没有问题。</p>
+<blockquote>
+<p>如何证明 CA 也是真的 ?</p>
+</blockquote>
+<p>给 CA 颁发证书。谁颁发，CA 的上一级。</p>
+<p><img src="/images/docs/tutorial/network/https/Snipaste_2021-01-02_22-11-55.png" alt=""></p>
 <h2 id="https-握手">HTTPS 握手</h2>
 <p><img src="/images/docs/tutorial/network/https/https_handshake.jpg" alt=""></p>
 <h2 id="ca-证书验证过程">CA 证书验证过程</h2>
@@ -993,6 +1040,7 @@ var _hmt = _hmt || [];
 <h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://en.wikipedia.org/wiki/Public-key_cryptography">Public-key cryptography</a></li>
+<li><a href="https://book.douban.com/subject/30443578/">《软件架构设计》</a></li>
 </ul>
 </article>
  
@@ -1040,9 +1088,12 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#为什么出现-https">为什么出现 HTTPS</a></li>
-    <li><a href="#rsa">RSA</a>
+    <li><a href="#ssltls">SSL/TLS</a>
       <ul>
-        <li><a href="#应用场景">应用场景</a></li>
+        <li><a href="#双向非对称加密">双向非对称加密</a></li>
+        <li><a href="#单向非对称加密">单向非对称加密</a></li>
+        <li><a href="#rsa-应用场景">RSA 应用场景</a></li>
+        <li><a href="#如何保证公钥传输不被中间人劫持">如何保证公钥传输不被中间人劫持?</a></li>
       </ul>
     </li>
     <li><a href="#https-握手">HTTPS 握手</a></li>
