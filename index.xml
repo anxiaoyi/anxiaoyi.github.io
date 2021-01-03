@@ -629,6 +629,24 @@ BEGIN { FS = &amp;#34;\t&amp;#34; printf(&amp;#34;%10s %6s %5s %s\n\n&amp;#34;, 
     </item>
     
     <item>
+      <title>Redis 线程 I/O 模型</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/io-pattern/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/io-pattern/</guid>
+      <description>Redis 线程 I/O 模型  Redis 是个单线程程序！ 这点必须铭记。
+ Redis 单线程为什么这么快? 因为它所有的数据都在内存中，所有的运算都是内存级别的运算。正因为 Redis 是单线程，所以要小心使用 Redis 指令，对于那些时间复杂度为 O(n) 级别的指令，一定要谨慎使用，一不小心就可能会导致 Redis 卡顿。
+单线程如何处理并发客户端? 多路复用
+非阻塞 IO 当我们调用套接字的读写方法，默认它们是阻塞的，比如read方法要传递进去一个参数n，表示最多读取这么多字节后再返回，如果一个字节都没有，那么线程就会卡在那里，直到新的数据到来或者连接关闭了，read方法才可以返回，线程才能继续处理。而write方法一般来说不会阻塞，除非内核为套接字分配的写缓冲区已经满了，write方法就会阻塞，直到缓存区中有空闲空间挪出来了。
+非阻塞 IO 在套接字对象上提供了一个选项Non_Blocking，当这个选项打开时，读写方法不会阻塞，而是能读多少读多少，能写多少写多少。能读多少取决于内核为套接字分配的读缓冲区内部的数据字节数，能写多少取决于内核为套接字分配的写缓冲区的空闲空间字节数。读方法和写方法都会通过返回值来告知程序实际读写了多少字节。
+有了非阻塞 IO 意味着线程在读写 IO 时可以不必再阻塞了，读写可以瞬间完成然后线程可以继续干别的事了。
+事件轮询 (多路复用) 非阻塞 IO 有个问题，那就是线程要读数据，结果读了一部分就返回了，线程如何知道何时才应该继续读。也就是当数据到来时，线程如何得到通知。写也是一样，如果缓冲区满了，写不完，剩下的数据何时才应该继续写，线程也应该得到通知。
+事件轮询 API 就是用来解决这个问题的，最简单的事件轮询 API 是select函数，它是操作系统提供给用户程序的 API。输入是读写描述符列表read_fds &amp;amp; write_fds，输出是与之对应的可读可写事件。同时还提供了一个timeout参数，如果没有任何事件到来，那么就最多等待timeout时间，线程处于阻塞状态。一旦期间有任何事件到来，就可以立即返回。时间过了之后还是没有任何事件到来，也会立即返回。拿到事件后，线程就可以继续挨个处理相应的事件。处理完了继续过来轮询。于是线程就进入了一个死循环，我们把这个死循环称为事件循环，一个循环为一个周期。
+每个客户端套接字socket都有对应的读写文件描述符。
+read_events, write_events = select(read_fds, write_fds, timeout) for event in read_events: handle_read(event.fd) for event in write_events: handle_write(event.fd) handle_others() # 处理其它事情，如定时任务等 因为我们通过select系统调用同时处理多个通道描述符的读写事件，因此我们将这类系统调用称为多路复用 API。现代操作系统的多路复用 API 已经不再使用select系统调用，而改用epoll(linux)和kqueue(freebsd &amp;amp; macosx)，因为 select 系统调用的性能在描述符特别多时性能会非常差。它们使用起来可能在形式上略有差异，但是本质上都是差不多的，都可以使用上面的伪代码逻辑进行理解。</description>
+    </item>
+    
+    <item>
       <title>RestTemplate</title>
       <link>https://kunzhao.org/docs/tutorial/spring/resttemplate/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -865,6 +883,18 @@ ls -l 显示结果：
     </item>
     
     <item>
+      <title>Redis RESP 通信协议</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/resp/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/resp/</guid>
+      <description>Redis RESP 通信协议  RESP(Redis Serialization Protocol) 是 Redis 序列化协议的简写。它是一种直观的文本协议，优势在于实现异常简单，解析性能极好。
+ RESP Redis 协议将传输的结构数据分为 5 种最小单元类型，单元结束时统一加上回车换行符号\r\n。
+ 单行字符串 以 + 符号开头。 多行字符串 以 $ 符号开头，后跟字符串长度。NULL 用多行字符串表示，不过长度写为 -1，空串写为 0 整数值 以 : 符号开头，后跟整数的字符串形式。 错误消息 以 - 符号开头。 数组 以 * 号开头，后跟数组的长度。  +hello world\r\n$11\r\nhello world\r\n:1024\r\n-WRONGTYPE Operation against a key holding the wrong kind of value\r\n*3\r\n:1\r\n:2\r\n:3\r\n$-1\r\n$0\r\n\r\nClient 发送给 Server  客户端向服务器发送的指令只有一种格式，多行字符串数组。
+ 比如 set author codehole 被序列化为：</description>
+    </item>
+    
+    <item>
       <title>RocketMQ 消息接受流程</title>
       <link>https://kunzhao.org/docs/rocketmq/rocketmq-message-receive-flow/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1038,6 +1068,27 @@ HTTP3 协议特点 协议栈 可靠性 虽然 UDP 不提供可靠的传输，但
     </item>
     
     <item>
+      <title>Redis 持久化</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/persistence/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/persistence/</guid>
+      <description>Redis 持久化 RDB RDB 持久化是把当前进程数据生成快照保存到硬盘的过程，触发 RDB 持久化过程分为手动触发和自动触发。
+快照原理 Redis 使用操作系统的多进程 COW (Copy On Write) 机制来实现快照持久化。
+Redis 在持久化时会调用 glibc 的函数 fork 产生一个子进程，快照持久化完全交给子进程来处理，父进程继续处理客户端请求。子进程刚刚产生时，它和父进程共享内存里面的代码段和数据段。
+子进程做数据持久化，它不会修改现有的内存数据结构，它只是对数据结构进行遍历读取，然后序列化写到磁盘中。但是父进程不一样，它必须持续服务客户端请求，然后对内存数据结构进行不间断的修改。
+这个时候就会使用操作系统的 COW 机制来进行数据段页面的分离。数据段是由很多操作系统的页面组合而成，当父进程对其中一个页面的数据进行修改时，会将被共享的页面复制一份分离出来，然后对这个复制的页面进行修改。这时子进程相应的页面是没有变化的，还是进程产生时那一瞬间的数据。
+随着父进程修改操作的持续进行，越来越多的共享页面被分离出来，内存就会持续增长。但是也不会超过原有数据内存的 2 倍大小。另外一个 Redis 实例里冷数据占的比例往往是比较高的，所以很少会出现所有的页面都会被分离，被分离的往往只有其中一部分页面。每个页面的大小只有 4K，一个 Redis 实例里面一般都会有成千上万的页面。
+子进程因为数据没有变化，它能看到的内存里的数据在进程产生的一瞬间就凝固了，再也不会改变，这也是为什么 Redis 的持久化叫「快照」的原因。接下来子进程就可以非常安心的遍历数据了进行序列化写磁盘了。
+触发机制 手动触发分别对应save和bgsave命令：
+  save命令：阻塞当前Redis服务器，直到RDB过程完成为止，对于内存比较大的实例会造成长时间阻塞，线上环境不建议使用。
+  bgsave命令：Redis进程执行fork操作创建子进程，RDB持久化过程由子进程负责，完成后自动结束。阻塞只发生在fork阶段，一般时间很短。
+  除了执行命令手动触发之外，Redis内部还存在自动触发RDB的持久化机制，例如以下场景：
+ 1）使用save相关配置，如“save m n”。表示m秒内数据集存在n次修改时，自动触发bgsave。 2）如果从节点执行全量复制操作，主节点自动执行bgsave生成RDB文件并发送给从节点。 3）执行debug reload命令重新加载Redis时，也会自动触发save操作。 4）默认情况下执行shutdown命令时，如果没有开启AOF持久化功能则自动执行bgsave。   Redis save 命令已经废弃。
+  通过 info stats 命令的 latest_fork_usec 可以查看父进程 fork 时候阻塞的时间 (微秒)。 执行 lastsave 命令，可以查看最后一次生成 RDB 的时间，也对应 info 命令的 rdb_last_save_time 选项。  RDB 文件 RDB文件保存在dir配置指定的目录下，文件名通过dbfilename配置指定。可以通过执行config set dir{newDir}和config set dbfilename{newFileName}运行期动态执行，当下次运行时RDB文件会保存到新目录。</description>
+    </item>
+    
+    <item>
       <title>RocketMQ 消息过滤流程</title>
       <link>https://kunzhao.org/docs/rocketmq/rocketmq-message-filter-flow/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1169,6 +1220,35 @@ struct __attribute__ ((__packed__))sdshdr8 { uint8_t len; // 已使用长度  ui
     </item>
     
     <item>
+      <title>Redis 复制</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/redis-copy/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/redis-copy/</guid>
+      <description>Redis 复制 在分布式系统中为了解决单点问题，通常会把数据复制多个副本部署到其他机器，满足故障恢复和负载均衡等需求。Redis 也是如此，它为我们提供了复制功能，实现了相同数据的多个Redis副本。复制功能是高可用 Redis 的基础。
+建立复制 从节点执行：
+slaveof {masterHost} {masterPort}主从节点复制成功建立后，可以使用 info replication 命令查看复制相关状态。
+断开复制 从节点执行：
+slaveof no one还可以执行 slaveof {newMasterHost} {newMasterPort} 来实现切主操作，不过会先清空本地数据。
+只读 默认，从节点处于只读模式。slave-read-only: true
+复制原理 Redis在2.8及以上版本使用psync命令完成主从数据同步，同步过程分为：全量复制和部分复制。
+psync 原理  主从节点各自复制偏移量。 主节点复制积压缓冲区。 主节点运行 id 。  通过 info replication 查看 master_repl_offset 和 slave_repl_offset 可以查看到主从节点的复制偏移量。
+复制积压缓冲区是保存在主节点上的一个固定长度的队列，默认大小为1MB，当主节点有连接的从节点（slave）时被创建，这时主节点（master）响应写命令时，不但会把命令发送给从节点，还会写入复制积压缓冲区。
+由于缓冲区本质上是先进先出的定长队列，所以能实现保存最近已复制数据的功能，用于部分复制和复制命令丢失的数据补救。
+每个Redis节点启动后都会动态分配一个40位的十六进制字符串作为运行ID。运行ID的主要作用是用来唯一识别Redis节点，比如从节点保存主节点的运行ID识别自己正在复制的是哪个主节点。节点。如果只使用ip+port的方式识别主节点，那么主节点重启变更了整体数据集（如替换RDB/AOF文件），从节点再基于偏移量复制数据将是不安全的，因此当运行ID变化后从节点将做全量复制。可以运行info server命令查看当前节点的运行ID。
+需要注意的是Redis关闭再启动后，运行ID会随之改变。
+全量复制 一般用于初次复制场景，Redis早期支持的复制功能只有全量复制，它会把主节点全部数据一次性发送给从节点，当数据量较大时，会对主从节点和网络造成很大的开销。
+需要注意，对于数据量较大的主节点，比如生成的RDB文件超过6GB以上时要格外小心。传输文件这一步操作非常耗时，速度取决于主从节点之间网络带宽，通过细致分析Full resync和MASTER&amp;lt;-&amp;gt;SLAVE这两行日志的时间差，可以算出RDB文件从创建到传输完毕消耗的总时间。如果总时间超过repl-timeout所配置的值（默认60秒），从节点将放弃接受RDB文件并清理已经下载的临时文件，导致全量复制失败。
+针对数据量较大的节点，建议调大repl-timeout参数防止出现全量同步数据超时。例如对于千兆网卡的机器，网卡带宽理论峰值大约每秒传输100MB，在不考虑其他进程消耗带宽的情况下，6GB的RDB文件至少需要60秒传输时间，默认配置下，极易出现主从数据同步超时。
+关于无盘复制：为了降低主节点磁盘开销，Redis支持无盘复制，生成的RDB文件不保存到硬盘而是直接通过网络发送给从节点，通过repl-diskless-sync参数控制，默认关闭。无盘复制适用于主节点所在机器磁盘性能较差但网络带宽较充裕的场景。生成快照是一个遍历的过程，主节点会一边遍历内存，一边将序列化的内容发送到从节点，从节点还是跟之前一样，先将接收到的内容存储到磁盘文件中，再进行一次性加载。
+对于从节点开始接收RDB快照到接收完成期间，主节点仍然响应读写命令，因此主节点会把这期间写命令数据保存在复制客户端缓冲区内，当从节点加载完RDB文件后，主节点再把缓冲区内的数据发送给从节点，保证主从之间数据一致性。如果主节点创建和传输RDB的时间过长，对于高流量写入场景非常容易造成主节点复制客户端缓冲区溢出。默认配置为client-output-buffer-limit slave 256MB 64MB 60，如果60秒内缓冲区消耗持续大于64MB或者直接超过256MB时，主节点将直接关闭复制客户端连接，造成全量同步失败。
+部分复制 用于处理在主从复制中因网络闪断等原因造成的数据丢失场景，当从节点再次连上主节点后，如果条件允许，主节点会补发丢失数据给从节点。因为补发的数据远远小于全量数据，可以有效避免全量复制的过高开销。
+如果主节点的复制积压缓冲区内存在这部分数据则直接发送给从节点，这样就可以保持主从节点复制的一致性。补发的这部分数据一般远远小于全量数据，所以开销很小。
+ 主节点何时认为从节点断掉?
+ 主从节点之间网络出现中断时，如果超过 repl-timeout 时间，主节点会认为从节点故障，并中断复制连接。</description>
+    </item>
+    
+    <item>
       <title>RocketMQ 消息索引流程</title>
       <link>https://kunzhao.org/docs/rocketmq/rocketmq-message-indexing-flow/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1283,6 +1363,25 @@ CDN 可缓存的内容  静态资源：图片、CSS、JS、HTML 文件、流媒�
       <description>JavaScript String 转为 Boolean 正确的方法：
 let isTrue = (myValue === &amp;#39;true&amp;#39;) 注意如下写法的结果，两个结果都是 true：
 let myBool = Boolean(&amp;#39;false&amp;#39;) // true let myBool = !!&amp;#34;false&amp;#34;; // true </description>
+    </item>
+    
+    <item>
+      <title>Redis 哨兵</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/sentinel/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/sentinel/</guid>
+      <description>Redis 哨兵 Redis的主从复制模式下，一旦主节点由于故障不能提供服务，需要人工将从节点晋升为主节点，同时还要通知应用方更新主节点地址，对于很多应用场景这种故障处理的方式是无法接受的。可喜的是Redis从2.8开始正式提供了Redis Sentinel（哨兵）架构来解决这个问题。
+Redis Sentinel 高可用方案 当主节点出现故障时，Redis Sentinel 能自动完成故障发现和故障转移，并通知应用方，从而实现真正的高可用。
+Redis Sentinel是一个分布式架构，其中包含若干个Sentinel节点和Redis数据节点，每个Sentinel节点会对数据节点和其余Sentinel节点进行监控，当它发现节点不可达时，会对节点做下线标识。如果被标识的是主节点，它还会和其他Sentinel节点进行“协商”，当大多数Sentinel节点都认为主节点不可达时，它们会选举出一个Sentinel节点来完成自动故障转移的工作，同时会将这个变化实时通知给Redis应用方。整个过程完全是自动的，不需要人工来介入，所以这套方案很有效地解决了Redis的高可用问题。
+Sentinel节点本身就是独立的Redis节点，只不过它们有一些特殊，它们不存储数据，只支持部分命令。
+实现原理 定时器  每隔10秒，每个Sentinel节点会向主节点和从节点发送info命令获取最新的拓扑结构，   每隔2秒，每个Sentinel节点会向Redis数据节点的__sentinel__：hello频道上发送该Sentinel节点对于主节点的判断以及当前Sentinel节点的信息，同时每个Sentinel节点也会订阅该频道，来了解其他Sentinel节点以及它们对主节点的判断。   每隔1秒，每个Sentinel节点会向主节点、从节点、其余Sentinel节点发送一条ping命令做一次心跳检测，来确认这些节点当前是否可达。  主观下线和客观下线 第三个定时任务，每个Sentinel节点会每隔1秒对主节点、从节点、其他Sentinel节点发送ping命令做心跳检测，当这些节点超过down-after-milliseconds没有进行有效回复，Sentinel节点就会对该节点做失败判定，这个行为叫做主观下线。
+当Sentinel主观下线的节点是主节点时，该Sentinel节点会通过sentinelis-master-down-by-addr命令向其他Sentinel节点询问对主节点的判断，当超过&amp;lt;quorum&amp;gt;个数，Sentinel节点认为主节点确实有问题，这时该Sentinel节点会做出客观下线的决定，这样客观下线的含义是比较明显了，也就是大部分Sentinel节点都对主节点的下线做了同意的判定，那么这个判定就是客观的。
+领导者 Sentinel 节点选举  Redis 使用了 Raft 算法实现领导者选举。
+ 故障转移 在从节点列表中选出一个节点作为新的主节点，选择方法如下：
+ 过滤：“不健康”（主观下线、断线）、5秒内没有回复过Sentinel节点ping响应、与主节点失联超过down-after-milliseconds*10秒。 选择slave-priority（从节点优先级）最高的从节点列表，如果存在则返回，不存在则继续。 选择复制偏移量最大的从节点（复制的最完整），如果存在则返回，不存在则继续。 选择runid最小的从节点。  Sentinel领导者节点会对第一步选出来的从节点执行slaveof no one命令让其成为主节点。
+Sentinel领导者节点会向剩余的从节点发送命令，让它们成为新主节点的从节点，复制规则和parallel-syncs参数有关。
+Sentinel节点集合会将原来的主节点更新为从节点，并保持着对其关注，当其恢复后命令它去复制新的主节点。</description>
     </item>
     
     <item>
@@ -3536,6 +3635,20 @@ retryOperation(func, 1000, 5) .then(console.log) .catch(console.log); 参考  Pr
       
       <guid>https://kunzhao.org/docs/programmer-interview/java/sentinel-vs-hystrix/</guid>
       <description>Sentinel 与 Hystrix 的对比 对比     Sentinel Hystrix     隔离策略 信号量隔离 线程池隔离/信号量隔离   熔断降级策略 基于响应时间或失败比率 基于失败比率   实时指标实现 滑动窗口 滑动窗口（基于 RxJava）   规则配置 支持多种数据源 支持多种数据源   扩展性 多个扩展点 插件的形式   基于注解的支持 支持 支持   限流 基于 QPS，支持基于调用关系的限流 有限的支持   流量整形 支持慢启动、匀速器模式 不支持   系统负载保护 支持 不支持   控制台 开箱即用，可配置规则、查看秒级监控、机器发现等 不完善   常见框架的适配 Servlet、Spring Cloud、Dubbo、gRPC 等 Servlet、Spring Cloud Netflix    参考  Sentinel 与 Hystrix 的对比  </description>
+    </item>
+    
+    <item>
+      <title>同步/异步与阻塞/非阻塞</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-optimize/async_block/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-optimize/async_block/</guid>
+      <description>同步/异步与阻塞/非阻塞  两组概念不在同一个纬度
+ 同步/异步 同步：操作者主动完成了这件事情，需要自己完成的操作都是同步操作。
+异步：调用指令发出，操作马上返回，处理完成后，再通过通知的手段来告诉操作者结果，不是调用者自己完成的。
+阻塞/非阻塞 阻塞：从头到尾只做这一件事情，不能做其他事情：
+非阻塞：无需等待在这里，反复过来检查：
+总结  POSIX defines these two terms as follows: A synchronous I/O operation causes therequesting process to be blocked until that I/O operation completes. An asynchronous I/O operation does not cause the requesting process to be blocked. Using these definitions, the first four I/O modes - blocking, nonblocking, I/O multiplexing, and signal-driven I/O - are all synchronous because the actual I/O operation (recvfrom) blocks the process.</description>
     </item>
     
     <item>

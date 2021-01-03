@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Redis 复制"><meta property="og:title" content="Redis 复制" />
+<meta property="og:description" content="Redis 复制 在分布式系统中为了解决单点问题，通常会把数据复制多个副本部署到其他机器，满足故障恢复和负载均衡等需求。Redis 也是如此，它为我们提供了复制功能，实现了相同数据的多个Redis副本。复制功能是高可用 Redis 的基础。
+建立复制 从节点执行：
+slaveof {masterHost} {masterPort}主从节点复制成功建立后，可以使用 info replication 命令查看复制相关状态。
+断开复制 从节点执行：
+slaveof no one还可以执行 slaveof {newMasterHost} {newMasterPort} 来实现切主操作，不过会先清空本地数据。
+只读 默认，从节点处于只读模式。slave-read-only: true
+复制原理 Redis在2.8及以上版本使用psync命令完成主从数据同步，同步过程分为：全量复制和部分复制。
+psync 原理  主从节点各自复制偏移量。 主节点复制积压缓冲区。 主节点运行 id 。  通过 info replication 查看 master_repl_offset 和 slave_repl_offset 可以查看到主从节点的复制偏移量。
+复制积压缓冲区是保存在主节点上的一个固定长度的队列，默认大小为1MB，当主节点有连接的从节点（slave）时被创建，这时主节点（master）响应写命令时，不但会把命令发送给从节点，还会写入复制积压缓冲区。
+由于缓冲区本质上是先进先出的定长队列，所以能实现保存最近已复制数据的功能，用于部分复制和复制命令丢失的数据补救。
+每个Redis节点启动后都会动态分配一个40位的十六进制字符串作为运行ID。运行ID的主要作用是用来唯一识别Redis节点，比如从节点保存主节点的运行ID识别自己正在复制的是哪个主节点。节点。如果只使用ip&#43;port的方式识别主节点，那么主节点重启变更了整体数据集（如替换RDB/AOF文件），从节点再基于偏移量复制数据将是不安全的，因此当运行ID变化后从节点将做全量复制。可以运行info server命令查看当前节点的运行ID。
+需要注意的是Redis关闭再启动后，运行ID会随之改变。
+全量复制 一般用于初次复制场景，Redis早期支持的复制功能只有全量复制，它会把主节点全部数据一次性发送给从节点，当数据量较大时，会对主从节点和网络造成很大的开销。
+需要注意，对于数据量较大的主节点，比如生成的RDB文件超过6GB以上时要格外小心。传输文件这一步操作非常耗时，速度取决于主从节点之间网络带宽，通过细致分析Full resync和MASTER&lt;-&gt;SLAVE这两行日志的时间差，可以算出RDB文件从创建到传输完毕消耗的总时间。如果总时间超过repl-timeout所配置的值（默认60秒），从节点将放弃接受RDB文件并清理已经下载的临时文件，导致全量复制失败。
+针对数据量较大的节点，建议调大repl-timeout参数防止出现全量同步数据超时。例如对于千兆网卡的机器，网卡带宽理论峰值大约每秒传输100MB，在不考虑其他进程消耗带宽的情况下，6GB的RDB文件至少需要60秒传输时间，默认配置下，极易出现主从数据同步超时。
+关于无盘复制：为了降低主节点磁盘开销，Redis支持无盘复制，生成的RDB文件不保存到硬盘而是直接通过网络发送给从节点，通过repl-diskless-sync参数控制，默认关闭。无盘复制适用于主节点所在机器磁盘性能较差但网络带宽较充裕的场景。生成快照是一个遍历的过程，主节点会一边遍历内存，一边将序列化的内容发送到从节点，从节点还是跟之前一样，先将接收到的内容存储到磁盘文件中，再进行一次性加载。
+对于从节点开始接收RDB快照到接收完成期间，主节点仍然响应读写命令，因此主节点会把这期间写命令数据保存在复制客户端缓冲区内，当从节点加载完RDB文件后，主节点再把缓冲区内的数据发送给从节点，保证主从之间数据一致性。如果主节点创建和传输RDB的时间过长，对于高流量写入场景非常容易造成主节点复制客户端缓冲区溢出。默认配置为client-output-buffer-limit slave 256MB 64MB 60，如果60秒内缓冲区消耗持续大于64MB或者直接超过256MB时，主节点将直接关闭复制客户端连接，造成全量同步失败。
+部分复制 用于处理在主从复制中因网络闪断等原因造成的数据丢失场景，当从节点再次连上主节点后，如果条件允许，主节点会补发丢失数据给从节点。因为补发的数据远远小于全量数据，可以有效避免全量复制的过高开销。
+如果主节点的复制积压缓冲区内存在这部分数据则直接发送给从节点，这样就可以保持主从节点复制的一致性。补发的这部分数据一般远远小于全量数据，所以开销很小。
+ 主节点何时认为从节点断掉?
+ 主从节点之间网络出现中断时，如果超过 repl-timeout 时间，主节点会认为从节点故障，并中断复制连接。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/redis-copy/" />
+
+<title>Redis 复制 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.25a217b5741ca455a946d8ecac10a4db172efa05564f7dd3f8594aeae5275997.js" integrity="sha256-JaIXtXQcpFWpRtjsrBCk2xcu&#43;gVWT33T&#43;FlK6uUnWZc="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/datastructure/" >
+      Redis 数据结构
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/io-pattern/" >
+      Redis 线程 I/O 模型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/resp/" >
+      Redis RESP 通信协议
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/persistence/" >
+      Redis 持久化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-copy/"  class="active">
+      Redis 复制
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/sentinel/" >
+      Redis 哨兵
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Redis 复制</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#建立复制">建立复制</a></li>
+    <li><a href="#断开复制">断开复制</a></li>
+    <li><a href="#只读">只读</a></li>
+    <li><a href="#复制原理">复制原理</a>
+      <ul>
+        <li><a href="#psync-原理">psync 原理</a></li>
+        <li><a href="#全量复制">全量复制</a></li>
+        <li><a href="#部分复制">部分复制</a></li>
+      </ul>
+    </li>
+    <li><a href="#心跳">心跳</a></li>
+    <li><a href="#规避复制风暴">规避复制风暴</a></li>
+    <li><a href="#最终一致">最终一致</a></li>
+    <li><a href="#wait-指令">wait 指令</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="redis-复制">Redis 复制</h1>
+<p>在分布式系统中为了解决单点问题，通常会把数据复制多个副本部署到其他机器，满足故障恢复和负载均衡等需求。Redis 也是如此，它为我们提供了复制功能，实现了相同数据的多个Redis副本。<strong>复制功能是高可用 Redis 的基础</strong>。</p>
+<h2 id="建立复制">建立复制</h2>
+<p>从节点执行：</p>
+<pre><code>slaveof {masterHost} {masterPort}
+</code></pre><p>主从节点复制成功建立后，可以使用 <code>info replication</code> 命令查看复制相关状态。</p>
+<h2 id="断开复制">断开复制</h2>
+<p>从节点执行：</p>
+<pre><code>slaveof no one
+</code></pre><p>还可以执行 <code>slaveof {newMasterHost} {newMasterPort}</code> 来实现切主操作，不过会先清空本地数据。</p>
+<h2 id="只读">只读</h2>
+<p>默认，从节点处于只读模式。<code>slave-read-only: true</code></p>
+<h2 id="复制原理">复制原理</h2>
+<p><img src="/images/docs/tutorial/redis/redis-copy/Snipaste_2021-01-03_20-45-04.png" alt=""></p>
+<p>Redis在2.8及以上版本使用<code>psync</code>命令完成主从数据同步，同步过程分为：全量复制和部分复制。</p>
+<h3 id="psync-原理">psync 原理</h3>
+<ul>
+<li>主从节点各自复制偏移量。</li>
+<li>主节点复制积压缓冲区。</li>
+<li>主节点运行 id 。</li>
+</ul>
+<p>通过 <code>info replication</code> 查看 <code>master_repl_offset</code> 和 <code>slave_repl_offset</code> 可以查看到主从节点的<strong>复制偏移量</strong>。</p>
+<p><img src="/images/docs/tutorial/redis/redis-copy/Snipaste_2021-01-03_21-06-38.png" alt=""></p>
+<p>复制积压缓冲区是保存在主节点上的一个固定长度的队列，默认大小为1MB，当主节点有连接的从节点（slave）时被创建，这时主节点（master）响应写命令时，不但会把命令发送给从节点，还会写入复制积压缓冲区。</p>
+<p><img src="/images/docs/tutorial/redis/redis-copy/Snipaste_2021-01-03_21-07-06.png" alt=""></p>
+<p>由于缓冲区本质上是先进先出的定长队列，所以能实现<strong>保存最近已复制数据</strong>的功能，用于部分复制和复制命令丢失的数据补救。</p>
+<p>每个Redis节点启动后都会动态分配一个40位的十六进制字符串作为运行ID。运行ID的主要作用是用来唯一识别Redis节点，比如从节点保存主节点的运行ID识别自己正在复制的是哪个主节点。节点。如果只使用<code>ip+port</code>的方式识别主节点，那么主节点重启变更了整体数据集（如替换<code>RDB/AOF</code>文件），从节点再基于偏移量复制数据将是不安全的，因此当运行ID变化后从节点将做全量复制。可以运行<code>info server</code>命令查看当前节点的运行ID。</p>
+<p>需要注意的是Redis关闭再启动后，运行ID会随之改变。</p>
+<h3 id="全量复制">全量复制</h3>
+<p>一般用于初次复制场景，Redis早期支持的复制功能只有全量复制，它会把<strong>主节点全部数据一次性发送给从节点</strong>，当数据量较大时，会对主从节点和网络造成很大的开销。</p>
+<p><img src="/images/docs/tutorial/redis/redis-copy/Snipaste_2021-01-03_20-49-52.png" alt=""></p>
+<p>需要注意，对于数据量较大的主节点，比如生成的RDB文件超过6GB以上时要格外小心。传输文件这一步操作非常耗时，速度取决于主从节点之间网络带宽，通过细致分析<code>Full resync</code>和<code>MASTER&lt;-&gt;SLAVE</code>这两行日志的时间差，可以算出RDB文件从创建到传输完毕消耗的总时间。如果总时间超过<code>repl-timeout</code>所配置的值（默认60秒），从节点将放弃接受RDB文件并清理已经下载的临时文件，导致全量复制失败。</p>
+<p>针对数据量较大的节点，建议调大<code>repl-timeout</code>参数防止出现全量同步数据超时。例如对于千兆网卡的机器，网卡带宽理论峰值大约每秒传输100MB，在不考虑其他进程消耗带宽的情况下，6GB的RDB文件至少需要60秒传输时间，默认配置下，极易出现主从数据同步超时。</p>
+<p>关于<strong>无盘复制</strong>：为了降低主节点磁盘开销，Redis支持无盘复制，生成的RDB文件不保存到硬盘而是直接通过网络发送给从节点，通过<code>repl-diskless-sync</code>参数控制，默认关闭。无盘复制适用于主节点所在机器磁盘性能较差但网络带宽较充裕的场景。生成快照是一个遍历的过程，主节点会<strong>一边遍历内存，一边将序列化的内容发送到从节点</strong>，从节点还是跟之前一样，先将接收到的内容存储到磁盘文件中，再进行一次性加载。</p>
+<p>对于从节点开始接收RDB快照到接收完成期间，主节点仍然响应读写命令，因此主节点会把这期间写命令数据保存在复制客户端缓冲区内，当从节点加载完RDB文件后，主节点再把缓冲区内的数据发送给从节点，保证<strong>主从之间数据一致性</strong>。如果主节点创建和传输RDB的时间过长，对于高流量写入场景非常容易造成主节点复制客户端缓冲区溢出。默认配置为<code>client-output-buffer-limit slave 256MB 64MB 60</code>，如果60秒内缓冲区消耗持续大于64MB或者直接超过256MB时，主节点将直接关闭复制客户端连接，造成全量同步失败。</p>
+<h3 id="部分复制">部分复制</h3>
+<p>用于处理在主从复制中因网络闪断等原因造成的数据丢失场景，当从节点再次连上主节点后，如果条件允许，主节点会<strong>补发丢失数据</strong>给从节点。因为补发的数据远远小于全量数据，可以有效避免全量复制的过高开销。</p>
+<p>如果主节点的复制积压缓冲区内存在这部分数据则直接发送给从节点，这样就可以保持主从节点复制的一致性。补发的这部分数据一般远远小于全量数据，所以开销很小。</p>
+<blockquote>
+<p>主节点何时认为从节点断掉?</p>
+</blockquote>
+<p>主从节点之间网络出现中断时，如果超过 <code>repl-timeout</code> 时间，主节点会认为从节点故障，并中断复制连接。</p>
+<p>当主从连接恢复后，由于从节点之前保存了自身已复制的偏移量和主节点的运行ID。因此会把它们当作<code>psync</code>参数发送给主节点，要求进行部分复制操作。</p>
+<p>主节点接到<code>psync</code>命令后首先核对参数<code>runId</code>是否与自身一致，如果一致，说明之前复制的是当前主节点；之后根据参数<code>offset</code>在自身<strong>复制积压缓冲区</strong>查找，如果偏移量之后的数据存在缓冲区中，则对从节点发送<code>+CONTINUE</code>响应，表示可以进行部分复制。</p>
+<h2 id="心跳">心跳</h2>
+<p>主节点默认每隔10秒对从节点发送<code>ping</code>命令，判断从节点的存活性和连接状态。可通过参数<code>repl-ping-slave-period</code>控制发送频率。</p>
+<p>从节点在主线程中每隔1秒发送<code>replconf ack {offset}</code>命令，给主节点上报自身当前的复制偏移量。</p>
+<h2 id="规避复制风暴">规避复制风暴</h2>
+<p>复制风暴是指大量从节点对同一主节点或者对同一台机器的多个主节点短时间内发起全量复制的过程。复制风暴对发起复制的主节点或者机器造成大量开销，导致CPU、内存、带宽消耗。</p>
+<p>解决方案首先可以减少主节点（master）挂载从节点（slave）的数量，或者采用树状复制结构，加入中间层从节点用来保护主节点。</p>
+<p><img src="/images/docs/tutorial/redis/redis-copy/Snipaste_2021-01-03_21-31-20.png" alt=""></p>
+<h2 id="最终一致">最终一致</h2>
+<p>Redis 的主从数据是异步同步的，所以分布式的 Redis 系统并不满足「一致性」要求。当客户端在 Redis 的主节点修改了数据后，立即返回，即使在主从网络断开的情况下，主节点依旧可以正常对外提供修改服务，所以 Redis 满足「可用性」。</p>
+<p>Redis 保证「最终一致性」，从节点会努力追赶主节点，最终从节点的状态会和主节点的状态将保持一致。如果网络断开了，主从节点的数据将会出现大量不一致，一旦网络恢复，从节点会采用多种策略努力追赶上落后的数据，继续尽力保持和主节点一致。</p>
+<h2 id="wait-指令">wait 指令</h2>
+<p>Redis 的复制是异步进行的，<code>wait</code> 指令可以让异步复制变身同步复制，确保系统的强一致性 (不严格)。<code>wait</code> 指令是 Redis3.0 版本以后才出现的。</p>
+<pre><code>&gt; set key value
+OK
+&gt; wait 1 0
+(integer) 1
+</code></pre><p><code>wait</code> 提供两个参数，第一个参数是从库的数量 <code>N</code>，第二个参数是时间 <code>t</code>，以毫秒为单位。它表示等待 <code>wait</code> 指令之前的所有写操作同步到 <code>N</code> 个从库 (也就是确保 <code>N</code> 个从库的同步没有滞后)，最多等待时间 <code>t</code>。如果时间 <code>t=0</code>，表示无限等待直到 <code>N</code> 个从库同步完成达成一致。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://book.douban.com/subject/26971561/">Redis开发与运维</a></li>
+<li><a href="https://juejin.cn/book/6844733724618129422">Redis 深度历险：核心原理与应用实践</a></li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#建立复制">建立复制</a></li>
+    <li><a href="#断开复制">断开复制</a></li>
+    <li><a href="#只读">只读</a></li>
+    <li><a href="#复制原理">复制原理</a>
+      <ul>
+        <li><a href="#psync-原理">psync 原理</a></li>
+        <li><a href="#全量复制">全量复制</a></li>
+        <li><a href="#部分复制">部分复制</a></li>
+      </ul>
+    </li>
+    <li><a href="#心跳">心跳</a></li>
+    <li><a href="#规避复制风暴">规避复制风暴</a></li>
+    <li><a href="#最终一致">最终一致</a></li>
+    <li><a href="#wait-指令">wait 指令</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
