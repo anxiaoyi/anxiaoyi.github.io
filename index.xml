@@ -565,7 +565,7 @@ find 可用于根据各种条件查找，例如您可以按权限、用户、组
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/network/http/</guid>
-      <description>HTTP 常见状态码    状态码 含义     1xx Information response   100 continue   101 Switching Protocols   2xx success   200 OK: 成功响应   201 Created   202 Accepted   204 No Content: 服务器已经成功处理请求，没有返回任何 Body (比如服务器收到一个发邮件的请求，服务器返回 204，表示已经收到请求，邮件后续会发送)   206 Partial Content: 服务器返回了某个文件的一部分   3xx redirection   301 Moved Permanently: 永久重定向   302 Found: 临时重定向   304 Not Modified: 浏览器通过 If-None-Match 头或 If-Modified-Since 头询问，服务器告知文件未改动   4xx client errors   400 Bad Request: 客户端发送的 HTTP 有语法错误、太大、帧错误等   401 Unauthorized   403 Forbidden   404 Not Found   405 Method Not Allowed   429 Too Many Requests   5xx server errors   500 Internal Server Error   502 Bad Gateway   503 Service Unavailable   504 Gateway Timeout    HTTP 方法    方法 含义     GET 获取数据   HEAD 与 GET 类似，但只返回响应头   POST 提交表单   PUT 用一个新的资源完全替换掉服务器的资源   DELETE 删除资源   CONNECT 建立一个 tunnel   OPTIONS 询问服务器支持哪些方法   TRACE 发起环回诊断，主要用于诊断   PATCH 对服务器资源进行部分更新    HTTP 报文 在浏览器中输入 &amp;ldquo;kunzhao.</description>
+      <description>HTTP 常见状态码    状态码 含义     1xx Information response   100 continue   101 Switching Protocols   2xx success   200 OK: 成功响应   201 Created   202 Accepted   204 No Content: 服务器已经成功处理请求，没有返回任何 Body (比如服务器收到一个发邮件的请求，服务器返回 204，表示已经收到请求，邮件后续会发送)   206 Partial Content: 服务器返回了某个文件的一部分   3xx redirection   300 Multiple Choices 是一个用来表示重定向的响应状态码，表示该请求拥有多种可能的响应。用户代理或者用户自身应该从中选择一个。   301 Moved Permanently: 永久重定向   302 Found: 临时重定向   304 Not Modified: 浏览器通过 If-None-Match 头或 If-Modified-Since 头询问，服务器告知文件未改动   4xx client errors   400 Bad Request: 客户端发送的 HTTP 有语法错误、太大、帧错误等   401 Unauthorized   403 Forbidden   404 Not Found   405 Method Not Allowed   429 Too Many Requests   499 Nginx 自己定义的，client has closed connection   5xx server errors   500 Internal Server Error   502 Bad Gateway   503 Service Unavailable   504 Gateway Timeout    HTTP 方法    方法 含义     GET 获取数据   HEAD 与 GET 类似，但只返回响应头   POST 提交表单   PUT 用一个新的资源完全替换掉服务器的资源   DELETE 删除资源   CONNECT 建立一个 tunnel   OPTIONS 询问服务器支持哪些方法   TRACE 发起环回诊断，主要用于诊断   PATCH 对服务器资源进行部分更新    HTTP 报文 在浏览器中输入 &amp;ldquo;kunzhao.</description>
     </item>
     
     <item>
@@ -1282,6 +1282,16 @@ MQAdminStartup.main(new String[] { &amp;#34;queryMsgById&amp;#34;, &amp;#34;-n&a
     </item>
     
     <item>
+      <title>Transactional</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/transactional/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/transactional/</guid>
+      <description>@Transactional Spring @Transactional @Transactional 注解中中几个比较重要的属性：
+public @interface Transactional { // REQUIRED: 0,  // SUPPORTS: 1,  // MANDATORY: 2,  // REQUIRES_NEW: 3,  // NOT_SUPPORTED: 4,  // NEVER: 5,  // NESTED: 6  Propagation propagation() default Propagation.REQUIRED; // DEFAULT: -1  // READ_UNCOMMITTED: 1,  // READ_COMMITTED: 2,  // REPEATABLE_READ: 4,  // SERIALIZABLE: 8  Isolation isolation() default Isolation.DEFAULT; @AliasFor(&amp;#34;value&amp;#34;) String transactionManager() default &amp;#34;&amp;#34;; // 从这一点设置的时间点开始（时间点a）到这个事务结束的过程中，其他事务所提交的数据，该事务将看不见！（查询中不会出现别人在时间点a之后提交的数据）  // 注意是一次执行多次查询来统计某些信息，这时为了保证数据整体的一致性，要用只读事务  boolean readOnly() default false; // 超时，事务是否发生回滚  int timeout default -1; } 事务传播属性 Propagation  REQUIRED: 有事务，加入事务，放到一个事务中执行，有异常一起回滚；没有就新创建一个事务。 REQUIRES_NEW: 无论有没有事务，都会新启一个事务，如果原来有，老的挂起，有异常互不干扰。 SUPPORTS: 有事务，加入事务，放到一个事务中执行，有异常一起回滚；否则不创建事务。 MANDATORY: 必须在一个已有事务中执行，否则抛出异常。 NEVER: 必须在一个没有事务中执行，否则抛出异常。 NOT_SUPPORTED: 不开启事务，并挂起任何存在的事务。 NESTED: 如果有事务运行，就作为这个事务的嵌套事务运行；如果没有活动事务，则按REQUIRED属性执行。  @Transactional 使用注意事项  @Transactional 只能应用到 public 方法才有效 @Transactional 不建议用在处理时间过长的事务 一个有 @Transactional 的方法被没有 @Transactional 方法调用时，会导致 Transactional 作用失效。 默认配置下，Spring 只有在抛出的异常为运行时 unchecked 异常时才回滚该事务，也就是抛出的异常为 RuntimeException 的子类(Errors也会导致事务回滚)，而抛出 checked 异常则不会导致事务回滚 。可通过 @Transactional rollbackFor 进行配置。  手动设置事务回滚 // 事务管理器 @Autowired private DataSourceTransactionManager transactionManager; @Transactional public void save(User user) { // 创建一个事务  DefaultTransactionDefinition def = new DefaultTransactionDefinition(); // 显式设置事务名称是只能通过编程完成的操作  def.</description>
+    </item>
+    
+    <item>
       <title>体系的深度治理</title>
       <link>https://kunzhao.org/docs/tutorial/distributed/deep-govern/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1478,6 +1488,23 @@ DNS 层次结构  根 DNS 服务器 ：返回顶级域 DNS 服务器的 IP 地�
     </item>
     
     <item>
+      <title>Redis 集群</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/cluster/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/cluster/</guid>
+      <description>Redis 集群 RedisCluster 是 Redis 的分布式解决方案，在 3.0 版本正式推出，有效地解决了Redis分布式方面的需求。当遇到单机内存、并发、流量等瓶颈时，可以采用 Cluster 架构方案达到负载均衡的目的。
+数据分区 RedisCluster 采用哈希分区规则
+虚拟槽分区巧妙地使用了哈希空间，使用分散度良好的哈希函数把所有数据映射到一个固定范围的整数集合中，整数定义为槽（slot）。这个范围一般远远大于节点数，比如RedisCluster槽范围是0~16383。槽是集群内数据管理和迁移的基本单位。采用大范围槽的主要目的是为了方便数据拆分和集群扩展。每个节点会负责一定数量的槽。
+RedisCluser 采用虚拟槽分区，所有的键根据哈希函数映射到 0 ~ 16383 整数槽内，计算公式：slot = CRC16（key）&amp;amp; 16383。每一个节点负责维护一部分槽以及槽所映射的键值数据。
+槽集合和节点的关系：
+使用 CRC16(key) &amp;amp; 16383 将键映射到槽上：
+ 虚拟槽分区，解耦了数据和节点之间的关系，简化了节点扩容和收缩难度。
+ 集群限制  key 批量操作支持有限。如mset、mget，目前只支持具有相同slot值的key执行批量操作。对于映射为不同slot值的key由于执行mSet、mget等操作可能存在于多个节点上因此不被支持。 只支持多key在同一节点上的事务操作，当多个key分布在不同的节点上时无法使用事务功能。 key作为数据分区的最小粒度，因此不能将一个大的键值对象如hash、list等映射到不同的节点。 复制结构只支持一层，从节点只能复制主节点，不支持嵌套树状复制结构。  集群搭建  Redis 集群一般由多个节点组成，节点数量至少为6个才能保证组成完整高可用的集群。 节点握手是指一批运行在集群模式下的节点通过Gossip协议彼此通信，达到感知对方的过程。 Redis集群把所有的数据映射到16384个槽中。每个key会映射为一个固定的槽，只有当节点分配了槽，才能响应和这些槽关联的键命令。 redis-trib.rb是采用Ruby实现的Redis集群管理工具。内部通过Cluster相关命令帮我们简化集群创建、检查、槽迁移和均衡等常见运维操作，使用之前需要安装Ruby依赖环境。  redis-trib.rb create节点通信 Gossip 协议的信息交换机制具有天然的分布式特性，但是有成本：加重带宽和计算的负担。因此选择每次需要通信的节点，变得非常重要：
+ 每秒随机选取 5 个最久没有通信的节点发送 ping 消息。 每 100 毫秒会扫描本地节点列表，发现最近一次接受 pong 时间大于 cluster_node_timeout / 2 ，则立刻发送 pong 消息，防止该节点信息太长时间未更新。  集群伸缩 redis-trib.</description>
+    </item>
+    
+    <item>
       <title>RocketMQ 主备同步</title>
       <link>https://kunzhao.org/docs/rocketmq/rocketmq-master-slave-sync/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1551,6 +1578,18 @@ plugins: [ // plugins 的配置  // html-webpack-plugin  // 功能：默认会�
     </item>
     
     <item>
+      <title>Redis 缓存</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/cache/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/cache/</guid>
+      <description>Redis 缓存 缓存更新策略  低一致性业务建议配置最大内存和淘汰策略的方式使用。 高一致性业务可以结合使用超时剔除和主动更新，这样即使主动更新出了问题，也能保证数据过期时间后删除脏数据。  穿透优化 缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常出于容错的考虑，如果从存储层查不到数据则不写入缓存层。缓存穿透将导致不存在的数据每次请求都要到存储层去查询，失去了缓存保护后端存储的意义。
+通常可以在程序中分别统计总调用数、缓存层命中数、存储层命中数，如果发现大量存储层空命中，可能就是出现了缓存穿透问题。造成缓存穿透的基本原因有两个。第一，自身业务代码或者数据出现问题，第二，一些恶意攻击、爬虫等造成大量空命中。下面我们来看一下如何解决缓存穿透问题。
+ 缓存空对象。设置较短过期时间，自动剔除，可以减少内存占用；存储层有了数据，可以利用消息系统或其它方式清楚掉缓存中的空对象。   布隆过滤器拦截  雪崩优化  保证缓存层服务高可用性。和飞机都有多个引擎一样。 依赖隔离组件为后端限流并降级  热点 Key 重建优化 在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。
+ 互斥锁  </description>
+    </item>
+    
+    <item>
       <title>TCP</title>
       <link>https://kunzhao.org/docs/tutorial/network/tcp/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1621,6 +1660,18 @@ searchCanStart() 比 canListenOnPort() 更具体一些，这个名字直接描�
 # 切换到 master 分支 git checkout master # 合并 user2/i18n 分支 git merge user2/i18n 合并后的分支示意图：
 Git rebase 我们使用 git rebase 来合并 user2/i18n 到 master 分支上：
 git checkout user2/i18n git rebase master # 如果有冲突，则需要解决冲突 # 解决完冲突，使用 git add -u 将完成冲突解决的文件加入到暂存区 # git rebase --continue # 直接推送，用本地的 user2/i18n 分支更新远程的 master 分支即可 git push origin user2/i18n:master rebase 之后的分支示例：</description>
+    </item>
+    
+    <item>
+      <title>Redis 分布式锁 🔒</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/distributed-lock/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/distributed-lock/</guid>
+      <description>Redis 分布式锁 🔒 简单实现 // 这里的冒号:就是一个普通的字符，没特别含义，它可以是任意其它字符，不要误解 &amp;gt; setnx lock:codehole true OK ... do something critical ... &amp;gt; del lock:codehole (integer) 1 缺点：逻辑执行到中间出现异常，可能会导致 del 没有被调用，🔒 得不到释放。
+加上过期时间的简单实现 &amp;gt; setnx lock:codehole true OK &amp;gt; expire lock:codehole 5 ... do something critical ... &amp;gt; del lock:codehole (integer) 1 缺点：setnx 和 expire 之间服务器进程突然挂掉了，可能是因为机器掉电或者是被人为杀掉的，就会导致 expire 得不到执行，也会造成死锁。
+Redis 2.8 合并 setnx 和 expire 指令 合并为原子操作。
+&amp;gt; set lock:codehole true ex 5 nx OK ... do something critical .</description>
     </item>
     
     <item>
@@ -1698,6 +1749,23 @@ git checkout user2/i18n git rebase master # 如果有冲突，则需要解决冲
 git mergetool 打开之前，也可以使用 git config 进行简单的配置，比如使用 vimdiff 工具作为默认的冲突解决工具：
 git config merge.tool vimdiff git config merge.conflictstyle diff3 git config mergetool.prompt false 放弃合并操作 你暂时不想解决冲突：
 git reset 参考  How to resolve merge conflicts in Git  扫描下面二维码，在手机端阅读：</description>
+    </item>
+    
+    <item>
+      <title>Redis 过期和淘汰策略</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/evict-maxmemory/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/evict-maxmemory/</guid>
+      <description>Redis 过期和淘汰策略 过期策略  过期的 key 集合
+ redis 会将每个设置了过期时间的 key 放入到一个独立的字典中，以后会定时遍历这个字典来删除到期的 key。除了定时遍历之外，它还会使用惰性策略来删除过期的 key，所谓惰性策略就是在客户端访问这个 key 的时候，redis 对 key 的过期时间进行检查，如果过期了就立即删除。定时删除是集中处理，惰性删除是零散处理。
+ 定时扫描策略
+ Redis 默认会每秒进行十次过期扫描，过期扫描不会遍历过期字典中所有的 key，而是采用了一种简单的贪心策略。
+ 从过期字典中随机 20 个 key； 删除这 20 个 key 中已经过期的 key； 如果过期的 key 比率超过 1/4，那就重复步骤 1；  同时，为了保证过期扫描不会出现循环过度，导致线程卡死现象，算法还增加了扫描时间的上限，默认不会超过 25ms。
+业务开发人员一定要注意过期时间，如果有大批量的 key 过期，要给过期时间设置一个随机范围，而不宜全部在同一时间过期，分散过期处理的压力：
+# 在目标过期时间上增加一天的随机时间 redis.expire_at(key, random.randint(86400) + expire_ts)  从库的过期策略
+ 从库不会进行过期扫描，从库对过期的处理是被动的。主库在 key 到期时，会在 AOF 文件里增加一条 del 指令，同步到所有的从库，从库通过执行这条 del 指令来删除过期的 key。
+因为指令同步是异步进行的，所以主库过期的 key 的 del 指令没有及时同步到从库的话，会出现主从数据的不一致，主库没有的数据在从库里还存在，比如集群环境分布式锁的算法漏洞就是因为这个同步延迟产生的。</description>
     </item>
     
     <item>
@@ -2577,6 +2645,15 @@ Combination Sum 原题 一个数组，从这个数组中找出所有相加等于
     </item>
     
     <item>
+      <title>Oracle VS MySQL</title>
+      <link>https://kunzhao.org/docs/tutorial/database/oracls-vs-mysql/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/oracls-vs-mysql/</guid>
+      <description>Oracle VS MySQL     Oracle MySQL     事务默认隔离级别 read commited repeatable read   价格 ORACLE 11g 标准版售价在六位数 开源免费   AUTO_INCREMENT 不可以声明，主键自带自增长 可以声明   索引 Oracle 的索引是数据库级别，不可以同名 MySQL 的索引是表级别的，可以同名   数字类型 NUMBER INT/DECIMAL   分页 Oracle 是需要用到伪列 ROWNUM 和嵌套查询 LIMIT X, Y   默认端口 1521 3306    参考  Oracle与MySQL的SQL语句区别  </description>
+    </item>
+    
+    <item>
       <title>平均负载</title>
       <link>https://kunzhao.org/docs/tutorial/unix-optimize/avg-load/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -2661,6 +2738,18 @@ function refreshRem() { var docEl = doc.documentElement; var width = docEl.getBo
  LinkedIn 的简历 简历是一种 self-contained 文档，采用 JSON 的表达方式应该会更为合适。
 JSON 示例如下:
 { &amp;#34;user_id&amp;#34;: 251, &amp;#34;first_name&amp;#34;: &amp;#34;Bill&amp;#34;, &amp;#34;last_name&amp;#34;: &amp;#34;Gates&amp;#34;, &amp;#34;summary&amp;#34;: &amp;#34;Co-chair of the Bill &amp;amp; Melinda Gates... Active blogger.&amp;#34;, &amp;#34;region_id&amp;#34;: &amp;#34;us:91&amp;#34;, &amp;#34;industry_id&amp;#34;: 131, &amp;#34;photo_url&amp;#34;: &amp;#34;/p/7/000/253/05b/308dd6e.jpg&amp;#34;, &amp;#34;positions&amp;#34;: [ {&amp;#34;job_title&amp;#34;: &amp;#34;Co-chair&amp;#34;, &amp;#34;organization&amp;#34;: &amp;#34;Bill &amp;amp; Melinda Gates Foundation&amp;#34;}, {&amp;#34;job_title&amp;#34;: &amp;#34;Co-founder, Chairman&amp;#34;, &amp;#34;organization&amp;#34;: &amp;#34;Microsoft&amp;#34;} ], &amp;#34;education&amp;#34;: [ {&amp;#34;school_name&amp;#34;: &amp;#34;Harvard University&amp;#34;, &amp;#34;start&amp;#34;: 1973, &amp;#34;end&amp;#34;: 1975}, {&amp;#34;school_name&amp;#34;: &amp;#34;Lakeside School, Seattle&amp;#34;, &amp;#34;start&amp;#34;: null, &amp;#34;end&amp;#34;: null} ], &amp;#34;contact_info&amp;#34;: { &amp;#34;blog&amp;#34;: &amp;#34;http://thegatesnotes.</description>
+    </item>
+    
+    <item>
+      <title>CPU 飙升或 load 飙升</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-optimize/high-cpu-and-load/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-optimize/high-cpu-and-load/</guid>
+      <description>CPU 飙升或 load 飙升 CPU 使用率飙升怎么办 ? 通过 top、ps、pidstat 等工具，你能够轻松找到 CPU 使用率较高（比如 100% ）的进程。接下来，你可能又想知道，占用 CPU 的到底是代码里的哪个函数呢？找到它，你才能更高效、更针对性地进行优化。
+哪种工具适合在第一时间分析进程的 CPU 问题呢？我的推荐是 perf。perf 是 Linux 2.6.31 以后内置的性能分析工具。它以性能事件采样为基础，不仅可以分析系统的各种事件和内核性能，还可以用来分析指定应用程序的性能问题。
+# -g开启调用关系分析，-p指定php-fpm的进程号21515 $ perf top -g -p 21515  用户 CPU 和 Nice CPU 高，说明用户态进程占用了较多的 CPU，所以应该着重排查进程的性能问题。 系统 CPU 高，说明内核态占用了较多的 CPU，所以应该着重排查内核线程或者系统调用的性能问题。  load 飙升怎么办 ? 用 iostat、mpstat、pidstat 等工具，找出平均负载升高的根源。
+ 平均负载高有可能是 CPU 密集型进程导致的； 平均负载高并不一定代表 CPU 使用率高，还有可能是 I/O 更繁忙了； 当发现负载高的时候，你可以使用 mpstat、pidstat 等工具，辅助分析负载的来源。  </description>
     </item>
     
     <item>
@@ -3187,6 +3276,23 @@ let b = new Foo(); b.__proto___ === Foo.prototype // true 自 ECMAScript5 起，
       <description>HTML 语义化 作用 Web语义化是指使用恰当语义的html标签、class类名等内容，让页面具有良好的结构与含义，从而让人和机器都能快速理解网页内容。语义化的web页面一方面可以让机器在更少的人类干预情况下收集并研究网页的信息，从而可以读懂网页的内容，然后将收集汇总的信息进行分析，结果为人类所用；另一方面它可以让开发人员读懂结构和用户以及屏幕阅读器（如果访客有视障）能够读懂内容。 简单来说就是利于 SEO，便于阅读维护理解。
 常见语义化标签  i：专业术语 em：强调文本 strong：这个文本非常重要 section：文档中的一个区域、一节 article：文档、页面、网站中的独立结构 aside：附属信息 nav：页面的导航链接区域 footer：页脚 hgroup：文章的标题 header：页眉  dl、dt、dd &amp;lt;dl&amp;gt; 代表 description list，这个 list 封装了若干个 terms (&amp;lt;dt&amp;gt;) 以及 descriptions (&amp;lt;dd&amp;gt;) 信息。
 &amp;lt;dl&amp;gt; &amp;lt;dt&amp;gt;火狐浏览器&amp;lt;/dt&amp;gt; &amp;lt;dd&amp;gt; 由 Mozilla 组织以及数百个志愿者一起开发的一款免费、开源、跨平台的 Web 浏览器。 &amp;lt;/dd&amp;gt; &amp;lt;dt&amp;gt;Chrome 浏览器&amp;lt;/dt&amp;gt; &amp;lt;dd&amp;gt; 谷歌浏览器，是一个由Google（谷歌）公司开发的开放源代码网页浏览器。 &amp;lt;/dd&amp;gt; &amp;lt;/dl&amp;gt; </description>
+    </item>
+    
+    <item>
+      <title>ShardingSphere 3.X</title>
+      <link>https://kunzhao.org/docs/tutorial/database/sharding-sphere/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/sharding-sphere/</guid>
+      <description>ShardingSphere 3.X 分片 分片键 用于分片的数据库字段，是将数据库(表)水平拆分的关键字段。例：将订单表中的订单主键的尾数取模分片，则订单主键为分片字段。 SQL中如果无分片字段，将执行全路由，性能较差。 除了对单分片字段的支持，ShardingSphere也支持根据多个字段进行分片。
+分片算法 通过分片算法将数据分片，支持通过=、BETWEEN和IN分片。分片算法需要应用方开发者自行实现，可实现的灵活度非常高。
+ 精确分片算法 PreciseShardingAlgorithm: 用于处理使用单一键作为分片键的 = 与 IN 进行分片的场景。 范围分片算法 RangeShardingAlgorithm: 用于处理使用单一键作为分片键的 BETWEEN AND 进行分片的场景。 复合分片算法 ComplexKeysShardingAlgorithm: 用于处理使用多键作为分片键进行分片的场景。 Hint 分片算法 HintShardingAlgorithm: 用于处理使用 Hint 行分片的场景。  分片策略 包含分片键和分片算法，由于分片算法的独立性，将其独立抽离。真正可用于分片操作的是分片键 + 分片算法，也就是分片策略。目前提供5种分片策略。
+ 标准分片策略 复合分片策略 行表达式分片策略: 使用 Groovy 表达式 Hint 分片策略 不分片策略   行表达式语法说明
+ 行表达式的使用非常直观，只需要在配置中使用${ expression }或$-&amp;gt;{ expression }标识行表达式即可。 目前支持数据节点和分片算法这两个部分的配置。行表达式的内容使用的是Groovy的语法，Groovy能够支持的所有操作，行表达式均能够支持。
+${begin..end}表示范围区间
+${[unit1, unit2, unit_x]}表示枚举值
+(1) 行表达式 ${[&#39;online&#39;, &#39;offline&#39;]}_table${1..3} 解析为：
+online_table1, online_table2, online_table3, offline_table1, offline_table2, offline_table3 (2) 数据节点配置</description>
     </item>
     
     <item>

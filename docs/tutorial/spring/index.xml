@@ -45,5 +45,15 @@
 &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;org.apache.tomcat.embed&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;tomcat-embed-jasper&amp;lt;/artifactId&amp;gt; &amp;lt;scope&amp;gt;provided&amp;lt;/scope&amp;gt; &amp;lt;/dependency&amp;gt; 添加 Servlet 支持 &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;javax.servlet&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;jstl&amp;lt;/artifactId&amp;gt; &amp;lt;/dependency&amp;gt; 设置打包成 WAR &amp;lt;!-- 这里设置打包的形式 默认为jar --&amp;gt; &amp;lt;packaging&amp;gt;war&amp;lt;/packaging&amp;gt; 修改 SpringApplication 配置 import org.springframework.boot.builder.SpringApplicationBuilder; import org.springframework.boot.web.servlet.support.SpringBootServletInitializer; @SpringBootApplication public class SpringBootStartApplication extends SpringBootServletInitializer { public static void main(String...args) { SpringApplication.run(SpringBootStartApplication.class, args); } @Override protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) { // 注意这里要指向原先用main方法执行的Application启动类 	return builder.</description>
     </item>
     
+    <item>
+      <title>Transactional</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/transactional/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/transactional/</guid>
+      <description>@Transactional Spring @Transactional @Transactional 注解中中几个比较重要的属性：
+public @interface Transactional { // REQUIRED: 0,  // SUPPORTS: 1,  // MANDATORY: 2,  // REQUIRES_NEW: 3,  // NOT_SUPPORTED: 4,  // NEVER: 5,  // NESTED: 6  Propagation propagation() default Propagation.REQUIRED; // DEFAULT: -1  // READ_UNCOMMITTED: 1,  // READ_COMMITTED: 2,  // REPEATABLE_READ: 4,  // SERIALIZABLE: 8  Isolation isolation() default Isolation.DEFAULT; @AliasFor(&amp;#34;value&amp;#34;) String transactionManager() default &amp;#34;&amp;#34;; // 从这一点设置的时间点开始（时间点a）到这个事务结束的过程中，其他事务所提交的数据，该事务将看不见！（查询中不会出现别人在时间点a之后提交的数据）  // 注意是一次执行多次查询来统计某些信息，这时为了保证数据整体的一致性，要用只读事务  boolean readOnly() default false; // 超时，事务是否发生回滚  int timeout default -1; } 事务传播属性 Propagation  REQUIRED: 有事务，加入事务，放到一个事务中执行，有异常一起回滚；没有就新创建一个事务。 REQUIRES_NEW: 无论有没有事务，都会新启一个事务，如果原来有，老的挂起，有异常互不干扰。 SUPPORTS: 有事务，加入事务，放到一个事务中执行，有异常一起回滚；否则不创建事务。 MANDATORY: 必须在一个已有事务中执行，否则抛出异常。 NEVER: 必须在一个没有事务中执行，否则抛出异常。 NOT_SUPPORTED: 不开启事务，并挂起任何存在的事务。 NESTED: 如果有事务运行，就作为这个事务的嵌套事务运行；如果没有活动事务，则按REQUIRED属性执行。  @Transactional 使用注意事项  @Transactional 只能应用到 public 方法才有效 @Transactional 不建议用在处理时间过长的事务 一个有 @Transactional 的方法被没有 @Transactional 方法调用时，会导致 Transactional 作用失效。 默认配置下，Spring 只有在抛出的异常为运行时 unchecked 异常时才回滚该事务，也就是抛出的异常为 RuntimeException 的子类(Errors也会导致事务回滚)，而抛出 checked 异常则不会导致事务回滚 。可通过 @Transactional rollbackFor 进行配置。  手动设置事务回滚 // 事务管理器 @Autowired private DataSourceTransactionManager transactionManager; @Transactional public void save(User user) { // 创建一个事务  DefaultTransactionDefinition def = new DefaultTransactionDefinition(); // 显式设置事务名称是只能通过编程完成的操作  def.</description>
+    </item>
+    
   </channel>
 </rss>

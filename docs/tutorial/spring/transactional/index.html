@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Transactional"><meta property="og:title" content="Transactional" />
+<meta property="og:description" content="@Transactional Spring @Transactional @Transactional 注解中中几个比较重要的属性：
+public @interface Transactional { // REQUIRED: 0,  // SUPPORTS: 1,  // MANDATORY: 2,  // REQUIRES_NEW: 3,  // NOT_SUPPORTED: 4,  // NEVER: 5,  // NESTED: 6  Propagation propagation() default Propagation.REQUIRED; // DEFAULT: -1  // READ_UNCOMMITTED: 1,  // READ_COMMITTED: 2,  // REPEATABLE_READ: 4,  // SERIALIZABLE: 8  Isolation isolation() default Isolation.DEFAULT; @AliasFor(&#34;value&#34;) String transactionManager() default &#34;&#34;; // 从这一点设置的时间点开始（时间点a）到这个事务结束的过程中，其他事务所提交的数据，该事务将看不见！（查询中不会出现别人在时间点a之后提交的数据）  // 注意是一次执行多次查询来统计某些信息，这时为了保证数据整体的一致性，要用只读事务  boolean readOnly() default false; // 超时，事务是否发生回滚  int timeout default -1; } 事务传播属性 Propagation  REQUIRED: 有事务，加入事务，放到一个事务中执行，有异常一起回滚；没有就新创建一个事务。 REQUIRES_NEW: 无论有没有事务，都会新启一个事务，如果原来有，老的挂起，有异常互不干扰。 SUPPORTS: 有事务，加入事务，放到一个事务中执行，有异常一起回滚；否则不创建事务。 MANDATORY: 必须在一个已有事务中执行，否则抛出异常。 NEVER: 必须在一个没有事务中执行，否则抛出异常。 NOT_SUPPORTED: 不开启事务，并挂起任何存在的事务。 NESTED: 如果有事务运行，就作为这个事务的嵌套事务运行；如果没有活动事务，则按REQUIRED属性执行。  @Transactional 使用注意事项  @Transactional 只能应用到 public 方法才有效 @Transactional 不建议用在处理时间过长的事务 一个有 @Transactional 的方法被没有 @Transactional 方法调用时，会导致 Transactional 作用失效。 默认配置下，Spring 只有在抛出的异常为运行时 unchecked 异常时才回滚该事务，也就是抛出的异常为 RuntimeException 的子类(Errors也会导致事务回滚)，而抛出 checked 异常则不会导致事务回滚 。可通过 @Transactional rollbackFor 进行配置。  手动设置事务回滚 // 事务管理器 @Autowired private DataSourceTransactionManager transactionManager; @Transactional public void save(User user) { // 创建一个事务  DefaultTransactionDefinition def = new DefaultTransactionDefinition(); // 显式设置事务名称是只能通过编程完成的操作  def." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/spring/transactional/" />
+
+<title>Transactional | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.f4d4c987530d1ba99b602793aff9b5b458a557a3fa206d6cbe44eb64aa22e10c.js" integrity="sha256-9NTJh1MNG6mbYCeTr/m1tFilV6P6IG1svkTrZKoi4Qw="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/annotations/" >
+      Spring 常用注解
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/resttemplate/" >
+      RestTemplate
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/ots-parsing-error/" >
+      ots parsing error
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/deploy-to-tomcat/" >
+      SpringBoot 打包成 WAR 部署到 Tomcat
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/transactional/"  class="active">
+      Transactional
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Transactional</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#spring-transactional">Spring @Transactional</a></li>
+    <li><a href="#事务传播属性-propagation">事务传播属性 Propagation</a></li>
+    <li><a href="#transactional-使用注意事项">@Transactional 使用注意事项</a></li>
+    <li><a href="#手动设置事务回滚">手动设置事务回滚</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="transactional">@Transactional</h1>
+<h2 id="spring-transactional">Spring @Transactional</h2>
+<p><code>@Transactional</code> 注解中中几个比较重要的属性：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">@interface</span> Transactional <span style="color:#f92672">{</span>
+
+    <span style="color:#75715e">// REQUIRED: 0,
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// SUPPORTS: 1,
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// MANDATORY: 2,
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// REQUIRES_NEW: 3,
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// NOT_SUPPORTED: 4,
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// NEVER: 5,
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// NESTED: 6
+</span><span style="color:#75715e"></span>    Propagation <span style="color:#a6e22e">propagation</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">default</span> Propagation<span style="color:#f92672">.</span><span style="color:#a6e22e">REQUIRED</span><span style="color:#f92672">;</span>
+
+    <span style="color:#75715e">// DEFAULT: -1
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// READ_UNCOMMITTED: 1,
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// READ_COMMITTED: 2,
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// REPEATABLE_READ: 4,
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// SERIALIZABLE: 8
+</span><span style="color:#75715e"></span>    Isolation <span style="color:#a6e22e">isolation</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">default</span> Isolation<span style="color:#f92672">.</span><span style="color:#a6e22e">DEFAULT</span><span style="color:#f92672">;</span>
+
+    <span style="color:#a6e22e">@AliasFor</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;value&#34;</span><span style="color:#f92672">)</span>
+    String <span style="color:#a6e22e">transactionManager</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">default</span> <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">;</span>
+
+    <span style="color:#75715e">// 从这一点设置的时间点开始（时间点a）到这个事务结束的过程中，其他事务所提交的数据，该事务将看不见！（查询中不会出现别人在时间点a之后提交的数据）
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 注意是一次执行多次查询来统计某些信息，这时为了保证数据整体的一致性，要用只读事务
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">readOnly</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">default</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+
+    <span style="color:#75715e">// 超时，事务是否发生回滚
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">int</span> timeout <span style="color:#66d9ef">default</span> <span style="color:#f92672">-</span>1<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="事务传播属性-propagation">事务传播属性 Propagation</h2>
+<ul>
+<li><code>REQUIRED</code>: 有事务，加入事务，放到一个事务中执行，有异常一起回滚；没有就新创建一个事务。</li>
+<li><code>REQUIRES_NEW</code>: 无论有没有事务，都会新启一个事务，如果原来有，老的挂起，有异常互不干扰。</li>
+<li><code>SUPPORTS</code>: 有事务，加入事务，放到一个事务中执行，有异常一起回滚；否则不创建事务。</li>
+<li><code>MANDATORY</code>: 必须在一个已有事务中执行，否则抛出异常。</li>
+<li><code>NEVER</code>: 必须在一个没有事务中执行，否则抛出异常。</li>
+<li><code>NOT_SUPPORTED</code>: 不开启事务，并挂起任何存在的事务。</li>
+<li><code>NESTED</code>: 如果有事务运行，就作为这个事务的嵌套事务运行；如果没有活动事务，则按REQUIRED属性执行。</li>
+</ul>
+<h2 id="transactional-使用注意事项">@Transactional 使用注意事项</h2>
+<ul>
+<li><code>@Transactional</code> 只能应用到 <code>public</code> 方法才有效</li>
+<li><code>@Transactional</code> 不建议用在处理时间过长的事务</li>
+<li>一个有 <code>@Transactional</code> 的方法被没有 <code>@Transactional</code> 方法调用时，会导致 <code>Transactional</code> 作用失效。</li>
+<li>默认配置下，Spring 只有在抛出的异常为运行时 <code>unchecked</code> 异常时才回滚该事务，也就是抛出的异常为 <code>RuntimeException</code> 的子类(<code>Errors</code>也会导致事务回滚)，而抛出 <code>checked</code> 异常则不会导致事务回滚 。可通过 <code>@Transactional rollbackFor</code> 进行配置。</li>
+</ul>
+<h2 id="手动设置事务回滚">手动设置事务回滚</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 事务管理器
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">@Autowired</span>
+<span style="color:#66d9ef">private</span> DataSourceTransactionManager transactionManager<span style="color:#f92672">;</span>
+
+<span style="color:#a6e22e">@Transactional</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">save</span><span style="color:#f92672">(</span>User user<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// 创建一个事务
+</span><span style="color:#75715e"></span>    DefaultTransactionDefinition def <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> DefaultTransactionDefinition<span style="color:#f92672">();</span>
+    <span style="color:#75715e">// 显式设置事务名称是只能通过编程完成的操作
+</span><span style="color:#75715e"></span>    def<span style="color:#f92672">.</span><span style="color:#a6e22e">setName</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;SomeTxName&#34;</span><span style="color:#f92672">);</span>
+    <span style="color:#75715e">// 设置事务策略
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 支持当前交易；如果不存在，请创建一个新的。类似于同名的EJB事务属性。这通常是事务定义的默认设置, 并且通常定义事务同步作用域。
+</span><span style="color:#75715e"></span>    def<span style="color:#f92672">.</span><span style="color:#a6e22e">setPropagationBehavior</span><span style="color:#f92672">(</span>TransactionDefinition<span style="color:#f92672">.</span><span style="color:#a6e22e">PROPAGATION_REQUIRED</span><span style="color:#f92672">);</span>
+    <span style="color:#75715e">// 开始事务
+</span><span style="color:#75715e"></span>    TransactionStatus status <span style="color:#f92672">=</span> transactionManager<span style="color:#f92672">.</span><span style="color:#a6e22e">getTransaction</span><span style="color:#f92672">(</span>def<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 在这里执行您的业务逻辑
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">// db操作
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">// 提交事务
+</span><span style="color:#75715e"></span>        transactionManager<span style="color:#f92672">.</span><span style="color:#a6e22e">commit</span><span style="color:#f92672">(</span>status<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Exception ex<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 事务回滚
+</span><span style="color:#75715e"></span>        transactionManager<span style="color:#f92672">.</span><span style="color:#a6e22e">rollback</span><span style="color:#f92672">(</span>status<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">throw</span> ex<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div></article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#spring-transactional">Spring @Transactional</a></li>
+    <li><a href="#事务传播属性-propagation">事务传播属性 Propagation</a></li>
+    <li><a href="#transactional-使用注意事项">@Transactional 使用注意事项</a></li>
+    <li><a href="#手动设置事务回滚">手动设置事务回滚</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-8950855178079071"
+     data-ad-slot="6142361626"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

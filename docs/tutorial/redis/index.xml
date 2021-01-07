@@ -114,5 +114,63 @@ Sentinel领导者节点会向剩余的从节点发送命令，让它们成为新
 Sentinel节点集合会将原来的主节点更新为从节点，并保持着对其关注，当其恢复后命令它去复制新的主节点。</description>
     </item>
     
+    <item>
+      <title>Redis 集群</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/cluster/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/cluster/</guid>
+      <description>Redis 集群 RedisCluster 是 Redis 的分布式解决方案，在 3.0 版本正式推出，有效地解决了Redis分布式方面的需求。当遇到单机内存、并发、流量等瓶颈时，可以采用 Cluster 架构方案达到负载均衡的目的。
+数据分区 RedisCluster 采用哈希分区规则
+虚拟槽分区巧妙地使用了哈希空间，使用分散度良好的哈希函数把所有数据映射到一个固定范围的整数集合中，整数定义为槽（slot）。这个范围一般远远大于节点数，比如RedisCluster槽范围是0~16383。槽是集群内数据管理和迁移的基本单位。采用大范围槽的主要目的是为了方便数据拆分和集群扩展。每个节点会负责一定数量的槽。
+RedisCluser 采用虚拟槽分区，所有的键根据哈希函数映射到 0 ~ 16383 整数槽内，计算公式：slot = CRC16（key）&amp;amp; 16383。每一个节点负责维护一部分槽以及槽所映射的键值数据。
+槽集合和节点的关系：
+使用 CRC16(key) &amp;amp; 16383 将键映射到槽上：
+ 虚拟槽分区，解耦了数据和节点之间的关系，简化了节点扩容和收缩难度。
+ 集群限制  key 批量操作支持有限。如mset、mget，目前只支持具有相同slot值的key执行批量操作。对于映射为不同slot值的key由于执行mSet、mget等操作可能存在于多个节点上因此不被支持。 只支持多key在同一节点上的事务操作，当多个key分布在不同的节点上时无法使用事务功能。 key作为数据分区的最小粒度，因此不能将一个大的键值对象如hash、list等映射到不同的节点。 复制结构只支持一层，从节点只能复制主节点，不支持嵌套树状复制结构。  集群搭建  Redis 集群一般由多个节点组成，节点数量至少为6个才能保证组成完整高可用的集群。 节点握手是指一批运行在集群模式下的节点通过Gossip协议彼此通信，达到感知对方的过程。 Redis集群把所有的数据映射到16384个槽中。每个key会映射为一个固定的槽，只有当节点分配了槽，才能响应和这些槽关联的键命令。 redis-trib.rb是采用Ruby实现的Redis集群管理工具。内部通过Cluster相关命令帮我们简化集群创建、检查、槽迁移和均衡等常见运维操作，使用之前需要安装Ruby依赖环境。  redis-trib.rb create节点通信 Gossip 协议的信息交换机制具有天然的分布式特性，但是有成本：加重带宽和计算的负担。因此选择每次需要通信的节点，变得非常重要：
+ 每秒随机选取 5 个最久没有通信的节点发送 ping 消息。 每 100 毫秒会扫描本地节点列表，发现最近一次接受 pong 时间大于 cluster_node_timeout / 2 ，则立刻发送 pong 消息，防止该节点信息太长时间未更新。  集群伸缩 redis-trib.</description>
+    </item>
+    
+    <item>
+      <title>Redis 缓存</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/cache/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/cache/</guid>
+      <description>Redis 缓存 缓存更新策略  低一致性业务建议配置最大内存和淘汰策略的方式使用。 高一致性业务可以结合使用超时剔除和主动更新，这样即使主动更新出了问题，也能保证数据过期时间后删除脏数据。  穿透优化 缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常出于容错的考虑，如果从存储层查不到数据则不写入缓存层。缓存穿透将导致不存在的数据每次请求都要到存储层去查询，失去了缓存保护后端存储的意义。
+通常可以在程序中分别统计总调用数、缓存层命中数、存储层命中数，如果发现大量存储层空命中，可能就是出现了缓存穿透问题。造成缓存穿透的基本原因有两个。第一，自身业务代码或者数据出现问题，第二，一些恶意攻击、爬虫等造成大量空命中。下面我们来看一下如何解决缓存穿透问题。
+ 缓存空对象。设置较短过期时间，自动剔除，可以减少内存占用；存储层有了数据，可以利用消息系统或其它方式清楚掉缓存中的空对象。   布隆过滤器拦截  雪崩优化  保证缓存层服务高可用性。和飞机都有多个引擎一样。 依赖隔离组件为后端限流并降级  热点 Key 重建优化 在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。
+ 互斥锁  </description>
+    </item>
+    
+    <item>
+      <title>Redis 分布式锁 🔒</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/distributed-lock/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/distributed-lock/</guid>
+      <description>Redis 分布式锁 🔒 简单实现 // 这里的冒号:就是一个普通的字符，没特别含义，它可以是任意其它字符，不要误解 &amp;gt; setnx lock:codehole true OK ... do something critical ... &amp;gt; del lock:codehole (integer) 1 缺点：逻辑执行到中间出现异常，可能会导致 del 没有被调用，🔒 得不到释放。
+加上过期时间的简单实现 &amp;gt; setnx lock:codehole true OK &amp;gt; expire lock:codehole 5 ... do something critical ... &amp;gt; del lock:codehole (integer) 1 缺点：setnx 和 expire 之间服务器进程突然挂掉了，可能是因为机器掉电或者是被人为杀掉的，就会导致 expire 得不到执行，也会造成死锁。
+Redis 2.8 合并 setnx 和 expire 指令 合并为原子操作。
+&amp;gt; set lock:codehole true ex 5 nx OK ... do something critical .</description>
+    </item>
+    
+    <item>
+      <title>Redis 过期和淘汰策略</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/evict-maxmemory/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/evict-maxmemory/</guid>
+      <description>Redis 过期和淘汰策略 过期策略  过期的 key 集合
+ redis 会将每个设置了过期时间的 key 放入到一个独立的字典中，以后会定时遍历这个字典来删除到期的 key。除了定时遍历之外，它还会使用惰性策略来删除过期的 key，所谓惰性策略就是在客户端访问这个 key 的时候，redis 对 key 的过期时间进行检查，如果过期了就立即删除。定时删除是集中处理，惰性删除是零散处理。
+ 定时扫描策略
+ Redis 默认会每秒进行十次过期扫描，过期扫描不会遍历过期字典中所有的 key，而是采用了一种简单的贪心策略。
+ 从过期字典中随机 20 个 key； 删除这 20 个 key 中已经过期的 key； 如果过期的 key 比率超过 1/4，那就重复步骤 1；  同时，为了保证过期扫描不会出现循环过度，导致线程卡死现象，算法还增加了扫描时间的上限，默认不会超过 25ms。
+业务开发人员一定要注意过期时间，如果有大批量的 key 过期，要给过期时间设置一个随机范围，而不宜全部在同一时间过期，分散过期处理的压力：
+# 在目标过期时间上增加一天的随机时间 redis.expire_at(key, random.randint(86400) + expire_ts)  从库的过期策略
+ 从库不会进行过期扫描，从库对过期的处理是被动的。主库在 key 到期时，会在 AOF 文件里增加一条 del 指令，同步到所有的从库，从库通过执行这条 del 指令来删除过期的 key。
+因为指令同步是异步进行的，所以主库过期的 key 的 del 指令没有及时同步到从库的话，会出现主从数据的不一致，主库没有的数据在从库里还存在，比如集群环境分布式锁的算法漏洞就是因为这个同步延迟产生的。</description>
+    </item>
+    
   </channel>
 </rss>

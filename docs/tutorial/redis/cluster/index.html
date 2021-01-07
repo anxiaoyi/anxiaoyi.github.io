@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Redis 集群"><meta property="og:title" content="Redis 集群" />
+<meta property="og:description" content="Redis 集群 RedisCluster 是 Redis 的分布式解决方案，在 3.0 版本正式推出，有效地解决了Redis分布式方面的需求。当遇到单机内存、并发、流量等瓶颈时，可以采用 Cluster 架构方案达到负载均衡的目的。
+数据分区 RedisCluster 采用哈希分区规则
+虚拟槽分区巧妙地使用了哈希空间，使用分散度良好的哈希函数把所有数据映射到一个固定范围的整数集合中，整数定义为槽（slot）。这个范围一般远远大于节点数，比如RedisCluster槽范围是0~16383。槽是集群内数据管理和迁移的基本单位。采用大范围槽的主要目的是为了方便数据拆分和集群扩展。每个节点会负责一定数量的槽。
+RedisCluser 采用虚拟槽分区，所有的键根据哈希函数映射到 0 ~ 16383 整数槽内，计算公式：slot = CRC16（key）&amp; 16383。每一个节点负责维护一部分槽以及槽所映射的键值数据。
+槽集合和节点的关系：
+使用 CRC16(key) &amp; 16383 将键映射到槽上：
+ 虚拟槽分区，解耦了数据和节点之间的关系，简化了节点扩容和收缩难度。
+ 集群限制  key 批量操作支持有限。如mset、mget，目前只支持具有相同slot值的key执行批量操作。对于映射为不同slot值的key由于执行mSet、mget等操作可能存在于多个节点上因此不被支持。 只支持多key在同一节点上的事务操作，当多个key分布在不同的节点上时无法使用事务功能。 key作为数据分区的最小粒度，因此不能将一个大的键值对象如hash、list等映射到不同的节点。 复制结构只支持一层，从节点只能复制主节点，不支持嵌套树状复制结构。  集群搭建  Redis 集群一般由多个节点组成，节点数量至少为6个才能保证组成完整高可用的集群。 节点握手是指一批运行在集群模式下的节点通过Gossip协议彼此通信，达到感知对方的过程。 Redis集群把所有的数据映射到16384个槽中。每个key会映射为一个固定的槽，只有当节点分配了槽，才能响应和这些槽关联的键命令。 redis-trib.rb是采用Ruby实现的Redis集群管理工具。内部通过Cluster相关命令帮我们简化集群创建、检查、槽迁移和均衡等常见运维操作，使用之前需要安装Ruby依赖环境。  redis-trib.rb create节点通信 Gossip 协议的信息交换机制具有天然的分布式特性，但是有成本：加重带宽和计算的负担。因此选择每次需要通信的节点，变得非常重要：
+ 每秒随机选取 5 个最久没有通信的节点发送 ping 消息。 每 100 毫秒会扫描本地节点列表，发现最近一次接受 pong 时间大于 cluster_node_timeout / 2 ，则立刻发送 pong 消息，防止该节点信息太长时间未更新。  集群伸缩 redis-trib." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/cluster/" />
+
+<title>Redis 集群 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.f4d4c987530d1ba99b602793aff9b5b458a557a3fa206d6cbe44eb64aa22e10c.js" integrity="sha256-9NTJh1MNG6mbYCeTr/m1tFilV6P6IG1svkTrZKoi4Qw="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/datastructure/" >
+      Redis 数据结构
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/io-pattern/" >
+      Redis 线程 I/O 模型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/resp/" >
+      Redis RESP 通信协议
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/persistence/" >
+      Redis 持久化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-copy/" >
+      Redis 复制
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/sentinel/" >
+      Redis 哨兵
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/cluster/"  class="active">
+      Redis 集群
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/cache/" >
+      Redis 缓存
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/distributed-lock/" >
+      Redis 分布式锁 🔒
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/evict-maxmemory/" >
+      Redis 过期和淘汰策略
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Redis 集群</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据分区">数据分区</a></li>
+    <li><a href="#集群限制">集群限制</a></li>
+    <li><a href="#集群搭建">集群搭建</a></li>
+    <li><a href="#节点通信">节点通信</a></li>
+    <li><a href="#集群伸缩">集群伸缩</a></li>
+    <li><a href="#请求路由">请求路由</a></li>
+    <li><a href="#故障转移">故障转移</a></li>
+    <li><a href="#运维注意">运维注意</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="redis-集群">Redis 集群</h1>
+<p>RedisCluster 是 Redis 的分布式解决方案，在 3.0 版本正式推出，有效地解决了Redis分布式方面的需求。当遇到单机内存、并发、流量等瓶颈时，可以采用 Cluster 架构方案达到负载均衡的目的。</p>
+<h2 id="数据分区">数据分区</h2>
+<p>RedisCluster 采用哈希分区规则</p>
+<p>虚拟槽分区巧妙地使用了哈希空间，使用分散度良好的哈希函数把所有数据映射到一个固定范围的整数集合中，<strong>整数定义为槽（slot）</strong>。这个范围一般远远大于节点数，比如RedisCluster槽范围是<code>0~16383</code>。槽是集群内数据管理和迁移的基本单位。采用大范围槽的主要目的是为了方便数据拆分和集群扩展。每个节点会负责一定数量的槽。</p>
+<p>RedisCluser 采用虚拟槽分区，所有的键根据哈希函数映射到 <code>0 ~ 16383</code> 整数槽内，计算公式：<code>slot = CRC16（key）&amp; 16383</code>。每一个节点负责维护一部分槽以及槽所映射的键值数据。</p>
+<p>槽集合和节点的关系：</p>
+<p><img src="/images/docs/tutorial/redis/cluster/Snipaste_2021-01-05_20-29-08.png" alt=""></p>
+<p>使用 <code>CRC16(key) &amp; 16383</code> 将键映射到槽上：</p>
+<p><img src="/images/docs/tutorial/redis/cluster/Snipaste_2021-01-05_20-35-03.png" alt=""></p>
+<blockquote>
+<p>虚拟槽分区，解耦了数据和节点之间的关系，简化了节点扩容和收缩难度。</p>
+</blockquote>
+<h2 id="集群限制">集群限制</h2>
+<ul>
+<li>key 批量操作支持有限。如<code>mset</code>、<code>mget</code>，目前只支持具有相同slot值的key执行批量操作。对于映射为不同slot值的key由于执行<code>mSet</code>、<code>mget</code>等操作可能存在于多个节点上因此不被支持。</li>
+<li>只支持多key在同一节点上的事务操作，当多个key分布在不同的节点上时无法使用事务功能。</li>
+<li>key作为数据分区的最小粒度，因此不能将一个大的键值对象如<code>hash</code>、<code>list</code>等映射到不同的节点。</li>
+<li>复制结构只支持一层，从节点只能复制主节点，<strong>不支持嵌套树状复制结构</strong>。</li>
+</ul>
+<h2 id="集群搭建">集群搭建</h2>
+<ul>
+<li>Redis 集群一般由多个节点组成，节点数量至少为6个才能保证组成完整高可用的集群。</li>
+<li>节点握手是指一批运行在集群模式下的节点通过Gossip协议彼此通信，达到感知对方的过程。</li>
+<li>Redis集群把所有的数据映射到16384个槽中。每个key会映射为一个固定的槽，只有当节点分配了槽，才能响应和这些槽关联的键命令。</li>
+<li><code>redis-trib.rb</code>是采用Ruby实现的Redis集群管理工具。内部通过Cluster相关命令帮我们简化集群创建、检查、槽迁移和均衡等常见运维操作，使用之前需要安装Ruby依赖环境。</li>
+</ul>
+<pre><code>redis-trib.rb create
+</code></pre><h2 id="节点通信">节点通信</h2>
+<p>Gossip 协议的信息交换机制具有<strong>天然的分布式</strong>特性，但是有成本：加重带宽和计算的负担。因此选择每次需要通信的节点，变得非常重要：</p>
+<ul>
+<li>每秒随机选取 5 个<strong>最久没有通信</strong>的节点发送 ping 消息。</li>
+<li>每 100 毫秒会扫描本地节点列表，发现最近一次接受 pong 时间大于 cluster_node_timeout / 2 ，则立刻发送 pong 消息，防止该节点信息太长时间未更新。</li>
+</ul>
+<h2 id="集群伸缩">集群伸缩</h2>
+<p><img src="/images/docs/tutorial/redis/cluster/Snipaste_2021-01-05_21-59-27.png" alt=""></p>
+<pre><code>redis-trib.rb add-node new_host:new_port existing_host:existing_port --slave --master-id &lt;arg&gt;
+</code></pre><p>加入集群后需要为新节点迁移槽和相关数据，槽在迁移过程中集群可以正常提供读写服务，数据迁移过程是逐个槽进行的。</p>
+<h2 id="请求路由">请求路由</h2>
+<p>在集群模式下，Redis接收任何键相关命令时首先计算键对应的槽，再根据槽找出所对应的节点，如果节点是自身，则处理键命令；否则回复<code>MOVED</code>重定向错误，通知客户端请求正确的节点。这个过程称为<code>MOVED</code>重定向。</p>
+<p>使用<code>redis-cli</code>命令时，可以加入<code>-c</code>参数支持自动重定向，简化手动发起重定向操作。</p>
+<p>Redis首先需要计算键所对应的槽。根据键的有效部分使用<code>CRC16</code>函数计算出散列值，再取对<code>16383</code>的余数，使每个键都可以映射到<code>0~16383</code>槽范围内。</p>
+<p>Redis计算得到键对应的槽后，需要查找槽所对应的节点。集群内通过消息交换每个节点都会知道所有节点的槽信息，内部保存在<code>clusterState</code>结构中。</p>
+<p><img src="/images/docs/tutorial/redis/cluster/Snipaste_2021-01-06_18-59-33.png" alt=""></p>
+<p>根据<code>MOVED</code>重定向机制，客户端可以随机连接集群内任一Redis获取键所在节点，这种客户端又叫<code>Dummy</code>（傀儡）客户端，它优点是代码实现简单，对客户端协议影响较小，只需要根据重定向信息再次发送请求即可。但是它的弊端很明显，<strong>每次执行键命令前都要到Redis上进行重定向</strong>才能找到要执行命令的节点，额外增加了IO开销，这不是Redis集群高效的使用方式。正因为如此通常集群客户端都采用另一种实现：Smart（智能）客户端。</p>
+<p>Smart客户端通过在内部维护<code>slot→node</code>的映射关系，本地就可实现键到节点的查找，从而保证IO效率的最大化，而MOVED重定向负责协助Smart客户端更新<code>slot→node</code>映射。</p>
+<p>Redis集群支持在线迁移槽（slot）和数据来完成水平伸缩，当slot对应的数据从源节点到目标节点迁移过程中，客户端需要做到智能识别，保证键命令可正常执行。例如当一个slot数据从源节点迁移到目标节点时，期间可能<strong>出现一部分数据在源节点，而另一部分在目标节点</strong>。</p>
+<p><img src="/images/docs/tutorial/redis/cluster/Snipaste_2021-01-06_19-10-22.png" alt=""></p>
+<p>当出现上述情况时，客户端键命令执行流程将发生变化，如下所示：</p>
+<ul>
+<li>客户端根据本地<strong>slots缓存</strong>发送命令到源节点，如果存在键对象则直接执行并返回结果给客户端。</li>
+<li>如果键对象不存在，则可能存在于目标节点，这时源节点会回复<code>ASK</code>重定向异常。格式如下：<code>（error）ASK{slot}{targetIP}：{targetPort}</code>。</li>
+<li>客户端从<code>ASK</code>重定向异常提取出目标节点信息，发送<code>asking</code>命令到目标节点打开客户端连接标识，再执行键命令。如果存在则执行，不存在则返回不存在信息。</li>
+</ul>
+<p><img src="/images/docs/tutorial/redis/cluster/Snipaste_2021-01-06_19-11-07.png" alt=""></p>
+<p><code>ASK</code>与<code>MOVED</code>虽然都是对客户端的重定向控制，但是有着本质区别。<code>ASK</code>重定向说明集群正在进行slot数据迁移，客户端无法知道什么时候迁移完成，因此只能是<strong>临时性的重定向</strong>，客户端<strong>不会更新slots缓存</strong>。但是<code>MOVED</code>重定向说明键对应的槽已经明确指定到新的节点，因此<strong>需要更新slots缓存</strong>。</p>
+<h2 id="故障转移">故障转移</h2>
+<p>Redis集群自身实现了高可用。高可用首先需要解决集群部分失败的场景：当集群内少量节点出现故障时通过自动故障转移保证集群可以正常对外提供服务。</p>
+<p>Redis集群内节点通过<code>ping/pong</code>消息实现节点通信，消息不但可以传播节点槽信息，还可以传播其他状态如：主从状态、节点故障等。因此故障发现也是通过消息传播机制实现的，主要环节包括：主观下线（<code>pfail</code>）和客观下线（<code>fail</code>）。</p>
+<p>主观下线流程：</p>
+<p><img src="/images/docs/tutorial/redis/cluster/Snipaste_2021-01-06_19-54-18.png" alt=""></p>
+<p>当某个节点判断另一个节点主观下线后，相应的节点状态会跟随消息在集群内传播。<code>ping/pong</code>消息的消息体会携带集群1/10的其他节点状态数据，当接受节点发现消息体中含有主观下线的节点状态时，会在本地找到故障节点的ClusterNode结构，保存到<strong>下线报告链表</strong>中。</p>
+<p>通过Gossip消息传播，集群内节点不断收集到故障节点的下线报告。当<strong>半数以上</strong>持有槽的主节点都标记某个节点是主观下线时，触发客观下线流程。</p>
+<p><strong>故障恢复</strong></p>
+<p>故障节点变为客观下线后，如果下线节点是持有槽的主节点则需要在它的<strong>从节点</strong>中选出一个替换它，从而保证集群的高可用。下线主节点的所有从节点承担故障恢复的义务，当从节点通过内部定时任务发现自身复制的主节点进入客观下线时，将会触发故障恢复流程：</p>
+<ul>
+<li>从节点与主节点断线时间超过<code>cluster-node-time*cluster-slave-validity-factor</code>，则当前从节点不具备故障转移资格。参数<code>cluster-slave-validity-factor</code>用于从节点的有效因子，默认为<code>10</code>。</li>
+<li>当从节点符合故障转移资格后，更新触发故障选举的时间，只有到达该时间后才能执行后续流程。这里之所以采用<strong>延迟触发机制</strong>，主要是通过对多个从节点使用不同的延迟选举时间来支持优先级问题。复制偏移量越大说明从节点延迟越低，那么它应该具有更高的优先级来替换故障主节点。</li>
+</ul>
+<p><img src="/images/docs/tutorial/redis/cluster/Snipaste_2021-01-06_20-39-13.png" alt=""></p>
+<ul>
+<li>发起选举。Redis集群没有直接使用从节点进行领导者选举，主要因为从节点数必须大于等于3个才能保证凑够<code>N/2+1</code>个节点，将导致从节点资源浪费。使用<strong>集群内所有持有槽的主节点进行领导者选举</strong>，即使只有一个从节点也可以完成选举过程。当从节点收集到<code>N/2+1</code>个持有槽的主节点投票时，从节点可以执行替换主节点操作。</li>
+</ul>
+<p><img src="/images/docs/tutorial/redis/cluster/Snipaste_2021-01-06_20-43-46.png" alt=""></p>
+<p><strong>预估故障转移时间</strong></p>
+<pre><code>failover-time(毫秒) ≤ cluster-node-timeout + cluster-node-timeout / 2 + 1000
+</code></pre><ul>
+<li>主观下线识别时间：<code>cluster-node-timeout</code></li>
+<li>主观下线状态消息传播时间<code>&lt;=cluster-node-timeout/2</code>。消息通信机制对超过<code>cluster-node-timeout/2</code>未通信节点会发起<code>ping</code>消息，消息体在选择包含哪些节点时会优先选取下线状态节点，所以通常这段时间内能够收集到半数以上主节点的<code>pfail</code>报告从而完成故障发现。</li>
+<li>从节点转移时间<code>&lt;=1000</code>毫秒。由于存在延迟发起选举机制，偏移量最大的从节点会<strong>最多延迟<code>1</code>秒发起选举</strong>。通常第一次选举就会成功。</li>
+</ul>
+<p>故障转移时间跟 <code>cluster-node-timeout</code> 参数息息相关，默认<code>15</code>秒。配置时可以根据业务容忍度做出适当调整，但不是越小越好。</p>
+<h2 id="运维注意">运维注意</h2>
+<p>集群内 Gossip 消息通信本身会消耗带宽，官方建议集群最大规模在 <code>1000</code> 以内，也是出于对消息通信成本的考虑，因此单集群不适合部署超大规模的节点。</p>
+<p>同一个系统可以针对不同业务场景拆分使用多套集群。这样每个集群既满足伸缩性和故障转移要求，还可以规避大规模集群的弊端。</p>
+<blockquote>
+<p>如何解决集群倾斜(<strong>不同节点之间数据量和请求量出现明显差异</strong>，这种情况将加大负载均衡和开发运维的难度) ?</p>
+</blockquote>
+<ul>
+<li>使用 <code>redis-trib.rb info {host:ip}</code> 探测每个节点，了解节点上<strong>各个槽负责的键的数量</strong>。可以使用 <code>redis-trib.rb rebalance</code> 命令重新进行平衡。</li>
+<li>使用 <code>redis-cli --bigkeys</code> 识别出大对象，然后根据业务场景进行拆分</li>
+</ul>
+<blockquote>
+<p>如何避免请求倾斜 ?</p>
+</blockquote>
+<p>集群内特定节点请求量/流量过大将导致节点之间负载不均，影响集群均衡和运维成本。常出现在<strong>热点键</strong>场景，当键命令消耗较低时如小对象的<code>get</code>、<code>set</code>、<code>incr</code>等，即使请求量差异较大一般也不会产生负载严重不均。但是当热点键对应高算法复杂度的命令或者是大对象操作如<code>hgetall</code>、<code>smembers</code>等，会导致对应节点负载过高的情况。</p>
+<ul>
+<li>热点大集合对象拆分，避免整体读取</li>
+<li>不用使用热键作为 <code>hash_tag</code></li>
+<li>一致性要求不高的，客户端使用本地缓存，渐少热键调用</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据分区">数据分区</a></li>
+    <li><a href="#集群限制">集群限制</a></li>
+    <li><a href="#集群搭建">集群搭建</a></li>
+    <li><a href="#节点通信">节点通信</a></li>
+    <li><a href="#集群伸缩">集群伸缩</a></li>
+    <li><a href="#请求路由">请求路由</a></li>
+    <li><a href="#故障转移">故障转移</a></li>
+    <li><a href="#运维注意">运维注意</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-8950855178079071"
+     data-ad-slot="6142361626"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
