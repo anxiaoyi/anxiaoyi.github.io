@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MySQL 索引"><meta property="og:title" content="MySQL 索引" />
+<meta property="og:description" content="MySQL 索引 InnoDB 的 B&#43; 树 每一个索引在 InnoDB 里面对应一棵 B&#43; 树。B&#43; 树能够很好地配合磁盘的读写特性，减少单次查询的磁盘访问次数。
+根据叶子节点的内容，索引类型分为主键索引和非主键索引。
+ 主键索引的叶子节点存的是整行数据。在 InnoDB 里，主键索引也被称为聚簇索引（clustered index）。 非主键索引的叶子节点内容是主键的值。在 InnoDB 里，非主键索引也被称为二级索引（secondary index）。  主键长度越小，普通索引的叶子节点就越小，普通索引占用的空间也就越小。
+回表 回到主键索引树搜索的过程，我们称为回表。
+select * from T where k between 3 and 5 覆盖索引 ID 的值已经在 k 索引树上了，因此可以直接提供查询结果，不需要回表。也就是说，在这个查询里面，索引 k 已经“覆盖了”我们的查询需求，我们称为覆盖索引。
+select ID from T where k between 3 and 5 由于覆盖索引可以减少树的搜索次数，显著提升查询性能，所以使用覆盖索引是一个常用的性能优化手段。
+最左前缀原则 B&#43; 树这种索引结构，可以利用索引的“最左前缀”，来定位记录。
+上述联合索引对于如下查询请求，也是可以满足的：
+ 查到所有名字是“张三”的人 查的是所有名字第一个字是“张”的人  不只是索引的全部定义，只要满足最左前缀，就可以利用索引来加速检索。这个最左前缀可以是联合索引的最左 N 个字段，也可以是字符串索引的最左 M 个字符。
+在建立联合索引的时候，如何安排索引内的字段顺序 ?
+ 如果通过调整顺序，可以少维护一个索引，那么这个顺序往往就是需要优先考虑采用的。 考虑空间占用问题  索引下推 索引：联合索引（name, age）。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-index/" />
+
+<title>MySQL 索引 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-query/" >
+      MySQL 查询
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/transaction-internal/" >
+      MySQL 事务实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-crash-safe/" >
+      MySQL Crash Safe
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-index/"  class="active">
+      MySQL 索引
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/auto-increment-id/" >
+      MySQL 自增键
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-high-availablity/" >
+      MySQL 高可用
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/oracls-vs-mysql/" >
+      Oracle VS MySQL
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/sharding-sphere/" >
+      ShardingSphere 3.X
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>MySQL 索引</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#innodb-的-b-树">InnoDB 的 B+ 树</a></li>
+    <li><a href="#回表">回表</a></li>
+    <li><a href="#覆盖索引">覆盖索引</a></li>
+    <li><a href="#最左前缀原则">最左前缀原则</a></li>
+    <li><a href="#索引下推">索引下推</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="mysql-索引">MySQL 索引</h1>
+<h2 id="innodb-的-b-树">InnoDB 的 B+ 树</h2>
+<p>每一个索引在 InnoDB 里面对应一棵 B+ 树。B+ 树能够很好地<strong>配合磁盘</strong>的读写特性，减少单次查询的磁盘访问次数。</p>
+<p><img src="/images/docs/tutorial/database/mysql-index/Snipaste_2021-01-09_18-12-46.png" alt=""></p>
+<p>根据叶子节点的内容，索引类型分为<strong>主键索引</strong>和<strong>非主键索引</strong>。</p>
+<ul>
+<li>主键索引的叶子节点存的是<strong>整行数据</strong>。在 InnoDB 里，主键索引也被称为<strong>聚簇索引</strong>（clustered index）。</li>
+<li>非主键索引的叶子节点内容是<strong>主键的值</strong>。在 InnoDB 里，非主键索引也被称为<strong>二级索引</strong>（secondary index）。</li>
+</ul>
+<p>主键长度越小，普通索引的叶子节点就越小，普通索引占用的空间也就越小。</p>
+<h2 id="回表">回表</h2>
+<p>回到主键索引树搜索的过程，我们称为回表。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> T <span style="color:#66d9ef">where</span> k <span style="color:#66d9ef">between</span> <span style="color:#ae81ff">3</span> <span style="color:#66d9ef">and</span> <span style="color:#ae81ff">5</span>
+</code></pre></div><h2 id="覆盖索引">覆盖索引</h2>
+<p>ID 的值已经在 k 索引树上了，因此可以直接提供查询结果，不需要回表。也就是说，在这个查询里面，索引 k 已经“覆盖了”我们的查询需求，我们称为覆盖索引。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> ID <span style="color:#66d9ef">from</span> T <span style="color:#66d9ef">where</span> k <span style="color:#66d9ef">between</span> <span style="color:#ae81ff">3</span> <span style="color:#66d9ef">and</span> <span style="color:#ae81ff">5</span>
+</code></pre></div><p>由于覆盖索引可以减少树的搜索次数，显著提升查询性能，所以使用<strong>覆盖索引</strong>是一个<strong>常用的性能优化</strong>手段。</p>
+<h2 id="最左前缀原则">最左前缀原则</h2>
+<p>B+ 树这种索引结构，可以利用索引的“最左前缀”，来定位记录。</p>
+<p><img src="/images/docs/tutorial/database/mysql-index/Snipaste_2021-01-09_18-23-32.png" alt=""></p>
+<p>上述联合索引对于如下查询请求，也是可以满足的：</p>
+<ul>
+<li>查到所有名字是“张三”的人</li>
+<li>查的是所有名字第一个字是“张”的人</li>
+</ul>
+<p>不只是索引的全部定义，只要满足最左前缀，就可以利用索引来加速检索。这个最左前缀可以是<strong>联合索引的最左 N 个字段</strong>，也可以是<strong>字符串索引的最左 M 个字符</strong>。</p>
+<p>在建立联合索引的时候，如何安排索引内的字段顺序 ?</p>
+<ul>
+<li>如果通过调整顺序，可以<strong>少维护一个索引</strong>，那么这个顺序往往就是需要优先考虑采用的。</li>
+<li>考虑空间占用问题</li>
+</ul>
+<h2 id="索引下推">索引下推</h2>
+<p>索引：<strong>联合索引（name, age）</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> tuser <span style="color:#66d9ef">where</span> name <span style="color:#66d9ef">like</span> <span style="color:#e6db74">&#39;张%&#39;</span> <span style="color:#66d9ef">and</span> age<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span> <span style="color:#66d9ef">and</span> ismale<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>;
+</code></pre></div><p>这个语句在搜索索引树的时候，只能用 “张”，找到第一个满足条件的记录 ID3。</p>
+<ul>
+<li>在 MySQL 5.6 之前，只能从 ID3 开始一个个回表。到主键索引上找出数据行，再对比字段值。</li>
+<li>而 MySQL 5.6 引入的索引下推优化（index condition pushdown)， 可以在索引遍历过程中，对索引中包含的字段先做判断，直接过滤掉不满足条件的记录，减少回表次数。</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#innodb-的-b-树">InnoDB 的 B+ 树</a></li>
+    <li><a href="#回表">回表</a></li>
+    <li><a href="#覆盖索引">覆盖索引</a></li>
+    <li><a href="#最左前缀原则">最左前缀原则</a></li>
+    <li><a href="#索引下推">索引下推</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-8950855178079071"
+     data-ad-slot="6142361626"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

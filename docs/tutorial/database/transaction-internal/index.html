@@ -4,24 +4,20 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="事务实现原理"><meta property="og:title" content="事务实现原理" />
-<meta property="og:description" content="事务实现原理 Redo Log  A: 要么不执行，要么完全执行，宕机重启已执行的要回滚 C: 主键不为空、参照完整性等 I: 如果全是串行执行，也不需要隔离，所以和并发有关 D: 数据不能丢  C 一致性 C 由各种规则约束实现，比较简单。
-Write-Ahead Log 先在内存中提交事务，然后写 Write-Ahead Log，然后后台把数据异步刷到磁盘。在 InnoDB 中，Write-Ahead Log 是 Redo Log。事务提交之后，Redo Log 先写入到内存的 Redo Log Buffer 中，然后异步刷到磁盘上的 Redo Log 。
-InnoDB 关键参数 innodb_flush_log_at_trx_commit 控制刷盘策略：
- 0: 每秒刷一次 (默认) 1: 提交一个事务，就刷一次 2: 不刷盘，根据 innodb_flush_log_at_timeout 设置的值决定刷盘频率  Redo Log 逻辑与物理结构  为什么 Redo Log Block 是 512 字节?
- 因为早期的磁盘，一个扇区是存储 512 字节数据。
- 为什么 Redo Log 循坏使用?" />
+<meta name="description" content="MySQL 事务实现原理"><meta property="og:title" content="MySQL 事务实现原理" />
+<meta property="og:description" content="MySQL 事务实现原理 事务隔离级别  读未提交是指，一个事务还没提交时，它做的变更就能被别的事务看到。 读提交是指，一个事务提交之后，它做的变更才会被其他事务看到。 可重复读是指，一个事务执行过程中看到的数据，总是跟这个事务在启动时看到的数据是一致的。当然在可重复读隔离级别下，未提交变更对其他事务也是不可见的。 串行化，顾名思义是对于同一行记录，“写”会加“写锁”，“读”会加“读锁”。当出现读写锁冲突的时候，后访问的事务必须等前一个事务执行完成，才能继续执行。  示例 mysql&gt; create table T(c int) engine=InnoDB; insert into T(c) values(1);  读未提交：V1 = V2 = V3 = 2，事务 B 虽然还没有提交，但是结果已经被 A 看到了。 读提交：V1 = 1，V2 = V3 = 2，事务 B 的更新在提交后才能被 A 看到。 可重复读：V1 = V2 = 1，V3 = 2，事务在执行期间看到的数据前后必须是一致的。 串行化：在事务 B 执行“将 1 改成 2”的时候，会被锁住。直到事务 A 提交后，事务 B 才可以继续执行。  隔离级别是如何实现的 在实现上，数据库里面会创建一个视图，访问的时候以视图的逻辑结果为准。在“可重复读”隔离级别下，这个视图是在事务启动时创建的，整个事务存在期间都用这个视图。在“读提交”隔离级别下，这个视图是在每个 SQL 语句开始执行的时候创建的。这里需要注意的是，“读未提交”隔离级别下直接返回记录上的最新值，没有视图概念；而“串行化”隔离级别下直接用加锁的方式来避免并行访问。
+我们可以看到在不同的隔离级别下，数据库行为是有所不同的。Oracle 数据库的默认隔离级别其实就是“读提交”，因此对于一些从 Oracle 迁移到 MySQL 的应用，为保证数据库隔离级别的一致，你一定要记得将 MySQL 的隔离级别设置为“读提交”。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/transaction-internal/" />
 
-<title>事务实现原理 | 赵坤的个人网站</title>
+<title>MySQL 事务实现原理 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.f4d4c987530d1ba99b602793aff9b5b458a557a3fa206d6cbe44eb64aa22e10c.js" integrity="sha256-9NTJh1MNG6mbYCeTr/m1tFilV6P6IG1svkTrZKoi4Qw="></script>
+<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -543,8 +539,58 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/database/mysql-query/" >
+      MySQL 查询
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/database/transaction-internal/"  class="active">
-      事务实现原理
+      MySQL 事务实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-crash-safe/" >
+      MySQL Crash Safe
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-index/" >
+      MySQL 索引
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/auto-increment-id/" >
+      MySQL 自增键
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-high-availablity/" >
+      MySQL 高可用
   </a>
 
 </li>
@@ -873,7 +919,7 @@ var _hmt = _hmt || [];
     <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
-  <strong>事务实现原理</strong>
+  <strong>MySQL 事务实现原理</strong>
 
   <label for="toc-control">
     <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
@@ -887,18 +933,23 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#redo-log">Redo Log</a>
+    <li><a href="#事务隔离级别">事务隔离级别</a>
       <ul>
-        <li><a href="#c-一致性">C 一致性</a></li>
-        <li><a href="#write-ahead-log">Write-Ahead Log</a></li>
-        <li><a href="#redo-log-逻辑与物理结构">Redo Log 逻辑与物理结构</a></li>
+        <li><a href="#示例">示例</a></li>
       </ul>
     </li>
-    <li><a href="#undo-log">Undo Log</a>
+    <li><a href="#隔离级别是如何实现的">隔离级别是如何实现的</a></li>
+    <li><a href="#幻读介绍及原因">幻读介绍及原因</a></li>
+    <li><a href="#事务如何实现的">事务如何实现的</a>
       <ul>
-        <li><a href="#undo-log-结构">Undo Log 结构</a></li>
+        <li><a href="#四个属性">四个属性</a></li>
+        <li><a href="#redo-log">Redo Log</a></li>
+        <li><a href="#binlog">binlog</a></li>
+        <li><a href="#两阶段提交">两阶段提交</a></li>
+        <li><a href="#undo-log">Undo Log</a></li>
       </ul>
     </li>
+    <li><a href="#加锁规则">加锁规则</a></li>
   </ul>
 </nav>
 
@@ -909,17 +960,50 @@ var _hmt = _hmt || [];
       </header>
 
       
-<article class="markdown"><h1 id="事务实现原理">事务实现原理</h1>
-<h2 id="redo-log">Redo Log</h2>
+<article class="markdown"><h1 id="mysql-事务实现原理">MySQL 事务实现原理</h1>
+<h2 id="事务隔离级别">事务隔离级别</h2>
+<ul>
+<li><strong>读未提交</strong>是指，一个事务还没提交时，它做的变更就能被别的事务看到。</li>
+<li><strong>读提交</strong>是指，一个事务提交之后，它做的变更才会被其他事务看到。</li>
+<li><strong>可重复读</strong>是指，一个事务执行过程中看到的数据，总是跟这个事务在启动时看到的数据是一致的。当然在可重复读隔离级别下，未提交变更对其他事务也是不可见的。</li>
+<li><strong>串行化</strong>，顾名思义是对于同一行记录，“写”会加“写锁”，“读”会加“读锁”。当出现读写锁冲突的时候，后访问的事务必须等前一个事务执行完成，才能继续执行。</li>
+</ul>
+<h3 id="示例">示例</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">create</span> <span style="color:#66d9ef">table</span> T(<span style="color:#66d9ef">c</span> int) engine<span style="color:#f92672">=</span>InnoDB;
+<span style="color:#66d9ef">insert</span> <span style="color:#66d9ef">into</span> T(<span style="color:#66d9ef">c</span>) <span style="color:#66d9ef">values</span>(<span style="color:#ae81ff">1</span>);
+</code></pre></div><p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2021-01-09_18-51-52.png" alt=""></p>
+<ul>
+<li>读未提交：<code>V1 = V2 = V3 = 2</code>，事务 B 虽然还没有提交，但是结果已经被 A 看到了。</li>
+<li>读提交：<code>V1 = 1</code>，<code>V2 = V3 = 2</code>，事务 B 的更新在提交后才能被 A 看到。</li>
+<li>可重复读：<code>V1 = V2 = 1</code>，<code>V3 = 2</code>，事务在执行期间看到的数据前后必须是一致的。</li>
+<li>串行化：在事务 B 执行“将 1 改成 2”的时候，<strong>会被锁住</strong>。直到事务 A 提交后，事务 B 才可以继续执行。</li>
+</ul>
+<h2 id="隔离级别是如何实现的">隔离级别是如何实现的</h2>
+<p>在实现上，数据库里面会创建一个<strong>视图</strong>，访问的时候以视图的逻辑结果为准。在“可重复读”隔离级别下，这个视图是在<strong>事务启动</strong>时创建的，整个事务存在期间都用这个视图。在“读提交”隔离级别下，这个视图是在每个 <strong>SQL 语句开始执行</strong>的时候创建的。这里需要注意的是，“读未提交”隔离级别下直接返回记录上的最新值，没有视图概念；而“串行化”隔离级别下直接用加锁的方式来避免并行访问。</p>
+<p>我们可以看到在不同的隔离级别下，数据库行为是有所不同的。Oracle 数据库的默认隔离级别其实就是“读提交”，因此对于一些从 Oracle 迁移到 MySQL 的应用，为保证数据库隔离级别的一致，你一定要记得将 MySQL 的隔离级别设置为“读提交”。</p>
+<p>在 MySQL 中，实际上每条记录在更新的时候都会同时记录一条回滚操作。记录上的最新值，通过回滚操作，都可以得到前一个状态的值。<strong>同一条记录在系统中可以存在多个版本，就是数据库的多版本并发控制（MVCC）</strong>。</p>
+<p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2021-01-09_17-09-09.png" alt=""></p>
+<h2 id="幻读介绍及原因">幻读介绍及原因</h2>
+<p>在可重复读隔离级别下，普通的查询是快照读，是不会看到别的事务插入的数据的。因此，幻读在“当前读”下才会出现。幻读仅专指“<strong>新插入的行</strong>”。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> T <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">5</span>);
+</code></pre></div><p>产生幻读的原因是，<strong>行锁只能锁住行</strong>，但是新插入记录这个动作，要<strong>更新的是记录之间的“间隙”</strong>。因此，为了解决幻读问题，InnoDB 只好引入新的锁，也就是间隙锁 (Gap Lock)。顾名思义，<strong>间隙锁，锁的就是两个值之间的空隙</strong>。</p>
+<p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2021-01-09_17-15-03.png" alt=""></p>
+<p>这样，当你执行 <code>select * from t where d=5 for update</code> 的时候，就不止是给数据库中已有的 6 个记录加上了行锁，还同时加了 7 个间隙锁。这样就确保了无法再插入新的记录。也就是说这时候，在一行行扫描的过程中，不仅将给行加上了行锁，还给行两边的空隙，也加上了间隙锁。</p>
+<p><strong>间隙锁和行锁合称 <code>next-key lock</code></strong>，每个 next-key lock 是前开后闭区间。也就是说，我们的表 t 初始化以后，如果用 <code>select * from t for update</code> 要把整个表所有记录锁起来，就形成了 7 个 next-key lock，分别是 (-∞,0]、(0,5]、(5,10]、(10,15]、(15,20]、(20, 25]、(25, +supremum]。</p>
+<p>间隙锁的引入，可能会导致同样的语句锁住更大的范围，这其实是<strong>影响了并发度</strong>的。</p>
+<h2 id="事务如何实现的">事务如何实现的</h2>
+<h3 id="四个属性">四个属性</h3>
 <ul>
 <li>A: 要么不执行，要么完全执行，宕机重启已执行的要回滚</li>
 <li>C: 主键不为空、参照完整性等</li>
 <li>I: 如果全是串行执行，也不需要隔离，所以和并发有关</li>
 <li>D: 数据不能丢</li>
 </ul>
-<h3 id="c-一致性">C 一致性</h3>
-<p>C 由各种规则约束实现，比较简单。</p>
-<h3 id="write-ahead-log">Write-Ahead Log</h3>
+<h3 id="redo-log">Redo Log</h3>
+<blockquote>
+<p>redo log 是 InnoDB 引擎特有的日志。</p>
+</blockquote>
+<h4 id="write-ahead-log">Write-Ahead Log</h4>
 <p>先在<strong>内存中提交事务，然后写 Write-Ahead Log，然后后台把数据异步刷到磁盘</strong>。在 InnoDB 中，Write-Ahead Log 是 Redo Log。事务提交之后，Redo Log 先写入到内存的 Redo Log Buffer 中，然后异步刷到磁盘上的 Redo Log 。</p>
 <p>InnoDB 关键参数 <code>innodb_flush_log_at_trx_commit</code> 控制刷盘策略：</p>
 <ul>
@@ -928,7 +1012,7 @@ var _hmt = _hmt || [];
 <li>2: 不刷盘，根据 <code>innodb_flush_log_at_timeout</code> 设置的值决定刷盘频率</li>
 </ul>
 <p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2020-12-28_12-22-25.png" alt=""></p>
-<h3 id="redo-log-逻辑与物理结构">Redo Log 逻辑与物理结构</h3>
+<h4 id="redo-log-逻辑与物理结构">Redo Log 逻辑与物理结构</h4>
 <blockquote>
 <p>为什么 Redo Log Block 是 512 字节?</p>
 </blockquote>
@@ -937,9 +1021,22 @@ var _hmt = _hmt || [];
 <p>为什么 Redo Log 循坏使用?</p>
 </blockquote>
 <p>Redo Log 是固定大小的，循环使用，一旦 Page 数据刷到磁盘上，日志数据就没有存在的必要了。</p>
+<p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2021-01-09_17-29-24.png" alt=""></p>
 <p>LSN (Log Sequence Number) 是按照时间顺序从小到大的编号，记录了从安装到现在为止，写入的总的字节数。</p>
 <p><img src="/images/docs/tutorial/database/transaction-internal/20201228162056.png" alt=""></p>
-<h2 id="undo-log">Undo Log</h2>
+<h3 id="binlog">binlog</h3>
+<p>MySQL 整体来看，其实就有两块：一块是 Server 层，它主要做的是 MySQL 功能层面的事情；还有一块是引擎层，负责存储相关的具体事宜。redo log 是 InnoDB 引擎特有的日志，而 Server 层也有自己的日志，称为 binlog（归档日志）。</p>
+<ul>
+<li>redo log 是物理日志，记录的是“在某个数据页上做了什么修改”；binlog 是逻辑日志，记录的是这个语句的原始逻辑，比如“给 ID=2 这一行的 c 字段加 1 ”。</li>
+<li>redo log 是循环写的，空间固定会用完；binlog 是可以追加写入的。“追加写”是指 binlog 文件写到一定大小后会切换到下一个，并不会覆盖以前的日志。</li>
+</ul>
+<p><code>sync_binlog</code> 这个参数设置成 1 的时候，表示每次事务的 binlog 都持久化到磁盘。这个参数我也建议你设置成 1，这样可以保证 MySQL 异常重启之后 binlog 不丢失。</p>
+<h3 id="两阶段提交">两阶段提交</h3>
+<blockquote>
+<p>为什么必须有“两阶段提交”呢？这是为了让两份日志之间的逻辑一致。</p>
+</blockquote>
+<p><img src="/images/docs/tutorial/database/transaction-internal/2e5bff4910ec189fe1ee6e2ecc7b4bbe.png" alt=""></p>
+<h3 id="undo-log">Undo Log</h3>
 <blockquote>
 <p>为什么需要 Undo Log ?</p>
 </blockquote>
@@ -948,7 +1045,7 @@ var _hmt = _hmt || [];
 <li>已经提交的事务，可以继续保留在内存</li>
 <li>未提交的事务，也可以写入磁盘，如果需要回滚，再更改磁盘上的数据</li>
 </ul>
-<h3 id="undo-log-结构">Undo Log 结构</h3>
+<h4 id="undo-log-结构">Undo Log 结构</h4>
 <p>Undo Log 维护了数据从旧到新的各个版本，各个版本通过<strong>链表</strong>串联。事务如果想要实现<strong>隔离性</strong>，只能读取 (<code>select</code> 快照读) 历史版本，不能读取正在修改的数据。</p>
 <p>与快照读对应的是当前读:</p>
 <p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2020-12-30_10-02-34.png" alt=""></p>
@@ -958,6 +1055,13 @@ var _hmt = _hmt || [];
 <ul>
 <li><strong>无序随机写入</strong></li>
 <li><strong>事务 commit 之后</strong>，就可以删除掉 Undo Log</li>
+</ul>
+<h2 id="加锁规则">加锁规则</h2>
+<ul>
+<li>原则 1：<strong>加锁的基本单位是 next-key lock</strong>。希望你还记得，next-key lock 是前开后闭区间。</li>
+<li>原则 2：查找过程中访问到的对象才会加锁。</li>
+<li>优化 1：索引上的等值查询，给唯一索引加锁的时候，next-key lock 退化为行锁。</li>
+<li>优化 2：索引上的等值查询，向右遍历时且最后一个值不满足等值条件的时候，next-key lock 退化为间隙锁。</li>
 </ul>
 </article>
  
@@ -1004,18 +1108,23 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#redo-log">Redo Log</a>
+    <li><a href="#事务隔离级别">事务隔离级别</a>
       <ul>
-        <li><a href="#c-一致性">C 一致性</a></li>
-        <li><a href="#write-ahead-log">Write-Ahead Log</a></li>
-        <li><a href="#redo-log-逻辑与物理结构">Redo Log 逻辑与物理结构</a></li>
+        <li><a href="#示例">示例</a></li>
       </ul>
     </li>
-    <li><a href="#undo-log">Undo Log</a>
+    <li><a href="#隔离级别是如何实现的">隔离级别是如何实现的</a></li>
+    <li><a href="#幻读介绍及原因">幻读介绍及原因</a></li>
+    <li><a href="#事务如何实现的">事务如何实现的</a>
       <ul>
-        <li><a href="#undo-log-结构">Undo Log 结构</a></li>
+        <li><a href="#四个属性">四个属性</a></li>
+        <li><a href="#redo-log">Redo Log</a></li>
+        <li><a href="#binlog">binlog</a></li>
+        <li><a href="#两阶段提交">两阶段提交</a></li>
+        <li><a href="#undo-log">Undo Log</a></li>
       </ul>
     </li>
+    <li><a href="#加锁规则">加锁规则</a></li>
   </ul>
 </nav>
 

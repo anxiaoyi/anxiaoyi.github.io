@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MySQL 自增键"><meta property="og:title" content="MySQL 自增键" />
+<meta property="og:description" content="MySQL 自增键 自增 ID 表定义的自增值达到上限后的逻辑是：再申请下一个 id 时，得到的值保持不变。
+create table t( id int unsigned auto_increment primary key ) auto_increment=4294967295; insert into t values(null); -- Duplicate entry &#39;4294967295&#39; for key &#39;PRIMARY&#39; insert into t values(null); 第一个 insert 语句插入数据成功后，这个表的 AUTO_INCREMENT 没有改变（还是 4294967295），就导致了第二个 insert 语句又拿到相同的自增 id 值，再试图执行插入语句，报主键冲突错误。
+row_id 如果你创建的 InnoDB 表没有指定主键，那么 InnoDB 会给你创建一个不可见的，长度为 6 个字节的 row_id。InnoDB 维护了一个全局的 dict_sys.row_id 值，所有无主键的 InnoDB 表，每插入一行数据，都将当前的 dict_sys.row_id 值作为要插入数据的 row_id，然后把 dict_sys.row_id 的值加 1。
+实际上，在代码实现时 row_id 是一个长度为 8 字节的无符号长整型 (bigint unsigned)。但是，InnoDB 在设计时，给 row_id 留的只是 6 个字节的长度，这样写到数据表中时只放了最后 6 个字节，所以 row_id 能写到数据表中的值，就有两个特征：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/auto-increment-id/" />
+
+<title>MySQL 自增键 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-query/" >
+      MySQL 查询
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/transaction-internal/" >
+      MySQL 事务实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-crash-safe/" >
+      MySQL Crash Safe
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-index/" >
+      MySQL 索引
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/auto-increment-id/"  class="active">
+      MySQL 自增键
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-high-availablity/" >
+      MySQL 高可用
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/oracls-vs-mysql/" >
+      Oracle VS MySQL
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/sharding-sphere/" >
+      ShardingSphere 3.X
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>MySQL 自增键</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#自增-id">自增 ID</a></li>
+    <li><a href="#row_id">row_id</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="mysql-自增键">MySQL 自增键</h1>
+<h2 id="自增-id">自增 ID</h2>
+<p>表定义的自增值达到上限后的逻辑是：再申请下一个 id 时，<strong>得到的值保持不变</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">
+<span style="color:#66d9ef">create</span> <span style="color:#66d9ef">table</span> t(
+    id int unsigned auto_increment <span style="color:#66d9ef">primary</span> <span style="color:#66d9ef">key</span>
+) auto_increment<span style="color:#f92672">=</span><span style="color:#ae81ff">4294967295</span>;
+
+<span style="color:#66d9ef">insert</span> <span style="color:#66d9ef">into</span> t <span style="color:#66d9ef">values</span>(<span style="color:#66d9ef">null</span>);
+<span style="color:#75715e">-- Duplicate entry &#39;4294967295&#39; for key &#39;PRIMARY&#39;
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">insert</span> <span style="color:#66d9ef">into</span> t <span style="color:#66d9ef">values</span>(<span style="color:#66d9ef">null</span>);
+</code></pre></div><p>第一个 <code>insert</code> 语句插入数据成功后，这个表的 AUTO_INCREMENT 没有改变（还是 4294967295），就导致了第二个 <code>insert</code> 语句又拿到相同的自增 id 值，再试图执行插入语句，报主键冲突错误。</p>
+<h2 id="row_id">row_id</h2>
+<p>如果你创建的 InnoDB 表没有指定主键，那么 InnoDB 会<strong>给你创建一个不可见的，长度为 6 个字节的 <code>row_id</code></strong>。InnoDB 维护了一个全局的 <code>dict_sys.row_id</code> 值，所有无主键的 InnoDB 表，每插入一行数据，都将当前的 <code>dict_sys.row_id</code> 值作为要插入数据的 <code>row_id</code>，然后把 <code>dict_sys.row_id</code> 的值加 <code>1</code>。</p>
+<p>实际上，在代码实现时 <code>row_id</code> 是一个长度为 8 字节的无符号长整型 (<code>bigint unsigned</code>)。但是，InnoDB 在设计时，给 <code>row_id</code> 留的只是 6 个字节的长度，这样写到数据表中时只放了最后 6 个字节，所以 <code>row_id</code> 能写到数据表中的值，就有两个特征：</p>
+<ul>
+<li><code>row_id</code> 写入表中的值范围，是从 <code>0</code> 到 <code>2^48-1</code>；</li>
+<li>当 <code>dict_sys.row_id=2^48</code> 时，如果再有插入数据的行为要来申请 <code>row_id</code>，拿到以后再取最后 6 个字节的话就是 0。</li>
+</ul>
+<p>也就是说，写入表的 <code>row_id</code> 是从 0 开始到 <code>2^48-1</code>。达到上限后，下一个值就是 0，然后继续循环。</p>
+<p>当然，<code>2^48-1</code> 这个值本身已经很大了，但是如果一个 MySQL 实例跑得足够久的话，还是可能达到这个上限的。在 InnoDB 逻辑里，申请到 <code>row_id=N</code> 后，就将这行数据写入表中；如果表中已经存在 <code>row_id=N</code> 的行，<strong>新写入的行就会覆盖原有的行</strong>。</p>
+<p>从这个角度看，我们还是应该在 InnoDB 表中<strong>主动创建自增主键</strong>。因为，表自增 id 到达上限后，再插入数据时报主键冲突错误，是更能被接受的。</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#自增-id">自增 ID</a></li>
+    <li><a href="#row_id">row_id</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-8950855178079071"
+     data-ad-slot="6142361626"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

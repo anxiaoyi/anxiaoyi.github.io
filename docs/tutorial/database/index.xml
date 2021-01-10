@@ -7,17 +7,91 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language><atom:link href="https://kunzhao.org/docs/tutorial/database/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>事务实现原理</title>
+      <title>MySQL 查询</title>
+      <link>https://kunzhao.org/docs/tutorial/database/mysql-query/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/mysql-query/</guid>
+      <description>MySQL 查询 MySQL 逻辑架构 连接器 第一步，你会先连接到这个数据库上，这时候接待你的就是连接器。连接器负责跟客户端建立连接、获取权限、维持和管理连接。连接命令一般是这么写的：
+mysql -h$ip -P$port -u$user -p 连接完成后，如果你没有后续的动作，这个连接就处于空闲状态，你可以在 show processlist 命令中看到它。客户端如果太长时间没动静，连接器就会自动将它断开。这个时间是由参数 wait_timeout 控制的，默认值是 8 小时。
+查询缓存 连接建立完成后，你就可以执行 select 语句了。执行逻辑就会来到第二步：查询缓存。MySQL 拿到一个查询请求后，会先到查询缓存看看，之前是不是执行过这条语句。之前执行过的语句及其结果可能会以 key-value 对的形式，被直接缓存在内存中。key 是查询的语句，value 是查询的结果。如果你的查询能够直接在这个缓存中找到 key，那么这个 value 就会被直接返回给客户端。
+但是大多数情况下我会建议你不要使用查询缓存，为什么呢？因为查询缓存往往弊大于利。查询缓存的失效非常频繁，只要有对一个表的更新，这个表上所有的查询缓存都会被清空。因此很可能你费劲地把结果存起来，还没使用呢，就被一个更新全清空了。对于更新压力大的数据库来说，查询缓存的命中率会非常低。除非你的业务就是有一张静态表，很长时间才会更新一次。
+你可以将参数 query_cache_type 设置成 DEMAND，这样对于默认的 SQL 语句都不使用查询缓存。
+分析器 如果没有命中查询缓存，就要开始真正执行语句了。首先，MySQL 需要知道你要做什么，因此需要对 SQL 语句做解析。分析器先会做“词法分析”。你输入的是由多个字符串和空格组成的一条 SQL 语句，MySQL 需要识别出里面的字符串分别是什么，代表什么。
+做完了这些识别以后，就要做“语法分析”。根据词法分析的结果，语法分析器会根据语法规则，判断你输入的这个 SQL 语句是否满足 MySQL 语法。
+优化器 经过了分析器，MySQL 就知道你要做什么了。在开始执行之前，还要先经过优化器的处理。优化器是在表里面有多个索引的时候，决定使用哪个索引；或者在一个语句有多表关联（join）的时候，决定各个表的连接顺序。
+执行器 MySQL 通过分析器知道了你要做什么，通过优化器知道了该怎么做，于是就进入了执行器阶段，开始执行语句。开始执行的时候，要先判断一下你对这个表 T 有没有执行查询的权限，如果没有，就会返回没有权限的错误。
+如果有权限，就打开表继续执行。打开表的时候，执行器就会根据表的引擎定义，去使用这个引擎提供的接口。第一次调用的是“取满足条件的第一行”这个接口，之后循环取“满足条件的下一行”这个接口，这些接口都是引擎中已经定义好的。
+ResultSet 的数据存放在哪里 实际上，服务端并不需要保存一个完整的结果集。取数据和发数据的流程是这样的：
+ 获取一行，写到 net_buffer 中。这块内存的大小是由参数 net_buffer_length 定义的，默认是 16k。 重复获取行，直到 net_buffer 写满，调用网络接口发出去。 如果发送成功，就清空 net_buffer，然后继续取下一行，并写入 net_buffer。 如果发送函数返回 EAGAIN 或 WSAEWOULDBLOCK，就表示本地网络栈（socket send buffer）写满了，进入等待。直到网络栈重新可写，再继续发送。  MySQL 是“边读边发的”，这个概念很重要。这就意味着，如果客户端接收得慢，会导致 MySQL 服务端由于结果发不出去，这个事务的执行时间变长。</description>
+    </item>
+    
+    <item>
+      <title>MySQL 事务实现原理</title>
       <link>https://kunzhao.org/docs/tutorial/database/transaction-internal/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/database/transaction-internal/</guid>
-      <description>事务实现原理 Redo Log  A: 要么不执行，要么完全执行，宕机重启已执行的要回滚 C: 主键不为空、参照完整性等 I: 如果全是串行执行，也不需要隔离，所以和并发有关 D: 数据不能丢  C 一致性 C 由各种规则约束实现，比较简单。
-Write-Ahead Log 先在内存中提交事务，然后写 Write-Ahead Log，然后后台把数据异步刷到磁盘。在 InnoDB 中，Write-Ahead Log 是 Redo Log。事务提交之后，Redo Log 先写入到内存的 Redo Log Buffer 中，然后异步刷到磁盘上的 Redo Log 。
-InnoDB 关键参数 innodb_flush_log_at_trx_commit 控制刷盘策略：
- 0: 每秒刷一次 (默认) 1: 提交一个事务，就刷一次 2: 不刷盘，根据 innodb_flush_log_at_timeout 设置的值决定刷盘频率  Redo Log 逻辑与物理结构  为什么 Redo Log Block 是 512 字节?
- 因为早期的磁盘，一个扇区是存储 512 字节数据。
- 为什么 Redo Log 循坏使用?</description>
+      <description>MySQL 事务实现原理 事务隔离级别  读未提交是指，一个事务还没提交时，它做的变更就能被别的事务看到。 读提交是指，一个事务提交之后，它做的变更才会被其他事务看到。 可重复读是指，一个事务执行过程中看到的数据，总是跟这个事务在启动时看到的数据是一致的。当然在可重复读隔离级别下，未提交变更对其他事务也是不可见的。 串行化，顾名思义是对于同一行记录，“写”会加“写锁”，“读”会加“读锁”。当出现读写锁冲突的时候，后访问的事务必须等前一个事务执行完成，才能继续执行。  示例 mysql&amp;gt; create table T(c int) engine=InnoDB; insert into T(c) values(1);  读未提交：V1 = V2 = V3 = 2，事务 B 虽然还没有提交，但是结果已经被 A 看到了。 读提交：V1 = 1，V2 = V3 = 2，事务 B 的更新在提交后才能被 A 看到。 可重复读：V1 = V2 = 1，V3 = 2，事务在执行期间看到的数据前后必须是一致的。 串行化：在事务 B 执行“将 1 改成 2”的时候，会被锁住。直到事务 A 提交后，事务 B 才可以继续执行。  隔离级别是如何实现的 在实现上，数据库里面会创建一个视图，访问的时候以视图的逻辑结果为准。在“可重复读”隔离级别下，这个视图是在事务启动时创建的，整个事务存在期间都用这个视图。在“读提交”隔离级别下，这个视图是在每个 SQL 语句开始执行的时候创建的。这里需要注意的是，“读未提交”隔离级别下直接返回记录上的最新值，没有视图概念；而“串行化”隔离级别下直接用加锁的方式来避免并行访问。
+我们可以看到在不同的隔离级别下，数据库行为是有所不同的。Oracle 数据库的默认隔离级别其实就是“读提交”，因此对于一些从 Oracle 迁移到 MySQL 的应用，为保证数据库隔离级别的一致，你一定要记得将 MySQL 的隔离级别设置为“读提交”。</description>
+    </item>
+    
+    <item>
+      <title>MySQL Crash Safe</title>
+      <link>https://kunzhao.org/docs/tutorial/database/mysql-crash-safe/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/mysql-crash-safe/</guid>
+      <description>MySQL Crash Safe binlog 的写入机制 其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。
+系统给 binlog cache 分配了一片内存，每个线程一个，参数 binlog_cache_size 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。
+事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。
+每个线程有自己 binlog cache，但是共用同一份 binlog 文件。
+ 图中的 write，指的就是指把日志写入到文件系统的 page cache，并没有把数据持久化到磁盘，所以速度比较快。 图中的 fsync，才是将数据持久化到磁盘的操作。一般情况下，我们认为 fsync 才占磁盘的 IOPS。  write 和 fsync 的时机，是由参数 sync_binlog 控制的：
+ sync_binlog=0 的时候，表示每次提交事务都只 write，不 fsync； sync_binlog=1 的时候，表示每次提交事务都会执行 fsync； sync_binlog=N(N&amp;gt;1) 的时候，表示每次提交事务都 write，但累积 N 个事务后才 fsync。  redo log 写入机制 事务在执行过程中，生成的 redo log 是要先写到 redo log buffer 的。redo log 可能存在的三种状态：</description>
+    </item>
+    
+    <item>
+      <title>MySQL 索引</title>
+      <link>https://kunzhao.org/docs/tutorial/database/mysql-index/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/mysql-index/</guid>
+      <description>MySQL 索引 InnoDB 的 B+ 树 每一个索引在 InnoDB 里面对应一棵 B+ 树。B+ 树能够很好地配合磁盘的读写特性，减少单次查询的磁盘访问次数。
+根据叶子节点的内容，索引类型分为主键索引和非主键索引。
+ 主键索引的叶子节点存的是整行数据。在 InnoDB 里，主键索引也被称为聚簇索引（clustered index）。 非主键索引的叶子节点内容是主键的值。在 InnoDB 里，非主键索引也被称为二级索引（secondary index）。  主键长度越小，普通索引的叶子节点就越小，普通索引占用的空间也就越小。
+回表 回到主键索引树搜索的过程，我们称为回表。
+select * from T where k between 3 and 5 覆盖索引 ID 的值已经在 k 索引树上了，因此可以直接提供查询结果，不需要回表。也就是说，在这个查询里面，索引 k 已经“覆盖了”我们的查询需求，我们称为覆盖索引。
+select ID from T where k between 3 and 5 由于覆盖索引可以减少树的搜索次数，显著提升查询性能，所以使用覆盖索引是一个常用的性能优化手段。
+最左前缀原则 B+ 树这种索引结构，可以利用索引的“最左前缀”，来定位记录。
+上述联合索引对于如下查询请求，也是可以满足的：
+ 查到所有名字是“张三”的人 查的是所有名字第一个字是“张”的人  不只是索引的全部定义，只要满足最左前缀，就可以利用索引来加速检索。这个最左前缀可以是联合索引的最左 N 个字段，也可以是字符串索引的最左 M 个字符。
+在建立联合索引的时候，如何安排索引内的字段顺序 ?
+ 如果通过调整顺序，可以少维护一个索引，那么这个顺序往往就是需要优先考虑采用的。 考虑空间占用问题  索引下推 索引：联合索引（name, age）。</description>
+    </item>
+    
+    <item>
+      <title>MySQL 自增键</title>
+      <link>https://kunzhao.org/docs/tutorial/database/auto-increment-id/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/auto-increment-id/</guid>
+      <description>MySQL 自增键 自增 ID 表定义的自增值达到上限后的逻辑是：再申请下一个 id 时，得到的值保持不变。
+create table t( id int unsigned auto_increment primary key ) auto_increment=4294967295; insert into t values(null); -- Duplicate entry &amp;#39;4294967295&amp;#39; for key &amp;#39;PRIMARY&amp;#39; insert into t values(null); 第一个 insert 语句插入数据成功后，这个表的 AUTO_INCREMENT 没有改变（还是 4294967295），就导致了第二个 insert 语句又拿到相同的自增 id 值，再试图执行插入语句，报主键冲突错误。
+row_id 如果你创建的 InnoDB 表没有指定主键，那么 InnoDB 会给你创建一个不可见的，长度为 6 个字节的 row_id。InnoDB 维护了一个全局的 dict_sys.row_id 值，所有无主键的 InnoDB 表，每插入一行数据，都将当前的 dict_sys.row_id 值作为要插入数据的 row_id，然后把 dict_sys.row_id 的值加 1。
+实际上，在代码实现时 row_id 是一个长度为 8 字节的无符号长整型 (bigint unsigned)。但是，InnoDB 在设计时，给 row_id 留的只是 6 个字节的长度，这样写到数据表中时只放了最后 6 个字节，所以 row_id 能写到数据表中的值，就有两个特征：</description>
+    </item>
+    
+    <item>
+      <title>MySQL 高可用</title>
+      <link>https://kunzhao.org/docs/tutorial/database/mysql-high-availablity/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/mysql-high-availablity/</guid>
+      <description>MySQL 高可用 主备 M/S 结构 update 语句在节点 A 执行，然后同步到节点 B 的完整流程图:
+备库 B 跟主库 A 之间维持了一个长连接。主库 A 内部有一个线程，专门用于服务备库 B 的这个长连接。
+binlog 格式  statement：记录 SQL 语句，容易导致主备不一致 row：记录了真实删除行的主键 id，缺点占用空间 mixed: MySQL 自己判断是否会引起主备不一致  如下是可能引起主备不一致的语句示例：
+mysql&amp;gt; delete from t where a&amp;gt;=4 and t_modified&amp;lt;=&amp;#39;2018-11-10&amp;#39; limit 1; mysql&amp;gt; insert into t values(10,10, now()); 主备双 M 结构 生产上多用的是互为主备的结构：这样在切换的时候就不用再修改主备关系。
+双 M 结构有一个问题需要解决。业务逻辑在节点 A 上更新了一条语句，然后再把生成的 binlog 发给节点 B，节点 B 执行完这条更新语句后也会生成 binlog。如果节点 A 同时是节点 B 的备库，相当于又把节点 B 新生成的 binlog 拿过来执行了一次，然后节点 A 和 B 间，会不断地循环执行这个更新语句，也就是循环复制了。</description>
     </item>
     
     <item>

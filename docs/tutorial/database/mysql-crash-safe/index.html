@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MySQL Crash Safe"><meta property="og:title" content="MySQL Crash Safe" />
+<meta property="og:description" content="MySQL Crash Safe binlog 的写入机制 其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。
+系统给 binlog cache 分配了一片内存，每个线程一个，参数 binlog_cache_size 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。
+事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。
+每个线程有自己 binlog cache，但是共用同一份 binlog 文件。
+ 图中的 write，指的就是指把日志写入到文件系统的 page cache，并没有把数据持久化到磁盘，所以速度比较快。 图中的 fsync，才是将数据持久化到磁盘的操作。一般情况下，我们认为 fsync 才占磁盘的 IOPS。  write 和 fsync 的时机，是由参数 sync_binlog 控制的：
+ sync_binlog=0 的时候，表示每次提交事务都只 write，不 fsync； sync_binlog=1 的时候，表示每次提交事务都会执行 fsync； sync_binlog=N(N&gt;1) 的时候，表示每次提交事务都 write，但累积 N 个事务后才 fsync。  redo log 写入机制 事务在执行过程中，生成的 redo log 是要先写到 redo log buffer 的。redo log 可能存在的三种状态：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-crash-safe/" />
+
+<title>MySQL Crash Safe | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-query/" >
+      MySQL 查询
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/transaction-internal/" >
+      MySQL 事务实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-crash-safe/"  class="active">
+      MySQL Crash Safe
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-index/" >
+      MySQL 索引
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/auto-increment-id/" >
+      MySQL 自增键
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-high-availablity/" >
+      MySQL 高可用
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/oracls-vs-mysql/" >
+      Oracle VS MySQL
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/sharding-sphere/" >
+      ShardingSphere 3.X
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>MySQL Crash Safe</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#binlog-的写入机制">binlog 的写入机制</a></li>
+    <li><a href="#redo-log-写入机制">redo log 写入机制</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="mysql-crash-safe">MySQL Crash Safe</h1>
+<h2 id="binlog-的写入机制">binlog 的写入机制</h2>
+<p>其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。</p>
+<p>系统给 binlog cache 分配了一片内存，每个线程一个，参数 <code>binlog_cache_size</code> 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。</p>
+<p>事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。</p>
+<p><img src="/images/docs/tutorial/database/mysql-crash-safe/9ed86644d5f39efb0efec595abb92e3e.png" alt=""></p>
+<p>每个线程有自己 binlog cache，但是共用同一份 binlog 文件。</p>
+<ul>
+<li>图中的 <code>write</code>，指的就是指把日志写入到文件系统的 page cache，并没有把数据持久化到磁盘，所以速度比较快。</li>
+<li>图中的 <code>fsync</code>，才是将数据持久化到磁盘的操作。一般情况下，我们认为 <code>fsync</code> 才占磁盘的 IOPS。</li>
+</ul>
+<p>write 和 fsync 的时机，是由参数 <code>sync_binlog</code> 控制的：</p>
+<ul>
+<li><code>sync_binlog=0</code> 的时候，表示每次提交事务都只 <code>write</code>，不 <code>fsync</code>；</li>
+<li><code>sync_binlog=1</code> 的时候，表示每次提交事务都会执行 <code>fsync</code>；</li>
+<li><code>sync_binlog=N(N&gt;1)</code> 的时候，表示每次提交事务都 <code>write</code>，但累积 N 个事务后才 <code>fsync</code>。</li>
+</ul>
+<h2 id="redo-log-写入机制">redo log 写入机制</h2>
+<p>事务在执行过程中，生成的 redo log 是要先写到 redo log buffer 的。redo log 可能存在的三种状态：</p>
+<p><img src="/images/docs/tutorial/database/mysql-crash-safe/9d057f61d3962407f413deebc80526d4.png" alt=""></p>
+<p>为了控制 redo log 的写入策略，InnoDB 提供了 <code>innodb_flush_log_at_trx_commit</code> 参数，它有三种可能取值：</p>
+<ul>
+<li>设置为 <code>0</code> 的时候，表示每次事务提交时都只是把 redo log 留在 redo log buffer 中 ;</li>
+<li>设置为 <code>1</code> 的时候，表示每次事务提交时都将 redo log 直接持久化到磁盘；</li>
+<li>设置为 <code>2</code> 的时候，表示每次事务提交时都只是把 redo log 写到 page cache。</li>
+</ul>
+<p>InnoDB 有一个后台线程，每隔 1 秒，就会把 redo log buffer 中的日志，调用 <code>write</code> 写到文件系统的 page cache，然后调用 <code>fsync</code> 持久化到磁盘。</p>
+<p>实际上，除了后台线程每秒一次的轮询操作外，还有两种场景会让一个没有提交的事务的 redo log 写入到磁盘中。</p>
+<ul>
+<li>一种是，redo log buffer 占用的空间即将达到 <code>innodb_log_buffer_size</code> 一半的时候，后台线程会主动写盘。注意，由于这个事务并没有提交，所以这个写盘动作只是 <code>write</code>，而没有调用 <code>fsync</code>，也就是只留在了文件系统的 page cache。</li>
+<li>另一种是，并行的事务提交的时候，顺带将这个事务的 redo log buffer 持久化到磁盘。假设一个事务 A 执行到一半，已经写了一些 redo log 到 buffer 中，这时候有另外一个线程的事务 B 提交，如果 <code>innodb_flush_log_at_trx_commit</code> 设置的是 1，那么按照这个参数的逻辑，事务 B 要把 redo log buffer 里的日志全部持久化到磁盘。这时候，就会带上事务 A 在 redo log buffer 里的日志一起持久化到磁盘。</li>
+</ul>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#binlog-的写入机制">binlog 的写入机制</a></li>
+    <li><a href="#redo-log-写入机制">redo log 写入机制</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-8950855178079071"
+     data-ad-slot="6142361626"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

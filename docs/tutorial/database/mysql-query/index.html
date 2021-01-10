@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MySQL 查询"><meta property="og:title" content="MySQL 查询" />
+<meta property="og:description" content="MySQL 查询 MySQL 逻辑架构 连接器 第一步，你会先连接到这个数据库上，这时候接待你的就是连接器。连接器负责跟客户端建立连接、获取权限、维持和管理连接。连接命令一般是这么写的：
+mysql -h$ip -P$port -u$user -p 连接完成后，如果你没有后续的动作，这个连接就处于空闲状态，你可以在 show processlist 命令中看到它。客户端如果太长时间没动静，连接器就会自动将它断开。这个时间是由参数 wait_timeout 控制的，默认值是 8 小时。
+查询缓存 连接建立完成后，你就可以执行 select 语句了。执行逻辑就会来到第二步：查询缓存。MySQL 拿到一个查询请求后，会先到查询缓存看看，之前是不是执行过这条语句。之前执行过的语句及其结果可能会以 key-value 对的形式，被直接缓存在内存中。key 是查询的语句，value 是查询的结果。如果你的查询能够直接在这个缓存中找到 key，那么这个 value 就会被直接返回给客户端。
+但是大多数情况下我会建议你不要使用查询缓存，为什么呢？因为查询缓存往往弊大于利。查询缓存的失效非常频繁，只要有对一个表的更新，这个表上所有的查询缓存都会被清空。因此很可能你费劲地把结果存起来，还没使用呢，就被一个更新全清空了。对于更新压力大的数据库来说，查询缓存的命中率会非常低。除非你的业务就是有一张静态表，很长时间才会更新一次。
+你可以将参数 query_cache_type 设置成 DEMAND，这样对于默认的 SQL 语句都不使用查询缓存。
+分析器 如果没有命中查询缓存，就要开始真正执行语句了。首先，MySQL 需要知道你要做什么，因此需要对 SQL 语句做解析。分析器先会做“词法分析”。你输入的是由多个字符串和空格组成的一条 SQL 语句，MySQL 需要识别出里面的字符串分别是什么，代表什么。
+做完了这些识别以后，就要做“语法分析”。根据词法分析的结果，语法分析器会根据语法规则，判断你输入的这个 SQL 语句是否满足 MySQL 语法。
+优化器 经过了分析器，MySQL 就知道你要做什么了。在开始执行之前，还要先经过优化器的处理。优化器是在表里面有多个索引的时候，决定使用哪个索引；或者在一个语句有多表关联（join）的时候，决定各个表的连接顺序。
+执行器 MySQL 通过分析器知道了你要做什么，通过优化器知道了该怎么做，于是就进入了执行器阶段，开始执行语句。开始执行的时候，要先判断一下你对这个表 T 有没有执行查询的权限，如果没有，就会返回没有权限的错误。
+如果有权限，就打开表继续执行。打开表的时候，执行器就会根据表的引擎定义，去使用这个引擎提供的接口。第一次调用的是“取满足条件的第一行”这个接口，之后循环取“满足条件的下一行”这个接口，这些接口都是引擎中已经定义好的。
+ResultSet 的数据存放在哪里 实际上，服务端并不需要保存一个完整的结果集。取数据和发数据的流程是这样的：
+ 获取一行，写到 net_buffer 中。这块内存的大小是由参数 net_buffer_length 定义的，默认是 16k。 重复获取行，直到 net_buffer 写满，调用网络接口发出去。 如果发送成功，就清空 net_buffer，然后继续取下一行，并写入 net_buffer。 如果发送函数返回 EAGAIN 或 WSAEWOULDBLOCK，就表示本地网络栈（socket send buffer）写满了，进入等待。直到网络栈重新可写，再继续发送。  MySQL 是“边读边发的”，这个概念很重要。这就意味着，如果客户端接收得慢，会导致 MySQL 服务端由于结果发不出去，这个事务的执行时间变长。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-query/" />
+
+<title>MySQL 查询 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-query/"  class="active">
+      MySQL 查询
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/transaction-internal/" >
+      MySQL 事务实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-crash-safe/" >
+      MySQL Crash Safe
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-index/" >
+      MySQL 索引
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/auto-increment-id/" >
+      MySQL 自增键
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-high-availablity/" >
+      MySQL 高可用
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/oracls-vs-mysql/" >
+      Oracle VS MySQL
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/sharding-sphere/" >
+      ShardingSphere 3.X
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>MySQL 查询</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#mysql-逻辑架构">MySQL 逻辑架构</a></li>
+    <li><a href="#连接器">连接器</a></li>
+    <li><a href="#查询缓存">查询缓存</a></li>
+    <li><a href="#分析器">分析器</a></li>
+    <li><a href="#优化器">优化器</a></li>
+    <li><a href="#执行器">执行器</a></li>
+    <li><a href="#resultset-的数据存放在哪里">ResultSet 的数据存放在哪里</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown"><h1 id="mysql-查询">MySQL 查询</h1>
+<h2 id="mysql-逻辑架构">MySQL 逻辑架构</h2>
+<p><img src="/images/docs/tutorial/database/mysql-query/0d2070e8f84c4801adbfa03bda1f98d9.png" alt=""></p>
+<h2 id="连接器">连接器</h2>
+<p>第一步，你会先连接到这个数据库上，这时候接待你的就是连接器。连接器负责跟客户端建立连接、获取权限、维持和管理连接。连接命令一般是这么写的：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql <span style="color:#f92672">-</span>h$ip <span style="color:#f92672">-</span>P$port <span style="color:#f92672">-</span>u$user <span style="color:#f92672">-</span>p
+</code></pre></div><p>连接完成后，如果你没有后续的动作，这个连接就处于空闲状态，你可以在 <code>show processlist</code> 命令中看到它。客户端如果太长时间没动静，连接器就会自动将它断开。这个时间是由参数 <code>wait_timeout </code>控制的，默认值是 <code>8</code> 小时。</p>
+<h2 id="查询缓存">查询缓存</h2>
+<p>连接建立完成后，你就可以执行 <code>select</code> 语句了。执行逻辑就会来到第二步：查询缓存。MySQL 拿到一个查询请求后，会先到查询缓存看看，之前是不是执行过这条语句。之前执行过的语句及其结果可能会以 key-value 对的形式，被直接缓存在内存中。key 是查询的语句，value 是查询的结果。如果你的查询能够直接在这个缓存中找到 key，那么这个 value 就会被直接返回给客户端。</p>
+<p>但是大多数情况下我会建议你不要使用查询缓存，为什么呢？因为<strong>查询缓存往往弊大于利</strong>。查询缓存的失效非常频繁，只要有对一个表的更新，这个表上所有的查询缓存都会被清空。因此很可能你费劲地把结果存起来，还没使用呢，就被一个更新全清空了。对于更新压力大的数据库来说，查询缓存的命中率会非常低。除非你的业务就是有一张静态表，很长时间才会更新一次。</p>
+<p>你可以将参数 <code>query_cache_type</code> 设置成 <code>DEMAND</code>，这样对于默认的 SQL 语句都不使用查询缓存。</p>
+<h2 id="分析器">分析器</h2>
+<p>如果没有命中查询缓存，就要开始真正执行语句了。首先，MySQL 需要知道你要做什么，因此需要对 SQL 语句做解析。分析器先会做“词法分析”。你输入的是由多个字符串和空格组成的一条 SQL 语句，MySQL 需要识别出里面的字符串分别是什么，代表什么。</p>
+<p>做完了这些识别以后，就要做“语法分析”。根据词法分析的结果，语法分析器会根据语法规则，判断你输入的这个 SQL 语句是否满足 MySQL 语法。</p>
+<h2 id="优化器">优化器</h2>
+<p>经过了分析器，MySQL 就知道你要做什么了。在开始执行之前，还要先经过优化器的处理。优化器是在表里面有多个索引的时候，决定使用哪个索引；或者在一个语句有多表关联（join）的时候，决定各个表的连接顺序。</p>
+<h2 id="执行器">执行器</h2>
+<p>MySQL 通过分析器知道了你要做什么，通过优化器知道了该怎么做，于是就进入了执行器阶段，开始执行语句。开始执行的时候，要先判断一下你对这个表 T 有没有执行查询的权限，如果没有，就会返回没有权限的错误。</p>
+<p>如果有权限，就打开表继续执行。打开表的时候，执行器就会根据表的引擎定义，去使用这个引擎提供的接口。第一次调用的是“取满足条件的第一行”这个接口，之后循环取“满足条件的下一行”这个接口，这些接口都是引擎中已经定义好的。</p>
+<h2 id="resultset-的数据存放在哪里">ResultSet 的数据存放在哪里</h2>
+<p>实际上，服务端并不需要保存一个完整的结果集。取数据和发数据的流程是这样的：</p>
+<ul>
+<li>获取一行，写到 <code>net_buffer</code> 中。这块内存的大小是由参数 <code>net_buffer_length</code> 定义的，默认是 <code>16k</code>。</li>
+<li>重复获取行，直到 <code>net_buffer</code> 写满，调用网络接口发出去。</li>
+<li>如果发送成功，就清空 <code>net_buffer</code>，然后继续取下一行，并写入 <code>net_buffer</code>。</li>
+<li>如果发送函数返回 <code>EAGAIN</code> 或 <code>WSAEWOULDBLOCK</code>，就表示本地网络栈（socket send buffer）写满了，进入等待。直到网络栈重新可写，再继续发送。</li>
+</ul>
+<p><strong>MySQL 是“边读边发的”</strong>，这个概念很重要。这就意味着，如果客户端接收得慢，会导致 MySQL 服务端由于结果发不出去，这个事务的执行时间变长。</p>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  
+  
+  <div id="vcomments"></div>
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
+
+  <script type="text/javascript">
+    new Valine({
+        el: '#vcomments' ,
+        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
+        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
+        notify: 'false', 
+        verify: 'false', 
+        avatar:'mm', 
+        placeholder: '说点什么吧...',
+        visitor: 'true'
+    });
+  </script></div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#mysql-逻辑架构">MySQL 逻辑架构</a></li>
+    <li><a href="#连接器">连接器</a></li>
+    <li><a href="#查询缓存">查询缓存</a></li>
+    <li><a href="#分析器">分析器</a></li>
+    <li><a href="#优化器">优化器</a></li>
+    <li><a href="#执行器">执行器</a></li>
+    <li><a href="#resultset-的数据存放在哪里">ResultSet 的数据存放在哪里</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-8950855178079071"
+     data-ad-slot="6142361626"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
