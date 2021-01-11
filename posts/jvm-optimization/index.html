@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script defer src="/en.search.min.932d0403618fee52c2f9dd103c901d18857dcf2e1cd6fa4c13da586e6f98b46b.js" integrity="sha256-ky0EA2GP7lLC&#43;d0QPJAdGIV9zy4c1vpME9pYbm&#43;YtGs="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -373,17 +373,16 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#java-虚拟机内存模型">Java 虚拟机内存模型</a></li>
-    <li><a href="#pc-register">pc register</a></li>
-    <li><a href="#stack">stack</a></li>
-    <li><a href="#native-method-stack">native method stack</a></li>
-    <li><a href="#heap">HEAP</a>
+    <li><a href="#java-虚拟机内存模型">Java 虚拟机内存模型</a>
       <ul>
-        <li><a href="#逃逸分析">逃逸分析</a></li>
+        <li><a href="#pc-register">pc register</a></li>
+        <li><a href="#stack">stack</a></li>
+        <li><a href="#native-method-stack">native method stack</a></li>
+        <li><a href="#heap">HEAP</a></li>
+        <li><a href="#method-area">method area</a></li>
+        <li><a href="#直接内存">直接内存</a></li>
       </ul>
     </li>
-    <li><a href="#method-area">method area</a></li>
-    <li><a href="#直接内存">直接内存</a></li>
     <li><a href="#区域比例">区域比例</a></li>
     <li><a href="#垃圾回收算法">垃圾回收算法</a></li>
     <li><a href="#谁才是真正的垃圾">谁才是真正的垃圾</a></li>
@@ -425,7 +424,6 @@ var _hmt = _hmt || [];
         <li><a href="#6-deoptimization">(6) Deoptimization</a></li>
       </ul>
     </li>
-    <li><a href="#todo">TODO</a></li>
     <li><a href="#远程-jvisualvm">远程 <code>JVisualVM</code></a></li>
     <li><a href="#gc-日志分析工具">GC 日志分析工具</a></li>
     <li><a href="#dump-什么">DUMP 什么</a></li>
@@ -437,7 +435,6 @@ var _hmt = _hmt || [];
     <li><a href="#mat">MAT</a></li>
     <li><a href="#jvm-诊断示例httpsplumbreublogmemory-leaksmemory-leaks-fallacies-and-misconceptions">JVM 诊断<a href="https://plumbr.eu/blog/memory-leaks/memory-leaks-fallacies-and-misconceptions">示例</a></a></li>
     <li><a href="#jvisualvm">JVisualVM</a></li>
-    <li><a href="#todo-1">TODO</a></li>
     <li><a href="#如何在生产环境使用-btrace-进行调试httpwwwimportnewcom23614html"><a href="http://www.importnew.com/23614.html">如何在生产环境使用 Btrace 进行调试</a></a>
       <ul>
         <li><a href="#btrace-可以做什么">Btrace 可以做什么？</a></li>
@@ -490,20 +487,20 @@ var _hmt = _hmt || [];
 <h2 id="java-虚拟机内存模型">Java 虚拟机内存模型</h2>
 <p>JVM 虚拟机将内存数据分为如下这几部分：</p>
 <p><img src="/images/posts/jvm-optimization/jvm_memory_overview.jpg" alt=""></p>
-<h2 id="pc-register">pc register</h2>
+<h3 id="pc-register">pc register</h3>
 <ul>
 <li><strong>pc register (program counter)</strong>： 一个包含当前时刻指令的地址的<strong>寄存器</strong></li>
 </ul>
 <p>程序寄存器区域是<strong>唯一一个</strong>在 Java 虚拟机规范中没有规定任何 <code>OutOfMemoryError</code> 情况的区域</p>
-<h2 id="stack">stack</h2>
+<h3 id="stack">stack</h3>
 <p>栈会抛出两种异常：<code>StackOverflowError</code> 和 <code>OutOfMemoryError</code>，在 HotSpot 虚拟机栈中，可以使用参数 <code>-Xss1M</code> 来设置栈的大小为 <strong>1MB</strong>。随着<strong>调用函数参数的增加和局部变量的增加</strong>，单次函数调用对栈空间的需求也会增加，因此栈的最大递归次数不是一成不变的。函数嵌套调用的次数由栈的大小决定：栈越大，函数嵌套调用次数越多；对一个函数而言，它的参数越多，内部局部变量越多，它的栈帧就越大，其嵌套调用次数就会越少。</p>
 <p><img src="/images/posts/jvm-optimization/3558cf63-bac7-42b3-9f3b-bcdebffa40a6.png" alt=""></p>
 <ul>
 <li><code>Xss1M</code>: 设置栈的大小</li>
 </ul>
-<h2 id="native-method-stack">native method stack</h2>
+<h3 id="native-method-stack">native method stack</h3>
 <p>与 <strong>stack</strong> 一样，同样抛出两种异常：<code>StackOverflowError</code> 和 <code>OutOfMemoryError</code>。在 sun 的 HOT SPOT 虚拟机中，不区分本地方法栈和虚拟机栈</p>
-<h2 id="heap">HEAP</h2>
+<h3 id="heap">HEAP</h3>
 <p><img src="/images/posts/jvm-optimization/Java-Memory-Model.png" alt=""></p>
 <ul>
 <li><code>-Xmx</code>: 设置<!-- raw HTML omitted --><strong>堆的最大值</strong><!-- raw HTML omitted --></li>
@@ -521,7 +518,7 @@ var _hmt = _hmt || [];
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">().</span><span style="color:#a6e22e">freeMemory</span><span style="color:#f92672">()</span> <span style="color:#f92672">/</span> 1024 <span style="color:#f92672">/</span> 1024
 Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">().</span><span style="color:#a6e22e">totalMemory</span><span style="color:#f92672">()</span> <span style="color:#f92672">/</span> 1024 <span style="color:#f92672">/</span> 1024
 Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">().</span><span style="color:#a6e22e">maxMemory</span><span style="color:#f92672">()</span> <span style="color:#f92672">/</span> 1000 <span style="color:#f92672">/</span> 1000
-</code></pre></div><h3 id="逃逸分析">逃逸分析</h3>
+</code></pre></div><h4 id="逃逸分析">逃逸分析</h4>
 <p>Java 7 开始支持<strong>对象的栈分配和逃逸分析机制</strong>，这样的机制能够将<strong>堆分配对象变成栈分配对象</strong>:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">myMethod</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     V v <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> V<span style="color:#f92672">();</span>
@@ -532,7 +529,7 @@ Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntim
 <li><strong><code>-server</code></strong>: <code>server</code> 模式下，才可以启用逃逸分析</li>
 <li><strong><code>-XX:DoEscapeAnalysis</code></strong>: 启用逃逸分析</li>
 </ul>
-<h2 id="method-area">method area</h2>
+<h3 id="method-area">method area</h3>
 <p>方法区主要保存的是<strong>类的元数据</strong>：类型、常量池、字段、方法。在 Hot Spot 虚拟机中，<strong>方法区也称为永久区</strong>，同样也可以被 GC 回收。<strong>持久代的大小直接决定了系统可以支持多少个类定义和多少常量</strong>。对于使用 CGLIB 或者 Javassist 等动态字节码生成工具的应用程序而言，设置合理的持久代有利于维持系统稳定。</p>
 <p><strong>方法区的大小直接决定了系统可以保存多少个类</strong>，如果系统使用了一些动态代理，那么有可能会在运行时生成大量的类，如果这样，就需要设置一个合理的永久区大小，确保不发生永久区内存溢出。</p>
 <ul>
@@ -543,7 +540,16 @@ Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntim
 <ul>
 <li><code>-XX:MaxMetaspaceSize</code>: 指定元数据区大小</li>
 </ul>
-<h2 id="直接内存">直接内存</h2>
+<p><img src="/images/posts/jvm-optimization/9906824978c891c86524f9394102de6c.png" alt=""></p>
+<blockquote>
+<p>那你可能又有疑问了，Java8 为什么使用元空间替代永久代，这样做有什么好处呢？</p>
+</blockquote>
+<p>官方给出的解释是：</p>
+<ul>
+<li>移除永久代是为了融合 HotSpot JVM 与 JRockit VM 而做出的努力，因为 JRockit 没有永久代，所以不需要配置永久代。</li>
+<li>永久代内存经常不够用或发生内存溢出，爆出异常 <code>java.lang.OutOfMemoryError: PermGen</code>。这是因为在 JDK1.7 版本中，指定的 <code>PermGen</code> 区大小为 8M，由于 <code>PermGen</code> 中类的元数据信息在每次 <code>FullGC</code> 的时候都可能被收集，回收率都偏低，成绩很难令人满意；还有，为 <code>PermGen</code> 分配多大的空间很难确定，·e 的大小依赖于很多因素，比如，JVM 加载的 class 总数、常量池的大小和方法的大小等。</li>
+</ul>
+<h3 id="直接内存">直接内存</h3>
 <p>使用 <strong>NIO</strong> 之后，直接内存的使用变得非常普遍，直接内存跳过了 Java 堆，可以直接访问原生堆空间。<strong>直接内存适合申请次数少、访问较为频繁的场合。如果需要频繁申请，则并不适合使用直接内存</strong>。</p>
 <ul>
 <li><code>-XX:MaxDirectMemorySize</code>: 最大可用直接内存，默认为 <code>-Xmx</code></li>
@@ -1129,11 +1135,6 @@ sph<span style="color:#f92672">.</span><span style="color:#a6e22e">getStdDev</sp
 <p><strong>Deoptimizing Zombie Code</strong>:</p>
 <p>Recall that the compiled code is held in a fixedsize code cache; when zombie methods are identified, it means that the code in question can be removed from the code cache, making room for other classes to be compiled (or limiting the amount of memory the JVM will need to allocate later).</p>
 <p>The possible downside here is that if the code for the class is made zombie and then later reloaded and heavily used again, the JVM will need to recompile and reoptimize the code.</p>
-<h2 id="todo">TODO</h2>
-<ul>
-<li><a href="https://docs.oracle.com/javase/6/docs/technotes/guides/management/jconsole.html">https://docs.oracle.com/javase/6/docs/technotes/guides/management/jconsole.html</a></li>
-<li><a href="https://stackoverflow.com/questions/1058991/how-to-monitor-java-memory-usage">https://stackoverflow.com/questions/1058991/how-to-monitor-java-memory-usage</a></li>
-</ul>
 <h2 id="远程-jvisualvm">远程 <code>JVisualVM</code></h2>
 <p>远程机器上输入 <code>jstatd</code>:</p>
 <pre><code>Could not create remote object
@@ -1328,8 +1329,6 @@ echo <span style="color:#e6db74">&#34;\n&#34;</span>
 <p><img src="/images/posts/jvm-optimization/2017_09_18_14_38_51.png" alt=""></p>
 <p>才能显示具体的 <code>GC</code> 过程:</p>
 <p><img src="/images/posts/jvm-optimization/2017_09_18_14_40_26.png" alt=""></p>
-<h2 id="todo-1">TODO</h2>
-<p><a href="https://plumbr.eu/handbook/garbage-collection-algorithms-implementations#serial-minor-gc">https://plumbr.eu/handbook/garbage-collection-algorithms-implementations#serial-minor-gc</a></p>
 <h2 id="如何在生产环境使用-btrace-进行调试httpwwwimportnewcom23614html"><a href="http://www.importnew.com/23614.html">如何在生产环境使用 Btrace 进行调试</a></h2>
 <p>大多数问题的解决方式都是在<strong>本地打断点</strong>进行调试，或者在测试环境利用<strong>输出日志</strong>进行调试，这种方式简单粗暴，但过程比较繁琐，需要各种重新发布，重启应用，还不能保证一次就找到问题的根源。</p>
 <p><a href="https://github.com/btraceio/btrace"><code>BTrace</code></a> 是 sun 公司推出的一款 <code>Java</code> <strong>动态、安全追踪（监控）工具</strong>，可以在不用重启的情况下监控系统运行情况，方便的获取程序运行时的数据信息，如<strong>方法参数、返回值、全局变量和堆栈信息</strong>等，并且做到最少的侵入，占用最少的系统资源。</p>
@@ -1440,24 +1439,7 @@ echo <span style="color:#e6db74">&#34;\n&#34;</span>
  
         
   
-  <div class="book-comments">  
-  
-  <div id="vcomments"></div>
-  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
-  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
-
-  <script type="text/javascript">
-    new Valine({
-        el: '#vcomments' ,
-        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
-        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
-        notify: 'false', 
-        verify: 'false', 
-        avatar:'mm', 
-        placeholder: '说点什么吧...',
-        visitor: 'true'
-    });
-  </script></div>
+  <div class="book-comments">  </div>
   
  
       </footer>
@@ -1469,17 +1451,16 @@ echo <span style="color:#e6db74">&#34;\n&#34;</span>
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#java-虚拟机内存模型">Java 虚拟机内存模型</a></li>
-    <li><a href="#pc-register">pc register</a></li>
-    <li><a href="#stack">stack</a></li>
-    <li><a href="#native-method-stack">native method stack</a></li>
-    <li><a href="#heap">HEAP</a>
+    <li><a href="#java-虚拟机内存模型">Java 虚拟机内存模型</a>
       <ul>
-        <li><a href="#逃逸分析">逃逸分析</a></li>
+        <li><a href="#pc-register">pc register</a></li>
+        <li><a href="#stack">stack</a></li>
+        <li><a href="#native-method-stack">native method stack</a></li>
+        <li><a href="#heap">HEAP</a></li>
+        <li><a href="#method-area">method area</a></li>
+        <li><a href="#直接内存">直接内存</a></li>
       </ul>
     </li>
-    <li><a href="#method-area">method area</a></li>
-    <li><a href="#直接内存">直接内存</a></li>
     <li><a href="#区域比例">区域比例</a></li>
     <li><a href="#垃圾回收算法">垃圾回收算法</a></li>
     <li><a href="#谁才是真正的垃圾">谁才是真正的垃圾</a></li>
@@ -1521,7 +1502,6 @@ echo <span style="color:#e6db74">&#34;\n&#34;</span>
         <li><a href="#6-deoptimization">(6) Deoptimization</a></li>
       </ul>
     </li>
-    <li><a href="#todo">TODO</a></li>
     <li><a href="#远程-jvisualvm">远程 <code>JVisualVM</code></a></li>
     <li><a href="#gc-日志分析工具">GC 日志分析工具</a></li>
     <li><a href="#dump-什么">DUMP 什么</a></li>
@@ -1533,7 +1513,6 @@ echo <span style="color:#e6db74">&#34;\n&#34;</span>
     <li><a href="#mat">MAT</a></li>
     <li><a href="#jvm-诊断示例httpsplumbreublogmemory-leaksmemory-leaks-fallacies-and-misconceptions">JVM 诊断<a href="https://plumbr.eu/blog/memory-leaks/memory-leaks-fallacies-and-misconceptions">示例</a></a></li>
     <li><a href="#jvisualvm">JVisualVM</a></li>
-    <li><a href="#todo-1">TODO</a></li>
     <li><a href="#如何在生产环境使用-btrace-进行调试httpwwwimportnewcom23614html"><a href="http://www.importnew.com/23614.html">如何在生产环境使用 Btrace 进行调试</a></a>
       <ul>
         <li><a href="#btrace-可以做什么">Btrace 可以做什么？</a></li>

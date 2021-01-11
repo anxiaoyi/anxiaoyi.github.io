@@ -5,10 +5,11 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Java 类加载"><meta property="og:title" content="Java 类加载" />
-<meta property="og:description" content="Java 类加载 类加载的过程 参考：《深入理解 Java 虚拟机》
+<meta property="og:description" content="Java 类加载 类编译  .class 文件包含哪些信息 ?
+ 类加载的过程 参考：《深入理解 Java 虚拟机》
 JVM 把 Class 文件加载到内存，然后进行校验、准备、解析、初始化，最终形成可以使用的 Java 类型，这就是类加载机制。其中，校验、准备、解析这三个阶段，放在一起是链接阶段。
  【加载】二进制字节流可以从 JAR、WAR、网络、运行时动态生成（动态代理）、JSP生成。 【验证】文件格式、元数据（信息语义）、字节码验证（类型转换是否有效、跳转指令不会跳到方法体以外的地方去）、符号引用验证 【准备】static final 变量赋值、各个基本数据类型的默认值 【解析】常量池内的符号引用（用符号描述引用目标）替换为直接引用（直接指向目标的指针） 【初始化】编译器收集 static 块、类变量的赋值放到 () 方法中  加载器类型  Bootstrap ClassLoader：加载 JAVA_HOME/lib、或者 -Xbootclasspath，并且是按照名字识别的，如 rt.jar Extension ClassLoader：JAVA_HOME/lib/ext、或者 java.ext.dirs 系统变量 Application ClassLoader：加载用户 ClassPath 上的类库  类加载器之间的层次关系，称之为双亲委派模型。如果一个类收到类加载请求，那么会首先委派给父类，父类反馈无法完成，自己才进行加载。
-何时初始化  遇到 new、getstatic、putstatic、invokestatic 这 4 条字节码指令。对应的是 new 一个对象、读取静态字段、设置静态字段（字段没有被 final 修饰，否则在编译器就已经将结果放在常量池了）、调用一个类的静态方法。 java.lang.reflect 进行反射。 初始化 A 类，其父类没有被初始化。 虚拟机启动时，包含 main() 方法的这个类  // 不会导致子类初始化 println(SubClass.parentStaticValue); // 不会初始化 SuperClass SuperClass[] sca = new SuperClass[10]; // 不会导致 ConstClass 初始化 println(ConstClass." />
+何时初始化  遇到 new、getstatic、putstatic、invokestatic 这 4 条字节码指令。对应的是 new 一个对象、读取静态字段、设置静态字段（字段没有被 final 修饰，否则在编译器就已经将结果放在常量池了）、调用一个类的静态方法。 java.lang.reflect 进行反射。 初始化 A 类，其父类没有被初始化。 虚拟机启动时，包含 main() 方法的这个类  // 不会导致子类初始化 println(SubClass." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/classloader/" />
 
@@ -19,7 +20,7 @@ JVM 把 Class 文件加载到内存，然后进行校验、准备、解析、初
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script defer src="/en.search.min.932d0403618fee52c2f9dd103c901d18857dcf2e1cd6fa4c13da586e6f98b46b.js" integrity="sha256-ky0EA2GP7lLC&#43;d0QPJAdGIV9zy4c1vpME9pYbm&#43;YtGs="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -885,6 +886,7 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#类编译">类编译</a></li>
     <li><a href="#类加载的过程">类加载的过程</a>
       <ul>
         <li><a href="#加载器类型">加载器类型</a></li>
@@ -903,6 +905,11 @@ var _hmt = _hmt || [];
 
       
 <article class="markdown"><h1 id="java-类加载">Java 类加载</h1>
+<h2 id="类编译">类编译</h2>
+<blockquote>
+<p>.class 文件包含哪些信息 ?</p>
+</blockquote>
+<p><img src="/images/docs/tutorial/java/classloader/605dbbcfbbfcc09143d7d9e7fed5ac7e.png" alt=""></p>
 <h2 id="类加载的过程">类加载的过程</h2>
 <p>参考：《深入理解 Java 虚拟机》</p>
 <p>JVM 把 Class 文件加载到内存，然后进行校验、准备、解析、初始化，最终形成可以使用的 Java 类型，这就是类加载机制。其中，<strong>校验、准备、解析这三个阶段，放在一起是链接阶段</strong>。</p>
@@ -913,6 +920,7 @@ var _hmt = _hmt || [];
 <li>【解析】常量池内的符号引用（用符号描述引用目标）替换为直接引用（直接指向目标的指针）</li>
 <li>【初始化】编译器收集 static 块、类变量的赋值放到 <!-- raw HTML omitted -->() 方法中</li>
 </ul>
+<p><img src="/images/docs/tutorial/java/classloader/8d4ec9c73ec37d69adb105aa7d052717.jpg" alt=""></p>
 <h3 id="加载器类型">加载器类型</h3>
 <ul>
 <li><code>Bootstrap ClassLoader</code>：加载 <code>JAVA_HOME/lib</code>、或者 <code>-Xbootclasspath</code>，并且是按照名字识别的，如 rt.jar</li>
@@ -956,24 +964,7 @@ var _hmt = _hmt || [];
  
         
   
-  <div class="book-comments">  
-  
-  <div id="vcomments"></div>
-  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
-  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
-
-  <script type="text/javascript">
-    new Valine({
-        el: '#vcomments' ,
-        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
-        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
-        notify: 'false', 
-        verify: 'false', 
-        avatar:'mm', 
-        placeholder: '说点什么吧...',
-        visitor: 'true'
-    });
-  </script></div>
+  <div class="book-comments">  </div>
   
  
       </footer>
@@ -985,6 +976,7 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#类编译">类编译</a></li>
     <li><a href="#类加载的过程">类加载的过程</a>
       <ul>
         <li><a href="#加载器类型">加载器类型</a></li>

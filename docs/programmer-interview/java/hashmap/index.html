@@ -5,7 +5,11 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="HashMap"><meta property="og:title" content="HashMap" />
-<meta property="og:description" content="HashMap get 方法如何实现的 public V get(Object key) { Node&lt;K,V&gt; e; return (e = getNode(hash(key), key)) == null ? null : e.value; } final Node&lt;K,V&gt; getNode(int hash, Object key) { Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; first, e; int n; K k; if ((tab = table) != null &amp;&amp; (n = tab.length) &gt; 0 &amp;&amp; (first = tab[(n - 1) &amp; hash]) != null) { if (first.hash == hash &amp;&amp; // always check first node  ((k = first." />
+<meta property="og:description" content="HashMap 数组长度为什么必须是 2 的指数幂 减少哈希冲突，均匀分布元素。
+1）通过将 Key 的 hash 值与 length-1 进行 &amp; 运算，实现了当前 Key 的定位，2 的幂次方可以减少冲突（碰撞）的次数，提高 HashMap 查询效率；
+2）如果 length 为 2 的次幂，则 length-1 转化为二进制必定是 11111…… 的形式，在于 h 的二进制与操作效率会非常的快，而且空间不浪费；如果 length 不是 2 的次幂，比如 length 为 15，则 length-1 为 14，对应的二进制为 1110，在于 h 与操作，最后一位都为 0，而 0001，0011，0101，1001，1011，0111，1101 这几个位置永远都不能存放元素了，空间浪费相当大，更糟的是这种情况中，数组可以使用的位置比数组长度小了很多，这意味着进一步增加了碰撞的几率，减慢了查询的效率！这样就会造成空间的浪费。
+如何扩容的 初始扩容因子 static final int DEFAULT_INITIAL_CAPACITY = 1 &lt;&lt; 4; // aka 16 static final float DEFAULT_LOAD_FACTOR = 0.75f;  为什么是 0.75 这个值呢？
+ 这是因为对于使用链表法的哈希表来说，查找一个元素的平均时间是 O(1&#43;n)，这里的 n 指的是遍历链表的长度，因此加载因子越大，对空间的利用就越充分，这就意味着链表的长度越长，查找效率也就越低。如果设置的加载因子太小，那么哈希表的数据将过于稀疏，对空间造成严重浪费。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/hashmap/" />
 
@@ -16,7 +20,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script defer src="/en.search.min.932d0403618fee52c2f9dd103c901d18857dcf2e1cd6fa4c13da586e6f98b46b.js" integrity="sha256-ky0EA2GP7lLC&#43;d0QPJAdGIV9zy4c1vpME9pYbm&#43;YtGs="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -704,7 +708,18 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#数组长度为什么必须是-2-的指数幂">数组长度为什么必须是 2 的指数幂</a></li>
+    <li><a href="#如何扩容的">如何扩容的</a>
+      <ul>
+        <li><a href="#初始扩容因子">初始扩容因子</a></li>
+        <li><a href="#何时扩容">何时扩容</a></li>
+        <li><a href="#扩容扩多少">扩容扩多少</a></li>
+        <li><a href="#元素如何迁移">元素如何迁移</a></li>
+        <li><a href="#头插法设计思路">头插法设计思路</a></li>
+      </ul>
+    </li>
     <li><a href="#get-方法如何实现的">get 方法如何实现的</a></li>
+    <li><a href="#红黑树">红黑树</a></li>
   </ul>
 </nav>
 
@@ -716,6 +731,65 @@ var _hmt = _hmt || [];
 
       
 <article class="markdown"><h1 id="hashmap">HashMap</h1>
+<h2 id="数组长度为什么必须是-2-的指数幂">数组长度为什么必须是 2 的指数幂</h2>
+<p>减少哈希冲突，均匀分布元素。</p>
+<p>1）通过将 Key 的 hash 值与 length-1 进行 &amp; 运算，实现了当前 Key 的定位，2 的幂次方可以减少冲突（碰撞）的次数，提高 HashMap 查询效率；</p>
+<p>2）如果 length 为 2 的次幂，则 length-1 转化为二进制必定是 11111…… 的形式，在于 h 的二进制与操作效率会非常的快，而且空间不浪费；如果 length 不是 2 的次幂，比如 length 为 15，则 length-1 为 14，对应的二进制为 1110，在于 h 与操作，最后一位都为 0，而 0001，0011，0101，1001，1011，0111，1101 这几个位置永远都不能存放元素了，空间浪费相当大，更糟的是这种情况中，数组可以使用的位置比数组长度小了很多，这意味着进一步增加了碰撞的几率，减慢了查询的效率！这样就会造成空间的浪费。</p>
+<h2 id="如何扩容的">如何扩容的</h2>
+<h3 id="初始扩容因子">初始扩容因子</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> DEFAULT_INITIAL_CAPACITY <span style="color:#f92672">=</span> 1 <span style="color:#f92672">&lt;&lt;</span> 4<span style="color:#f92672">;</span> <span style="color:#75715e">// aka 16
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">float</span> DEFAULT_LOAD_FACTOR <span style="color:#f92672">=</span> 0<span style="color:#f92672">.</span><span style="color:#a6e22e">75f</span><span style="color:#f92672">;</span>
+</code></pre></div><blockquote>
+<p>为什么是 <code>0.75</code> 这个值呢？</p>
+</blockquote>
+<p>这是因为对于使用链表法的哈希表来说，查找一个元素的平均时间是 <code>O(1+n)</code>，这里的 <code>n</code> 指的是遍历链表的长度，因此加载因子越大，对空间的利用就越充分，这就意味着链表的长度越长，查找效率也就越低。如果设置的加载因子太小，那么哈希表的数据将过于稀疏，对空间造成严重浪费。</p>
+<h3 id="何时扩容">何时扩容</h3>
+<p>首次 <code>put</code> 的时候，如果 <code>table</code> 为空，会执行扩容：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">((</span>tab <span style="color:#f92672">=</span> table<span style="color:#f92672">)</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>n <span style="color:#f92672">=</span> tab<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">)</span> <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span>
+    n <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>tab <span style="color:#f92672">=</span> resize<span style="color:#f92672">()).</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span>
+</code></pre></div><p>在 <code>put</code> 方法中，<code>size++</code> 之后的值如果大于 <code>threshold</code>，那么也会执行 <code>resize</code> 方法。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(++</span>size <span style="color:#f92672">&gt;</span> threshold<span style="color:#f92672">)</span>
+    resize<span style="color:#f92672">();</span>
+</code></pre></div><h3 id="扩容扩多少">扩容扩多少</h3>
+<p>首次扩容：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">newCap <span style="color:#f92672">=</span> DEFAULT_INITIAL_CAPACITY<span style="color:#f92672">;</span>
+newThr <span style="color:#f92672">=</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">)(</span>DEFAULT_LOAD_FACTOR <span style="color:#f92672">*</span> DEFAULT_INITIAL_CAPACITY<span style="color:#f92672">);</span>
+</code></pre></div><p>非首次扩容，新的容量和新的 <code>threshold</code> 都是<strong>翻一倍</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">newCap <span style="color:#f92672">=</span> oldCap <span style="color:#f92672">&lt;&lt;</span> 1<span style="color:#f92672">;</span>
+newThr <span style="color:#f92672">=</span> oldThr <span style="color:#f92672">&lt;&lt;</span> 1<span style="color:#f92672">;</span>
+</code></pre></div><h3 id="元素如何迁移">元素如何迁移</h3>
+<ul>
+<li>创建新的数组</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Node<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;[]</span> newTab <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>Node<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;[])</span><span style="color:#66d9ef">new</span> Node<span style="color:#f92672">[</span>newCap<span style="color:#f92672">];</span>
+</code></pre></div><ul>
+<li>遍历旧数组</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> j <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> j <span style="color:#f92672">&lt;</span> oldCap<span style="color:#f92672">;</span> <span style="color:#f92672">++</span>j<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    Node<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;</span> e<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">((</span>e <span style="color:#f92672">=</span> oldTab<span style="color:#f92672">[</span>j<span style="color:#f92672">])</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><ul>
+<li>如果 <code>e.next</code> 不为空，即数组里面只存储了这一个元素</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">newTab<span style="color:#f92672">[</span>e<span style="color:#f92672">.</span><span style="color:#a6e22e">hash</span> <span style="color:#f92672">&amp;</span> <span style="color:#f92672">(</span>newCap <span style="color:#f92672">-</span> 1<span style="color:#f92672">)]</span> <span style="color:#f92672">=</span> e<span style="color:#f92672">;</span>
+</code></pre></div><ul>
+<li>如果 <code>e</code> 是 <code>TreeNode</code></li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#f92672">((</span>TreeNode<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;)</span>e<span style="color:#f92672">).</span><span style="color:#a6e22e">split</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">,</span> newTab<span style="color:#f92672">,</span> j<span style="color:#f92672">,</span> oldCap<span style="color:#f92672">);</span>
+</code></pre></div><ul>
+<li>如果 <code>e</code> 有 <code>next</code>，维持原来的顺序，挂到新的数组上</li>
+</ul>
+<p>原来的元素在重新计算 <code>hash</code> 之后，会放到两个数组的坑里面。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// (e.hash &amp; oldCap) == 0 的属于 loHead
+</span><span style="color:#75715e"></span>newTab<span style="color:#f92672">[</span>j<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> loHead<span style="color:#f92672">;</span>
+<span style="color:#75715e">// 否则属于 hiHead
+</span><span style="color:#75715e"></span>newTab<span style="color:#f92672">[</span>j <span style="color:#f92672">+</span> oldCap<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> hiHead<span style="color:#f92672">;</span>
+</code></pre></div><h3 id="头插法设计思路">头插法设计思路</h3>
+<p>JDK1.7是考虑新增数据大多数是热点数据，所以考虑放在链表头位置，也就是数组中，这样可以提高查询效率，但这种方式会出现插入数据是逆序的。在JDK1.8开始hashmap链表在节点长度达到8之后会变成红黑树，这样一来在数组后节点长度不断增加时，遍历一次的次数就会少很多，相比头插法而言，尾插法操作额外的遍历消耗已经小很多了。</p>
+<p>也有很多人说避免多线程情况下hashmap扩容时的死循环问题，我个人觉得避免死循环的关键不在尾插法的改变，而是扩容时，用了首尾两个指针来避免死循环。这个我会在后面的多线程中讲到hashmap扩容导致死循环的问题。</p>
 <h2 id="get-方法如何实现的">get 方法如何实现的</h2>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> V <span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>Object key<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     Node<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span>V<span style="color:#f92672">&gt;</span> e<span style="color:#f92672">;</span>
@@ -741,8 +815,26 @@ var _hmt = _hmt || [];
     <span style="color:#f92672">}</span>
     <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><p>首先使用 <code>(n - 1) &amp; key.hash</code> 定位到这个 <code>key</code> 应该落到 <code>table</code> 的哪一个<strong>桶</strong>里面，其中 <code>n</code> 是指 <code>table</code> 的长度。然后看这个桶里面的 <code>first</code> 元素是否是目标值，如果是，直接返回。否则看 <code>first</code> 是否属于 <code>TreeNode</code>，如果是 <code>TreeNode</code>，则调用 <code>getTreeNode</code> 方法；否则沿着 <code>e.next</code> 往下遍历，并依次检查条件 <code>key.hash == k.hash</code> 并且 <code>key.equals(k)</code>。</p>
-</article>
+</code></pre></div><ul>
+<li>首先使用 <code>(n - 1) &amp; key.hash</code> 定位到这个 <code>key</code> 应该落到 <code>table</code> 的哪一个<strong>桶</strong>里面，其中 <code>n</code> 是指 <code>table</code> 的长度。</li>
+<li>然后看这个桶里面的 <code>first</code> 元素是否是目标值，如果是，直接返回。</li>
+<li>否则看 <code>first</code> 是否属于 <code>TreeNode</code>，如果是 <code>TreeNode</code>，则调用 <code>getTreeNode</code> 方法；否则沿着 <code>e.next</code> 往下遍历，并依次检查条件 <code>key.hash == k.hash</code> 并且 <code>key.equals(k)</code>。</li>
+</ul>
+<h2 id="红黑树">红黑树</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> TREEIFY_THRESHOLD <span style="color:#f92672">=</span> 8<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> UNTREEIFY_THRESHOLD <span style="color:#f92672">=</span> 6<span style="color:#f92672">;</span>
+</code></pre></div><p>Because <strong>TreeNodes are about twice the size of regular nodes</strong>, we use them <strong>only when bins contain enough nodes</strong> to warrant use (see <code>TREEIFY_THRESHOLD</code>). And when they become too small (due to removal or resizing) they are converted back to plain bins.  In usages with well-distributed user hashCodes, tree bins are rarely used.  Ideally, under random hashCodes, the frequency of nodes in bins follows a Poisson distribution (<a href="http://en.wikipedia.org/wiki/Poisson_distribution">http://en.wikipedia.org/wiki/Poisson_distribution</a>) with a parameter of about <code>0.5</code> on average for the default resizing threshold of <code>0.75</code>, although with a large variance because of resizing granularity. Ignoring variance, the expected occurrences of list size <code>k</code> are <code>(exp(-0.5) pow(0.5, k) / factorial(k))</code>. The first values are:</p>
+<p>根据泊松分布实验发现，假设hashmap长度length为16，假设放入12（0.75*16）个数据到hashmap中，链表中存放8个节点的概率仅为0.00000006，而链表中存放1~7节点的概率为：</p>
+<pre><code>0:    0.60653066
+1:    0.30326533
+2:    0.07581633
+3:    0.01263606
+4:    0.00157952
+5:    0.00015795
+6:    0.00001316
+7:    0.00000094
+8:    0.00000006
+</code></pre></article>
  
 
       <footer class="book-footer">
@@ -758,24 +850,7 @@ var _hmt = _hmt || [];
  
         
   
-  <div class="book-comments">  
-  
-  <div id="vcomments"></div>
-  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
-  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
-
-  <script type="text/javascript">
-    new Valine({
-        el: '#vcomments' ,
-        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
-        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
-        notify: 'false', 
-        verify: 'false', 
-        avatar:'mm', 
-        placeholder: '说点什么吧...',
-        visitor: 'true'
-    });
-  </script></div>
+  <div class="book-comments">  </div>
   
  
       </footer>
@@ -787,7 +862,18 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#数组长度为什么必须是-2-的指数幂">数组长度为什么必须是 2 的指数幂</a></li>
+    <li><a href="#如何扩容的">如何扩容的</a>
+      <ul>
+        <li><a href="#初始扩容因子">初始扩容因子</a></li>
+        <li><a href="#何时扩容">何时扩容</a></li>
+        <li><a href="#扩容扩多少">扩容扩多少</a></li>
+        <li><a href="#元素如何迁移">元素如何迁移</a></li>
+        <li><a href="#头插法设计思路">头插法设计思路</a></li>
+      </ul>
+    </li>
     <li><a href="#get-方法如何实现的">get 方法如何实现的</a></li>
+    <li><a href="#红黑树">红黑树</a></li>
   </ul>
 </nav>
 

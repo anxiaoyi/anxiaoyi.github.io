@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script defer src="/en.search.min.932d0403618fee52c2f9dd103c901d18857dcf2e1cd6fa4c13da586e6f98b46b.js" integrity="sha256-ky0EA2GP7lLC&#43;d0QPJAdGIV9zy4c1vpME9pYbm&#43;YtGs="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -955,6 +955,7 @@ var _hmt = _hmt || [];
     <li><a href="#字符串">字符串</a></li>
     <li><a href="#字典">字典</a></li>
     <li><a href="#压缩列表">压缩列表</a></li>
+    <li><a href="#跳跃列表">跳跃列表</a></li>
     <li><a href="#位图">位图</a></li>
     <li><a href="#hyperloglog">HyperLogLog</a></li>
     <li><a href="#redis-40-布隆过滤器">Redis 4.0 布隆过滤器</a></li>
@@ -995,8 +996,34 @@ var _hmt = _hmt || [];
     dictht ht[<span style="color:#ae81ff">2</span>];
 }
 </code></pre></div><h2 id="压缩列表">压缩列表</h2>
-<p>Redis 为了节约内存空间使用，<code>zset</code> 和 <code>hash</code> 容器对象在<strong>元素个数较少</strong>的时候，采用压缩列表 (ziplist) 进行存储。压缩列表是一块连续的内存空间，元素之间紧挨着存储，没有任何冗余空隙。</p>
-<h2 id="位图">位图</h2>
+<p>Redis 为了节约内存空间使用，<code>zset</code> 和 <code>hash</code> 容器对象在<strong>元素个数较少</strong>的时候，采用压缩列表 (<code>ziplist</code>) 进行存储。压缩列表是一块连续的内存空间，元素之间紧挨着存储，没有任何冗余空隙。</p>
+<p>Redis 的 <code>zset</code> 是一个复合结构，一方面它需要一个 hash 结构来存储 value 和 score 的对应关系，另一方面需要提供按照 score 来排序的功能，还需要能够指定 score 的范围来获取 value 列表的功能，这就需要另外一个结构「跳跃列表」。</p>
+<p><code>zset</code> 的内部实现是一个 <code>hash</code> 字典加一个跳跃列表 (skiplist)。</p>
+<h2 id="跳跃列表">跳跃列表</h2>
+<p>如果数据存储在链表中，就真的没法用<strong>二分查找</strong>算法了吗？只需要对链表稍加改造，就可以支持类似“二分”的查找算法。这种<strong>链表加多级索引</strong>的结构，就是跳表。</p>
+<p>Redis 中的<strong>有序集合</strong>支持的核心操作主要有下面这几个：</p>
+<ul>
+<li>插入一个数据；</li>
+<li>删除一个数据；</li>
+<li>查找一个数据；</li>
+<li>按照区间查找数据（比如查找值在<code>[100, 356]</code>之间的数据）；</li>
+<li>迭代输出有序序列。</li>
+</ul>
+<p>插入、删除、查找以及迭代输出有序序列这几个操作，红黑树也可以完成，时间复杂度跟跳表是一样的。但是，<strong>按照区间来查找数据这个操作，红黑树的效率没有跳表高</strong>。</p>
+<p>对于按照区间查找数据这个操作，跳表可以做到 <code>O(logn)</code> 的时间复杂度定位区间的起点，然后在原始链表中顺序往后遍历就可以了。</p>
+<p><img src="/images/docs/tutorial/redis/datastructure/d03bef9a64a0368e6a0d23ace8bd450c.jpg" alt=""></p>
+<p>对于每一个新插入的节点，都需要调用一个随机算法给它分配一个合理的层数。直观上期望的目标是 50% 的 Level1，25% 的 Level2，12.5% 的 Level3，一直到最顶层<code>2^-63</code>，因为这里每一层的晋升概率是 <code>50%</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">/* Returns a random level for the new skiplist node we are going to create.
+</span><span style="color:#75715e"> * The return value of this function is between 1 and ZSKIPLIST_MAXLEVEL
+</span><span style="color:#75715e"> * (both inclusive), with a powerlaw-alike distribution where higher
+</span><span style="color:#75715e"> * levels are less likely to be returned. */</span>
+<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">zslRandomLevel</span>(<span style="color:#66d9ef">void</span>) {
+    <span style="color:#66d9ef">int</span> level <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
+    <span style="color:#66d9ef">while</span> ((random()<span style="color:#f92672">&amp;</span><span style="color:#ae81ff">0xFFFF</span>) <span style="color:#f92672">&lt;</span> (ZSKIPLIST_P <span style="color:#f92672">*</span> <span style="color:#ae81ff">0xFFFF</span>))
+        level <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>;
+    <span style="color:#66d9ef">return</span> (level<span style="color:#f92672">&lt;</span>ZSKIPLIST_MAXLEVEL) <span style="color:#f92672">?</span> level : ZSKIPLIST_MAXLEVEL;
+}
+</code></pre></div><h2 id="位图">位图</h2>
 <p>在我们平时开发过程中，会有一些 <strong>bool 型数据</strong>需要存取，比如用户一年的签到记录，签了是 1，没签是 0，要记录 365 天。如果使用普通的 key/value，每个用户要记录 365 个，当用户上亿的时候，需要的存储空间是惊人的。</p>
 <p>为了解决这个问题，Redis 提供了位图数据结构，这样每天的签到记录只占据一个位，365 天就是 365 个位，46 个字节 (一个稍长一点的字符串) 就可以完全容纳下，这就大大节约了存储空间。</p>
 <p>Redis 的位数组是自动扩展，如果设置了某个偏移位置超出了现有的内容范围，就会自动将位数组进行零扩充。</p>
@@ -1043,24 +1070,7 @@ var _hmt = _hmt || [];
  
         
   
-  <div class="book-comments">  
-  
-  <div id="vcomments"></div>
-  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
-  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
-
-  <script type="text/javascript">
-    new Valine({
-        el: '#vcomments' ,
-        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
-        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
-        notify: 'false', 
-        verify: 'false', 
-        avatar:'mm', 
-        placeholder: '说点什么吧...',
-        visitor: 'true'
-    });
-  </script></div>
+  <div class="book-comments">  </div>
   
  
       </footer>
@@ -1075,6 +1085,7 @@ var _hmt = _hmt || [];
     <li><a href="#字符串">字符串</a></li>
     <li><a href="#字典">字典</a></li>
     <li><a href="#压缩列表">压缩列表</a></li>
+    <li><a href="#跳跃列表">跳跃列表</a></li>
     <li><a href="#位图">位图</a></li>
     <li><a href="#hyperloglog">HyperLogLog</a></li>
     <li><a href="#redis-40-布隆过滤器">Redis 4.0 布隆过滤器</a></li>

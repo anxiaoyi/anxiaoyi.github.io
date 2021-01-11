@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script defer src="/en.search.min.932d0403618fee52c2f9dd103c901d18857dcf2e1cd6fa4c13da586e6f98b46b.js" integrity="sha256-ky0EA2GP7lLC&#43;d0QPJAdGIV9zy4c1vpME9pYbm&#43;YtGs="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -938,9 +938,14 @@ var _hmt = _hmt || [];
         <li><a href="#示例">示例</a></li>
       </ul>
     </li>
-    <li><a href="#隔离级别是如何实现的">隔离级别是如何实现的</a></li>
+    <li><a href="#隔离级别是如何实现的">隔离级别是如何实现的</a>
+      <ul>
+        <li><a href="#select-的一致性视图">SELECT 的一致性视图</a></li>
+        <li><a href="#update-的一致性逻辑">UPDATE 的一致性逻辑</a></li>
+      </ul>
+    </li>
     <li><a href="#幻读介绍及原因">幻读介绍及原因</a></li>
-    <li><a href="#事务如何实现的">事务如何实现的</a>
+    <li><a href="#事务相关的-log">事务相关的 Log</a>
       <ul>
         <li><a href="#四个属性">四个属性</a></li>
         <li><a href="#redo-log">Redo Log</a></li>
@@ -949,7 +954,14 @@ var _hmt = _hmt || [];
         <li><a href="#undo-log">Undo Log</a></li>
       </ul>
     </li>
-    <li><a href="#加锁规则">加锁规则</a></li>
+    <li><a href="#加锁规则">加锁规则</a>
+      <ul>
+        <li><a href="#全局锁">全局锁</a></li>
+        <li><a href="#表锁">表锁</a></li>
+        <li><a href="#行锁">行锁</a></li>
+        <li><a href="#行锁转为表锁">行锁转为表锁</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 
@@ -983,6 +995,21 @@ var _hmt = _hmt || [];
 <p>我们可以看到在不同的隔离级别下，数据库行为是有所不同的。Oracle 数据库的默认隔离级别其实就是“读提交”，因此对于一些从 Oracle 迁移到 MySQL 的应用，为保证数据库隔离级别的一致，你一定要记得将 MySQL 的隔离级别设置为“读提交”。</p>
 <p>在 MySQL 中，实际上每条记录在更新的时候都会同时记录一条回滚操作。记录上的最新值，通过回滚操作，都可以得到前一个状态的值。<strong>同一条记录在系统中可以存在多个版本，就是数据库的多版本并发控制（MVCC）</strong>。</p>
 <p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2021-01-09_17-09-09.png" alt=""></p>
+<p>InnoDB 里面每个事务有一个唯一的事务 ID，叫作 transaction id。它是在事务开始的时候向 InnoDB 的事务系统申请的，是按申请顺序严格递增的。</p>
+<p>而每行数据也都是有多个版本的。每次事务更新数据的时候，都会生成一个新的数据版本，并且把 transaction id 赋值给这个数据版本的事务 ID，记为 <code>row trx_id</code>。同时，旧的数据版本要保留，并且在新的数据版本中，能够有信息可以直接拿到它。</p>
+<p>也就是说，数据表中的一行记录，其实可能有多个版本 (row)，每个版本有自己的 <code>row trx_id</code>。</p>
+<p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2021-01-10_17-01-28.png" alt=""></p>
+<p>图中的<strong>三个虚线箭头</strong>，就是 undo log；而 V1、V2、V3 并不是物理上真实存在的，而是每次需要的时候根据当前版本和 undo log 计算出来的。比如，需要 V2 的时候，就是通过 V4 依次执行 U3、U2 算出来。</p>
+<h3 id="select-的一致性视图">SELECT 的一致性视图</h3>
+<p>InnoDB 为<strong>每个事务</strong>构造了一个<strong>数组</strong>，用来保存这个事务启动瞬间，<strong>当前正在“活跃”的所有事务 ID</strong>。“活跃”指的就是，启动了但还没提交。</p>
+<p>数组里面事务 ID 的最小值记为低水位，当前系统里面已经创建过的事务 ID 的最大值加 1 记为高水位。</p>
+<p>这个视图数组和高水位，就组成了<strong>当前事务的一致性视图（read-view）</strong>。</p>
+<p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2021-01-10_17-06-43.png" alt=""></p>
+<h3 id="update-的一致性逻辑">UPDATE 的一致性逻辑</h3>
+<p><strong>更新数据都是先读后写的，而这个读，只能读当前的值，称为“当前读”（current read）。</strong> 其实，除了 update 语句外，select 语句如果加锁，也是当前读。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> k <span style="color:#66d9ef">from</span> t <span style="color:#66d9ef">where</span> id<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> <span style="color:#66d9ef">lock</span> <span style="color:#66d9ef">in</span> <span style="color:#66d9ef">share</span> <span style="color:#66d9ef">mode</span>;
+mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> k <span style="color:#66d9ef">from</span> t <span style="color:#66d9ef">where</span> id<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">update</span>;
+</code></pre></div><p>可重复读的核心就是一致性读（consistent read）；而事务更新数据的时候，只能用当前读。<strong>如果当前的记录的行锁被其他事务占用的话，就需要进入锁等待。</strong></p>
 <h2 id="幻读介绍及原因">幻读介绍及原因</h2>
 <p>在可重复读隔离级别下，普通的查询是快照读，是不会看到别的事务插入的数据的。因此，幻读在“当前读”下才会出现。幻读仅专指“<strong>新插入的行</strong>”。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> T <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">5</span>);
@@ -991,7 +1018,7 @@ var _hmt = _hmt || [];
 <p>这样，当你执行 <code>select * from t where d=5 for update</code> 的时候，就不止是给数据库中已有的 6 个记录加上了行锁，还同时加了 7 个间隙锁。这样就确保了无法再插入新的记录。也就是说这时候，在一行行扫描的过程中，不仅将给行加上了行锁，还给行两边的空隙，也加上了间隙锁。</p>
 <p><strong>间隙锁和行锁合称 <code>next-key lock</code></strong>，每个 next-key lock 是前开后闭区间。也就是说，我们的表 t 初始化以后，如果用 <code>select * from t for update</code> 要把整个表所有记录锁起来，就形成了 7 个 next-key lock，分别是 (-∞,0]、(0,5]、(5,10]、(10,15]、(15,20]、(20, 25]、(25, +supremum]。</p>
 <p>间隙锁的引入，可能会导致同样的语句锁住更大的范围，这其实是<strong>影响了并发度</strong>的。</p>
-<h2 id="事务如何实现的">事务如何实现的</h2>
+<h2 id="事务相关的-log">事务相关的 Log</h2>
 <h3 id="四个属性">四个属性</h3>
 <ul>
 <li>A: 要么不执行，要么完全执行，宕机重启已执行的要回滚</li>
@@ -1063,7 +1090,70 @@ var _hmt = _hmt || [];
 <li>优化 1：索引上的等值查询，给唯一索引加锁的时候，next-key lock 退化为行锁。</li>
 <li>优化 2：索引上的等值查询，向右遍历时且最后一个值不满足等值条件的时候，next-key lock 退化为间隙锁。</li>
 </ul>
-</article>
+<h3 id="全局锁">全局锁</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">Flush tables <span style="color:#66d9ef">with</span> <span style="color:#66d9ef">read</span> <span style="color:#66d9ef">lock</span>;
+</code></pre></div><p>当你需要让整个库处于只读状态的时候，可以使用这个命令，之后其他线程的以下语句会被阻塞：数据更新语句（数据的增删改）、数据定义语句（包括建表、修改表结构等）和更新类事务的提交语句。全局锁的典型使用场景是，做<strong>全库逻辑备份</strong>。</p>
+<h3 id="表锁">表锁</h3>
+<p>表锁的语法是 <code>lock tables … read/write</code>。与 FTWRL 类似，可以用 <code>unlock tables</code> 主动释放锁，也可以在客户端断开的时候自动释放。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 第一个窗口执行
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">LOCK</span> <span style="color:#66d9ef">TABLE</span> t2 <span style="color:#66d9ef">READ</span>; <span style="color:#75715e">-- 加读锁
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">-- 第二个窗口执行
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> t2; <span style="color:#75715e">-- 不会加锁
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">UPDATE</span> t2 <span style="color:#66d9ef">SET</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;g1&#39;</span> <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">7</span>; <span style="color:#75715e">-- 锁住
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">-- 第一个窗口执行，可以看到被等待锁的语句
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">SHOW</span> PROCESSLIST;
+
+<span style="color:#75715e">-- 第一个窗口执行，第二个窗口的语句才会返回
+</span><span style="color:#75715e"></span>UNLOCK TABLES;
+</code></pre></div><h3 id="行锁">行锁</h3>
+<p><strong>在 InnoDB 事务中，行锁是在需要的时候才加上的，但并不是不需要了就立刻释放，而是要等到事务结束时才释放。这个就是两阶段锁协议</strong>。如果你的事务中需要锁多个行，要把最可能造成锁冲突、最可能影响并发度的锁的申请时机尽量往后放。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 首先看一下我们的表
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> t (
+  id TINYINT(<span style="color:#ae81ff">3</span>) UNSIGNED <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> AUTO_INCREMENT,
+  name VARCHAR(<span style="color:#ae81ff">10</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span><span style="color:#960050;background-color:#1e0010">，</span>
+  
+  <span style="color:#75715e">--           ↓ (id 字段是索引字段)
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span>(id)
+);
+
+<span style="color:#75715e">-- 窗口一、窗口二依次执行
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">BEGIN</span>;
+
+<span style="color:#75715e">-- 窗口一
+</span><span style="color:#75715e">--                              ↓ (索引条件)
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">UPDATE</span> t <span style="color:#66d9ef">SET</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;d1&#39;</span> <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;
+
+<span style="color:#75715e">-- 窗口二
+</span><span style="color:#75715e">--                              ↓ (索引条件)
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">UPDATE</span> t <span style="color:#66d9ef">SET</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;d2&#39;</span> <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>; <span style="color:#75715e">-- 陷入锁等待
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">UPDATE</span> t <span style="color:#66d9ef">SET</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;d2&#39;</span> <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>; <span style="color:#75715e">-- 不是同一行，不会陷入锁等待
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">-- 大量事务无法获取锁会挂起，造成严重性能问题
+</span><span style="color:#75715e">-- INNODB_LOCK_WAIT_TIMEOUT = 100 秒
+</span></code></pre></div><h3 id="行锁转为表锁">行锁转为表锁</h3>
+<blockquote>
+<p><code>id</code> 不是索引了。</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 首先看一下我们的表
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> t (
+  <span style="color:#75715e">-- ↓ (id 不是索引字段)
+</span><span style="color:#75715e"></span>  id TINYINT(<span style="color:#ae81ff">3</span>) UNSIGNED <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> AUTO_INCREMENT,
+  name VARCHAR(<span style="color:#ae81ff">10</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span><span style="color:#960050;background-color:#1e0010">，</span>
+);
+
+<span style="color:#75715e">-- 窗口一、窗口二依次执行
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">BEGIN</span>;
+
+<span style="color:#75715e">-- 窗口一
+</span><span style="color:#75715e">--                              ↓ (非索引条件)
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">UPDATE</span> t <span style="color:#66d9ef">SET</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;d1&#39;</span> <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;
+
+<span style="color:#75715e">-- 窗口二
+</span><span style="color:#75715e">--                              ↓ (非索引条件)
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">UPDATE</span> t <span style="color:#66d9ef">SET</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;d2&#39;</span> <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>; <span style="color:#75715e">-- 陷入表锁等待
+</span></code></pre></div></article>
  
 
       <footer class="book-footer">
@@ -1079,24 +1169,7 @@ var _hmt = _hmt || [];
  
         
   
-  <div class="book-comments">  
-  
-  <div id="vcomments"></div>
-  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
-  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
-
-  <script type="text/javascript">
-    new Valine({
-        el: '#vcomments' ,
-        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
-        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
-        notify: 'false', 
-        verify: 'false', 
-        avatar:'mm', 
-        placeholder: '说点什么吧...',
-        visitor: 'true'
-    });
-  </script></div>
+  <div class="book-comments">  </div>
   
  
       </footer>
@@ -1113,9 +1186,14 @@ var _hmt = _hmt || [];
         <li><a href="#示例">示例</a></li>
       </ul>
     </li>
-    <li><a href="#隔离级别是如何实现的">隔离级别是如何实现的</a></li>
+    <li><a href="#隔离级别是如何实现的">隔离级别是如何实现的</a>
+      <ul>
+        <li><a href="#select-的一致性视图">SELECT 的一致性视图</a></li>
+        <li><a href="#update-的一致性逻辑">UPDATE 的一致性逻辑</a></li>
+      </ul>
+    </li>
     <li><a href="#幻读介绍及原因">幻读介绍及原因</a></li>
-    <li><a href="#事务如何实现的">事务如何实现的</a>
+    <li><a href="#事务相关的-log">事务相关的 Log</a>
       <ul>
         <li><a href="#四个属性">四个属性</a></li>
         <li><a href="#redo-log">Redo Log</a></li>
@@ -1124,7 +1202,14 @@ var _hmt = _hmt || [];
         <li><a href="#undo-log">Undo Log</a></li>
       </ul>
     </li>
-    <li><a href="#加锁规则">加锁规则</a></li>
+    <li><a href="#加锁规则">加锁规则</a>
+      <ul>
+        <li><a href="#全局锁">全局锁</a></li>
+        <li><a href="#表锁">表锁</a></li>
+        <li><a href="#行锁">行锁</a></li>
+        <li><a href="#行锁转为表锁">行锁转为表锁</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 

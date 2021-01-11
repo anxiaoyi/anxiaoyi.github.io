@@ -19,7 +19,7 @@ public void foo(java.lang.Object); Code: 0: aload_1 1: dup 2: astore_2 3: monito
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script defer src="/en.search.min.932d0403618fee52c2f9dd103c901d18857dcf2e1cd6fa4c13da586e6f98b46b.js" integrity="sha256-ky0EA2GP7lLC&#43;d0QPJAdGIV9zy4c1vpME9pYbm&#43;YtGs="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -710,6 +710,7 @@ var _hmt = _hmt || [];
     <li><a href="#锁的对象是谁">锁的对象是谁</a></li>
     <li><a href="#synchronized-同步块">synchronized 同步块</a></li>
     <li><a href="#synchronized-方法">synchronized 方法</a></li>
+    <li><a href="#synchronized-底层实现">synchronized 底层实现</a></li>
     <li><a href="#synzhronized-性能改进">synzhronized 性能改进</a>
       <ul>
         <li><a href="#对象头">对象头</a></li>
@@ -720,6 +721,7 @@ var _hmt = _hmt || [];
       </ul>
     </li>
     <li><a href="#可重入与公平性">可重入与公平性</a></li>
+    <li><a href="#synchronized-vs-lock">synchronized vs Lock</a></li>
   </ul>
 </nav>
 
@@ -783,7 +785,30 @@ Exception table<span style="color:#f92672">:</span>
         1<span style="color:#f92672">:</span> invokevirtual java<span style="color:#f92672">/</span>lang<span style="color:#f92672">/</span>Object<span style="color:#f92672">.</span><span style="color:#a6e22e">hashCode</span><span style="color:#f92672">:()</span>I
         4<span style="color:#f92672">:</span> pop
         5<span style="color:#f92672">:</span> <span style="color:#66d9ef">return</span>
-</code></pre></div><h2 id="synzhronized-性能改进">synzhronized 性能改进</h2>
+</code></pre></div><h2 id="synchronized-底层实现">synchronized 底层实现</h2>
+<p>JVM 中的同步是基于进入和退出管程（Monitor）对象实现的。每个对象实例都会有一个 Monitor，Monitor 可以和对象一起创建、销毁。Monitor 是由 <code>ObjectMonitor</code> 实现，而 <code>ObjectMonitor</code> 是由 C++ 的 <code>ObjectMonitor.hpp</code> 文件实现，如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++">ObjectMonitor() {
+   _header <span style="color:#f92672">=</span> NULL;
+   _count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; <span style="color:#75715e">//记录个数
+</span><span style="color:#75715e"></span>   _waiters <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>,
+   _recursions <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+   _object <span style="color:#f92672">=</span> NULL;
+   _owner <span style="color:#f92672">=</span> NULL;
+   _WaitSet <span style="color:#f92672">=</span> NULL; <span style="color:#75715e">//处于wait状态的线程，会被加入到_WaitSet
+</span><span style="color:#75715e"></span>   _WaitSetLock <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> ;
+   _Responsible <span style="color:#f92672">=</span> NULL ;
+   _succ <span style="color:#f92672">=</span> NULL ;
+   _cxq <span style="color:#f92672">=</span> NULL ;
+   FreeNext <span style="color:#f92672">=</span> NULL ;
+   _EntryList <span style="color:#f92672">=</span> NULL ; <span style="color:#75715e">//处于等待锁block状态的线程，会被加入到该列表
+</span><span style="color:#75715e"></span>   _SpinFreq <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> ;
+   _SpinClock <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> ;
+   OwnerIsThread <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> ;
+}
+</code></pre></div><p>当多个线程同时访问一段同步代码时，多个线程会先被存放在 <code>ContentionList</code> 和 <code>_EntryList</code> 集合中，处于 block 状态的线程，都会被加入到该列表。接下来当线程获取到对象的 Monitor 时，Monitor 是依靠底层操作系统的 Mutex Lock 来实现互斥的，线程申请 Mutex 成功，则持有该 Mutex，其它线程将无法获取到该 Mutex，竞争失败的线程会再次进入 <code>ContentionList</code> 被挂起。</p>
+<p>如果线程调用 <code>wait()</code> 方法，就会释放当前持有的 Mutex，并且该线程会进入 <code>WaitSet</code> 集合中，等待下一次被唤醒。如果当前线程顺利执行完方法，也将释放 Mutex。</p>
+<p><img src="/images/docs/programmer-interview/java/synchronized/f78e6979c424cce677add97080811308.jpg" alt=""></p>
+<h2 id="synzhronized-性能改进">synzhronized 性能改进</h2>
 <p>在 Java 6 之前，Monitor 的实现完全是依靠操作系统内部的<strong>互斥锁</strong>，因为需要进行用户态到内核态的切换，所以同步操作是一个无差别的<strong>重量级操作</strong>。</p>
 <p>现代的（Oracle）JDK 中，JVM 对此进行了非常大地改进，提供了三种不同的 Monitor 实现，也就是常说的三种不同的锁：<strong>偏斜锁（Biased Locking）</strong>、<strong>轻量级锁</strong>和<strong>重量级锁</strong>，大大改进了其性能。</p>
 <p>所谓<strong>锁的升级、降级</strong>，就是 JVM 优化 synchronized 运行的机制，当 JVM 检测到不同的竞争状况时，会自动切换到适合的锁实现，这种切换就是锁的升级、降级。</p>
@@ -801,6 +826,8 @@ Exception table<span style="color:#f92672">:</span>
 <p>当 JVM 进入安全点（<a href="http://blog.ragozin.info/2012/10/safepoints-in-hotspot-jvm.html">SafePoint</a>）的时候，会检查是否有闲置的 Monitor，然后试图进行降级。HotSpot JVM 的 Stop-the-World 机制称为 safepoint，在此期间，所有线程（不含 JNI 线程）会被挂起。</p>
 <h2 id="可重入与公平性">可重入与公平性</h2>
 <p><code>synchronized</code> 是非公平锁，可以重入。</p>
+<h2 id="synchronized-vs-lock">synchronized vs Lock</h2>
+<p><img src="/images/docs/programmer-interview/java/synchronized/8ec55dc637830f728e505c673fefde3d.jpg" alt=""></p>
 </article>
  
 
@@ -817,24 +844,7 @@ Exception table<span style="color:#f92672">:</span>
  
         
   
-  <div class="book-comments">  
-  
-  <div id="vcomments"></div>
-  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
-  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
-
-  <script type="text/javascript">
-    new Valine({
-        el: '#vcomments' ,
-        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
-        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
-        notify: 'false', 
-        verify: 'false', 
-        avatar:'mm', 
-        placeholder: '说点什么吧...',
-        visitor: 'true'
-    });
-  </script></div>
+  <div class="book-comments">  </div>
   
  
       </footer>
@@ -849,6 +859,7 @@ Exception table<span style="color:#f92672">:</span>
     <li><a href="#锁的对象是谁">锁的对象是谁</a></li>
     <li><a href="#synchronized-同步块">synchronized 同步块</a></li>
     <li><a href="#synchronized-方法">synchronized 方法</a></li>
+    <li><a href="#synchronized-底层实现">synchronized 底层实现</a></li>
     <li><a href="#synzhronized-性能改进">synzhronized 性能改进</a>
       <ul>
         <li><a href="#对象头">对象头</a></li>
@@ -859,6 +870,7 @@ Exception table<span style="color:#f92672">:</span>
       </ul>
     </li>
     <li><a href="#可重入与公平性">可重入与公平性</a></li>
+    <li><a href="#synchronized-vs-lock">synchronized vs Lock</a></li>
   </ul>
 </nav>
 

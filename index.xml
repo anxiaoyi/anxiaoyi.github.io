@@ -852,10 +852,11 @@ HTTP/2 中新的二进制分帧层突破了这些限制，实现了完整的请�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/java/classloader/</guid>
-      <description>Java 类加载 类加载的过程 参考：《深入理解 Java 虚拟机》
+      <description>Java 类加载 类编译  .class 文件包含哪些信息 ?
+ 类加载的过程 参考：《深入理解 Java 虚拟机》
 JVM 把 Class 文件加载到内存，然后进行校验、准备、解析、初始化，最终形成可以使用的 Java 类型，这就是类加载机制。其中，校验、准备、解析这三个阶段，放在一起是链接阶段。
  【加载】二进制字节流可以从 JAR、WAR、网络、运行时动态生成（动态代理）、JSP生成。 【验证】文件格式、元数据（信息语义）、字节码验证（类型转换是否有效、跳转指令不会跳到方法体以外的地方去）、符号引用验证 【准备】static final 变量赋值、各个基本数据类型的默认值 【解析】常量池内的符号引用（用符号描述引用目标）替换为直接引用（直接指向目标的指针） 【初始化】编译器收集 static 块、类变量的赋值放到 () 方法中  加载器类型  Bootstrap ClassLoader：加载 JAVA_HOME/lib、或者 -Xbootclasspath，并且是按照名字识别的，如 rt.jar Extension ClassLoader：JAVA_HOME/lib/ext、或者 java.ext.dirs 系统变量 Application ClassLoader：加载用户 ClassPath 上的类库  类加载器之间的层次关系，称之为双亲委派模型。如果一个类收到类加载请求，那么会首先委派给父类，父类反馈无法完成，自己才进行加载。
-何时初始化  遇到 new、getstatic、putstatic、invokestatic 这 4 条字节码指令。对应的是 new 一个对象、读取静态字段、设置静态字段（字段没有被 final 修饰，否则在编译器就已经将结果放在常量池了）、调用一个类的静态方法。 java.lang.reflect 进行反射。 初始化 A 类，其父类没有被初始化。 虚拟机启动时，包含 main() 方法的这个类  // 不会导致子类初始化 println(SubClass.parentStaticValue); // 不会初始化 SuperClass SuperClass[] sca = new SuperClass[10]; // 不会导致 ConstClass 初始化 println(ConstClass.</description>
+何时初始化  遇到 new、getstatic、putstatic、invokestatic 这 4 条字节码指令。对应的是 new 一个对象、读取静态字段、设置静态字段（字段没有被 final 修饰，否则在编译器就已经将结果放在常量池了）、调用一个类的静态方法。 java.lang.reflect 进行反射。 初始化 A 类，其父类没有被初始化。 虚拟机启动时，包含 main() 方法的这个类  // 不会导致子类初始化 println(SubClass.</description>
     </item>
     
     <item>
@@ -1103,7 +1104,7 @@ HTTP3 协议特点 协议栈 可靠性 虽然 UDP 不提供可靠的传输，但
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/database/mysql-index/</guid>
-      <description>MySQL 索引 InnoDB 的 B+ 树 每一个索引在 InnoDB 里面对应一棵 B+ 树。B+ 树能够很好地配合磁盘的读写特性，减少单次查询的磁盘访问次数。
+      <description>MySQL 索引 索引存储结构 InnoDB 的 B+ 树 每一个索引在 InnoDB 里面对应一棵 B+ 树。B+ 树能够很好地配合磁盘的读写特性，减少单次查询的磁盘访问次数。
 根据叶子节点的内容，索引类型分为主键索引和非主键索引。
  主键索引的叶子节点存的是整行数据。在 InnoDB 里，主键索引也被称为聚簇索引（clustered index）。 非主键索引的叶子节点内容是主键的值。在 InnoDB 里，非主键索引也被称为二级索引（secondary index）。  主键长度越小，普通索引的叶子节点就越小，普通索引占用的空间也就越小。
 回表 回到主键索引树搜索的过程，我们称为回表。
@@ -1112,8 +1113,7 @@ select ID from T where k between 3 and 5 由于覆盖索引可以减少树的搜
 最左前缀原则 B+ 树这种索引结构，可以利用索引的“最左前缀”，来定位记录。
 上述联合索引对于如下查询请求，也是可以满足的：
  查到所有名字是“张三”的人 查的是所有名字第一个字是“张”的人  不只是索引的全部定义，只要满足最左前缀，就可以利用索引来加速检索。这个最左前缀可以是联合索引的最左 N 个字段，也可以是字符串索引的最左 M 个字符。
-在建立联合索引的时候，如何安排索引内的字段顺序 ?
- 如果通过调整顺序，可以少维护一个索引，那么这个顺序往往就是需要优先考虑采用的。 考虑空间占用问题  索引下推 索引：联合索引（name, age）。</description>
+在建立联合索引的时候，如何安排索引内的字段顺序 ?</description>
     </item>
     
     <item>
@@ -1488,14 +1488,13 @@ public class MessageStoreConfig { private String messageDelayLevel = &amp;#34;1s
       <guid>https://kunzhao.org/docs/tutorial/distributed/transaction/</guid>
       <description>分布式事务解决方案汇总  如何保证转账这个操作在两个系统中同时成功呢？
  2PC 每个参与者要实现三个接口：Prepare、Commit、Rollback 三个接口，这就是 XA 协议。
+XA 则规范了 TM 与 RM 之间的通信接口，在 TM 与多个 RM 之间形成一个双向通信桥梁，从而在多个数据库资源下保证 ACID 四个特性。
 主要的缺点就是：
- 性能问题 事务执行到中间，事务协调者宕机，整个事务处于悬而不决的状态。 一个参与者超时了，那么其它参与者应该提交还是回滚呢？ 2PC 主要用在两个数据库之间，而非两个系统之间。   3PC 只是解决了宕机问题，本质上和 2PC 没有区别，不再赘述。
- 消息中间件-最终一致性 消息中间件本身如 Kafka 不提供事务消息功能，那么解决步骤如下：
+ 性能问题 事务执行到中间，事务协调者宕机，整个事务处于悬而不决的状态。 一个参与者超时了，那么其它参与者应该提交还是回滚呢？ 2PC 主要用在两个数据库之间，而非两个系统之间。  3PC 3PC 把 2PC 的准备阶段分为了准备阶段和预处理阶段，在第一阶段只是询问各个资源节点是否可以执行事务，而在第二阶段，所有的节点反馈可以执行事务，才开始执行事务操作，最后在第三阶段执行提交或回滚操作。并且在事务管理器和资源管理器中都引入了超时机制，如果在第三阶段，资源节点一直无法收到来自资源管理器的提交或回滚请求，它就会在超时之后，继续提交事务。
+所以 3PC 可以通过超时机制，避免管理器挂掉所造成的长时间阻塞问题，但其实这样还是无法解决在最后提交全局事务时，由于网络故障无法通知到一些节点的问题，特别是回滚通知，这样会导致事务等待超时从而默认提交。
+消息中间件-最终一致性 消息中间件本身如 Kafka 不提供事务消息功能，那么解决步骤如下：
  系统 A 增加一张消息表，消息写入到消息表中和 DB1 的扣钱操作放到一个数据库的事务里，保证原子性。 系统 A 后台程序源源不断地将消息表中的消息传送给消息中间件，失败了也尝试重传。 系统 B 通过消息中间件的 ACK 机制，明确自己是否消费成功。 系统 B 增加判重表，记录处理成功的消息 ID 和消息中间件对应的 offset，实现业务幂等性，应对重复消费问题；如果业务本身有业务数据，可以判断是否重复，那么就无需这个判重表。  消息中间件如 RocketMQ 本身提供事务消息：
-RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认的消息，回调给发送方，询问这条消息是要发送出去，还是取消。发送方根据自己的业务数，知道这条消息是应该发送出去 (DB 更新成功)，还是应该取消 (DB 更新失败)。
-RocketMQ 最大的改变就是把 &amp;ldquo;扫描消息表&amp;rdquo; 这件事不让业务方做，而是让消息中间件完成。
-无论什么 MQ，如果消费端一直消费失败，那么是要需要自动回滚整个流程？答案是需要人工介入，更加可靠，更加简单，发生概率极低。
-TCC 支付宝提出了 TCC，是为了解决 SOA 系统中的分布式事务问题，这是一个应用层面的 2PC 协议。</description>
+RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认的消息，回调给发送方，询问这条消息是要发送出去，还是取消。发送方根据自己的业务数，知道这条消息是应该发送出去 (DB 更新成功)，还是应该取消 (DB 更新失败)。</description>
     </item>
     
     <item>
@@ -1900,6 +1899,19 @@ Pipeline 也属于异步化，Leader 一批批地处理消息：
 DNS 返回多个 A 记录，客户端随机选择。有两个问题：
  每条记录都会引来基本相同的请求流量 客户端无法识别最近的地址  优点就是最简单、最有效的负载均衡。
 （2）虚拟 IP 负载均衡</description>
+    </item>
+    
+    <item>
+      <title>分布式锁 🔒</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/distributed-lock/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/distributed-lock/</guid>
+      <description>分布式锁 🔒 Redis 分布式锁 Redis 实现的分布式锁，请阅读 Redis 分布式锁
+ZooKeeper 分布式锁 最简单锁实现  lock: 创建一个带有 EPHEMERAL 标志的 designated znode，创建成功，锁成功；否则，客户端可以设置上 watch 标志，当当前的 leader 挂掉的时候，即时地获得通知。 unlock: 客户端显示地删除 znode 的时候，或者客户端挂掉的时候，锁自动释放。znode 被删除的时候，其他想要获取锁的客户端可以获取到通知。  缺点：
+ herd effect (羊群效应)：如果有许多客户端等待获取锁，那么当锁被释放时，他们都会争夺锁，即使只有一个客户端可以获取锁。 只实现了独占锁。  没有羊群效应的锁实现 顺序临时节点：Zookeeper 提供一个多层级的节点命名空间（节点称为 Znode），每个节点都用一个以斜杠（/）分隔的路径来表示，而且每个节点都有父节点（根节点除外），非常类似于文件系统。节点类型可以分为持久节点（PERSISTENT ）、临时节点（EPHEMERAL），每个节点还能被标记为有序性（SEQUENTIAL），一旦节点被标记为有序性，那么整个节点就具有顺序自增的特点。一般我们可以组合这几类节点来创建我们所需要的节点，例如，创建一个持久节点作为父节点，在父节点下面创建临时节点，并标记该临时节点为有序性。
+Lock:
+n = create(l + “/lock-”, EPHEMERAL|SEQUENTIAL) C = getChildren(l, false) if n is lowest znode in C, exit p = znode in C ordered just before n if exists(p, true) wait for watch event goto 2 Unlock:</description>
     </item>
     
     <item>
@@ -3084,7 +3096,11 @@ ACID一致性的思想是关于数据的某些陈述（不变量）必须始终�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/programmer-interview/java/hashmap/</guid>
-      <description>HashMap get 方法如何实现的 public V get(Object key) { Node&amp;lt;K,V&amp;gt; e; return (e = getNode(hash(key), key)) == null ? null : e.value; } final Node&amp;lt;K,V&amp;gt; getNode(int hash, Object key) { Node&amp;lt;K,V&amp;gt;[] tab; Node&amp;lt;K,V&amp;gt; first, e; int n; K k; if ((tab = table) != null &amp;amp;&amp;amp; (n = tab.length) &amp;gt; 0 &amp;amp;&amp;amp; (first = tab[(n - 1) &amp;amp; hash]) != null) { if (first.hash == hash &amp;amp;&amp;amp; // always check first node  ((k = first.</description>
+      <description>HashMap 数组长度为什么必须是 2 的指数幂 减少哈希冲突，均匀分布元素。
+1）通过将 Key 的 hash 值与 length-1 进行 &amp;amp; 运算，实现了当前 Key 的定位，2 的幂次方可以减少冲突（碰撞）的次数，提高 HashMap 查询效率；
+2）如果 length 为 2 的次幂，则 length-1 转化为二进制必定是 11111…… 的形式，在于 h 的二进制与操作效率会非常的快，而且空间不浪费；如果 length 不是 2 的次幂，比如 length 为 15，则 length-1 为 14，对应的二进制为 1110，在于 h 与操作，最后一位都为 0，而 0001，0011，0101，1001，1011，0111，1101 这几个位置永远都不能存放元素了，空间浪费相当大，更糟的是这种情况中，数组可以使用的位置比数组长度小了很多，这意味着进一步增加了碰撞的几率，减慢了查询的效率！这样就会造成空间的浪费。
+如何扩容的 初始扩容因子 static final int DEFAULT_INITIAL_CAPACITY = 1 &amp;lt;&amp;lt; 4; // aka 16 static final float DEFAULT_LOAD_FACTOR = 0.75f;  为什么是 0.75 这个值呢？
+ 这是因为对于使用链表法的哈希表来说，查找一个元素的平均时间是 O(1+n)，这里的 n 指的是遍历链表的长度，因此加载因子越大，对空间的利用就越充分，这就意味着链表的长度越长，查找效率也就越低。如果设置的加载因子太小，那么哈希表的数据将过于稀疏，对空间造成严重浪费。</description>
     </item>
     
     <item>
@@ -3851,6 +3867,15 @@ handleCallback({&amp;#34;status&amp;#34;: true, &amp;#34;user&amp;#34;: &amp;#34
       
       <guid>https://kunzhao.org/docs/programmer-interview/algorithm/heap-sort/</guid>
       <description>堆排序 // - 建堆，不同节点运行 heapify 的时间与节点所处的高度相关 // https://www.cnblogs.com/LzyRapx/p/9565305.html // // 树高 h = lgn // // 第 0 层，只有根节点，它需要最多向下调整 h * 2^0 次 // 第 1 层，有 2 个节点，它需要向下调整 (h - 1) * 2^1 次 // 第 2 层，有 4 个节点，它需要向下调整 (h - 2) * 2^2 次 // // 第 h 层，有 2^h 个节点，它需要向下调整 (h - h) * 2^h 次 // // O(n) = h * 2^0 + (h - 1) * 2^1 + (h - 2) * 2^2 + .</description>
+    </item>
+    
+    <item>
+      <title>线程</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-optimize/thread/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-optimize/thread/</guid>
+      <description>线程 生命周期 自发性上下文切换 自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。sleep()、wait()、yield()、join()、park()、synchronized、lock。</description>
     </item>
     
     <item>

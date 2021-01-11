@@ -21,7 +21,7 @@ if (workerCountOf(c) &lt; corePoolSize) { if (addWorker(command, true)) return; 
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script defer src="/en.search.min.932d0403618fee52c2f9dd103c901d18857dcf2e1cd6fa4c13da586e6f98b46b.js" integrity="sha256-ky0EA2GP7lLC&#43;d0QPJAdGIV9zy4c1vpME9pYbm&#43;YtGs="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -816,13 +816,17 @@ var _hmt = _hmt || [];
 <h3 id="计算密集型任务">计算密集型任务</h3>
 <p>在拥有 <code>N</code> 个 CPU 的处理器上，线程池大小设置为 <code>N + 1</code>，通常实现最优利用率。</p>
 <blockquote>
-<p>多出来的线程，确保线程偶尔暂停的时候，也不会浪费 CPU 时钟周期。</p>
+<p>多出来的线程，确保线程偶尔暂停的时候，也不会浪费 CPU 时钟周期。(比 CPU 核心数多出来的一个线程是为了防止线程偶发的<strong>缺页中断</strong>，或者其它原因导致的任务暂停而带来的影响。一旦任务暂停，CPU 就会处于空闲状态，而在这种情况下多出来的一个线程就可以充分利用 CPU 的空闲时间。)</p>
 </blockquote>
 <h3 id="io密集型任务">I/O密集型任务</h3>
-<p>这种任务不会一直运行，因此线程池规模应该更大。需要估算任务的<strong>等待时间</strong>与<strong>计算时间</strong>的比值，或许通过一些<strong>分析/监控工具</strong>获得。</p>
+<p>这种任务不会一直运行，因此线程池规模应该更大。我们可以多配置一些线程，具体的计算方法是 <strong><code>2N</code></strong>。需要估算任务的<strong>等待时间</strong>与<strong>计算时间</strong>的比值，或许通过一些<strong>分析/监控工具</strong>获得。</p>
 <p>线程池最优大小：</p>
 <pre><code>线程池数量 = CPU 数量 * CPU 利用率 * (1 + 等待时间/计算时间)
-</code></pre><h2 id="拒绝策略">拒绝策略</h2>
+</code></pre><blockquote>
+<p>我们可以通过 JDK 自带的工具 <code>VisualVM</code> 来查看 WT(线程等待时间)/ST(线程运行时间) 比例</p>
+</blockquote>
+<p>综合来看，我们可以根据自己的业务场景，从“N+1”和“2N”两个公式中选出一个适合的，计算出一个大概的线程数量，之后通过<strong>实际压测</strong>，逐渐往“增大线程数量”和“减小线程数量”这两个方向调整，然后观察整体的处理时间变化，最终确定一个具体的线程数量。</p>
+<h2 id="拒绝策略">拒绝策略</h2>
 <ul>
 <li><code>AbortPolicy</code>：拒绝执行任务，并抛出 <code>RejectedExecutionException</code> 异常</li>
 <li><code>DiscardPolicy</code>：丢弃任务</li>
@@ -875,24 +879,7 @@ var _hmt = _hmt || [];
  
         
   
-  <div class="book-comments">  
-  
-  <div id="vcomments"></div>
-  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
-  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
-
-  <script type="text/javascript">
-    new Valine({
-        el: '#vcomments' ,
-        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
-        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
-        notify: 'false', 
-        verify: 'false', 
-        avatar:'mm', 
-        placeholder: '说点什么吧...',
-        visitor: 'true'
-    });
-  </script></div>
+  <div class="book-comments">  </div>
   
  
       </footer>

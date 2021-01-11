@@ -7,14 +7,13 @@
 <meta name="description" content="分布式事务解决方案汇总"><meta property="og:title" content="分布式事务解决方案汇总" />
 <meta property="og:description" content="分布式事务解决方案汇总  如何保证转账这个操作在两个系统中同时成功呢？
  2PC 每个参与者要实现三个接口：Prepare、Commit、Rollback 三个接口，这就是 XA 协议。
+XA 则规范了 TM 与 RM 之间的通信接口，在 TM 与多个 RM 之间形成一个双向通信桥梁，从而在多个数据库资源下保证 ACID 四个特性。
 主要的缺点就是：
- 性能问题 事务执行到中间，事务协调者宕机，整个事务处于悬而不决的状态。 一个参与者超时了，那么其它参与者应该提交还是回滚呢？ 2PC 主要用在两个数据库之间，而非两个系统之间。   3PC 只是解决了宕机问题，本质上和 2PC 没有区别，不再赘述。
- 消息中间件-最终一致性 消息中间件本身如 Kafka 不提供事务消息功能，那么解决步骤如下：
+ 性能问题 事务执行到中间，事务协调者宕机，整个事务处于悬而不决的状态。 一个参与者超时了，那么其它参与者应该提交还是回滚呢？ 2PC 主要用在两个数据库之间，而非两个系统之间。  3PC 3PC 把 2PC 的准备阶段分为了准备阶段和预处理阶段，在第一阶段只是询问各个资源节点是否可以执行事务，而在第二阶段，所有的节点反馈可以执行事务，才开始执行事务操作，最后在第三阶段执行提交或回滚操作。并且在事务管理器和资源管理器中都引入了超时机制，如果在第三阶段，资源节点一直无法收到来自资源管理器的提交或回滚请求，它就会在超时之后，继续提交事务。
+所以 3PC 可以通过超时机制，避免管理器挂掉所造成的长时间阻塞问题，但其实这样还是无法解决在最后提交全局事务时，由于网络故障无法通知到一些节点的问题，特别是回滚通知，这样会导致事务等待超时从而默认提交。
+消息中间件-最终一致性 消息中间件本身如 Kafka 不提供事务消息功能，那么解决步骤如下：
  系统 A 增加一张消息表，消息写入到消息表中和 DB1 的扣钱操作放到一个数据库的事务里，保证原子性。 系统 A 后台程序源源不断地将消息表中的消息传送给消息中间件，失败了也尝试重传。 系统 B 通过消息中间件的 ACK 机制，明确自己是否消费成功。 系统 B 增加判重表，记录处理成功的消息 ID 和消息中间件对应的 offset，实现业务幂等性，应对重复消费问题；如果业务本身有业务数据，可以判断是否重复，那么就无需这个判重表。  消息中间件如 RocketMQ 本身提供事务消息：
-RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认的消息，回调给发送方，询问这条消息是要发送出去，还是取消。发送方根据自己的业务数，知道这条消息是应该发送出去 (DB 更新成功)，还是应该取消 (DB 更新失败)。
-RocketMQ 最大的改变就是把 &ldquo;扫描消息表&rdquo; 这件事不让业务方做，而是让消息中间件完成。
-无论什么 MQ，如果消费端一直消费失败，那么是要需要自动回滚整个流程？答案是需要人工介入，更加可靠，更加简单，发生概率极低。
-TCC 支付宝提出了 TCC，是为了解决 SOA 系统中的分布式事务问题，这是一个应用层面的 2PC 协议。" />
+RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认的消息，回调给发送方，询问这条消息是要发送出去，还是取消。发送方根据自己的业务数，知道这条消息是应该发送出去 (DB 更新成功)，还是应该取消 (DB 更新失败)。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/transaction/" />
 
@@ -25,7 +24,7 @@ TCC 支付宝提出了 TCC，是为了解决 SOA 系统中的分布式事务问�
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.4dcf5406fd83d52ebea9a7b1cff51e4d2366e01870b6c5fef094004b80024304.js" integrity="sha256-Tc9UBv2D1S6&#43;qaexz/UeTSNm4BhwtsX&#43;8JQAS4ACQwQ="></script>
+<script defer src="/en.search.min.932d0403618fee52c2f9dd103c901d18857dcf2e1cd6fa4c13da586e6f98b46b.js" integrity="sha256-ky0EA2GP7lLC&#43;d0QPJAdGIV9zy4c1vpME9pYbm&#43;YtGs="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -618,6 +617,16 @@ var _hmt = _hmt || [];
 </li>
       
     
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/distributed-lock/" >
+      分布式锁 🔒
+  </a>
+
+</li>
+      
+    
   </ul>
   
 
@@ -962,12 +971,14 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#2pc">2PC</a></li>
+    <li><a href="#3pc">3PC</a></li>
     <li><a href="#消息中间件-最终一致性">消息中间件-最终一致性</a></li>
     <li><a href="#tcc">TCC</a></li>
     <li><a href="#事务状态表--调用方重试--接受方幂等">事务状态表 + 调用方重试 + 接受方幂等</a></li>
     <li><a href="#对账">对账</a></li>
     <li><a href="#妥协方案弱一致性基于状态的补偿">妥协方案：弱一致性+基于状态的补偿</a></li>
     <li><a href="#妥协方案重试回滚报警人工修复">妥协方案：重试+回滚+报警+人工修复</a></li>
+    <li><a href="#业务无侵入方案-seatafescar">业务无侵入方案-Seata(Fescar)</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -985,6 +996,8 @@ var _hmt = _hmt || [];
 </blockquote>
 <h2 id="2pc">2PC</h2>
 <p>每个参与者要<strong>实现三个接口</strong>：Prepare、Commit、Rollback 三个接口，这就是 <strong>XA 协议</strong>。</p>
+<p><img src="/images/docs/tutorial/distributed/transaction-solution/dcbb483b62b1e0a51d03c7edfcf89767.jpg" alt=""></p>
+<p>XA 则规范了 TM 与 RM 之间的通信接口，在 TM 与多个 RM 之间形成一个双向通信桥梁，从而在多个数据库资源下保证 ACID 四个特性。</p>
 <p>主要的缺点就是：</p>
 <ul>
 <li><strong>性能</strong>问题</li>
@@ -992,9 +1005,10 @@ var _hmt = _hmt || [];
 <li>一个参与者<strong>超时</strong>了，那么其它参与者应该提交还是回滚呢？</li>
 <li>2PC 主要<strong>用在两个数据库</strong>之间，而非两个系统之间。</li>
 </ul>
-<blockquote>
-<p>3PC 只是解决了宕机问题，本质上和 2PC 没有区别，不再赘述。</p>
-</blockquote>
+<p><img src="/images/docs/tutorial/distributed/transaction-solution/59734e1a229ceee9df4295d0901ce2d5.jpg" alt=""></p>
+<h2 id="3pc">3PC</h2>
+<p>3PC 把 2PC 的准备阶段分为了<strong>准备阶段和预处理阶段</strong>，在第一阶段只是询问各个资源节点是否可以执行事务，而在第二阶段，所有的节点反馈可以执行事务，才开始执行事务操作，最后在第三阶段执行提交或回滚操作。并且在事务管理器和资源管理器中都引入了超时机制，如果在第三阶段，资源节点一直无法收到来自资源管理器的提交或回滚请求，它就会在超时之后，继续提交事务。</p>
+<p>所以 3PC 可以通过<strong>超时机制</strong>，避免管理器挂掉所造成的长时间阻塞问题，但其实这样还是无法解决在最后提交全局事务时，由于网络故障无法通知到一些节点的问题，特别是回滚通知，这样会导致事务等待超时从而默认提交。</p>
 <h2 id="消息中间件-最终一致性">消息中间件-最终一致性</h2>
 <p>消息中间件本身如 Kafka 不提供事务消息功能，那么解决步骤如下：</p>
 <ul>
@@ -1010,9 +1024,12 @@ var _hmt = _hmt || [];
 <p>RocketMQ 最大的改变就是把 &ldquo;<strong>扫描消息表</strong>&rdquo; 这件事不让业务方做，而是让消息中间件完成。</p>
 <p>无论什么 MQ，如果<strong>消费端一直消费失败</strong>，那么是要需要自动回滚整个流程？答案是需要<strong>人工介入</strong>，更加可靠，更加简单，<strong>发生概率极低</strong>。</p>
 <h2 id="tcc">TCC</h2>
-<p>支付宝提出了 <strong>TCC</strong>，是为了解决 SOA 系统中的分布式事务问题，这是一个应用层面的 2PC 协议。</p>
+<p>支付宝提出了 <strong>TCC</strong>，是为了解决 SOA 系统中的分布式事务问题，这是一个<strong>应用层面</strong>的 2PC 协议。</p>
+<p><img src="/images/docs/tutorial/distributed/transaction-solution/23f68980870465ba6c00c0f2619fcfa9.jpg" alt=""></p>
 <p>TCC 区别于 2PC 的地方在于，<code>Confirm</code> 或者 <code>Cancel</code> 失败了，TCC 框架会<strong>不断重试</strong>，这就要求这两个操作都必须是<strong>幂等性</strong>操作。</p>
 <p>在转账操作中，Try 操作主要是为了<strong>锁定</strong>，是为了<strong>保证业务操作的前置条件都得到满足</strong>。然后 Confirm 阶段，才可以通过不断重试来保证成功。</p>
+<p>TCC 补偿性事务也有比较明显的缺点，那就是对<strong>业务的侵入性</strong>非常大。</p>
+<p>首先，我们需要在业务设计的时候考虑预留资源；然后，我们需要编写大量业务性代码，例如 Try、Confirm、Cancel 方法；最后，我们还需要为每个方法考虑幂等性。这种事务的实现和维护成本非常高，但综合来看，这种实现是目前大家最常用的分布式事务解决方案。</p>
 <h2 id="事务状态表--调用方重试--接受方幂等">事务状态表 + 调用方重试 + 接受方幂等</h2>
 <p>这是一种类似 TCC 的方法，只是这个方法是<strong>业务方自己实现</strong>的。</p>
 <p>调用方维护一张<strong>事务状态表</strong>（或事务日志表、日志流水表），每次调用之前，落盘一条事务流水，生成一个<strong>全局的事务 ID</strong>。如下表所示，状态的设置也可以只设置 BEGIN 和 END，不保存中间状态：</p>
@@ -1068,6 +1085,23 @@ var _hmt = _hmt || [];
 <p>对于那些过了很长时间一直占用，而不释放的库存，可能是多扣、或者下单没有支付导致的。通过对比，就可以回收这些库存，取消相应订单。</p>
 <h2 id="妥协方案重试回滚报警人工修复">妥协方案：重试+回滚+报警+人工修复</h2>
 <p>根据业务逻辑，通过三次重试或者回滚的方法，<strong>最大限度保证一致</strong>。实在不一致，就触发报警，让<strong>人工干预</strong>。只要日志流水记录得完整，人工肯定可以修复！</p>
+<h2 id="业务无侵入方案-seatafescar">业务无侵入方案-Seata(Fescar)</h2>
+<p>Seata 是阿里去年开源的一套分布式事务解决方案，开源一年多已经有一万多 star 了，可见受欢迎程度非常之高。</p>
+<p>Seata 的基础建模和 DTP 模型类似，只不过前者是将事务管理器分得更细了，抽出一个事务协调器（Transaction Coordinator 简称 TC），主要维护全局事务的运行状态，负责协调并驱动全局事务的提交或回滚。而 TM 则负责开启一个全局事务，并最终发起全局提交或全局回滚的决议。如下图所示：</p>
+<p><img src="/images/docs/tutorial/distributed/transaction-solution/6ac3de014819c54fe6904c938240b183.jpg" alt=""></p>
+<p>整个事务流程为：</p>
+<ul>
+<li>TM 向 TC 申请开启一个全局事务，全局事务创建成功并生成一个全局唯一的 XID；</li>
+<li>XID 在微服务调用链路的上下文中传播；</li>
+<li>RM 向 TC 注册分支事务，将其纳入 XID 对应全局事务的管辖；</li>
+<li>TM 向 TC 发起针对 XID 的全局提交或回滚决议；</li>
+<li>TC 调度 XID 下管辖的全部分支事务完成提交或回滚请求。</li>
+</ul>
+<p>Seata 与其它分布式最大的区别在于，它在第一提交阶段就已经将各个事务操作 commit 了。<strong>Seata 认为在一个正常的业务下，各个服务提交事务的大概率是成功的</strong>，这种事务提交操作可以节约两个阶段持有锁的时间，从而提高整体的执行效率。</p>
+<p>Seata 将 RM 提升到了服务层，通过 JDBC 数据源代理解析 SQL，把业务数据在更新前后的数据镜像组织成<strong>回滚日志</strong>，利用本地事务的 ACID 特性，将业务数据的更新和回滚日志的写入在同一个本地事务中提交。</p>
+<p>如果 TC 决议要全局回滚，会通知 RM 进行回滚操作，通过 <code>XID</code> 找到对应的回滚日志记录，通过回滚记录生成反向更新 <code>SQL</code>，进行更新回滚操作。</p>
+<p>以上我们可以保证一个事务的原子性和一致性，但隔离性如何保证呢？</p>
+<p>Seata 设计通过事务协调器维护的<strong>全局写排它锁</strong>，来保证事务间的写隔离，而读写隔离级别则默认为未提交读的隔离级别。</p>
 <h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://book.douban.com/subject/30443578/">《软件架构设计》</a></li>
@@ -1088,24 +1122,7 @@ var _hmt = _hmt || [];
  
         
   
-  <div class="book-comments">  
-  
-  <div id="vcomments"></div>
-  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
-  <script src='//unpkg.com/valine/dist/Valine.min.js'></script>
-
-  <script type="text/javascript">
-    new Valine({
-        el: '#vcomments' ,
-        appId: 'Hw2fQnNQyghcgeRvQosC5cIy-gzGzoHsz',
-        appKey: '0ULuPWcxGRLCaHz84icXvBgn',
-        notify: 'false', 
-        verify: 'false', 
-        avatar:'mm', 
-        placeholder: '说点什么吧...',
-        visitor: 'true'
-    });
-  </script></div>
+  <div class="book-comments">  </div>
   
  
       </footer>
@@ -1118,12 +1135,14 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#2pc">2PC</a></li>
+    <li><a href="#3pc">3PC</a></li>
     <li><a href="#消息中间件-最终一致性">消息中间件-最终一致性</a></li>
     <li><a href="#tcc">TCC</a></li>
     <li><a href="#事务状态表--调用方重试--接受方幂等">事务状态表 + 调用方重试 + 接受方幂等</a></li>
     <li><a href="#对账">对账</a></li>
     <li><a href="#妥协方案弱一致性基于状态的补偿">妥协方案：弱一致性+基于状态的补偿</a></li>
     <li><a href="#妥协方案重试回滚报警人工修复">妥协方案：重试+回滚+报警+人工修复</a></li>
+    <li><a href="#业务无侵入方案-seatafescar">业务无侵入方案-Seata(Fescar)</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
