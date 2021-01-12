@@ -129,7 +129,7 @@ RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/distributed/business-high-availablity/</guid>
-      <description>业务高可用方案 应对机房断电、火灾、城市地震、水灾等极端情况，就需要异地多活架构。
+      <description>业务高可用方案 高可用是系统级工程 应对机房断电、火灾、城市地震、水灾等极端情况，就需要异地多活架构。
 跨城异地和同城异区 银行存款余额、支付宝余额无法做到跨城异地多活。例如，挖掘机挖断光缆后，广州机房和北京机房是不是可以同时转出去1W元？因此只能做同城异区架构(应对机房级别故障)。
  跨城异地和同城异区，是完全两套不同的架构。距离数字上的变化，量变引起了质变，架构复杂度大大提升，网络传输速度降低，中间不可控因素增多。上述这些问题，同城异区也会遇到，但是概率小很多，而且同城异区还可以搭建多套互联通道，成本可控，搭建同城异区，架构上可以将两个机房当作本地机房来设计，无需额外考虑。
  跨城异地多活  优先实现核心业务的异地多活架构 异地多活理论上就不可能很快，物理因素决定的，因此只同步核心业务的数据，保证最终一致性，不保证实时一致性 多种手段同步数据：消息队列、B 中心本机读取失败再去 A 中心读取一次、重新生成数据方式、数据库同步等 只保证大部分用户的异地多活：异地多活无法保证 100% 的业务可用  异地多活设计步骤  业务分级，挑选核心业务：访问量大的业务、核心业务、产生大量收入的业务 数据分类：数据量、数据是否必须唯一 (例如用户 ID)、实时性、可丢失性 (session)、可恢复性 数据同步方案：MySQL 数据同步、消息队列同步、重复生成 异常处理：避免整体业务不可用、修正异常数据、弥补用户损失  通过多个通道同步的方式，来进行异常处理：
@@ -174,6 +174,18 @@ ZooKeeper 分布式锁 最简单锁实现  lock: 创建一个带有 EPHEMERAL �
  herd effect (羊群效应)：如果有许多客户端等待获取锁，那么当锁被释放时，他们都会争夺锁，即使只有一个客户端可以获取锁。 只实现了独占锁。  没有羊群效应的锁实现 顺序临时节点：Zookeeper 提供一个多层级的节点命名空间（节点称为 Znode），每个节点都用一个以斜杠（/）分隔的路径来表示，而且每个节点都有父节点（根节点除外），非常类似于文件系统。节点类型可以分为持久节点（PERSISTENT ）、临时节点（EPHEMERAL），每个节点还能被标记为有序性（SEQUENTIAL），一旦节点被标记为有序性，那么整个节点就具有顺序自增的特点。一般我们可以组合这几类节点来创建我们所需要的节点，例如，创建一个持久节点作为父节点，在父节点下面创建临时节点，并标记该临时节点为有序性。
 Lock:
 n = create(l + “/lock-”, EPHEMERAL|SEQUENTIAL) C = getChildren(l, false) if n is lowest znode in C, exit p = znode in C ordered just before n if exists(p, true) wait for watch event goto 2 Unlock:</description>
+    </item>
+    
+    <item>
+      <title>分布式 ID 设计</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/distributed-id/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/distributed-id/</guid>
+      <description>分布式 ID 设计 Twitter Snowflake 整体长度通常是 64 （1 + 41 + 10+ 12 = 64）位，适合使用 Java 语言中的 long 类型来存储。头部是 1 位的正负标识位。紧跟着的高位部分包含 41 位时间戳，通常使用 System.currentTimeMillis()。后面是 10 位的 WorkerID，标准定义是 5 位数据中心 + 5 位机器 ID，组成了机器编号，以区分不同的集群节点。最后的 12 位就是单位毫秒内可生成的序列号数目的理论极限。
+基于 Java 的实现有很多：Snowflake。
+MongoDB 的 ObjectId 提供了一个 12 byte（96 位）的 ID 定义，其中 32 位用于记录以秒为单位的时间，机器 ID 则为 24 位，16 位用作进程 ID，24 位随机起始的计数序列。
+微信的 seqsvr  微信序列号生成器架构设计及演变  百度的 UidGenerator  UidGenerator  </description>
     </item>
     
   </channel>

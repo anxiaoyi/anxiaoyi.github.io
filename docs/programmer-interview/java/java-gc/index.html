@@ -28,7 +28,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.932d0403618fee52c2f9dd103c901d18857dcf2e1cd6fa4c13da586e6f98b46b.js" integrity="sha256-ky0EA2GP7lLC&#43;d0QPJAdGIV9zy4c1vpME9pYbm&#43;YtGs="></script>
+<script defer src="/en.search.min.aaf47a7e1defe04c36a6040bbf366b57b569c4c097feb25d967c3697c1428797.js" integrity="sha256-qvR6fh3v4Ew2pgQLvzZrV7VpxMCX/rJdlnw2l8FCh5c="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -754,6 +754,13 @@ var _hmt = _hmt || [];
         <li><a href="#大对象">大对象</a></li>
       </ul>
     </li>
+    <li><a href="#垃圾调优策略">垃圾调优策略</a>
+      <ul>
+        <li><a href="#降低-minor-gc-频率">降低 Minor GC 频率</a></li>
+        <li><a href="#降低-full-gc-的频率">降低 Full GC 的频率</a></li>
+        <li><a href="#选择合适的-gc-回收器">选择合适的 GC 回收器</a></li>
+      </ul>
+    </li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -784,6 +791,7 @@ var _hmt = _hmt || [];
 <li>本地方法栈中引用的对象</li>
 </ul>
 <h2 id="垃圾回收算法">垃圾回收算法</h2>
+<p><img src="/images/docs/programmer-interview/java/java-gc/3f4316c41d4ffb27e5a36db5f2641db9.jpg" alt=""></p>
 <h3 id="标记-清除算法">标记-清除算法</h3>
 <p>从每个 GC Roots 对象出发，依次<strong>标记有引用关系的对象</strong>，最后将没有被标记的对象清除。</p>
 <p><img src="/images/docs/programmer-interview/java/java-gc/mark-sweep.png" alt=""></p>
@@ -806,6 +814,7 @@ var _hmt = _hmt || [];
 <p>优点：可以控制一次回收多少个小区间。</p>
 </blockquote>
 <h2 id="hotspot-虚拟机垃圾收集器">HotSpot 虚拟机垃圾收集器</h2>
+<p><img src="/images/docs/programmer-interview/java/java-gc/2824581e7c94a3a94b2b0abb1d348974.jpg" alt=""></p>
 <h3 id="serial">Serial</h3>
 <p>新生代 Serial 收集器采用<strong>复制</strong>算法，使用单线程进行垃圾回收，回收时 Java 应用程序中的线程都需要暂停 (Stop-The-World)，以等待回收完成。使用 <code>-XX:+UseSerialGC</code> 可以指定新生代采用 Serial 收集器，老年代采用 Serial Old 收集器。</p>
 <p><img src="/images/docs/programmer-interview/java/java-gc/serial.png" alt=""></p>
@@ -882,6 +891,27 @@ var _hmt = _hmt || [];
 <blockquote>
 <p>参数 <code>PretenureSizeThreshold</code> 可以设置对象直接晋升到老年代的阈值，单位是字节，不过只对 <code>Serial</code> 和 <code>ParNew</code> 收集器有效，默认值为 0，即不指定最大晋升大小。</p>
 </blockquote>
+<h2 id="垃圾调优策略">垃圾调优策略</h2>
+<p>面对不同的业务场景，垃圾回收的调优策略也不一样。例如，在对<strong>内存要求苛刻</strong>的情况下，需要提高对象的回收效率；在 <strong>CPU 使用率高</strong>的情况下，需要降低高并发时垃圾回收的频率。可以说，垃圾回收的调优是一项必备技能。</p>
+<h3 id="降低-minor-gc-频率">降低 Minor GC 频率</h3>
+<p>通常情况下，由于新生代空间较小，Eden 区很快被填满，就会导致频繁 Minor GC，因此我们可以通过<strong>增大新生代空间</strong>来降低 Minor GC 的频率。</p>
+<p>可能你会有这样的疑问，扩容 Eden 区虽然可以减少 Minor GC 的次数，但不会增加单次 Minor GC 的时间吗？如果单次 Minor GC 的时间增加，那也很难达到我们期待的优化效果呀。</p>
+<p>我们知道，单次 Minor GC 时间是由两部分组成：<strong>T1（扫描新生代）和 T2（复制存活对象）</strong>。假设一个对象在 Eden 区的存活时间为 500ms，Minor GC 的时间间隔是 300ms，那么正常情况下，Minor GC 的时间为 ：<code>T1+T2</code>。</p>
+<p>当我们增大新生代空间，Minor GC 的时间间隔可能会扩大到 600ms，此时一个存活 500ms 的对象就会在 Eden 区中被回收掉，此时就不存在复制存活对象了，所以再发生 Minor GC 的时间为：两次扫描新生代，即 <code>2T1</code>。</p>
+<p>可见，扩容后，Minor GC 时增加了 T1，但省去了 T2 的时间。通常在虚拟机中，<strong>复制对象的成本要远高于扫描成本</strong>。</p>
+<p>如果在堆内存中存在较多的长期存活的对象，此时增加年轻代空间，反而会增加 Minor GC 的时间。如果堆中的短期对象很多，那么扩容新生代，单次 Minor GC 时间不会显著增加。因此，<strong>单次 Minor GC 时间更多取决于 GC 后存活对象的数量</strong>，而非 Eden 区的大小。</p>
+<h3 id="降低-full-gc-的频率">降低 Full GC 的频率</h3>
+<ul>
+<li>
+<p><strong>减少创建大对象</strong>：在平常的业务场景中，我们习惯一次性从数据库中查询出一个大对象用于 web 端显示。例如，我之前碰到过一个一次性查询出 60 个字段的业务操作，这种大对象如果超过年轻代最大对象阈值，会被直接创建在老年代；即使被创建在了年轻代，由于年轻代的内存空间有限，通过 Minor GC 之后也会进入到老年代。这种大对象很容易产生较多的 Full GC。</p>
+</li>
+<li>
+<p><strong>增大堆内存空间</strong>：在堆内存不足的情况下，增大堆内存空间，且设置初始化堆内存为最大堆内存，也可以降低 Full GC 的频率。</p>
+</li>
+</ul>
+<h3 id="选择合适的-gc-回收器">选择合适的 GC 回收器</h3>
+<p>假设我们有这样一个需求，要求每次操作的<strong>响应时间</strong>必须在 500ms 以内。这个时候我们一般会选择响应速度较快的 GC 回收器，CMS（Concurrent Mark Sweep）回收器和 G1 回收器都是不错的选择。</p>
+<p>而当我们的需求对<strong>系统吞吐量</strong>有要求时，就可以选择 Parallel Scavenge 回收器来提高系统的吞吐量。</p>
 <h2 id="参考">参考</h2>
 <ul>
 <li>《深入理解 Java 虚拟机》</li>
@@ -952,6 +982,13 @@ var _hmt = _hmt || [];
       <ul>
         <li><a href="#老年对象达到年龄">老年对象达到年龄</a></li>
         <li><a href="#大对象">大对象</a></li>
+      </ul>
+    </li>
+    <li><a href="#垃圾调优策略">垃圾调优策略</a>
+      <ul>
+        <li><a href="#降低-minor-gc-频率">降低 Minor GC 频率</a></li>
+        <li><a href="#降低-full-gc-的频率">降低 Full GC 的频率</a></li>
+        <li><a href="#选择合适的-gc-回收器">选择合适的 GC 回收器</a></li>
       </ul>
     </li>
     <li><a href="#参考">参考</a></li>
