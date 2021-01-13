@@ -103,5 +103,21 @@ public class MessageStoreConfig { private String messageDelayLevel = &amp;#34;1s
 // SLAVE 角色 messageStoreConfig.setBrokerRole(BrokerRole.SLAVE); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 store 根目录必须不同 messageStoreConfig.setStorePathRootDir(storePathRootDir); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 storePathCommitLog 根目录必须不同 messageStoreConfig.setStorePathCommitLog(storePathCommitLog); // 设置 Slave 的 Master HA 地址 messageStoreConfig.setHaMasterAddress(&amp;#34;localhost:10912&amp;#34;); // SLAVE 角色的 brokerId 必须大于 0 brokerConfig.setBrokerId(1); 注意 Slave 和 Master 的 brokerName 必须一致，即它们必须处于同一个 BrokerData 数据结构里面。实际上在做了如上的修改之后， Slave 和 Master 依旧不能同时运行在同一台机器上，因为 Slave 本身也可以称为 Master，接受来自其他 Slave 的请求，因此当运行 Slave 的时候，需要将 HAService 里面的启动 AcceptSocketService 运行的相关方法注释掉。</description>
     </item>
     
+    <item>
+      <title>RocketMQ 事务消息</title>
+      <link>https://kunzhao.org/docs/rocketmq/rocketmq-transaction/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/rocketmq/rocketmq-transaction/</guid>
+      <description>RocketMQ 事务消息  基于 RocketMQ 4.8.0 版本进行的源码分析。
+ 源码调试过程 mkdir .rocketmq/conf cp distribution/conf/logback_namesrv.xml .rocketmq/conf cp distribution/conf/logback_broker.xml .rocketmq/conf NamesrvStartup.java 加上如下代码：
+static { System.setProperty(MixAll.ROCKETMQ_HOME_PROPERTY, &amp;#34;.rocketmq&amp;#34;); } BrokerStartup.java 加上如下代码:
+static { System.setProperty(MixAll.ROCKETMQ_HOME_PROPERTY, &amp;#34;.rocketmq&amp;#34;); System.setProperty(MixAll.NAMESRV_ADDR_PROPERTY, &amp;#34;localhost:9876&amp;#34;); } TransactionProducer.java 加上如下代码：
+static { System.setProperty(MixAll.NAMESRV_ADDR_PROPERTY, &amp;#34;localhost:9876&amp;#34;); } 运行顺序：
+ NamesrvStartup BrokerStartup TransactionProducer  发送事务消息 我们先来看客户端调用 Producer 发送事务消息的过程：
+初始化事务环境 初始化事务环境是为了构建 checkExecutor 线程池：
+public class TransactionMQProducer extends DefaultMQProducer { @Override public void start() throws MQClientException { this.defaultMQProducerImpl.initTransactionEnv(); super.start(); } } 发送消息并执行本地事务 public class TransactionMQProducer extends DefaultMQProducer { @Override public TransactionSendResult sendMessageInTransaction(final Message msg, final Object arg) throws MQClientException { return this.</description>
+    </item>
+    
   </channel>
 </rss>
