@@ -23,7 +23,7 @@ public class TransactionMQProducer extends DefaultMQProducer { @Override public 
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.f703303e83e289d89ef376e18ef3972e8a9739dff4eba8c0b69075517fa47b5d.js" integrity="sha256-9wMwPoPiidie83bhjvOXLoqXOd/066jAtpB1UX&#43;ke10="></script>
+<script defer src="/en.search.min.0142c687b67421ba13af027a7430a42df65ec4af4bf7fe55a3db417c73a59592.js" integrity="sha256-AULGh7Z0IboTrwJ6dDCkLfZexK9L9/5Vo9tBfHOllZI="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -482,7 +482,7 @@ var _hmt = _hmt || [];
     <li><a href="#扫描事务状态">扫描事务状态</a>
       <ul>
         <li><a href="#server-定时扫描">Server 定时扫描</a></li>
-        <li><a href="#server-查询事务状态">Server 查询事务状态</a></li>
+        <li><a href="#server-检查事务状态">Server 检查事务状态</a></li>
         <li><a href="#客户端检查事务状态">客户端检查事务状态</a></li>
       </ul>
     </li>
@@ -647,7 +647,25 @@ msgInner<span style="color:#f92672">.</span><span style="color:#a6e22e">setTopic
 <p>PREPARED 消息不会被消费吗 ?</p>
 </blockquote>
 <p><code>PREPARED</code> 消息在存储到磁盘之前，会将话题改为 <code>RMQ_SYS_TRANS_HALF_TOPIC</code>，因此通过订阅该消息关联的原来的话题，是消费不到该消息的。</p>
-<h3 id="接收事务结束的消息">接收事务结束的消息</h3>
+<p>另外就是在 Broker 分发消息的时候，正常情况下，当收到了一条消息，后台会根据消息，构建 <code>consume</code> 文件 (下面代码中的 <code>putMessagePositionInfo()</code> 方法就是为了构建<strong>消费</strong>文件)，以供消费者消费。但是在遇到 <code>PREPARED</code> 消息的时候，就不再构建 <code>consome</code> 文件了，即消费者根本看不到这条消息。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DefaultMessageStore.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLogDispatcherBuildConsumeQueue</span> <span style="color:#66d9ef">implements</span> CommitLogDispatcher <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">dispatch</span><span style="color:#f92672">(</span>DispatchRequest request<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> tranType <span style="color:#f92672">=</span> MessageSysFlag<span style="color:#f92672">.</span><span style="color:#a6e22e">getTransactionValue</span><span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">getSysFlag</span><span style="color:#f92672">());</span>
+        <span style="color:#66d9ef">switch</span> <span style="color:#f92672">(</span>tranType<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">case</span> MessageSysFlag<span style="color:#f92672">.</span><span style="color:#a6e22e">TRANSACTION_NOT_TYPE</span><span style="color:#f92672">:</span>
+            <span style="color:#66d9ef">case</span> MessageSysFlag<span style="color:#f92672">.</span><span style="color:#a6e22e">TRANSACTION_COMMIT_TYPE</span><span style="color:#f92672">:</span>
+                DefaultMessageStore<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">putMessagePositionInfo</span><span style="color:#f92672">(</span>request<span style="color:#f92672">);</span>
+                <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">case</span> MessageSysFlag<span style="color:#f92672">.</span><span style="color:#a6e22e">TRANSACTION_PREPARED_TYPE</span><span style="color:#f92672">:</span>
+            <span style="color:#66d9ef">case</span> MessageSysFlag<span style="color:#f92672">.</span><span style="color:#a6e22e">TRANSACTION_ROLLBACK_TYPE</span><span style="color:#f92672">:</span>
+                <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="接收事务结束的消息">接收事务结束的消息</h3>
 <p>对于 <code>END_TRANSACTION</code> 的请求，<code>BrokerController</code> 注册了单独的处理器来处理事务结束的命令：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// BrokerController
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">remotingServer</span><span style="color:#f92672">.</span><span style="color:#a6e22e">registerProcessor</span><span style="color:#f92672">(</span>RequestCode<span style="color:#f92672">.</span><span style="color:#a6e22e">END_TRANSACTION</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">new</span> EndTransactionProcessor<span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">),</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">endTransactionExecutor</span><span style="color:#f92672">);</span>
@@ -712,35 +730,78 @@ RemotingCommand sendResult <span style="color:#f92672">=</span> sendFinalMessage
 <li><code>transactionTimeOut = 6 * 1000</code>：第一次检查事务消息的时间，一条消息只有大于这个时间还没有收到 <code>COMMIT</code> 或者 <code>ROLLBACK</code>，那么就执行检查。</li>
 <li><code>transactionCheckMax = 15</code>：最多执行多少次检查后，如果依然还没有收到这条消息是提交还是回滚，那么这条消息将被丢弃。</li>
 </ul>
-<h3 id="server-查询事务状态">Server 查询事务状态</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// TransactionalMessageServiceImpl
-</span><span style="color:#75715e"></span>
-<span style="color:#a6e22e">@Override</span>
-<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">check</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> transactionTimeout<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> transactionCheckMax<span style="color:#f92672">,</span> AbstractTransactionalMessageCheckListener listener<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-    String topic <span style="color:#f92672">=</span> TopicValidator<span style="color:#f92672">.</span><span style="color:#a6e22e">RMQ_SYS_TRANS_HALF_TOPIC</span><span style="color:#f92672">;</span>
-    Set<span style="color:#f92672">&lt;</span>MessageQueue<span style="color:#f92672">&gt;</span> msgQueues <span style="color:#f92672">=</span> transactionalMessageBridge<span style="color:#f92672">.</span><span style="color:#a6e22e">fetchMessageQueues</span><span style="color:#f92672">(</span>topic<span style="color:#f92672">);</span>
-
-    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>MessageQueue messageQueue <span style="color:#f92672">:</span> msgQueues<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> startTime <span style="color:#f92672">&gt;</span> MAX_PROCESS_TIME_LIMIT<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-                <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
-            <span style="color:#f92672">}</span>
-
-            <span style="color:#66d9ef">boolean</span> isNeedCheck <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>opMsg <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> valueOfCurrentMinusBorn <span style="color:#f92672">&gt;</span> checkImmunityTime<span style="color:#f92672">)</span>
-                <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>opMsg <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">(</span>opMsg<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>opMsg<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> 1<span style="color:#f92672">).</span><span style="color:#a6e22e">getBornTimestamp</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> startTime <span style="color:#f92672">&gt;</span> transactionTimeout<span style="color:#f92672">))</span>
-                <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>valueOfCurrentMinusBorn <span style="color:#f92672">&lt;=</span> <span style="color:#f92672">-</span>1<span style="color:#f92672">);</span>
-
-            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>isNeedCheck<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>putBackHalfMsgQueue<span style="color:#f92672">(</span>msgExt<span style="color:#f92672">,</span> i<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
-                    <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
-                <span style="color:#f92672">}</span>
-                listener<span style="color:#f92672">.</span><span style="color:#a6e22e">resolveHalfMsg</span><span style="color:#f92672">(</span>msgExt<span style="color:#f92672">);</span>
-            <span style="color:#f92672">}</span> 
-        <span style="color:#f92672">}</span>
+<h3 id="server-检查事务状态">Server 检查事务状态</h3>
+<p>在 <code>check</code> 方法内部，Server 端需要扫描是否有消息需要去检查事务的状态，如果需要，则会给 Client 发送 <code>CHECK_TRANSACTION_STATE</code> 命令。</p>
+<p>首先，Broker 将自己作为一个客户端来去<strong>订阅</strong>消费 <code>RMQ_SYS_TRANS_OP_HALF_TOPIC</code> 话题中的消息。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// TransactionalMessageBridge.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> PullResult <span style="color:#a6e22e">getOpMessage</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> queueId<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> offset<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> nums<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    String group <span style="color:#f92672">=</span> TransactionalMessageUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">buildConsumerGroup</span><span style="color:#f92672">();</span>
+    String topic <span style="color:#f92672">=</span> TransactionalMessageUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">buildOpTopic</span><span style="color:#f92672">();</span>
+    SubscriptionData sub <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> SubscriptionData<span style="color:#f92672">(</span>topic<span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;*&#34;</span><span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">return</span> getMessage<span style="color:#f92672">(</span>group<span style="color:#f92672">,</span> topic<span style="color:#f92672">,</span> queueId<span style="color:#f92672">,</span> offset<span style="color:#f92672">,</span> nums<span style="color:#f92672">,</span> sub<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>那么每一次消费，我怎么知道上一次消费到哪里了呢？实际上，最新的消息偏移量存储在了 <code>offsetTable</code> 中：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ConsumerOffsetManager.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">queryOffset</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String group<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> queueId<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// topic@group
+</span><span style="color:#75715e"></span>    String key <span style="color:#f92672">=</span> topic <span style="color:#f92672">+</span> TOPIC_GROUP_SEPARATOR <span style="color:#f92672">+</span> group<span style="color:#f92672">;</span>
+    ConcurrentMap<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">,</span> Long<span style="color:#f92672">&gt;</span> map <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">offsetTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>key<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">null</span> <span style="color:#f92672">!=</span> map<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        Long offset <span style="color:#f92672">=</span> map<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>queueId<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>offset <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span>
+            <span style="color:#66d9ef">return</span> offset<span style="color:#f92672">;</span>
     <span style="color:#f92672">}</span>
 
+    <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>1<span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><p><code>resolveHalfMsg</code> 就是在线程池中执行发送检查事务状态的任务：</p>
+</code></pre></div><p><code>offsetTable</code> 在后台也会定时地将里面的信息保存到磁盘上的 <code>config/consumerOffset.json</code> 文件中 (如下图所示)。<code>0:9</code> 的 <code>0</code> 代表 <code>queueId</code>，<code>9</code> 代表最新的 <code>offset</code>。</p>
+<p><img src="/images/docs/rocketmq/rocketmq-transaction/WX20210114-212255@2x.png" alt=""></p>
+<p>在获取到上一轮 <code>offset</code> 到最新的 <code>offset</code> 之间的<strong>消息列表</strong>后，那么就需要<strong>逐一检查</strong>这些消息的事务状态了。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">PullResult pullResult <span style="color:#f92672">=</span> fillOpRemoveMap<span style="color:#f92672">(</span>removeMap<span style="color:#f92672">,</span> opQueue<span style="color:#f92672">,</span> opOffset<span style="color:#f92672">,</span> halfOffset<span style="color:#f92672">,</span> doneOpOffset<span style="color:#f92672">);</span>
+<span style="color:#66d9ef">long</span> i <span style="color:#f92672">=</span> halfOffset<span style="color:#f92672">;</span>
+
+<span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    GetResult getResult <span style="color:#f92672">=</span> getHalfMsg<span style="color:#f92672">(</span>messageQueue<span style="color:#f92672">,</span> i<span style="color:#f92672">);</span>
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>isNeedCheck<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        listener<span style="color:#f92672">.</span><span style="color:#a6e22e">resolveHalfMsg</span><span style="color:#f92672">(</span>msgExt<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span> 
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>msgExt</code> 的内部状态：</p>
+<p><img src="/images/docs/rocketmq/rocketmq-transaction/WX20210114-195805@2x.png" alt=""></p>
+<p>那么在每一轮循环中，即每一条消息内部，逻辑又是怎样执行的呢？</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// TransactionalMessageServiceImpl
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> startTime <span style="color:#f92672">&gt;</span> MAX_PROCESS_TIME_LIMIT<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>needDiscard<span style="color:#f92672">(</span>msgExt<span style="color:#f92672">,</span> transactionCheckMax<span style="color:#f92672">)</span> <span style="color:#f92672">||</span> needSkip<span style="color:#f92672">(</span>msgExt<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">long</span> valueOfCurrentMinusBorn <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> msgExt<span style="color:#f92672">.</span><span style="color:#a6e22e">getBornTimestamp</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">long</span> checkImmunityTime <span style="color:#f92672">=</span> transactionTimeout<span style="color:#f92672">;</span>
+
+<span style="color:#66d9ef">boolean</span> isNeedCheck <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>opMsg <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> valueOfCurrentMinusBorn <span style="color:#f92672">&gt;</span> checkImmunityTime<span style="color:#f92672">);</span>
+
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>isNeedCheck<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>putBackHalfMsgQueue<span style="color:#f92672">(</span>msgExt<span style="color:#f92672">,</span> i<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    listener<span style="color:#f92672">.</span><span style="color:#a6e22e">resolveHalfMsg</span><span style="color:#f92672">(</span>msgExt<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span> 
+</code></pre></div><p>我们看到：</p>
+<ul>
+<li>首先对于 <code>while (true)</code> 的时间设定了限制，不能超过 <code>MAX_PROCESS_TIME_LIMIT</code> 这个值。</li>
+<li>其次，<code>needDiscard()</code> 这个方法检查的就是从消息的 <code>MessageConst.PROPERTY_TRANSACTION_CHECK_TIMES</code> 属性中，获取到这个消息已经检查了多少次，如果超过 <code>transactionCheckMax</code>，那么就需要丢弃。</li>
+<li><code>needSkip()</code> 函数判断的是这条消息自诞生以来，在 Broker 端放置的时间是否超过了 3 天，如果超过 3 天，这条消息也没有必要检查了，因为 RocketMQ 默认存储消息的最长时间就是 3 天。</li>
+<li><code>isNeedCheck</code> 看的主要就是消息诞生的时间是否超过了 <code>transactionTimeout</code>。</li>
+<li><code>putBackHalfMsgQueue</code> 主要就是将当前的消息，最新修改的属性等，重新拷贝一份，然后将<strong>新的消息</strong>追加到 <code>MappedFile</code> 的末尾。</li>
+<li><code>resolveHalfMsg</code> 就是在线程池中执行发送检查事务状态的任务：</li>
+</ul>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">resolveHalfMsg</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> MessageExt msgExt<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     executorService<span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Runnable<span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#a6e22e">@Override</span>
@@ -760,7 +821,8 @@ Channel channel <span style="color:#f92672">=</span> brokerController<span style
 <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>channel <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     brokerController<span style="color:#f92672">.</span><span style="color:#a6e22e">getBroker2Client</span><span style="color:#f92672">().</span><span style="color:#a6e22e">checkProducerTransactionState</span><span style="color:#f92672">(</span>groupId<span style="color:#f92672">,</span> channel<span style="color:#f92672">,</span> checkTransactionStateRequestHeader<span style="color:#f92672">,</span> msgExt<span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><p><code>checkProducerTransactionState</code> 的内部实现，就是发送了 <code>CHECK_TRANSACTION_STATE</code> 报文给 Client:</p>
+</code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-transaction/WX20210114-202318@2x.png" alt=""></p>
+<p><code>checkProducerTransactionState</code> 的内部实现，就是发送了 <code>CHECK_TRANSACTION_STATE</code> 报文给 Client:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// Broker2Client.java
 </span><span style="color:#75715e"></span>RemotingCommand request <span style="color:#f92672">=</span>
     RemotingCommand<span style="color:#f92672">.</span><span style="color:#a6e22e">createRequestCommand</span><span style="color:#f92672">(</span>RequestCode<span style="color:#f92672">.</span><span style="color:#a6e22e">CHECK_TRANSACTION_STATE</span><span style="color:#f92672">,</span> requestHeader<span style="color:#f92672">);</span>
@@ -772,6 +834,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">setBody</
             group<span style="color:#f92672">,</span> messageExt<span style="color:#f92672">.</span><span style="color:#a6e22e">getMsgId</span><span style="color:#f92672">(),</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">toString</span><span style="color:#f92672">());</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="客户端检查事务状态">客户端检查事务状态</h3>
+<p><code>Producer</code> 也通过 <code>Netty</code> 监听在了一个端口上，这样也能接受来自外接的命令了：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ClientRemotingProcessor</span> <span style="color:#66d9ef">extends</span> AsyncNettyRequestProcessor <span style="color:#66d9ef">implements</span> NettyRequestProcessor <span style="color:#f92672">{</span>
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> RemotingCommand <span style="color:#a6e22e">processRequest</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">,</span>
@@ -782,6 +845,22 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">setBody</
         <span style="color:#f92672">}</span>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
+</code></pre></div><p>当收到 <code>CHECK_TRANSACTION_STATE</code> 命令后，Client 会解析出消息的事务 ID、存放消息的 Broker 地址等：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">String transactionId <span style="color:#f92672">=</span> messageExt<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>MessageConst<span style="color:#f92672">.</span><span style="color:#a6e22e">PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX</span><span style="color:#f92672">);</span>
+<span style="color:#66d9ef">final</span> String group <span style="color:#f92672">=</span> messageExt<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>MessageConst<span style="color:#f92672">.</span><span style="color:#a6e22e">PROPERTY_PRODUCER_GROUP</span><span style="color:#f92672">);</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>group <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    MQProducerInner producer <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">mqClientFactory</span><span style="color:#f92672">.</span><span style="color:#a6e22e">selectProducer</span><span style="color:#f92672">(</span>group<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>producer <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// Broker 地址
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">final</span> String addr <span style="color:#f92672">=</span> RemotingHelper<span style="color:#f92672">.</span><span style="color:#a6e22e">parseChannelRemoteAddr</span><span style="color:#f92672">(</span>ctx<span style="color:#f92672">.</span><span style="color:#a6e22e">channel</span><span style="color:#f92672">());</span>
+        producer<span style="color:#f92672">.</span><span style="color:#a6e22e">checkTransactionState</span><span style="color:#f92672">(</span>addr<span style="color:#f92672">,</span> messageExt<span style="color:#f92672">,</span> requestHeader<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>然后 <code>checkTransactionState</code> 内部则通过线程池提交了一个新的任务，检查事务的状态，并反馈给 Broker。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">localTransactionState <span style="color:#f92672">=</span> transactionListener<span style="color:#f92672">.</span><span style="color:#a6e22e">checkLocalTransaction</span><span style="color:#f92672">(</span>message<span style="color:#f92672">);</span>
+<span style="color:#75715e">// COMMIT_TYPE 或者 ROLLBACK_TYPE 等
+</span><span style="color:#75715e"></span>thisHeader<span style="color:#f92672">.</span><span style="color:#a6e22e">setCommitOrRollback</span><span style="color:#f92672">(</span>MessageSysFlag<span style="color:#f92672">.</span><span style="color:#a6e22e">TRANSACTION_COMMIT_TYPE</span><span style="color:#f92672">);</span>
+DefaultMQProducerImpl<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">mQClientFactory</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getMQClientAPIImpl</span><span style="color:#f92672">().</span><span style="color:#a6e22e">endTransactionOneway</span><span style="color:#f92672">(</span>brokerAddr<span style="color:#f92672">,</span> thisHeader<span style="color:#f92672">,</span> remark<span style="color:#f92672">,</span> 3000<span style="color:#f92672">);</span>
 </code></pre></div><h2 id="参考">参考</h2>
 <ul>
 <li><a href="http://rocketmq.apache.org/docs/transaction-example/">Transaction example</a></li>
@@ -831,7 +910,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">setBody</
     <li><a href="#扫描事务状态">扫描事务状态</a>
       <ul>
         <li><a href="#server-定时扫描">Server 定时扫描</a></li>
-        <li><a href="#server-查询事务状态">Server 查询事务状态</a></li>
+        <li><a href="#server-检查事务状态">Server 检查事务状态</a></li>
         <li><a href="#客户端检查事务状态">客户端检查事务状态</a></li>
       </ul>
     </li>
