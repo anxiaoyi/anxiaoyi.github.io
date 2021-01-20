@@ -6,9 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="LeapArray"><meta property="og:title" content="LeapArray" />
 <meta property="og:description" content="LeapArray Sentinel 底层采用高性能的滑动窗口数据结构 LeapArray 来统计实时的秒级指标数据，可以很好地支撑写多于读的高并发场景。
-主要数据结构 protected int windowLengthInMs; protected int sampleCount; protected int intervalInMs; protected final AtomicReferenceArray&lt;WindowWrap&lt;T&gt;&gt; array;  intervalInMs 代表滑动窗口的总时间长度 sampleCount 表示要将 intervalInMs 切割成多少份，也就是滑动窗口中有多少个 bucket windowLengthInMs 表示每一份代表多长时间 array 表示的是底层的数组，即这么多份 bucket 构成的数组  根据时间戳定位某个 Bucket （1）获取对应的索引
-long timeId = timeMillis / windowLengthInMs; // Calculate current index so we can map the timestamp to the leap array. return (int)(timeId % array.length()); （2）计算当前 Bucket 开始的时间
-long windowStart = timeMillis - timeMillis % windowLengthInMs; （3）如果此 Bucket 不存在，创建并 CAS 更新" />
+Metric 统计类 LeapArray 作为基础设施，其目的主要是为了在底层配合 Metric 类，以便对资源的各种信息做统计，我们来看 Metric 类都需要统计哪些信息：
+public interface Metric extends DebugSupport { // 获取总的成功数量  long success(); // 获取最大的成功数量  long maxSuccess(); // 获取异常数量  long exception(); // 获取阻塞的数量  long block(); // 获取总的通过数量  long pass(); // 获取总响应时间  long rt(); // 获取最小的响应时间  long minRt(); } 相应的，在 Metric 接口中，也有添加各种事件的方法：
+public interface Metric extends DebugSupport { // 添加 n 个异常  void addException(int n); // 添加 n 个阻塞  void addBlock(int n); // 添加 n 个成功的响应  void addSuccess(int n); // 添加 n 个通过  void addPass(int n); // 在总响应时间上，添加 rt 时间  void addRT(long rt); } 以 ArrayMetric 的 addSuccess(int count) 和 success() 为例，我们看下在内部是如何使用 LeapArray 提供资源统计服务的。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/sentinel/leaparray/" />
 
@@ -19,7 +19,7 @@ long windowStart = timeMillis - timeMillis % windowLengthInMs; （3）如果此 
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.0142c687b67421ba13af027a7430a42df65ec4af4bf7fe55a3db417c73a59592.js" integrity="sha256-AULGh7Z0IboTrwJ6dDCkLfZexK9L9/5Vo9tBfHOllZI="></script>
+<script defer src="/en.search.min.5e430fc529faccfb503e65864ccc467e979d59029ed9e68855b7efefecc7f3b0.js" integrity="sha256-XkMPxSn6zPtQPmWGTMxGfpedWQKe2eaIVbfv7&#43;zH87A="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -885,8 +885,13 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#主要数据结构">主要数据结构</a></li>
-    <li><a href="#根据时间戳定位某个-bucket">根据时间戳定位某个 Bucket</a></li>
+    <li><a href="#metric-统计类">Metric 统计类</a></li>
+    <li><a href="#根据时间戳定位-bucket">根据时间戳定位 Bucket</a>
+      <ul>
+        <li><a href="#数据结构">数据结构</a></li>
+        <li><a href="#currentwindow">currentWindow()</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 
@@ -897,10 +902,73 @@ var _hmt = _hmt || [];
       </header>
 
       
-<article class="markdown"><h1 id="leaparray">LeapArray</h1>
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="leaparray">LeapArray</h1>
 <p>Sentinel 底层采用高性能的<strong>滑动窗口</strong>数据结构 LeapArray 来统计<strong>实时的秒级指标数据</strong>，可以很好地支撑<strong>写多于读</strong>的高并发场景。</p>
 <p><img src="/images/docs/tutorial/sentinel/leaparray/51955215-0af7c500-247e-11e9-8895-9fc0e4c10c8c.png" alt=""></p>
-<h2 id="主要数据结构">主要数据结构</h2>
+<h2 id="metric-统计类">Metric 统计类</h2>
+<p><code>LeapArray</code> 作为基础设施，其目的主要是为了在底层<strong>配合</strong> <code>Metric</code> 类，以便对资源的各种信息做统计，我们来看 <code>Metric</code> 类都需要统计哪些信息：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">Metric</span> <span style="color:#66d9ef">extends</span> DebugSupport <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// 获取总的成功数量
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">success</span><span style="color:#f92672">();</span>
+    <span style="color:#75715e">// 获取最大的成功数量
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">maxSuccess</span><span style="color:#f92672">();</span>
+    <span style="color:#75715e">// 获取异常数量
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">exception</span><span style="color:#f92672">();</span>
+    <span style="color:#75715e">// 获取阻塞的数量
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">block</span><span style="color:#f92672">();</span>
+    <span style="color:#75715e">// 获取总的通过数量
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">pass</span><span style="color:#f92672">();</span>
+    <span style="color:#75715e">// 获取总响应时间
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">rt</span><span style="color:#f92672">();</span>
+    <span style="color:#75715e">// 获取最小的响应时间
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">minRt</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>相应的，在 <code>Metric</code> 接口中，也有添加各种事件的方法：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">Metric</span> <span style="color:#66d9ef">extends</span> DebugSupport <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// 添加 n 个异常
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">addException</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> n<span style="color:#f92672">);</span>
+    <span style="color:#75715e">// 添加 n 个阻塞
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">addBlock</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> n<span style="color:#f92672">);</span>
+    <span style="color:#75715e">// 添加 n 个成功的响应
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">addSuccess</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> n<span style="color:#f92672">);</span>
+    <span style="color:#75715e">// 添加 n 个通过
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">addPass</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> n<span style="color:#f92672">);</span>
+    <span style="color:#75715e">// 在总响应时间上，添加 rt 时间
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">addRT</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> rt<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>以 <code>ArrayMetric</code> 的 <code>addSuccess(int count)</code> 和 <code>success()</code> 为例，我们看下在内部是如何使用 <code>LeapArray</code> 提供资源统计服务的。</p>
+<p>在 <code>addSuccess</code> 方法中，首先获取了当前时间戳的 Bucket (<code>data</code> 的类型是 <code>LeapArray&lt;MetricBucket&gt;</code>)，然后在这个 Bucket 上进一步调用了内部 <code>MetricBucket</code> 的 <code>addSuccess</code> 方法。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">addSuccess</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> count<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    WindowWrap<span style="color:#f92672">&lt;</span>MetricBucket<span style="color:#f92672">&gt;</span> wrap <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span><span style="color:#a6e22e">currentWindow</span><span style="color:#f92672">();</span>
+    wrap<span style="color:#f92672">.</span><span style="color:#a6e22e">value</span><span style="color:#f92672">().</span><span style="color:#a6e22e">addSuccess</span><span style="color:#f92672">(</span>count<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>在来看 <code>success()</code> 方法，其内部也首先获取了当前时间戳的 Bucket，然后使用 <code>values()</code> 方法获取了内部存储的所有的 <code>Bucket</code>，最后进行汇总统计 <code>success</code> 的个数。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">success</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    data<span style="color:#f92672">.</span><span style="color:#a6e22e">currentWindow</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">long</span> success <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+
+    List<span style="color:#f92672">&lt;</span>MetricBucket<span style="color:#f92672">&gt;</span> list <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span><span style="color:#a6e22e">values</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>MetricBucket window <span style="color:#f92672">:</span> list<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        success <span style="color:#f92672">+=</span> window<span style="color:#f92672">.</span><span style="color:#a6e22e">success</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> success<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>所以，<code>currentWindow()</code> 方法可谓是重中之重，此方法的作用是<strong>获取当前时间戳对应的 Bucket</strong>。我们接下来就重点研究此方法。</p>
+<h2 id="根据时间戳定位-bucket">根据时间戳定位 Bucket</h2>
+<h3 id="数据结构">数据结构</h3>
+<p>首先来看 <code>LeapArray</code> 内部主要的使用的数据结构：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">int</span> windowLengthInMs<span style="color:#f92672">;</span>
 <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">int</span> sampleCount<span style="color:#f92672">;</span>
 <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">int</span> intervalInMs<span style="color:#f92672">;</span>
@@ -908,11 +976,18 @@ var _hmt = _hmt || [];
 <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">final</span> AtomicReferenceArray<span style="color:#f92672">&lt;</span>WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;&gt;</span> array<span style="color:#f92672">;</span>
 </code></pre></div><ul>
 <li><code>intervalInMs</code> 代表滑动窗口的<strong>总时间长度</strong></li>
-<li><code>sampleCount</code> 表示要将 <code>intervalInMs</code> 切割成<strong>多少份</strong>，也就是滑动窗口中有多少个 <code>bucket</code></li>
-<li><code>windowLengthInMs</code> 表示<strong>每一份代表多长时间</strong></li>
-<li><code>array</code> 表示的是底层的数组，即这么多份 <code>bucket</code> 构成的数组</li>
+<li><code>sampleCount</code> 表示要将 <code>intervalInMs</code> 切割成<strong>多少份 Bucket</strong>，也就是滑动窗口中有多少个 <code>bucket</code></li>
+<li><code>windowLengthInMs</code> 表示<strong>每一份 Bucket 代表多长时间</strong></li>
+<li><code>array</code> 表示的是底层的数组，即这么多份 <code>bucket</code> 底层使用这个<strong>数组</strong>进行存储</li>
 </ul>
-<h2 id="根据时间戳定位某个-bucket">根据时间戳定位某个 Bucket</h2>
+<p>在创建 <code>LeapArray</code> 的时候，会保证每一个 Bucket 存储的时间长度都是相同的，不会出现最后一个 Bucket 存储的是半份或者一部分时间长度这种情况：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">AssertUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">isTrue</span><span style="color:#f92672">(</span>intervalInMs <span style="color:#f92672">%</span> sampleCount <span style="color:#f92672">==</span> 0<span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;time span needs to be evenly divided&#34;</span><span style="color:#f92672">);</span>
+</code></pre></div><p>以 <code>new LeapArray(6, 1200)</code> 为例，内部大概的数据结构图，如下图所示：</p>
+<pre><code>    B0      B1       B2      B3     B4      B5
+||_______|_______|_______|_______|_______|_______||
+0       200     400     600     800     1000    1200  timestamp
+</code></pre><p>表示，将 <code>intervalInMs = 1200</code> 毫秒的总时间窗口，拆分为 <code>sampleCount = 6</code> 个 Bucket，每一个 Bucket 存储的时间长度为 <code>windowLengthInMs = 200</code> 毫秒，底层 <code>array</code> 的长度为 <code>6</code>。</p>
+<h3 id="currentwindow">currentWindow()</h3>
 <p>（1）获取对应的索引</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">long</span> timeId <span style="color:#f92672">=</span> timeMillis <span style="color:#f92672">/</span> windowLengthInMs<span style="color:#f92672">;</span>
 <span style="color:#75715e">// Calculate current index so we can map the timestamp to the leap array.
@@ -983,7 +1058,14 @@ var _hmt = _hmt || [];
         <span style="color:#f92672">}</span>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
-</code></pre></div></article>
+</code></pre></div>
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
  
 
       <footer class="book-footer">
@@ -1011,8 +1093,13 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#主要数据结构">主要数据结构</a></li>
-    <li><a href="#根据时间戳定位某个-bucket">根据时间戳定位某个 Bucket</a></li>
+    <li><a href="#metric-统计类">Metric 统计类</a></li>
+    <li><a href="#根据时间戳定位-bucket">根据时间戳定位 Bucket</a>
+      <ul>
+        <li><a href="#数据结构">数据结构</a></li>
+        <li><a href="#currentwindow">currentWindow()</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 
@@ -1022,16 +1109,6 @@ var _hmt = _hmt || [];
   </main>
 
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-8950855178079071"
-     data-ad-slot="6142361626"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
 
   <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
 </body>

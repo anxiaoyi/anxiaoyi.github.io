@@ -5,11 +5,12 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="RocketMQ 主备同步"><meta property="og:title" content="RocketMQ 主备同步" />
-<meta property="og:description" content="RocketMQ 主备同步 介绍 RocketMQ 的主备同步机制
+<meta property="og:description" content="RocketMQ 主备同步  基于 RocketMQ 4.2.0 版本进行的源码分析。
+ 介绍 RocketMQ 的主备同步机制
 一、简介 RocketMQ 通过 Master-Slave 主备机制，来实现整个系统的高可用，具体表现在:
  Master 磁盘坏掉，Slave 依然保存了一份 Master 宕机，不影响消费者继续消费  二、搭建环境 我们在一台机器上搭建一个 Master 一个 Slave 的环境:
 为了能够将 Master 和 Slave 搭建在同一台计算机上，我们除了需要将 Broker 的角色设置为 SLAVE ，还需要为其指定单独的 brokerId、 storePathRootDir、 storePathCommitLog。
-// SLAVE 角色 messageStoreConfig.setBrokerRole(BrokerRole.SLAVE); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 store 根目录必须不同 messageStoreConfig.setStorePathRootDir(storePathRootDir); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 storePathCommitLog 根目录必须不同 messageStoreConfig.setStorePathCommitLog(storePathCommitLog); // 设置 Slave 的 Master HA 地址 messageStoreConfig.setHaMasterAddress(&#34;localhost:10912&#34;); // SLAVE 角色的 brokerId 必须大于 0 brokerConfig.setBrokerId(1); 注意 Slave 和 Master 的 brokerName 必须一致，即它们必须处于同一个 BrokerData 数据结构里面。实际上在做了如上的修改之后， Slave 和 Master 依旧不能同时运行在同一台机器上，因为 Slave 本身也可以称为 Master，接受来自其他 Slave 的请求，因此当运行 Slave 的时候，需要将 HAService 里面的启动 AcceptSocketService 运行的相关方法注释掉。" />
+// SLAVE 角色 messageStoreConfig.setBrokerRole(BrokerRole.SLAVE); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 store 根目录必须不同 messageStoreConfig.setStorePathRootDir(storePathRootDir); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 storePathCommitLog 根目录必须不同 messageStoreConfig.setStorePathCommitLog(storePathCommitLog); // 设置 Slave 的 Master HA 地址 messageStoreConfig.setHaMasterAddress(&#34;localhost:10912&#34;); // SLAVE 角色的 brokerId 必须大于 0 brokerConfig." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-master-slave-sync/" />
 
@@ -20,7 +21,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.0142c687b67421ba13af027a7430a42df65ec4af4bf7fe55a3db417c73a59592.js" integrity="sha256-AULGh7Z0IboTrwJ6dDCkLfZexK9L9/5Vo9tBfHOllZI="></script>
+<script defer src="/en.search.min.5e430fc529faccfb503e65864ccc467e979d59029ed9e68855b7efefecc7f3b0.js" integrity="sha256-XkMPxSn6zPtQPmWGTMxGfpedWQKe2eaIVbfv7&#43;zH87A="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -484,7 +485,20 @@ var _hmt = _hmt || [];
       </header>
 
       
-<article class="markdown"><h1 id="rocketmq-主备同步">RocketMQ 主备同步</h1>
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="rocketmq-主备同步">RocketMQ 主备同步</h1>
+<blockquote>
+<p>基于 RocketMQ 4.2.0 版本进行的源码分析。</p>
+</blockquote>
 <p>介绍 RocketMQ 的主备同步机制</p>
 <h2 id="一简介">一、简介</h2>
 <p>RocketMQ 通过 Master-Slave 主备机制，来实现整个系统的高可用，具体表现在:</p>
@@ -731,6 +745,13 @@ A: Slave 存储完毕之后，通过向 Master 汇报进度来完成。相当于
 A: 无论 Maser 是主动关闭 Mater，还是 Master 因为异常而退出，Slave 都会每隔 5 秒重连一次 Master</p>
 <p>扫描下面二维码，在手机端阅读：</p>
 <p><img src="/images/docs/rocketmq/rocketmq-master-slave-sync/qrcode.png" alt=""></p>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
 </article>
  
 
@@ -780,16 +801,6 @@ A: 无论 Maser 是主动关闭 Mater，还是 Master 因为异常而退出，Sl
   </main>
 
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-8950855178079071"
-     data-ad-slot="6142361626"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
 
   <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
 </body>

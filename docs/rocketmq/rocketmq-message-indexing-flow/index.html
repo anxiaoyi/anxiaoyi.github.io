@@ -5,14 +5,14 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="RocketMQ 消息索引流程"><meta property="og:title" content="RocketMQ 消息索引流程" />
-<meta property="og:description" content="RocketMQ 消息索引流程 讲述 RocketMQ 消息索引服务
+<meta property="og:description" content="RocketMQ 消息索引流程  基于 RocketMQ 4.2.0 版本进行的源码分析。
+ 讲述 RocketMQ 消息索引服务
 一、消息查询方式 对于 Producer 发送到 Broker 服务器的消息，RocketMQ 支持多种方式来方便地查询消息:
 (1) 根据键查询消息 如下所示，在构建消息的时候，指定了这条消息的键为 “OrderID001”:
 Message msg = new Message(&#34;TopicTest&#34;, &#34;TagA&#34;, &#34;OrderID001&#34;, // Keys  &#34;Hello world&#34;.getBytes(RemotingHelper.DEFAULT_CHARSET)); 那么，当这条消息发送成功后，我们可以使用 queryMsgByKey 命令查询到这条消息的详细信息:
 MQAdminStartup.main(new String[] { &#34;queryMsgByKey&#34;, &#34;-n&#34;, &#34;localhost:9876&#34;, &#34;-t&#34;, &#34;TopicTest&#34;, &#34;-k&#34;, &#34;OrderID001&#34; }); (2) 根据ID(偏移量)查询消息 消息在发送成功之后，其返回的 SendResult 类中包含了这条消息的唯一偏移量 ID (注意此处指的是 offsetMsgId):
 用户可以使用 queryMsgById 命令查询这条消息的详细信息:
-MQAdminStartup.main(new String[] { &#34;queryMsgById&#34;, &#34;-n&#34;, &#34;localhost:9876&#34;, &#34;-i&#34;, &#34;0A6C73D900002A9F0000000000004010&#34; }); (3) 根据唯一键查询消息 消息在发送成功之后，其返回的 SendResult 类中包含了这条消息的唯一 ID:
-用户可以使用 queryMsgByUniqueKey 命令查询这条消息的详细信息:" />
+MQAdminStartup.main(new String[] { &#34;queryMsgById&#34;, &#34;-n&#34;, &#34;localhost:9876&#34;, &#34;-i&#34;, &#34;0A6C73D900002A9F0000000000004010&#34; }); (3) 根据唯一键查询消息 消息在发送成功之后，其返回的 SendResult 类中包含了这条消息的唯一 ID:" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-message-indexing-flow/" />
 
@@ -23,7 +23,7 @@ MQAdminStartup.main(new String[] { &#34;queryMsgById&#34;, &#34;-n&#34;, &#34;lo
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.0142c687b67421ba13af027a7430a42df65ec4af4bf7fe55a3db417c73a59592.js" integrity="sha256-AULGh7Z0IboTrwJ6dDCkLfZexK9L9/5Vo9tBfHOllZI="></script>
+<script defer src="/en.search.min.5e430fc529faccfb503e65864ccc467e979d59029ed9e68855b7efefecc7f3b0.js" integrity="sha256-XkMPxSn6zPtQPmWGTMxGfpedWQKe2eaIVbfv7&#43;zH87A="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -511,7 +511,20 @@ var _hmt = _hmt || [];
       </header>
 
       
-<article class="markdown"><h1 id="rocketmq-消息索引流程">RocketMQ 消息索引流程</h1>
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="rocketmq-消息索引流程">RocketMQ 消息索引流程</h1>
+<blockquote>
+<p>基于 RocketMQ 4.2.0 版本进行的源码分析。</p>
+</blockquote>
 <p>讲述 RocketMQ 消息索引服务</p>
 <h2 id="一消息查询方式">一、消息查询方式</h2>
 <p>对于 Producer 发送到 Broker 服务器的消息，RocketMQ 支持多种方式来方便地查询消息:</p>
@@ -883,6 +896,13 @@ var _hmt = _hmt || [];
 <span style="color:#f92672">}</span>
 </code></pre></div><p>扫描下面二维码，在手机端阅读：</p>
 <p><img src="/images/docs/rocketmq/rocketmq-message-indexing-flow/qrcode.png" alt=""></p>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
 </article>
  
 
@@ -956,16 +976,6 @@ var _hmt = _hmt || [];
   </main>
 
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-8950855178079071"
-     data-ad-slot="6142361626"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
 
   <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
 </body>

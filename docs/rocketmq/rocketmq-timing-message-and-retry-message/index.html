@@ -5,7 +5,8 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="RocketMQ 定时消息和重试消息"><meta property="og:title" content="RocketMQ 定时消息和重试消息" />
-<meta property="og:description" content="RocketMQ 定时消息和重试消息 讲述 RocketMQ 定时消息和重试消息
+<meta property="og:description" content="RocketMQ 定时消息和重试消息  基于 RocketMQ 4.2.0 版本进行的源码分析。
+ 讲述 RocketMQ 定时消息和重试消息
 一、定时消息概述 RocketMQ 支持 Producer 端发送定时消息，即该消息被发送之后，到一段时间之后才能被 Consumer 消费者端消费。但是当前开源版本的 RocketMQ 所支持的定时时间是有限的、不同级别的精度的时间，并不是任意无限制的定时时间。因此在每条消息上设置定时时间的 API 叫做 setDelayTimeLevel，而非 setDelayTime 这样的命名:
 Message msg = new Message(&#34;TopicTest&#34; /* Topic */, &#34;TagA&#34; /* Tag */, (&#34;Hello RocketMQ &#34; &#43; i).getBytes(RemotingHelper.DEFAULT_CHARSET) /* Message body */); msg.setDelayTimeLevel(i &#43; 1); 默认 Broker 服务器端有 18 个定时级别:
 public class MessageStoreConfig { private String messageDelayLevel = &#34;1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h&#34;; } 这 18 个定时级别在服务器端启动的时候，会被解析并放置到表 delayLevelTable 中。解析的过程就是上述字符串按照空格拆分开，然后根据时间单位的不同再进一步进行计算，得到最终的毫秒时间。级别就是根据这些毫秒时间的顺序而确定的，例如上述 1s 延迟就是级别 1， 5s 延迟就是级别 2，以此类推:" />
@@ -19,7 +20,7 @@ public class MessageStoreConfig { private String messageDelayLevel = &#34;1s 5s 
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.0142c687b67421ba13af027a7430a42df65ec4af4bf7fe55a3db417c73a59592.js" integrity="sha256-AULGh7Z0IboTrwJ6dDCkLfZexK9L9/5Vo9tBfHOllZI="></script>
+<script defer src="/en.search.min.5e430fc529faccfb503e65864ccc467e979d59029ed9e68855b7efefecc7f3b0.js" integrity="sha256-XkMPxSn6zPtQPmWGTMxGfpedWQKe2eaIVbfv7&#43;zH87A="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -482,7 +483,20 @@ var _hmt = _hmt || [];
       </header>
 
       
-<article class="markdown"><h1 id="rocketmq-定时消息和重试消息">RocketMQ 定时消息和重试消息</h1>
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="rocketmq-定时消息和重试消息">RocketMQ 定时消息和重试消息</h1>
+<blockquote>
+<p>基于 RocketMQ 4.2.0 版本进行的源码分析。</p>
+</blockquote>
 <p>讲述 RocketMQ 定时消息和重试消息</p>
 <h2 id="一定时消息概述">一、定时消息概述</h2>
 <p>RocketMQ 支持 Producer 端发送定时消息，即该消息被发送之后，到一段时间之后才能被 Consumer 消费者端消费。但是当前开源版本的 RocketMQ 所支持的定时时间是<strong>有限的、不同级别的精度</strong>的时间，并不是任意无限制的定时时间。因此在每条消息上设置定时时间的 API 叫做 <code>setDelayTimeLevel</code>，而非 <code>setDelayTime</code> 这样的命名:</p>
@@ -810,6 +824,13 @@ producer<span style="color:#f92672">.</span><span style="color:#a6e22e">setRetry
 <p><img src="/images/docs/rocketmq/rocketmq-timing-message-and-retry-message/consumer_retry_message_consume_flow.png" alt="消费失败信息完整流程图"></p>
 <p>扫描下面二维码，在手机端阅读：</p>
 <p><img src="/images/docs/rocketmq/rocketmq-timing-message-and-retry-message/qrcode.png" alt=""></p>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
 </article>
  
 
@@ -858,16 +879,6 @@ producer<span style="color:#f92672">.</span><span style="color:#a6e22e">setRetry
   </main>
 
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-8950855178079071"
-     data-ad-slot="6142361626"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
 
   <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
 </body>

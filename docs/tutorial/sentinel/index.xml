@@ -31,9 +31,9 @@
       
       <guid>https://kunzhao.org/docs/tutorial/sentinel/leaparray/</guid>
       <description>LeapArray Sentinel 底层采用高性能的滑动窗口数据结构 LeapArray 来统计实时的秒级指标数据，可以很好地支撑写多于读的高并发场景。
-主要数据结构 protected int windowLengthInMs; protected int sampleCount; protected int intervalInMs; protected final AtomicReferenceArray&amp;lt;WindowWrap&amp;lt;T&amp;gt;&amp;gt; array;  intervalInMs 代表滑动窗口的总时间长度 sampleCount 表示要将 intervalInMs 切割成多少份，也就是滑动窗口中有多少个 bucket windowLengthInMs 表示每一份代表多长时间 array 表示的是底层的数组，即这么多份 bucket 构成的数组  根据时间戳定位某个 Bucket （1）获取对应的索引
-long timeId = timeMillis / windowLengthInMs; // Calculate current index so we can map the timestamp to the leap array. return (int)(timeId % array.length()); （2）计算当前 Bucket 开始的时间
-long windowStart = timeMillis - timeMillis % windowLengthInMs; （3）如果此 Bucket 不存在，创建并 CAS 更新</description>
+Metric 统计类 LeapArray 作为基础设施，其目的主要是为了在底层配合 Metric 类，以便对资源的各种信息做统计，我们来看 Metric 类都需要统计哪些信息：
+public interface Metric extends DebugSupport { // 获取总的成功数量  long success(); // 获取最大的成功数量  long maxSuccess(); // 获取异常数量  long exception(); // 获取阻塞的数量  long block(); // 获取总的通过数量  long pass(); // 获取总响应时间  long rt(); // 获取最小的响应时间  long minRt(); } 相应的，在 Metric 接口中，也有添加各种事件的方法：
+public interface Metric extends DebugSupport { // 添加 n 个异常  void addException(int n); // 添加 n 个阻塞  void addBlock(int n); // 添加 n 个成功的响应  void addSuccess(int n); // 添加 n 个通过  void addPass(int n); // 在总响应时间上，添加 rt 时间  void addRT(long rt); } 以 ArrayMetric 的 addSuccess(int count) 和 success() 为例，我们看下在内部是如何使用 LeapArray 提供资源统计服务的。</description>
     </item>
     
     <item>

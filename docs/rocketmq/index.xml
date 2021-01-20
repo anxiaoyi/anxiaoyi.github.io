@@ -12,14 +12,14 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/rocketmq/rocketmq-send-message-flow/</guid>
-      <description>RocketMQ 消息发送流程 本文讲述 RocketMQ 发送一条普通消息的流程。
+      <description>RocketMQ 消息发送流程  基于 RocketMQ 4.2.0 版本进行的源码分析。
+ 本文讲述 RocketMQ 发送一条普通消息的流程。
 一、服务器启动 我们可以参考官方文档来启动服务:
  启动 Name 服务器:  sh bin/mqnamesrv  启动 Broker 服务器:  sh bin/mqbroker -n localhost:9876 二、构建消息体 一条消息体最少需要指定两个值:
  所属话题 消息内容  如下就是创建了一条话题为 “Test”，消息体为 “Hello World” 的消息:
 Message msg = new Message( &amp;#34;Test&amp;#34;, &amp;#34;Hello World&amp;#34;.getBytes() ); 三、启动 Producer 准备发送消息 如果我们想要发送消息呢，我们还需要再启动一个 DefaultProducer (生产者) 类来发消息:
 DefaultMQProducer producer = new DefaultMQProducer(); producer.start(); 现在我们所启动的服务如下所示:
-四、Name 服务器的均等性 注意我们上述开启的是单个服务，也即一个 Broker 和一个 Name 服务器，但是实际上使用消息队列的时候，我们可能需要搭建的是一个集群，如下所示:
-在 RocketMQ 的设计中，客户端需要首先询问 Name 服务器才能确定一个合适的 Broker 以进行消息的发送:</description>
+四、Name 服务器的均等性 注意我们上述开启的是单个服务，也即一个 Broker 和一个 Name 服务器，但是实际上使用消息队列的时候，我们可能需要搭建的是一个集群，如下所示:</description>
     </item>
     
     <item>
@@ -28,7 +28,8 @@ DefaultMQProducer producer = new DefaultMQProducer(); producer.start(); 现在�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/rocketmq/rocketmq-message-store-flow/</guid>
-      <description>RocketMQ 消息存储流程 本文讲述 RocketMQ 存储一条消息的流程。
+      <description>RocketMQ 消息存储流程  基于 RocketMQ 4.2.0 版本进行的源码分析。
+ 本文讲述 RocketMQ 存储一条消息的流程。
 一、存储位置 当有一条消息过来之后，Broker 首先需要做的是确定这条消息应该存储在哪个文件里面。在 RocketMQ 中，这个用来存储消息的文件被称之为 MappedFile。这个文件默认创建的大小为 1GB。
 一个文件为 1GB 大小，也即 1024 * 1024 * 1024 = 1073741824 字节，这每个文件的命名是按照总的字节偏移量来命名的。例如第一个文件偏移量为 0，那么它的名字为 00000000000000000000；当当前这 1G 文件被存储满了之后，就会创建下一个文件，下一个文件的偏移量则为 1GB，那么它的名字为 00000000001073741824，以此类推。
 默认情况下这些消息文件位于 $HOME/store/commitlog 目录下，如下图所示:
@@ -43,7 +44,8 @@ public class MappedFileQueue { public MappedFile getLastMappedFile() { MappedFil
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/rocketmq/rocketmq-message-receive-flow/</guid>
-      <description>RocketMQ 消息接受流程 本篇讲述 RocketMQ 消息接受流程
+      <description>RocketMQ 消息接受流程  基于 RocketMQ 4.2.0 版本进行的源码分析。
+ 本篇讲述 RocketMQ 消息接受流程
 一、消费者注册 生产者负责往服务器 Broker 发送消息，消费者则从 Broker 获取消息。消费者获取消息采用的是订阅者模式，即消费者客户端可以任意订阅一个或者多个话题来消费消息:
 public class Consumer { public static void main(String[] args) throws InterruptedException, MQClientException { /* * 订阅一个或者多个话题 */ consumer.subscribe(&amp;#34;TopicTest&amp;#34;, &amp;#34;*&amp;#34;); } } 当消费者客户端启动以后，其会每隔 30 秒从命名服务器查询一次用户订阅的所有话题路由信息:
 public class MQClientInstance { private void startScheduledTask() { this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() { @Override public void run() { // 从命名服务器拉取话题信息  MQClientInstance.this.updateTopicRouteInfoFromNameServer(); } }, 10, this.clientConfig.getPollNameServerInterval(), TimeUnit.MILLISECONDS); } } 我们由 RocketMQ 消息发送流程 这篇文章知道 RocketMQ 在发送消息的时候，每条消息会以轮循的方式均衡地分发的不同 Broker 的不同队列中去。由此，消费者客户端从服务器命名服务器获取下来的便是话题的所有消息队列:</description>
@@ -55,11 +57,12 @@ public class MQClientInstance { private void startScheduledTask() { this.schedul
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/rocketmq/rocketmq-message-filter-flow/</guid>
-      <description>RocketMQ 消息过滤流程 讲述 RocketMQ 消息过滤流程
+      <description>RocketMQ 消息过滤流程  基于 RocketMQ 4.2.0 版本进行的源码分析。
+ 讲述 RocketMQ 消息过滤流程
 一、消息过滤类型 Producer 在发送消息的时候可以指定消息的标签类型，还可以为每一个消息添加一个或者多个额外的属性:
 // 指定标签 Message msg = new Message(&amp;#34;TopicTest&amp;#34;, &amp;#34;TagA&amp;#34;, (&amp;#34;Hello RocketMQ&amp;#34;).getBytes(RemotingHelper.DEFAULT_CHARSET)); // 添加属性 a msg.putUserProperty(&amp;#34;a&amp;#34;, 5); 根据标签和属性的不同，RocketMQ 客户端在消费消息的时候有三种消息过滤类型:
 (1) 标签匹配 consumer.subscribe(&amp;#34;TopicTest&amp;#34;, &amp;#34;TagA | TagB | TagC&amp;#34;); (2) SQL 匹配 consumer.subscribe(&amp;#34;TopicTest&amp;#34;, MessageSelector.bySql( &amp;#34;(TAGS is not null and TAGS in (&amp;#39;TagA&amp;#39;, &amp;#39;TagB&amp;#39;))&amp;#34; + &amp;#34;and (a is not null and a between 0 3)&amp;#34;)); (3) 自定义匹配 客户端实现 MessageFilter 类，自定义过滤逻辑:
-ClassLoader classLoader = Thread.currentThread().getContextClassLoader(); File classFile = new File(classLoader.</description>
+ClassLoader classLoader = Thread.</description>
     </item>
     
     <item>
@@ -68,14 +71,14 @@ ClassLoader classLoader = Thread.currentThread().getContextClassLoader(); File c
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/rocketmq/rocketmq-message-indexing-flow/</guid>
-      <description>RocketMQ 消息索引流程 讲述 RocketMQ 消息索引服务
+      <description>RocketMQ 消息索引流程  基于 RocketMQ 4.2.0 版本进行的源码分析。
+ 讲述 RocketMQ 消息索引服务
 一、消息查询方式 对于 Producer 发送到 Broker 服务器的消息，RocketMQ 支持多种方式来方便地查询消息:
 (1) 根据键查询消息 如下所示，在构建消息的时候，指定了这条消息的键为 “OrderID001”:
 Message msg = new Message(&amp;#34;TopicTest&amp;#34;, &amp;#34;TagA&amp;#34;, &amp;#34;OrderID001&amp;#34;, // Keys  &amp;#34;Hello world&amp;#34;.getBytes(RemotingHelper.DEFAULT_CHARSET)); 那么，当这条消息发送成功后，我们可以使用 queryMsgByKey 命令查询到这条消息的详细信息:
 MQAdminStartup.main(new String[] { &amp;#34;queryMsgByKey&amp;#34;, &amp;#34;-n&amp;#34;, &amp;#34;localhost:9876&amp;#34;, &amp;#34;-t&amp;#34;, &amp;#34;TopicTest&amp;#34;, &amp;#34;-k&amp;#34;, &amp;#34;OrderID001&amp;#34; }); (2) 根据ID(偏移量)查询消息 消息在发送成功之后，其返回的 SendResult 类中包含了这条消息的唯一偏移量 ID (注意此处指的是 offsetMsgId):
 用户可以使用 queryMsgById 命令查询这条消息的详细信息:
-MQAdminStartup.main(new String[] { &amp;#34;queryMsgById&amp;#34;, &amp;#34;-n&amp;#34;, &amp;#34;localhost:9876&amp;#34;, &amp;#34;-i&amp;#34;, &amp;#34;0A6C73D900002A9F0000000000004010&amp;#34; }); (3) 根据唯一键查询消息 消息在发送成功之后，其返回的 SendResult 类中包含了这条消息的唯一 ID:
-用户可以使用 queryMsgByUniqueKey 命令查询这条消息的详细信息:</description>
+MQAdminStartup.main(new String[] { &amp;#34;queryMsgById&amp;#34;, &amp;#34;-n&amp;#34;, &amp;#34;localhost:9876&amp;#34;, &amp;#34;-i&amp;#34;, &amp;#34;0A6C73D900002A9F0000000000004010&amp;#34; }); (3) 根据唯一键查询消息 消息在发送成功之后，其返回的 SendResult 类中包含了这条消息的唯一 ID:</description>
     </item>
     
     <item>
@@ -84,7 +87,8 @@ MQAdminStartup.main(new String[] { &amp;#34;queryMsgById&amp;#34;, &amp;#34;-n&a
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/rocketmq/rocketmq-timing-message-and-retry-message/</guid>
-      <description>RocketMQ 定时消息和重试消息 讲述 RocketMQ 定时消息和重试消息
+      <description>RocketMQ 定时消息和重试消息  基于 RocketMQ 4.2.0 版本进行的源码分析。
+ 讲述 RocketMQ 定时消息和重试消息
 一、定时消息概述 RocketMQ 支持 Producer 端发送定时消息，即该消息被发送之后，到一段时间之后才能被 Consumer 消费者端消费。但是当前开源版本的 RocketMQ 所支持的定时时间是有限的、不同级别的精度的时间，并不是任意无限制的定时时间。因此在每条消息上设置定时时间的 API 叫做 setDelayTimeLevel，而非 setDelayTime 这样的命名:
 Message msg = new Message(&amp;#34;TopicTest&amp;#34; /* Topic */, &amp;#34;TagA&amp;#34; /* Tag */, (&amp;#34;Hello RocketMQ &amp;#34; + i).getBytes(RemotingHelper.DEFAULT_CHARSET) /* Message body */); msg.setDelayTimeLevel(i + 1); 默认 Broker 服务器端有 18 个定时级别:
 public class MessageStoreConfig { private String messageDelayLevel = &amp;#34;1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h&amp;#34;; } 这 18 个定时级别在服务器端启动的时候，会被解析并放置到表 delayLevelTable 中。解析的过程就是上述字符串按照空格拆分开，然后根据时间单位的不同再进一步进行计算，得到最终的毫秒时间。级别就是根据这些毫秒时间的顺序而确定的，例如上述 1s 延迟就是级别 1， 5s 延迟就是级别 2，以此类推:</description>
@@ -96,11 +100,12 @@ public class MessageStoreConfig { private String messageDelayLevel = &amp;#34;1s
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/rocketmq/rocketmq-master-slave-sync/</guid>
-      <description>RocketMQ 主备同步 介绍 RocketMQ 的主备同步机制
+      <description>RocketMQ 主备同步  基于 RocketMQ 4.2.0 版本进行的源码分析。
+ 介绍 RocketMQ 的主备同步机制
 一、简介 RocketMQ 通过 Master-Slave 主备机制，来实现整个系统的高可用，具体表现在:
  Master 磁盘坏掉，Slave 依然保存了一份 Master 宕机，不影响消费者继续消费  二、搭建环境 我们在一台机器上搭建一个 Master 一个 Slave 的环境:
 为了能够将 Master 和 Slave 搭建在同一台计算机上，我们除了需要将 Broker 的角色设置为 SLAVE ，还需要为其指定单独的 brokerId、 storePathRootDir、 storePathCommitLog。
-// SLAVE 角色 messageStoreConfig.setBrokerRole(BrokerRole.SLAVE); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 store 根目录必须不同 messageStoreConfig.setStorePathRootDir(storePathRootDir); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 storePathCommitLog 根目录必须不同 messageStoreConfig.setStorePathCommitLog(storePathCommitLog); // 设置 Slave 的 Master HA 地址 messageStoreConfig.setHaMasterAddress(&amp;#34;localhost:10912&amp;#34;); // SLAVE 角色的 brokerId 必须大于 0 brokerConfig.setBrokerId(1); 注意 Slave 和 Master 的 brokerName 必须一致，即它们必须处于同一个 BrokerData 数据结构里面。实际上在做了如上的修改之后， Slave 和 Master 依旧不能同时运行在同一台机器上，因为 Slave 本身也可以称为 Master，接受来自其他 Slave 的请求，因此当运行 Slave 的时候，需要将 HAService 里面的启动 AcceptSocketService 运行的相关方法注释掉。</description>
+// SLAVE 角色 messageStoreConfig.setBrokerRole(BrokerRole.SLAVE); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 store 根目录必须不同 messageStoreConfig.setStorePathRootDir(storePathRootDir); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 storePathCommitLog 根目录必须不同 messageStoreConfig.setStorePathCommitLog(storePathCommitLog); // 设置 Slave 的 Master HA 地址 messageStoreConfig.setHaMasterAddress(&amp;#34;localhost:10912&amp;#34;); // SLAVE 角色的 brokerId 必须大于 0 brokerConfig.</description>
     </item>
     
     <item>
@@ -110,13 +115,14 @@ public class MessageStoreConfig { private String messageDelayLevel = &amp;#34;1s
       
       <guid>https://kunzhao.org/docs/rocketmq/rocketmq-transaction/</guid>
       <description>RocketMQ 事务消息  基于 RocketMQ 4.8.0 版本进行的源码分析。
- 源码调试过程 mkdir .rocketmq/conf cp distribution/conf/logback_namesrv.xml .rocketmq/conf cp distribution/conf/logback_broker.xml .rocketmq/conf NamesrvStartup.java 加上如下代码：
+ 讲述 RocketMQ 是如何支持事务消息的。
+源码调试过程 mkdir .rocketmq/conf cp distribution/conf/logback_namesrv.xml .rocketmq/conf cp distribution/conf/logback_broker.xml .rocketmq/conf NamesrvStartup.java 加上如下代码：
 static { System.setProperty(MixAll.ROCKETMQ_HOME_PROPERTY, &amp;#34;.rocketmq&amp;#34;); } BrokerStartup.java 加上如下代码:
 static { System.setProperty(MixAll.ROCKETMQ_HOME_PROPERTY, &amp;#34;.rocketmq&amp;#34;); System.setProperty(MixAll.NAMESRV_ADDR_PROPERTY, &amp;#34;localhost:9876&amp;#34;); } TransactionProducer.java 加上如下代码：
 static { System.setProperty(MixAll.NAMESRV_ADDR_PROPERTY, &amp;#34;localhost:9876&amp;#34;); } 运行顺序：
  NamesrvStartup BrokerStartup TransactionProducer  发送事务消息 我们先来看客户端调用 Producer 发送事务消息的过程：
 初始化事务环境 初始化事务环境是为了构建 checkExecutor 线程池：
-public class TransactionMQProducer extends DefaultMQProducer { @Override public void start() throws MQClientException { this.defaultMQProducerImpl.initTransactionEnv(); super.start(); } } 发送消息并执行本地事务 public class TransactionMQProducer extends DefaultMQProducer { @Override public TransactionSendResult sendMessageInTransaction(final Message msg, final Object arg) throws MQClientException { return this.</description>
+public class TransactionMQProducer extends DefaultMQProducer { @Override public void start() throws MQClientException { this.</description>
     </item>
     
   </channel>
