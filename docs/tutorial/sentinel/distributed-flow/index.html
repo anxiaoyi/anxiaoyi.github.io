@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="分布式限流实现原理"><meta property="og:title" content="分布式限流实现原理" />
+<meta property="og:description" content="分布式限流实现原理  本文讲述 Sentinel 的分布式限流原理。
+ 模块构成 Sentinel 的分布式限流模块包含：
+ sentinel-cluster-common-default: 集群通信的一些通用的类、常量等实现 sentinel-cluster-client-default: 默认的使用 Netty 作为底层通讯的集群 Client 端 sentinel-cluster-server-default: 默认的集群 Server 端  common-default 模块并没有实际的逻辑，只是一些共用的类之类的实现，不再赘述。
+Client 端 初始化 Bootstrap Client 端初始化 Bootstrap 并尝试连接 Server 端：
+// NettyTransportClient.java private Bootstrap initClientBootstrap() { Bootstrap b = new Bootstrap(); eventLoopGroup = new NioEventLoopGroup(); b.group(eventLoopGroup) .channel(NioSocketChannel.class) .option(ChannelOption.TCP_NODELAY, true) .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT) .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, ClusterClientConfigManager.getConnectTimeout()) .handler(new ChannelInitializer&lt;SocketChannel&gt;() { @Override public void initChannel(SocketChannel ch) throws Exception { clientHandler = new TokenClientHandler(currentState, disconnectCallback); ChannelPipeline pipeline = ch." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/sentinel/distributed-flow/" />
+
+<title>分布式限流实现原理 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/architecture/" >
+      架构
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/leaparray/" >
+      基于 LeapArray 的统计
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/flow/" >
+      限流实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/distributed-flow/"  class="active">
+      分布式限流实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/webmvc-flow/" >
+      WebMVC 限流实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/spi/" >
+      可扩展性
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>分布式限流实现原理</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#模块构成">模块构成</a></li>
+    <li><a href="#client-端">Client 端</a>
+      <ul>
+        <li><a href="#初始化-bootstrap">初始化 Bootstrap</a></li>
+        <li><a href="#消息类型">消息类型</a></li>
+        <li><a href="#限流的消息格式">限流的消息格式</a></li>
+        <li><a href="#请求限流-token">请求限流 Token</a></li>
+      </ul>
+    </li>
+    <li><a href="#server-端">Server 端</a>
+      <ul>
+        <li><a href="#初始化-netty">初始化 Netty</a></li>
+        <li><a href="#tokenservice">TokenService</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="分布式限流实现原理">分布式限流实现原理</h1>
+<blockquote>
+<p>本文讲述 Sentinel 的分布式限流原理。</p>
+</blockquote>
+<h2 id="模块构成">模块构成</h2>
+<p>Sentinel 的分布式限流模块包含：</p>
+<ul>
+<li><code>sentinel-cluster-common-default</code>: 集群通信的一些通用的类、常量等实现</li>
+<li><code>sentinel-cluster-client-default</code>: 默认的使用 Netty 作为底层通讯的集群 Client 端</li>
+<li><code>sentinel-cluster-server-default</code>: 默认的集群 Server 端</li>
+</ul>
+<p><code>common-default</code> 模块并没有实际的逻辑，只是一些共用的类之类的实现，不再赘述。</p>
+<h2 id="client-端">Client 端</h2>
+<h3 id="初始化-bootstrap">初始化 Bootstrap</h3>
+<p>Client 端初始化 <code>Bootstrap</code> 并尝试连接 Server 端：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// NettyTransportClient.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> Bootstrap <span style="color:#a6e22e">initClientBootstrap</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    Bootstrap b <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Bootstrap<span style="color:#f92672">();</span>
+    eventLoopGroup <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> NioEventLoopGroup<span style="color:#f92672">();</span>
+    b<span style="color:#f92672">.</span><span style="color:#a6e22e">group</span><span style="color:#f92672">(</span>eventLoopGroup<span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">channel</span><span style="color:#f92672">(</span>NioSocketChannel<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">option</span><span style="color:#f92672">(</span>ChannelOption<span style="color:#f92672">.</span><span style="color:#a6e22e">TCP_NODELAY</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">option</span><span style="color:#f92672">(</span>ChannelOption<span style="color:#f92672">.</span><span style="color:#a6e22e">ALLOCATOR</span><span style="color:#f92672">,</span> PooledByteBufAllocator<span style="color:#f92672">.</span><span style="color:#a6e22e">DEFAULT</span><span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">option</span><span style="color:#f92672">(</span>ChannelOption<span style="color:#f92672">.</span><span style="color:#a6e22e">CONNECT_TIMEOUT_MILLIS</span><span style="color:#f92672">,</span> ClusterClientConfigManager<span style="color:#f92672">.</span><span style="color:#a6e22e">getConnectTimeout</span><span style="color:#f92672">())</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">handler</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> ChannelInitializer<span style="color:#f92672">&lt;</span>SocketChannel<span style="color:#f92672">&gt;()</span> <span style="color:#f92672">{</span>
+            <span style="color:#a6e22e">@Override</span>
+            <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">initChannel</span><span style="color:#f92672">(</span>SocketChannel ch<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+                clientHandler <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> TokenClientHandler<span style="color:#f92672">(</span>currentState<span style="color:#f92672">,</span> disconnectCallback<span style="color:#f92672">);</span>
+
+                ChannelPipeline pipeline <span style="color:#f92672">=</span> ch<span style="color:#f92672">.</span><span style="color:#a6e22e">pipeline</span><span style="color:#f92672">();</span>
+                pipeline<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> LengthFieldBasedFrameDecoder<span style="color:#f92672">(</span>1024<span style="color:#f92672">,</span> 0<span style="color:#f92672">,</span> 2<span style="color:#f92672">,</span> 0<span style="color:#f92672">,</span> 2<span style="color:#f92672">));</span>
+                pipeline<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> NettyResponseDecoder<span style="color:#f92672">());</span>
+                pipeline<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> LengthFieldPrepender<span style="color:#f92672">(</span>2<span style="color:#f92672">));</span>
+                pipeline<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> NettyRequestEncoder<span style="color:#f92672">());</span>
+                pipeline<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span>clientHandler<span style="color:#f92672">);</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">});</span>
+
+    <span style="color:#66d9ef">return</span> b<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+
+b<span style="color:#f92672">.</span><span style="color:#a6e22e">connect</span><span style="color:#f92672">(</span>host<span style="color:#f92672">,</span> port<span style="color:#f92672">)</span>
+    <span style="color:#f92672">.</span><span style="color:#a6e22e">addListener</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> GenericFutureListener<span style="color:#f92672">&lt;</span>ChannelFuture<span style="color:#f92672">&gt;()</span> <span style="color:#f92672">{</span>
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">operationComplete</span><span style="color:#f92672">(</span>ChannelFuture future<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 打印连接是否异常的日志
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>future<span style="color:#f92672">.</span><span style="color:#a6e22e">cause</span><span style="color:#f92672">()</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">});</span>
+</code></pre></div><p>客户端对于 Socket 连接的建立和可用性提供了<strong>一定的保障</strong>：</p>
+<ul>
+<li>原子操作加 <code>PENDING</code> 状态，避免在正在启动或者正在关闭的时候，连续两次调用 <code>start</code> 或者 <code>stop</code> 操作。</li>
+</ul>
+<pre><code>OFF -&gt; PENDING -&gt; STARTED
+STARTED -&gt; PENDING -&gt; OFF
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> AtomicInteger currentState <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicInteger<span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">CLIENT_STATUS_OFF</span><span style="color:#f92672">);</span>
+
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">connect</span><span style="color:#f92672">(</span>Bootstrap b<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>currentState<span style="color:#f92672">.</span><span style="color:#a6e22e">compareAndSet</span><span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">CLIENT_STATUS_OFF</span><span style="color:#f92672">,</span> ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">CLIENT_STATUS_PENDING</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 建立连接
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">stop</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>currentState<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">==</span> ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">CLIENT_STATUS_PENDING</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+            Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">sleep</span><span style="color:#f92672">(</span>200<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Exception ex<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// Ignore.
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#75715e">// 停止连接
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+</code></pre></div><p><code>TokenClientHandler</code> 监听 Channel 状态，切换为 <code>STARTED</code> 或者 <code>OFF</code> 状态：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TokenClientHandler</span> <span style="color:#66d9ef">extends</span> ChannelInboundHandlerAdapter <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">channelActive</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        currentState<span style="color:#f92672">.</span><span style="color:#a6e22e">set</span><span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">CLIENT_STATUS_STARTED</span><span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">channelUnregistered</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        currentState<span style="color:#f92672">.</span><span style="color:#a6e22e">set</span><span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">CLIENT_STATUS_OFF</span><span style="color:#f92672">);</span>
+
+        disconnectCallback<span style="color:#f92672">.</span><span style="color:#a6e22e">run</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><ul>
+<li>断开连接的时候自动定时重连，连接的操作是放在另外一个线程池中单独执行的。同时结合 <code>shouldRetry</code> 的状态位，当手动确实是要 stop 的时候，那么就无需重试尝试连接了，确保只在连接突然断掉的状态下，才尝试连接。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> AtomicBoolean shouldRetry <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicBoolean<span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> ScheduledExecutorService SCHEDULER <span style="color:#f92672">=</span> Executors<span style="color:#f92672">.</span><span style="color:#a6e22e">newScheduledThreadPool</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span>
+        <span style="color:#66d9ef">new</span> NamedThreadFactory<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;sentinel-cluster-transport-client-scheduler&#34;</span><span style="color:#f92672">));</span>
+
+SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedule</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Runnable<span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>shouldRetry<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+                startInternal<span style="color:#f92672">();</span>
+            <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Exception e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                RecordLog<span style="color:#f92672">.</span><span style="color:#a6e22e">warn</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;[NettyTransportClient] Failed to reconnect to server&#34;</span><span style="color:#f92672">,</span> e<span style="color:#f92672">);</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">},</span> RECONNECT_DELAY_MS <span style="color:#f92672">*</span> <span style="color:#f92672">(</span>failConnectedTime<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">+</span> 1<span style="color:#f92672">),</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">MILLISECONDS</span><span style="color:#f92672">);</span>        
+</code></pre></div><h3 id="消息类型">消息类型</h3>
+<p>Client 端会发送三种类型的消息：<code>PING</code>、<code>PONG</code> 和 <code>PARAM_FLOW</code>。每种类型的消息，都相应的注册了 <code>RequestDataWriter</code> 和 <code>ResponseDataDecoder</code>。</p>
+<ul>
+<li><code>Writer</code>：消息写入到流，写入的顺序，写入的方式等。</li>
+<li><code>Decoder</code>：从流中读取该消息的响应，并解析成合适的响应体结果。</li>
+</ul>
+<p>在 Client 启动的时候，会将这些消息的 Writer 和 Decoder 注册到 <code>RequestDataWriterRegistry</code> 和 <code>ResponseDataDecodeRegistry</code> 中心。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@InitOrder</span><span style="color:#f92672">(</span>0<span style="color:#f92672">)</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultClusterClientInitFunc</span> <span style="color:#66d9ef">implements</span> InitFunc <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">init</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        initDefaultEntityWriters<span style="color:#f92672">();</span>
+        initDefaultEntityDecoders<span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">initDefaultEntityWriters</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        RequestDataWriterRegistry<span style="color:#f92672">.</span><span style="color:#a6e22e">addWriter</span><span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">TYPE_PING</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">new</span> PingRequestDataWriter<span style="color:#f92672">());</span>
+        RequestDataWriterRegistry<span style="color:#f92672">.</span><span style="color:#a6e22e">addWriter</span><span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">TYPE_FLOW</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">new</span> FlowRequestDataWriter<span style="color:#f92672">());</span>
+        Integer maxParamByteSize <span style="color:#f92672">=</span> ClusterClientStartUpConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxParamByteSize</span><span style="color:#f92672">();</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>maxParamByteSize <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            RequestDataWriterRegistry<span style="color:#f92672">.</span><span style="color:#a6e22e">addWriter</span><span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">TYPE_PARAM_FLOW</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">new</span> ParamFlowRequestDataWriter<span style="color:#f92672">());</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+            RequestDataWriterRegistry<span style="color:#f92672">.</span><span style="color:#a6e22e">addWriter</span><span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">TYPE_PARAM_FLOW</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">new</span> ParamFlowRequestDataWriter<span style="color:#f92672">(</span>maxParamByteSize<span style="color:#f92672">));</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">initDefaultEntityDecoders</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        ResponseDataDecodeRegistry<span style="color:#f92672">.</span><span style="color:#a6e22e">addDecoder</span><span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">TYPE_PING</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">new</span> PingResponseDataDecoder<span style="color:#f92672">());</span>
+        ResponseDataDecodeRegistry<span style="color:#f92672">.</span><span style="color:#a6e22e">addDecoder</span><span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">TYPE_FLOW</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">new</span> FlowResponseDataDecoder<span style="color:#f92672">());</span>
+        ResponseDataDecodeRegistry<span style="color:#f92672">.</span><span style="color:#a6e22e">addDecoder</span><span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">TYPE_PARAM_FLOW</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">new</span> FlowResponseDataDecoder<span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>在 <code>NettyResponseDecoder</code> 中，其根据 <code>ClientEntityCodecProvider</code> 查找到了默认的 <code>Decoder</code> 实现类 (<code>DefaultResponseEntityDecoder</code>)，然后在其内部，根据不同的消息类型，从上述的 <code>ResponseDataDecodeRegistry</code> 注册中心中查找对应的 <code>EntityDecoder</code> 进行 <code>decode</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">NettyResponseDecoder</span> <span style="color:#66d9ef">extends</span> ByteToMessageDecoder <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">decode</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">,</span> ByteBuf in<span style="color:#f92672">,</span> List<span style="color:#f92672">&lt;</span>Object<span style="color:#f92672">&gt;</span> out<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        ResponseEntityDecoder<span style="color:#f92672">&lt;</span>ByteBuf<span style="color:#f92672">,</span> Response<span style="color:#f92672">&gt;</span> responseDecoder <span style="color:#f92672">=</span> ClientEntityCodecProvider<span style="color:#f92672">.</span><span style="color:#a6e22e">getResponseEntityDecoder</span><span style="color:#f92672">();</span>
+        Response response <span style="color:#f92672">=</span> responseDecoder<span style="color:#f92672">.</span><span style="color:#a6e22e">decode</span><span style="color:#f92672">(</span>in<span style="color:#f92672">);</span>
+        out<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>response<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>默认的 <code>Decoder</code> 的格式如下：</p>
+<pre><code>+--------+---------+-----------+---------+
+| xid(4) | type(1) | status(1) | data... |
++--------+---------+-----------+---------+
+</code></pre><p>当解析完之后，将数据等响应信息封装为 <code>ClusterResponse</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultResponseEntityDecoder</span> <span style="color:#66d9ef">implements</span> ResponseEntityDecoder<span style="color:#f92672">&lt;</span>ByteBuf<span style="color:#f92672">,</span> ClusterResponse<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> ClusterResponse <span style="color:#a6e22e">decode</span><span style="color:#f92672">(</span>ByteBuf source<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>source<span style="color:#f92672">.</span><span style="color:#a6e22e">readableBytes</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;=</span> 6<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">int</span> xid <span style="color:#f92672">=</span> source<span style="color:#f92672">.</span><span style="color:#a6e22e">readInt</span><span style="color:#f92672">();</span>
+            <span style="color:#66d9ef">int</span> type <span style="color:#f92672">=</span> source<span style="color:#f92672">.</span><span style="color:#a6e22e">readByte</span><span style="color:#f92672">();</span>
+            <span style="color:#66d9ef">int</span> status <span style="color:#f92672">=</span> source<span style="color:#f92672">.</span><span style="color:#a6e22e">readByte</span><span style="color:#f92672">();</span>
+
+            EntityDecoder<span style="color:#f92672">&lt;</span>ByteBuf<span style="color:#f92672">,</span> <span style="color:#f92672">?&gt;</span> decoder <span style="color:#f92672">=</span> ResponseDataDecodeRegistry<span style="color:#f92672">.</span><span style="color:#a6e22e">getDecoder</span><span style="color:#f92672">(</span>type<span style="color:#f92672">);</span>
+
+            Object data<span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>source<span style="color:#f92672">.</span><span style="color:#a6e22e">readableBytes</span><span style="color:#f92672">()</span> <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                data <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+                data <span style="color:#f92672">=</span> decoder<span style="color:#f92672">.</span><span style="color:#a6e22e">decode</span><span style="color:#f92672">(</span>source<span style="color:#f92672">);</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> ClusterResponse<span style="color:#f92672">&lt;&gt;(</span>xid<span style="color:#f92672">,</span> type<span style="color:#f92672">,</span> status<span style="color:#f92672">,</span> data<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>同理，对于 <code>Writer</code> 的实现，也是类似的套路：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultRequestEntityWriter</span> <span style="color:#66d9ef">implements</span> RequestEntityWriter<span style="color:#f92672">&lt;</span>ClusterRequest<span style="color:#f92672">,</span> ByteBuf<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">writeTo</span><span style="color:#f92672">(</span>ClusterRequest request<span style="color:#f92672">,</span> ByteBuf target<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">int</span> type <span style="color:#f92672">=</span> request<span style="color:#f92672">.</span><span style="color:#a6e22e">getType</span><span style="color:#f92672">();</span>
+        EntityWriter<span style="color:#f92672">&lt;</span>Object<span style="color:#f92672">,</span> ByteBuf<span style="color:#f92672">&gt;</span> requestDataWriter <span style="color:#f92672">=</span> RequestDataWriterRegistry<span style="color:#f92672">.</span><span style="color:#a6e22e">getWriter</span><span style="color:#f92672">(</span>type<span style="color:#f92672">);</span>
+
+        <span style="color:#75715e">// Write head part of request.
+</span><span style="color:#75715e"></span>        writeHead<span style="color:#f92672">(</span>request<span style="color:#f92672">,</span> target<span style="color:#f92672">);</span>
+        <span style="color:#75715e">// Write data part.
+</span><span style="color:#75715e"></span>        requestDataWriter<span style="color:#f92672">.</span><span style="color:#a6e22e">writeTo</span><span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">getData</span><span style="color:#f92672">(),</span> target<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">writeHead</span><span style="color:#f92672">(</span>Request request<span style="color:#f92672">,</span> ByteBuf out<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        out<span style="color:#f92672">.</span><span style="color:#a6e22e">writeInt</span><span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">getId</span><span style="color:#f92672">());</span>
+        out<span style="color:#f92672">.</span><span style="color:#a6e22e">writeByte</span><span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">getType</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="限流的消息格式">限流的消息格式</h3>
+<pre><code>+-------------------+--------------+----------------+---------------+------------------+
+| RequestID(8 byte) | Type(1 byte) | FlowID(8 byte) | Count(4 byte) | PriorityFlag (1) |
++-------------------+--------------+----------------+---------------+------------------+
+</code></pre><h3 id="请求限流-token">请求限流 Token</h3>
+<p>Sentinel 客户端在执行限流算发啊的时候，会判断是否是分布式限流还是本地机器限流。如果某个限流规则是需要<strong>分布式限流</strong>，那么首先获取一个 <code>TokenService</code>，从这个 Service 上去请求 <code>TokenResult</code>，然后根据请求到的 <code>TokenResult</code> 决定是否进行限流。在这之间如果发生了比如未配置 <code>TokenService</code> 或者抛出了异常，则会降级为采用本地的限流策略来进行限流。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// FlowRuleChecker.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">canPassCheck</span><span style="color:#f92672">(</span><span style="color:#75715e">/*@NonNull*/</span> FlowRule rule<span style="color:#f92672">,</span> Context context<span style="color:#f92672">,</span> DefaultNode node<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> acquireCount<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// 如果是集群中的某个节点
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>rule<span style="color:#f92672">.</span><span style="color:#a6e22e">isClusterMode</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> passClusterCheck<span style="color:#f92672">(</span>rule<span style="color:#f92672">,</span> context<span style="color:#f92672">,</span> node<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">return</span> passLocalCheck<span style="color:#f92672">(</span>rule<span style="color:#f92672">,</span> context<span style="color:#f92672">,</span> node<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">passClusterCheck</span><span style="color:#f92672">(</span>FlowRule rule<span style="color:#f92672">,</span> Context context<span style="color:#f92672">,</span> DefaultNode node<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> acquireCount<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+        TokenService clusterService <span style="color:#f92672">=</span> pickClusterService<span style="color:#f92672">();</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>clusterService <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> fallbackToLocalOrPass<span style="color:#f92672">(</span>rule<span style="color:#f92672">,</span> context<span style="color:#f92672">,</span> node<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+        <span style="color:#66d9ef">long</span> flowId <span style="color:#f92672">=</span> rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getClusterConfig</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getFlowId</span><span style="color:#f92672">();</span>
+        TokenResult result <span style="color:#f92672">=</span> clusterService<span style="color:#f92672">.</span><span style="color:#a6e22e">requestToken</span><span style="color:#f92672">(</span>flowId<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">return</span> applyTokenResult<span style="color:#f92672">(</span>result<span style="color:#f92672">,</span> rule<span style="color:#f92672">,</span> context<span style="color:#f92672">,</span> node<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">);</span>
+        <span style="color:#75715e">// If client is absent, then fallback to local mode.
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Throwable ex<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        RecordLog<span style="color:#f92672">.</span><span style="color:#a6e22e">warn</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;[FlowRuleChecker] Request cluster token unexpected failed&#34;</span><span style="color:#f92672">,</span> ex<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#75715e">// Fallback to local flow control when token client or server for this rule is not available.
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// If fallback is not enabled, then directly pass.
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span> fallbackToLocalOrPass<span style="color:#f92672">(</span>rule<span style="color:#f92672">,</span> context<span style="color:#f92672">,</span> node<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>上述 <code>pickClusterService</code> 的实现如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> TokenService <span style="color:#a6e22e">pickClusterService</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ClusterStateManager<span style="color:#f92672">.</span><span style="color:#a6e22e">isClient</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> TokenClientProvider<span style="color:#f92672">.</span><span style="color:#a6e22e">getClient</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ClusterStateManager<span style="color:#f92672">.</span><span style="color:#a6e22e">isServer</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> EmbeddedClusterTokenServerProvider<span style="color:#f92672">.</span><span style="color:#a6e22e">getServer</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>当以集群启动的时候，那么返回的就是 <code>TokenClientProvider.getClient()</code>。在这个 Client 内部，<code>requestToken</code> 方法封装的就是<strong>发送限流请求</strong>的参数，获取限流响应的过程：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DefaultClusterTokenClient.java
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> TokenResult <span style="color:#a6e22e">requestToken</span><span style="color:#f92672">(</span>Long flowId<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> acquireCount<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>notValidRequest<span style="color:#f92672">(</span>flowId<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> badRequest<span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+    FlowRequestData data <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> FlowRequestData<span style="color:#f92672">().</span><span style="color:#a6e22e">setCount</span><span style="color:#f92672">(</span>acquireCount<span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">setFlowId</span><span style="color:#f92672">(</span>flowId<span style="color:#f92672">).</span><span style="color:#a6e22e">setPriority</span><span style="color:#f92672">(</span>prioritized<span style="color:#f92672">);</span>
+    ClusterRequest<span style="color:#f92672">&lt;</span>FlowRequestData<span style="color:#f92672">&gt;</span> request <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ClusterRequest<span style="color:#f92672">&lt;&gt;(</span>ClusterConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">MSG_TYPE_FLOW</span><span style="color:#f92672">,</span> data<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+        TokenResult result <span style="color:#f92672">=</span> sendTokenRequest<span style="color:#f92672">(</span>request<span style="color:#f92672">);</span>
+        logForResult<span style="color:#f92672">(</span>result<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">return</span> result<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Exception ex<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        ClusterClientStatLogUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">log</span><span style="color:#f92672">(</span>ex<span style="color:#f92672">.</span><span style="color:#a6e22e">getMessage</span><span style="color:#f92672">());</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> TokenResult<span style="color:#f92672">(</span>TokenResultStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">FAIL</span><span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>接下来继续看，获取到的 <code>TokenResult</code>，有哪些结果：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// FlowRuleChecker.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">applyTokenResult</span><span style="color:#f92672">(</span><span style="color:#75715e">/*@NonNull*/</span> TokenResult result<span style="color:#f92672">,</span> FlowRule rule<span style="color:#f92672">,</span> Context context<span style="color:#f92672">,</span>
+                                                        DefaultNode node<span style="color:#f92672">,</span>
+                                                        <span style="color:#66d9ef">int</span> acquireCount<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">switch</span> <span style="color:#f92672">(</span>result<span style="color:#f92672">.</span><span style="color:#a6e22e">getStatus</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">case</span> TokenResultStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">OK</span><span style="color:#f92672">:</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">case</span> TokenResultStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">SHOULD_WAIT</span><span style="color:#f92672">:</span>
+            <span style="color:#75715e">// Wait for next tick.
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+                Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">sleep</span><span style="color:#f92672">(</span>result<span style="color:#f92672">.</span><span style="color:#a6e22e">getWaitInMs</span><span style="color:#f92672">());</span>
+            <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>InterruptedException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                e<span style="color:#f92672">.</span><span style="color:#a6e22e">printStackTrace</span><span style="color:#f92672">();</span>
+            <span style="color:#f92672">}</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">case</span> TokenResultStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">NO_RULE_EXISTS</span><span style="color:#f92672">:</span>
+        <span style="color:#66d9ef">case</span> TokenResultStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">BAD_REQUEST</span><span style="color:#f92672">:</span>
+        <span style="color:#66d9ef">case</span> TokenResultStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">FAIL</span><span style="color:#f92672">:</span>
+        <span style="color:#66d9ef">case</span> TokenResultStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">TOO_MANY_REQUEST</span><span style="color:#f92672">:</span>
+            <span style="color:#66d9ef">return</span> fallbackToLocalOrPass<span style="color:#f92672">(</span>rule<span style="color:#f92672">,</span> context<span style="color:#f92672">,</span> node<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">case</span> TokenResultStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">BLOCKED</span><span style="color:#f92672">:</span>
+        <span style="color:#66d9ef">default</span><span style="color:#f92672">:</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>通过上述代码片段可知，只有 <code>TokenResult</code> 明确返回了 <code>OK</code> 或者 <code>SHOULD_WAIT</code> 的时候才会不进行限流；其他情况，比如规则不存在、请求不合法、需要阻塞等，一律执行限流策略。</p>
+<h2 id="server-端">Server 端</h2>
+<h3 id="初始化-netty">初始化 Netty</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// NettyTransportServer.java
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">// 默认 2 * CPU 核数 个 Worker 线程
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> DEFAULT_EVENT_LOOP_THREADS <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span>
+        SystemPropertyUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">getInt</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;io.netty.eventLoopThreads&#34;</span><span style="color:#f92672">,</span> Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">().</span><span style="color:#a6e22e">availableProcessors</span><span style="color:#f92672">()</span> <span style="color:#f92672">*</span> 2<span style="color:#f92672">));</span>
+
+<span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">start</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    ServerBootstrap b <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ServerBootstrap<span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">bossGroup</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> NioEventLoopGroup<span style="color:#f92672">(</span>1<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">workerGroup</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> NioEventLoopGroup<span style="color:#f92672">(</span>DEFAULT_EVENT_LOOP_THREADS<span style="color:#f92672">);</span>
+    b<span style="color:#f92672">.</span><span style="color:#a6e22e">group</span><span style="color:#f92672">(</span>bossGroup<span style="color:#f92672">,</span> workerGroup<span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">channel</span><span style="color:#f92672">(</span>NioServerSocketChannel<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">option</span><span style="color:#f92672">(</span>ChannelOption<span style="color:#f92672">.</span><span style="color:#a6e22e">SO_BACKLOG</span><span style="color:#f92672">,</span> 128<span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">handler</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> LoggingHandler<span style="color:#f92672">(</span>LogLevel<span style="color:#f92672">.</span><span style="color:#a6e22e">INFO</span><span style="color:#f92672">))</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">childHandler</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> ChannelInitializer<span style="color:#f92672">&lt;</span>SocketChannel<span style="color:#f92672">&gt;()</span> <span style="color:#f92672">{</span>
+            <span style="color:#a6e22e">@Override</span>
+            <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">initChannel</span><span style="color:#f92672">(</span>SocketChannel ch<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+                ChannelPipeline p <span style="color:#f92672">=</span> ch<span style="color:#f92672">.</span><span style="color:#a6e22e">pipeline</span><span style="color:#f92672">();</span>
+                p<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> LengthFieldBasedFrameDecoder<span style="color:#f92672">(</span>1024<span style="color:#f92672">,</span> 0<span style="color:#f92672">,</span> 2<span style="color:#f92672">,</span> 0<span style="color:#f92672">,</span> 2<span style="color:#f92672">));</span>
+                p<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> NettyRequestDecoder<span style="color:#f92672">());</span>
+                p<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> LengthFieldPrepender<span style="color:#f92672">(</span>2<span style="color:#f92672">));</span>
+                p<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> NettyResponseEncoder<span style="color:#f92672">());</span>
+                p<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> TokenServerHandler<span style="color:#f92672">(</span>connectionPool<span style="color:#f92672">));</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">})</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">childOption</span><span style="color:#f92672">(</span>ChannelOption<span style="color:#f92672">.</span><span style="color:#a6e22e">ALLOCATOR</span><span style="color:#f92672">,</span> PooledByteBufAllocator<span style="color:#f92672">.</span><span style="color:#a6e22e">DEFAULT</span><span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">childOption</span><span style="color:#f92672">(</span>ChannelOption<span style="color:#f92672">.</span><span style="color:#a6e22e">SO_SNDBUF</span><span style="color:#f92672">,</span> 32 <span style="color:#f92672">*</span> 1024<span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">childOption</span><span style="color:#f92672">(</span>ChannelOption<span style="color:#f92672">.</span><span style="color:#a6e22e">CONNECT_TIMEOUT_MILLIS</span><span style="color:#f92672">,</span> 10000<span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">childOption</span><span style="color:#f92672">(</span>ChannelOption<span style="color:#f92672">.</span><span style="color:#a6e22e">SO_TIMEOUT</span><span style="color:#f92672">,</span> 10<span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">childOption</span><span style="color:#f92672">(</span>ChannelOption<span style="color:#f92672">.</span><span style="color:#a6e22e">TCP_NODELAY</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">childOption</span><span style="color:#f92672">(</span>ChannelOption<span style="color:#f92672">.</span><span style="color:#a6e22e">SO_RCVBUF</span><span style="color:#f92672">,</span> 32 <span style="color:#f92672">*</span> 1024<span style="color:#f92672">);</span>
+    b<span style="color:#f92672">.</span><span style="color:#a6e22e">bind</span><span style="color:#f92672">(</span>port<span style="color:#f92672">).</span><span style="color:#a6e22e">addListener</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> GenericFutureListener<span style="color:#f92672">&lt;</span>ChannelFuture<span style="color:#f92672">&gt;()</span> <span style="color:#f92672">{</span>
+        <span style="color:#a6e22e">@Override</span>
+        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">operationComplete</span><span style="color:#f92672">(</span>ChannelFuture future<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>future<span style="color:#f92672">.</span><span style="color:#a6e22e">cause</span><span style="color:#f92672">()</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#75715e">// 打印启动失败日志
+</span><span style="color:#75715e"></span>            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">});</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>Server 端的 Netty 启动，同样借助 <code>PENDING</code> 状态避免多次启动/停止 Server。另外 Server 端还建立了一个连接池：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConnectionPool</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#75715e">/**
+</span><span style="color:#75715e">     * Format: (&#34;ip:port&#34;, connection)
+</span><span style="color:#75715e">     */</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> Map<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> Connection<span style="color:#f92672">&gt;</span> CONNECTION_MAP <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> Connection<span style="color:#f92672">&gt;();</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>在 <code>TokenServerHandler</code> 中，当有新的连接、或者有连接断掉、或者有新的消息发送过来的时候，都会相应的维护连接池中的连接：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TokenServerHandler</span> <span style="color:#66d9ef">extends</span> ChannelInboundHandlerAdapter <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">channelActive</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 添加到连接池里面
+</span><span style="color:#75715e"></span>        globalConnectionPool<span style="color:#f92672">.</span><span style="color:#a6e22e">createConnection</span><span style="color:#f92672">(</span>ctx<span style="color:#f92672">.</span><span style="color:#a6e22e">channel</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">channelInactive</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 从连接池中移除这个连接
+</span><span style="color:#75715e"></span>        String remoteAddress <span style="color:#f92672">=</span> getRemoteAddress<span style="color:#f92672">(</span>ctx<span style="color:#f92672">);</span>
+        globalConnectionPool<span style="color:#f92672">.</span><span style="color:#a6e22e">remove</span><span style="color:#f92672">(</span>ctx<span style="color:#f92672">.</span><span style="color:#a6e22e">channel</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#a6e22e">@SuppressWarnings</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;unchecked&#34;</span><span style="color:#f92672">)</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">channelRead</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">,</span> Object msg<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        globalConnectionPool<span style="color:#f92672">.</span><span style="color:#a6e22e">refreshLastReadTime</span><span style="color:#f92672">(</span>ctx<span style="color:#f92672">.</span><span style="color:#a6e22e">channel</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>连接池中维护的连接，内部有一个定时器，可以定时地<strong>关闭</strong>空闲的连接。</p>
+<p>当 Netty Server 有限流请求过来地时候，其会根据类型找到合适的 <code>RequestProcessor</code>，然后让这个处理器去处理请求：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">channelRead</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">,</span> Object msg<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>msg <span style="color:#66d9ef">instanceof</span> ClusterRequest<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        ClusterRequest request <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>ClusterRequest<span style="color:#f92672">)</span>msg<span style="color:#f92672">;</span>
+
+        <span style="color:#75715e">// Pick request processor for request type.
+</span><span style="color:#75715e"></span>        RequestProcessor<span style="color:#f92672">&lt;?,</span> <span style="color:#f92672">?&gt;</span> processor <span style="color:#f92672">=</span> RequestProcessorProvider<span style="color:#f92672">.</span><span style="color:#a6e22e">getProcessor</span><span style="color:#f92672">(</span>request<span style="color:#f92672">.</span><span style="color:#a6e22e">getType</span><span style="color:#f92672">());</span>
+        ClusterResponse<span style="color:#f92672">&lt;?&gt;</span> response <span style="color:#f92672">=</span> processor<span style="color:#f92672">.</span><span style="color:#a6e22e">processRequest</span><span style="color:#f92672">(</span>request<span style="color:#f92672">);</span>
+        writeResponse<span style="color:#f92672">(</span>ctx<span style="color:#f92672">,</span> response<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="tokenservice">TokenService</h3>
+<p>在 Processor 内部，会使用 <code>TokenService</code> 去判断是否需要限流。使用哪一个 <code>TokenService</code> 是根据 <code>TokenServiceProvider</code> 去决定的，其底层就是 SPI 机制。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// TokenServiceProvider.java
+</span><span style="color:#75715e"></span>SpiLoader<span style="color:#f92672">.</span><span style="color:#a6e22e">loadFirstInstanceOrDefault</span><span style="color:#f92672">(</span>TokenService<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">,</span> DefaultTokenService<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">);</span>
+</code></pre></div><p>在 <code>TokenService</code> 内部，其根据 <code>flowId</code> 找到对应的<strong>限流规则</strong>，然后再通过 <code>ClusterFlowChecker</code> 去获取集群的 Token：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DefaultTokenService.java
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> TokenResult <span style="color:#a6e22e">requestToken</span><span style="color:#f92672">(</span>Long ruleId<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> acquireCount<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// The rule should be valid.
+</span><span style="color:#75715e"></span>    FlowRule rule <span style="color:#f92672">=</span> ClusterFlowRuleManager<span style="color:#f92672">.</span><span style="color:#a6e22e">getFlowRuleById</span><span style="color:#f92672">(</span>ruleId<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>rule <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> TokenResult<span style="color:#f92672">(</span>TokenResultStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">NO_RULE_EXISTS</span><span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">return</span> ClusterFlowChecker<span style="color:#f92672">.</span><span style="color:#a6e22e">acquireClusterToken</span><span style="color:#f92672">(</span>rule<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>ClusterFlowRuleManager</code> 内部通过使用一个 <code>ConcurrentHashMap</code> 维护了 <code>&lt;flowId, clusterRule&gt;</code> 的映射，而这个映射是用户通过 <code>loadRules</code> 方法手动将限流规则加载到内存中的。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ClusterFlowRuleManager.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">loadRules</span><span style="color:#f92672">(</span>String namespace<span style="color:#f92672">,</span> List<span style="color:#f92672">&lt;</span>FlowRule<span style="color:#f92672">&gt;</span> rules<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    NamespaceFlowProperty<span style="color:#f92672">&lt;</span>FlowRule<span style="color:#f92672">&gt;</span> property <span style="color:#f92672">=</span> PROPERTY_MAP<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>namespace<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>property <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        property<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">().</span><span style="color:#a6e22e">updateValue</span><span style="color:#f92672">(</span>rules<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>其中 <code>ClusterFlowChecker</code> 的核心算法如下，就是看当前可用的资源是否超过了最大的资源数量：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ClusterFlowChecker.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">static</span> TokenResult <span style="color:#a6e22e">acquireClusterToken</span><span style="color:#f92672">(</span><span style="color:#75715e">/*@Valid*/</span> FlowRule rule<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> acquireCount<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    Long id <span style="color:#f92672">=</span> rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getClusterConfig</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getFlowId</span><span style="color:#f92672">();</span>
+    ClusterMetric metric <span style="color:#f92672">=</span> ClusterMetricStatistics<span style="color:#f92672">.</span><span style="color:#a6e22e">getMetric</span><span style="color:#f92672">(</span>id<span style="color:#f92672">);</span>
+
+    <span style="color:#75715e">// 平均一秒钟通过多少个 COUNT
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">double</span> latestQps <span style="color:#f92672">=</span> metric<span style="color:#f92672">.</span><span style="color:#a6e22e">getAvg</span><span style="color:#f92672">(</span>ClusterFlowEvent<span style="color:#f92672">.</span><span style="color:#a6e22e">PASS</span><span style="color:#f92672">);</span>
+    <span style="color:#75715e">// 总共多少个 COUNT
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">double</span> globalThreshold <span style="color:#f92672">=</span> calcGlobalThreshold<span style="color:#f92672">(</span>rule<span style="color:#f92672">)</span> <span style="color:#f92672">*</span> ClusterServerConfigManager<span style="color:#f92672">.</span><span style="color:#a6e22e">getExceedCount</span><span style="color:#f92672">();</span>
+    <span style="color:#75715e">// 剩余多少个 COUNT
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">double</span> nextRemaining <span style="color:#f92672">=</span> globalThreshold <span style="color:#f92672">-</span> latestQps <span style="color:#f92672">-</span> acquireCount<span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>nextRemaining <span style="color:#f92672">&gt;=</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        metric<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>ClusterFlowEvent<span style="color:#f92672">.</span><span style="color:#a6e22e">PASS</span><span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">);</span>
+        metric<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>ClusterFlowEvent<span style="color:#f92672">.</span><span style="color:#a6e22e">PASS_REQUEST</span><span style="color:#f92672">,</span> 1<span style="color:#f92672">);</span>
+
+        <span style="color:#75715e">// Remaining count is cut down to a smaller integer.
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> TokenResult<span style="color:#f92672">(</span>TokenResultStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">OK</span><span style="color:#f92672">)</span>
+            <span style="color:#f92672">.</span><span style="color:#a6e22e">setRemaining</span><span style="color:#f92672">((</span><span style="color:#66d9ef">int</span><span style="color:#f92672">)</span> nextRemaining<span style="color:#f92672">)</span>
+            <span style="color:#f92672">.</span><span style="color:#a6e22e">setWaitInMs</span><span style="color:#f92672">(</span>0<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        metric<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>ClusterFlowEvent<span style="color:#f92672">.</span><span style="color:#a6e22e">BLOCK</span><span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">);</span>
+        metric<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>ClusterFlowEvent<span style="color:#f92672">.</span><span style="color:#a6e22e">BLOCK_REQUEST</span><span style="color:#f92672">,</span> 1<span style="color:#f92672">);</span>
+
+        <span style="color:#75715e">// blocked
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> TokenResult<span style="color:#f92672">(</span>TokenResultStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">BLOCKED</span><span style="color:#f92672">)</span>
+            <span style="color:#f92672">.</span><span style="color:#a6e22e">setRemaining</span><span style="color:#f92672">(</span>0<span style="color:#f92672">)</span>
+            <span style="color:#f92672">.</span><span style="color:#a6e22e">setWaitInMs</span><span style="color:#f92672">(</span>0<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div>
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#模块构成">模块构成</a></li>
+    <li><a href="#client-端">Client 端</a>
+      <ul>
+        <li><a href="#初始化-bootstrap">初始化 Bootstrap</a></li>
+        <li><a href="#消息类型">消息类型</a></li>
+        <li><a href="#限流的消息格式">限流的消息格式</a></li>
+        <li><a href="#请求限流-token">请求限流 Token</a></li>
+      </ul>
+    </li>
+    <li><a href="#server-端">Server 端</a>
+      <ul>
+        <li><a href="#初始化-netty">初始化 Netty</a></li>
+        <li><a href="#tokenservice">TokenService</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

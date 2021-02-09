@@ -6,7 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Stream 编程"><meta property="og:title" content="Stream 编程" />
 <meta property="og:description" content="Stream 编程 String[] Stream Arrays.stream(lines.split(&#34;\\s&#43;&#34;)) .map(String::toUpperCase) .toArray(String[]::new) Integer[] 或 int[] stream int[] num = {1, 2, 3, 4, 5}; Integer[] result = Arrays.stream(num) .map(x -&gt; x * 2) .boxed() .toArray(Integer[]::new); int[]
-Stream&lt;Integer&gt; stream = Stream.of(1, 2, 3, 4, 5); int[] result = stream.map2Int(x -&gt; x).toArray(); " />
+Stream&lt;Integer&gt; stream = Stream.of(1, 2, 3, 4, 5); int[] result = stream.map2Int(x -&gt; x).toArray(); lambda 引用外部变量  lambda 引用外部变量为什么必须声明为 final ?
+ Local variables in Java have until now been immune to race conditions and visibility problems because they are accessible only to the thread executing the method in which they are declared." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/stream/" />
 
@@ -17,7 +18,7 @@ Stream&lt;Integer&gt; stream = Stream.of(1, 2, 3, 4, 5); int[] result = stream.m
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -488,6 +489,46 @@ var _hmt = _hmt || [];
 </li>
       
     
+      
+        <li>
+
+  <a href="/docs/tutorial/java/juc/" >
+      JUC 并发包
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/java-io/" >
+      Java IO
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/basic/" >
+      Java 基础
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/java-collection/" >
+      Java 集合类
+  </a>
+
+</li>
+      
+    
   </ul>
   
 
@@ -885,6 +926,7 @@ var _hmt = _hmt || [];
   <ul>
     <li><a href="#string-stream">String[] Stream</a></li>
     <li><a href="#integer-或-int-stream">Integer[] 或 int[] stream</a></li>
+    <li><a href="#lambda-引用外部变量">lambda 引用外部变量</a></li>
   </ul>
 </nav>
 
@@ -920,7 +962,17 @@ Integer<span style="color:#f92672">[]</span> result <span style="color:#f92672">
 </code></pre></div><p>int[]</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Stream<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">&gt;</span> stream <span style="color:#f92672">=</span> Stream<span style="color:#f92672">.</span><span style="color:#a6e22e">of</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 2<span style="color:#f92672">,</span> 3<span style="color:#f92672">,</span> 4<span style="color:#f92672">,</span> 5<span style="color:#f92672">);</span>
 <span style="color:#66d9ef">int</span><span style="color:#f92672">[]</span> result <span style="color:#f92672">=</span> stream<span style="color:#f92672">.</span><span style="color:#a6e22e">map2Int</span><span style="color:#f92672">(</span>x <span style="color:#f92672">-&gt;</span> x<span style="color:#f92672">).</span><span style="color:#a6e22e">toArray</span><span style="color:#f92672">();</span>
-</code></pre></div>
+</code></pre></div><h2 id="lambda-引用外部变量">lambda 引用外部变量</h2>
+<blockquote>
+<p>lambda 引用外部变量为什么必须声明为 final ?</p>
+</blockquote>
+<p>Local variables in Java have until now been immune to race conditions and visibility problems because they are accessible only to the thread executing the method in which they are declared. But <strong>a lambda can be passed from the thread that created it to a different thread</strong>, and that immunity would therefore be lost if the lambda, evaluated by the second thread, were given the ability to mutate local variables.</p>
+<blockquote>
+<p>Lambdas: local variables need final, instance variables don&rsquo;t</p>
+</blockquote>
+<p>字段和本地变量的本质区别在于：<strong>当 JVM 创建 lambda 实例的时候，本地变量会被拷贝一份</strong>。</p>
+<p>You may be asking yourself why local variables have these restrictions. First, there’s a key difference in how instance and local variables are implemented behind the scenes. <strong>Instance variables are stored on the heap, whereas local variables live on the stack.</strong> If a lambda could access the local variable directly and the lambda were used in a thread, then the thread using the lambda could try to access the variable after the thread that allocated the variable had deallocated it. Hence, Java implements access to a free local variable as access to a copy of it rather than access to the original variable. This makes no difference if the local variable is assigned to only once—hence the restriction. Second, this restriction also discourages typical imperative programming patterns (which, as we explain in later chapters, prevent easy parallelization) that mutate an outer variable.</p>
+
 <ins class="adsbygoogle"
 style="display:block"
 data-ad-client="ca-pub-8950855178079071"
@@ -957,6 +1009,7 @@ data-full-width-responsive="true"></ins>
   <ul>
     <li><a href="#string-stream">String[] Stream</a></li>
     <li><a href="#integer-或-int-stream">Integer[] 或 int[] stream</a></li>
+    <li><a href="#lambda-引用外部变量">lambda 引用外部变量</a></li>
   </ul>
 </nav>
 

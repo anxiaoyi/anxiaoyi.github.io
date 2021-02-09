@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Spring 读取 Properties 实现原理"><meta property="og:title" content="Spring 读取 Properties 实现原理" />
+<meta property="og:description" content="Spring 读取 Properties 实现原理 public class SpringApplication { private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners listeners, DefaultBootstrapContext bootstrapContext, ApplicationArguments applicationArguments) { // Create and configure the environment 	ConfigurableEnvironment environment = getOrCreateEnvironment(); configureEnvironment(environment, applicationArguments.getSourceArgs()); ConfigurationPropertySources.attach(environment); listeners.environmentPrepared(bootstrapContext, environment); // ...  } protected void configureEnvironment(ConfigurableEnvironment environment, String[] args) { // ... 	configurePropertySources(environment, args); configureProfiles(environment, args); } private ConfigurableEnvironment getOrCreateEnvironment() { if (this.environment != null) { return this.environment; } switch (this.webApplicationType) { case SERVLET: return new StandardServletEnvironment(); case REACTIVE: return new StandardReactiveWebEnvironment(); default: return new StandardEnvironment(); } } } 上述代码可知，SpringApplication 在启动的时候先创建 Environment，然后再配置 Profiles，然后再添加 configurationProperties。一般情况下创建的都是 StandardServletEnvironment 环境。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/spring/spring-read-properties/" />
+
+<title>Spring 读取 Properties 实现原理 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/annotations/" >
+      Spring 常用注解
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/resttemplate/" >
+      RestTemplate
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/ots-parsing-error/" >
+      ots parsing error
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/deploy-to-tomcat/" >
+      SpringBoot 打包成 WAR 部署到 Tomcat
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/transactional/" >
+      Transactional
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-plugin/" >
+      Spring 插件扩展
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-read-properties/"  class="active">
+      Spring 读取 Properties 实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-ioc/" >
+      Spring IOC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-aop/" >
+      Spring AOP
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-webmvc/" >
+      Spring WebMVC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/springboot-autoconfig/" >
+      SpringBoot 自动配置原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/springboot-startup/" >
+      SpringBoot 启动过程
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Spring 读取 Properties 实现原理</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#读取-property-过程">读取 Property 过程</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="spring-读取-properties-实现原理">Spring 读取 Properties 实现原理</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SpringApplication</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> ConfigurableEnvironment <span style="color:#a6e22e">prepareEnvironment</span><span style="color:#f92672">(</span>SpringApplicationRunListeners listeners<span style="color:#f92672">,</span>
+			DefaultBootstrapContext bootstrapContext<span style="color:#f92672">,</span> ApplicationArguments applicationArguments<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+		<span style="color:#75715e">// Create and configure the environment
+</span><span style="color:#75715e"></span>		ConfigurableEnvironment environment <span style="color:#f92672">=</span> getOrCreateEnvironment<span style="color:#f92672">();</span>
+        configureEnvironment<span style="color:#f92672">(</span>environment<span style="color:#f92672">,</span> applicationArguments<span style="color:#f92672">.</span><span style="color:#a6e22e">getSourceArgs</span><span style="color:#f92672">());</span>
+        ConfigurationPropertySources<span style="color:#f92672">.</span><span style="color:#a6e22e">attach</span><span style="color:#f92672">(</span>environment<span style="color:#f92672">);</span>
+        listeners<span style="color:#f92672">.</span><span style="color:#a6e22e">environmentPrepared</span><span style="color:#f92672">(</span>bootstrapContext<span style="color:#f92672">,</span> environment<span style="color:#f92672">);</span>
+
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">configureEnvironment</span><span style="color:#f92672">(</span>ConfigurableEnvironment environment<span style="color:#f92672">,</span> String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>		configurePropertySources<span style="color:#f92672">(</span>environment<span style="color:#f92672">,</span> args<span style="color:#f92672">);</span>
+		configureProfiles<span style="color:#f92672">(</span>environment<span style="color:#f92672">,</span> args<span style="color:#f92672">);</span>
+	<span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">private</span> ConfigurableEnvironment <span style="color:#a6e22e">getOrCreateEnvironment</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+		<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">environment</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+			<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">environment</span><span style="color:#f92672">;</span>
+		<span style="color:#f92672">}</span>
+		<span style="color:#66d9ef">switch</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">webApplicationType</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+		<span style="color:#66d9ef">case</span> SERVLET<span style="color:#f92672">:</span>
+			<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> StandardServletEnvironment<span style="color:#f92672">();</span>
+		<span style="color:#66d9ef">case</span> REACTIVE<span style="color:#f92672">:</span>
+			<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> StandardReactiveWebEnvironment<span style="color:#f92672">();</span>
+		<span style="color:#66d9ef">default</span><span style="color:#f92672">:</span>
+			<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> StandardEnvironment<span style="color:#f92672">();</span>
+		<span style="color:#f92672">}</span>
+	<span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>上述代码可知，SpringApplication 在启动的时候先创建 <code>Environment</code>，然后再配置 <code>Profiles</code>，然后再添加 <code>configurationProperties</code>。一般情况下创建的都是 <code>StandardServletEnvironment</code> 环境。</p>
+<pre><code>| Create Environment &amp; Configure Profiles | --&gt; | Attach Configure Properties |
+</code></pre><p>(1) Create Environment &amp; Configure Profiles</p>
+<p><code>StandardServletEnvironment</code> 这个类位于 <code>Spring</code> 项目下，它默认在构造器内部就执行 <code>customizePropertySources</code> 方法读取相关的 <code>properties</code> 文件。</p>
+<p>它的定义及其相关父类的定义如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">StandardEnvironment</span> <span style="color:#66d9ef">extends</span> AbstractEnvironment <span style="color:#f92672">{</span>
+
+	<span style="color:#75715e">/** System environment property source name: {@value}. */</span>
+	<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> String SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;systemEnvironment&#34;</span><span style="color:#f92672">;</span>
+
+	<span style="color:#75715e">/** JVM system properties property source name: {@value}. */</span>
+	<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> String SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;systemProperties&#34;</span><span style="color:#f92672">;</span>
+
+    <span style="color:#a6e22e">@Override</span>
+	<span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">customizePropertySources</span><span style="color:#f92672">(</span>MutablePropertySources propertySources<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+		propertySources<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span>
+				<span style="color:#66d9ef">new</span> PropertiesPropertySource<span style="color:#f92672">(</span>SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME<span style="color:#f92672">,</span> getSystemProperties<span style="color:#f92672">()));</span>
+		propertySources<span style="color:#f92672">.</span><span style="color:#a6e22e">addLast</span><span style="color:#f92672">(</span>
+				<span style="color:#66d9ef">new</span> SystemEnvironmentPropertySource<span style="color:#f92672">(</span>SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME<span style="color:#f92672">,</span> getSystemEnvironment<span style="color:#f92672">()));</span>
+	<span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+
+<span style="color:#75715e">// 构造器内部就开始自定义 property sources
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AbstractEnvironment</span> <span style="color:#66d9ef">implements</span> ConfigurableEnvironment <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">AbstractEnvironment</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+		customizePropertySources<span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">propertySources</span><span style="color:#f92672">);</span>
+	<span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>可见如果 <code>ENV</code> 或者 <code>System.properties</code> 中有 <code>spring.profiles.active</code> 的话，那么 SpringApplication 在启动的时候，就会<strong>第一次</strong>读取到 <code>spring.profiles.active</code> 的值。然后在 <code>Spring-Boot-2.0.6</code> 版本中会通过 <code>environment.setActiveProfiles()</code> 方法告诉 <code>environment</code> 现在激活的 <code>profile</code>；但是在 <code>v2.5.0-M1</code> 版本中，并没有告诉现在激活的 <code>profile</code>。</p>
+<p>(2) Attach Configure Properties</p>
+<p>Attach <code>configurationProperties</code> 的过程如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConfigurationPropertySources</span> <span style="color:#f92672">{</span>
+
+	<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> String ATTACHED_PROPERTY_SOURCE_NAME <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;configurationProperties&#34;</span><span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">attach</span><span style="color:#f92672">(</span>Environment environment<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+		MutablePropertySources sources <span style="color:#f92672">=</span> <span style="color:#f92672">((</span>ConfigurableEnvironment<span style="color:#f92672">)</span> environment<span style="color:#f92672">).</span><span style="color:#a6e22e">getPropertySources</span><span style="color:#f92672">();</span>
+		PropertySource<span style="color:#f92672">&lt;?&gt;</span> attached <span style="color:#f92672">=</span> sources<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>ATTACHED_PROPERTY_SOURCE_NAME<span style="color:#f92672">);</span>
+        
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>
+		<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>attached <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+			sources<span style="color:#f92672">.</span><span style="color:#a6e22e">addFirst</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> ConfigurationPropertySourcesPropertySource<span style="color:#f92672">(</span>ATTACHED_PROPERTY_SOURCE_NAME<span style="color:#f92672">,</span>
+					<span style="color:#66d9ef">new</span> SpringConfigurationPropertySources<span style="color:#f92672">(</span>sources<span style="color:#f92672">)));</span>
+		<span style="color:#f92672">}</span>
+	<span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>这个 <code>configurationProperties</code> 的数据源就是本地 <code>application.properties</code>、<code>application.yml</code> 类似于这些的文件源。</p>
+<h2 id="读取-property-过程">读取 Property 过程</h2>
+<p><code>getProperty</code> 背后是通过 <code>propertyResolver</code> 实现的：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AbstractEnvironment</span> <span style="color:#66d9ef">implements</span> ConfigurableEnvironment <span style="color:#f92672">{</span>
+
+	<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> MutablePropertySources propertySources <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> MutablePropertySources<span style="color:#f92672">();</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> ConfigurablePropertyResolver propertyResolver <span style="color:#f92672">=</span>
+			<span style="color:#66d9ef">new</span> PropertySourcesPropertyResolver<span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">propertySources</span><span style="color:#f92672">);</span>
+
+    <span style="color:#a6e22e">@Override</span>
+	<span style="color:#a6e22e">@Nullable</span>
+	<span style="color:#66d9ef">public</span> String <span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>String key<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">propertyResolver</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>key<span style="color:#f92672">);</span>
+	<span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>找到就直接返回：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PropertySourcesPropertyResolver</span> <span style="color:#66d9ef">extends</span> AbstractPropertyResolver <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Nullable</span>
+	<span style="color:#66d9ef">protected</span> <span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> T <span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>String key<span style="color:#f92672">,</span> Class<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> targetValueType<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> resolveNestedPlaceholders<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+		<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">propertySources</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+			<span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>PropertySource<span style="color:#f92672">&lt;?&gt;</span> propertySource <span style="color:#f92672">:</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">propertySources</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+				Object value <span style="color:#f92672">=</span> propertySource<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>key<span style="color:#f92672">);</span>
+				<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>value <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>					<span style="color:#66d9ef">return</span> convertValueIfNecessary<span style="color:#f92672">(</span>value<span style="color:#f92672">,</span> targetValueType<span style="color:#f92672">);</span>
+				<span style="color:#f92672">}</span>
+			<span style="color:#f92672">}</span>
+		<span style="color:#f92672">}</span>
+
+		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+	<span style="color:#f92672">}</span>
+
+
+<span style="color:#f92672">}</span>
+</code></pre></div>
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#读取-property-过程">读取 Property 过程</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

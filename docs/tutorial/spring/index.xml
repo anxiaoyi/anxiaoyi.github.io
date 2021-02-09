@@ -55,5 +55,81 @@
 public @interface Transactional { // REQUIRED: 0,  // SUPPORTS: 1,  // MANDATORY: 2,  // REQUIRES_NEW: 3,  // NOT_SUPPORTED: 4,  // NEVER: 5,  // NESTED: 6  Propagation propagation() default Propagation.REQUIRED; // DEFAULT: -1  // READ_UNCOMMITTED: 1,  // READ_COMMITTED: 2,  // REPEATABLE_READ: 4,  // SERIALIZABLE: 8  Isolation isolation() default Isolation.DEFAULT; @AliasFor(&amp;#34;value&amp;#34;) String transactionManager() default &amp;#34;&amp;#34;; // 从这一点设置的时间点开始（时间点a）到这个事务结束的过程中，其他事务所提交的数据，该事务将看不见！（查询中不会出现别人在时间点a之后提交的数据）  // 注意是一次执行多次查询来统计某些信息，这时为了保证数据整体的一致性，要用只读事务  boolean readOnly() default false; // 超时，事务是否发生回滚  int timeout default -1; } 事务传播属性 Propagation  REQUIRED: 有事务，加入事务，放到一个事务中执行，有异常一起回滚；没有就新创建一个事务。 REQUIRES_NEW: 无论有没有事务，都会新启一个事务，如果原来有，老的挂起，有异常互不干扰。 SUPPORTS: 有事务，加入事务，放到一个事务中执行，有异常一起回滚；否则不创建事务。 MANDATORY: 必须在一个已有事务中执行，否则抛出异常。 NEVER: 必须在一个没有事务中执行，否则抛出异常。 NOT_SUPPORTED: 不开启事务，并挂起任何存在的事务。 NESTED: 如果有事务运行，就作为这个事务的嵌套事务运行；如果没有活动事务，则按REQUIRED属性执行。  @Transactional 使用注意事项  @Transactional 只能应用到 public 方法才有效 @Transactional 不建议用在处理时间过长的事务 一个有 @Transactional 的方法被没有 @Transactional 方法调用时，会导致 Transactional 作用失效。 默认配置下，Spring 只有在抛出的异常为运行时 unchecked 异常时才回滚该事务，也就是抛出的异常为 RuntimeException 的子类(Errors也会导致事务回滚)，而抛出 checked 异常则不会导致事务回滚 。可通过 @Transactional rollbackFor 进行配置。  手动设置事务回滚 // 事务管理器 @Autowired private DataSourceTransactionManager transactionManager; @Transactional public void save(User user) { // 创建一个事务  DefaultTransactionDefinition def = new DefaultTransactionDefinition(); // 显式设置事务名称是只能通过编程完成的操作  def.</description>
     </item>
     
+    <item>
+      <title>Spring 插件扩展</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/spring-plugin/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/spring-plugin/</guid>
+      <description>Spring 插件扩展 本文汇总一些常见的扩展 Spring 的库的场景和扩展方法。
+自定义加载 Properties 文件 Apollo 是携程框架部门研发的分布式配置中心，它的 Java 客户端可以在 Spring 启动的时候将这些配置加载到本地，与 Spring 无缝整合，它的 Java 客户端使用文档请参考 Java 客户端使用指南。无论是支持注解方式 @Value(&amp;quot;${someKeyFromApollo:someDefaultValue}&amp;quot;) 引用，还是在文件中引用 Apollo 服务器上的配置 spring.datasource.url: ${someKeyFromApollo:someDefaultValue} 都是没有问题的。
+它的实现原理如下：
+public class ApolloApplicationContextInitializer implements ApplicationContextInitializer&amp;lt;ConfigurableApplicationContext&amp;gt; , EnvironmentPostProcessor, Ordered { @Override public void initialize(ConfigurableApplicationContext context) { ConfigurableEnvironment environment = context.getEnvironment(); if (!environment.getProperty(PropertySourcesConstants.APOLLO_BOOTSTRAP_ENABLED, Boolean.class, false)) { logger.debug(&amp;#34;Apollo bootstrap config is not enabled for context {}, see property: ${{}}&amp;#34;, context, PropertySourcesConstants.APOLLO_BOOTSTRAP_ENABLED); return; } logger.debug(&amp;#34;Apollo bootstrap config is enabled for context {}&amp;#34;, context); initialize(environment); } /** * Initialize Apollo Configurations Just after environment is ready.</description>
+    </item>
+    
+    <item>
+      <title>Spring 读取 Properties 实现原理</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/spring-read-properties/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/spring-read-properties/</guid>
+      <description>Spring 读取 Properties 实现原理 public class SpringApplication { private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners listeners, DefaultBootstrapContext bootstrapContext, ApplicationArguments applicationArguments) { // Create and configure the environment 	ConfigurableEnvironment environment = getOrCreateEnvironment(); configureEnvironment(environment, applicationArguments.getSourceArgs()); ConfigurationPropertySources.attach(environment); listeners.environmentPrepared(bootstrapContext, environment); // ...  } protected void configureEnvironment(ConfigurableEnvironment environment, String[] args) { // ... 	configurePropertySources(environment, args); configureProfiles(environment, args); } private ConfigurableEnvironment getOrCreateEnvironment() { if (this.environment != null) { return this.environment; } switch (this.webApplicationType) { case SERVLET: return new StandardServletEnvironment(); case REACTIVE: return new StandardReactiveWebEnvironment(); default: return new StandardEnvironment(); } } } 上述代码可知，SpringApplication 在启动的时候先创建 Environment，然后再配置 Profiles，然后再添加 configurationProperties。一般情况下创建的都是 StandardServletEnvironment 环境。</description>
+    </item>
+    
+    <item>
+      <title>Spring IOC</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/spring-ioc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/spring-ioc/</guid>
+      <description>Spring IOC Bean 加载过程 转化 BeanName 我们解析完 XML 配置后创建的 Map，使用的是 beanName 作为 key：
+public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory implements ConfigurableListableBeanFactory, BeanDefinitionRegistry, Serializable { // key: bean name  private final Map&amp;lt;String, BeanDefinition&amp;gt; beanDefinitionMap = new ConcurrentHashMap&amp;lt;&amp;gt;(256); } 在获取 Bean 的时候，alias bean name、factory bean name 都要转化为 bean name：
+public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport implements ConfigurableBeanFactory { protected &amp;lt;T&amp;gt; T doGetBean(final String name, @Nullable final Class&amp;lt;T&amp;gt; requiredType, @Nullable final Object[] args, boolean typeCheckOnly) throws BeansException { final String beanName = transformedBeanName(name); } protected String transformedBeanName(String name) { return canonicalName(BeanFactoryUtils.</description>
+    </item>
+    
+    <item>
+      <title>Spring AOP</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/spring-aop/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/spring-aop/</guid>
+      <description>Spring AOP EnableAspectJAutoProxy 使用 @EnableAspectJAutoProxy 来开启 AOP。
+收集切面 首先需要 Spring 能先从所有 Bean 中识别出我们的切面类，AnnotationAwareAspectJAutoProxyCreator 类重写的postProcessBeforeInstantiation 方法就是专门处理这个问题的，此操作的要求是必须在其它普通 Bean 对象创建完放入容器前解析。
+参考  源码分析-Spring AOP是如何实现的？（二）  </description>
+    </item>
+    
+    <item>
+      <title>Spring WebMVC</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/spring-webmvc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/spring-webmvc/</guid>
+      <description>Spring WebMVC  Spring 接受前端请求的处理过程，根据 SpringBoot 2.4.2 版本。
+ doService 放入各种属性到 request 对象上，然后交给 doDispatch 进行代理转发：
+public class DispatcherServlet extends FrameworkServlet { protected void doService(HttpServletRequest request, HttpServletResponse response) throws Exception { // ...  request.setAttribute(WEB_APPLICATION_CONTEXT_ATTRIBUTE, getWebApplicationContext()); request.setAttribute(LOCALE_RESOLVER_ATTRIBUTE, this.localeResolver); request.setAttribute(THEME_RESOLVER_ATTRIBUTE, this.themeResolver); // ...  doDispatch(request, response); } } doDispatcher public class DispatcherServlet extends FrameworkServlet { protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception { // 用哪个 Handler 链处理请求  mappedHandler = getHandler(processedRequest); // 用哪个 Handler adapter 处理请求  HandlerAdapter ha = getHandlerAdapter(mappedHandler.</description>
+    </item>
+    
+    <item>
+      <title>SpringBoot 自动配置原理</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/springboot-autoconfig/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/springboot-autoconfig/</guid>
+      <description>SpringBoot 自动配置原理  application.properties 配置是如何在 Spring Boot 项目中生效的呢？
+ Spring Boot 关于自动配置的源码在spring-boot-autoconfigure-x.x.x.x.jar中。@SpringBootApplication 引用了 @EnableAutoConfiguration：
+@Target({ElementType.TYPE}) @Retention(RetentionPolicy.RUNTIME) @Documented @Inherited @SpringBootConfiguration @EnableAutoConfiguration @ComponentScan( excludeFilters = {@Filter( type = FilterType.CUSTOM, classes = {TypeExcludeFilter.class} ), @Filter( type = FilterType.CUSTOM, classes = {AutoConfigurationExcludeFilter.class} )} ) public @interface SpringBootApplication { } @EnableAutoConfiguration 引入了 AutoConfigurationImportSelector.class：
+@Target({ElementType.TYPE}) @Retention(RetentionPolicy.RUNTIME) @Documented @Inherited @AutoConfigurationPackage @Import({AutoConfigurationImportSelector.class}) public @interface EnableAutoConfiguration { } 参考  Spring Boot面试杀手锏-自动配置原理  </description>
+    </item>
+    
+    <item>
+      <title>SpringBoot 启动过程</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/springboot-startup/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/springboot-startup/</guid>
+      <description>SpringBoot 启动过程  基于 Spring 的事件发布和监听机制开始说起。
+ </description>
+    </item>
+    
   </channel>
 </rss>

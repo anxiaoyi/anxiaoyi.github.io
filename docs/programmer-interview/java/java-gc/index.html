@@ -28,7 +28,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -240,48 +240,8 @@ var _hmt = _hmt || [];
       
         <li>
 
-  <a href="/docs/programmer-interview/java/arraylist/" >
-      ArrayList
-  </a>
-
-</li>
-      
-    
-      
-        <li>
-
-  <a href="/docs/programmer-interview/java/hashmap/" >
-      HashMap
-  </a>
-
-</li>
-      
-    
-      
-        <li>
-
-  <a href="/docs/programmer-interview/java/treemap/" >
-      TreeMap
-  </a>
-
-</li>
-      
-    
-      
-        <li>
-
   <a href="/docs/programmer-interview/java/finally/" >
       基础 - finally
-  </a>
-
-</li>
-      
-    
-      
-        <li>
-
-  <a href="/docs/programmer-interview/java/char/" >
-      char
   </a>
 
 </li>
@@ -741,11 +701,17 @@ var _hmt = _hmt || [];
         <li><a href="#cms">CMS</a></li>
         <li><a href="#g1">G1</a></li>
         <li><a href="#zgc">ZGC</a></li>
+        <li><a href="#默认垃圾收集器">默认垃圾收集器</a></li>
+        <li><a href="#垃圾回收器怎么选择">垃圾回收器怎么选择</a></li>
       </ul>
     </li>
     <li><a href="#fullgc">FullGC</a>
       <ul>
         <li><a href="#systemgc">System.gc()</a></li>
+        <li><a href="#老年代空间不足">老年代空间不足</a></li>
+        <li><a href="#永生区空间不足">永生区空间不足</a></li>
+        <li><a href="#cms-晋升失败">CMS 晋升失败</a></li>
+        <li><a href="#堆中分配很大的对象">堆中分配很大的对象</a></li>
       </ul>
     </li>
     <li><a href="#对象何时进入老年代">对象何时进入老年代</a>
@@ -761,6 +727,7 @@ var _hmt = _hmt || [];
         <li><a href="#选择合适的-gc-回收器">选择合适的 GC 回收器</a></li>
       </ul>
     </li>
+    <li><a href="#gc-日志分析工具">GC 日志分析工具</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -885,10 +852,36 @@ data-full-width-responsive="true"></ins>
 <p>G1 引入的目的是为了<strong>缩短处理超大堆的停顿时间</strong>。</p>
 </blockquote>
 <h3 id="zgc">ZGC</h3>
+<h3 id="默认垃圾收集器">默认垃圾收集器</h3>
+<p>参考 <a href="http://download.oracle.com/javase/6/docs/technotes/guides/vm/gc-ergonomics.html">1</a> 说: 对于 server-class 机器，默认 GC 从 serial 改为了 parallel 收集器。</p>
+<p>参考 <a href="http://download.oracle.com/javase/6/docs/technotes/guides/vm/server-class.html">2</a> says: 从 Java 5.0 开始就会检测运行在 server-vm 还是 client-vm。对于 Java SE 6, 拥有 2 个 CPU、2GB 物理内存的机器属于 server-class 的机器。</p>
+<p>Java 7 和 Java 8 使用的都是 <strong>Parallel GC</strong>，Java 9 使用的是 <strong>G1</strong> 垃圾收集器。</p>
+<h3 id="垃圾回收器怎么选择">垃圾回收器怎么选择</h3>
+<ul>
+<li>最小化地使用内存和并行开销，请选择 <code>Serial GC</code></li>
+<li>最大化应用程序的<strong>吞吐量</strong>，请选择<code>Parallel GC</code></li>
+<li>最小化 <code>GC</code> 的中断或者停顿时间，请选择 <code>CMS GC</code></li>
+</ul>
+<blockquote>
+<p>并发和并行都可以表示两个或者多个任务一起执行，但是偏重点不同。并发偏重于<strong>多个任务交替执行</strong>，而多个任务之间有可能还是串行的。而并行是真正意义上的“同时执行”。</p>
+</blockquote>
 <h2 id="fullgc">FullGC</h2>
-<p>什么情况下会触发 FullGC ?</p>
+<p>什么情况下会触发 FullGC ? <a href="https://www.cnblogs.com/jichi/p/12588087.html">参考</a></p>
 <h3 id="systemgc">System.gc()</h3>
 <p>默认情况下(即未开启 <code>-XX:+DisableExplictGC</code> 参数的情况下)，调用 <code>System.gc()</code> 会显示触发 FullGC，同时对新生代和老年代进行回收。</p>
+<h3 id="老年代空间不足">老年代空间不足</h3>
+<p>当老年代空间<strong>新生代对象转入</strong>、<strong>创建大对象</strong>、<strong>大数组</strong>时，空间不足，会触发 FullGC，如果触发完依然不足，则抛出如下错误：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">java<span style="color:#f92672">.</span><span style="color:#a6e22e">lang</span><span style="color:#f92672">.</span><span style="color:#a6e22e">OutOfMemoryError</span><span style="color:#f92672">:</span> Java heap space
+</code></pre></div><h3 id="永生区空间不足">永生区空间不足</h3>
+<p>Permanet Generation 中存放的为一些 class 的信息、常量、静态变量等数据，当系统中要加载的类、反射的类和调用的方法较多时，Permanet Generation可能会被占满，在未配置为采用 CMS GC 的情况下也会执行 Full GC。</p>
+<h3 id="cms-晋升失败">CMS 晋升失败</h3>
+<blockquote>
+<p>CMS GC时出现 promotion failed 和 concurrent mode failure</p>
+</blockquote>
+<p>promotion failed是在进行Minor GC时，survivor space放不下、对象只能放入老年代，而此时老年代也放不下造成的；concurrent mode failure是在</p>
+<p>执行CMS GC的过程中同时有对象要放入老年代，而此时老年代空间不足造成的（有时候“空间不足”是CMS GC时当前的浮动垃圾过多导致暂时性的空间不足触发Full GC）</p>
+<h3 id="堆中分配很大的对象">堆中分配很大的对象</h3>
+<p>所谓大对象，是指需要大量连续内存空间的java对象，例如很长的数组，此种对象会直接进入老年代，而老年代虽然有很大的剩余空间，但是无法找到足够大的连续空间来分配给当前对象，此种情况就会触发JVM进行Full GC。</p>
 <h2 id="对象何时进入老年代">对象何时进入老年代</h2>
 <h3 id="老年对象达到年龄">老年对象达到年龄</h3>
 <p>新生代的对象，每经历一次 GC，年龄加 1，当年龄的最大值<strong>最多</strong>达到 <code>MaxTenuringThreshold</code> (默认值 15) 的情况下，就可以晋升到老年代。</p>
@@ -922,6 +915,10 @@ data-full-width-responsive="true"></ins>
 <h3 id="选择合适的-gc-回收器">选择合适的 GC 回收器</h3>
 <p>假设我们有这样一个需求，要求每次操作的<strong>响应时间</strong>必须在 500ms 以内。这个时候我们一般会选择响应速度较快的 GC 回收器，CMS（Concurrent Mark Sweep）回收器和 G1 回收器都是不错的选择。</p>
 <p>而当我们的需求对<strong>系统吞吐量</strong>有要求时，就可以选择 Parallel Scavenge 回收器来提高系统的吞吐量。</p>
+<h2 id="gc-日志分析工具">GC 日志分析工具</h2>
+<ul>
+<li><a href="http://gceasy.io/">GCeasy</a></li>
+</ul>
 <h2 id="参考">参考</h2>
 <ul>
 <li>《深入理解 Java 虚拟机》</li>
@@ -988,11 +985,17 @@ data-full-width-responsive="true"></ins>
         <li><a href="#cms">CMS</a></li>
         <li><a href="#g1">G1</a></li>
         <li><a href="#zgc">ZGC</a></li>
+        <li><a href="#默认垃圾收集器">默认垃圾收集器</a></li>
+        <li><a href="#垃圾回收器怎么选择">垃圾回收器怎么选择</a></li>
       </ul>
     </li>
     <li><a href="#fullgc">FullGC</a>
       <ul>
         <li><a href="#systemgc">System.gc()</a></li>
+        <li><a href="#老年代空间不足">老年代空间不足</a></li>
+        <li><a href="#永生区空间不足">永生区空间不足</a></li>
+        <li><a href="#cms-晋升失败">CMS 晋升失败</a></li>
+        <li><a href="#堆中分配很大的对象">堆中分配很大的对象</a></li>
       </ul>
     </li>
     <li><a href="#对象何时进入老年代">对象何时进入老年代</a>
@@ -1008,6 +1011,7 @@ data-full-width-responsive="true"></ins>
         <li><a href="#选择合适的-gc-回收器">选择合适的 GC 回收器</a></li>
       </ul>
     </li>
+    <li><a href="#gc-日志分析工具">GC 日志分析工具</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>

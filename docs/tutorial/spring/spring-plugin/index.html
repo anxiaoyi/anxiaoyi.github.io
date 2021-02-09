@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Spring 插件扩展"><meta property="og:title" content="Spring 插件扩展" />
+<meta property="og:description" content="Spring 插件扩展 本文汇总一些常见的扩展 Spring 的库的场景和扩展方法。
+自定义加载 Properties 文件 Apollo 是携程框架部门研发的分布式配置中心，它的 Java 客户端可以在 Spring 启动的时候将这些配置加载到本地，与 Spring 无缝整合，它的 Java 客户端使用文档请参考 Java 客户端使用指南。无论是支持注解方式 @Value(&quot;${someKeyFromApollo:someDefaultValue}&quot;) 引用，还是在文件中引用 Apollo 服务器上的配置 spring.datasource.url: ${someKeyFromApollo:someDefaultValue} 都是没有问题的。
+它的实现原理如下：
+public class ApolloApplicationContextInitializer implements ApplicationContextInitializer&lt;ConfigurableApplicationContext&gt; , EnvironmentPostProcessor, Ordered { @Override public void initialize(ConfigurableApplicationContext context) { ConfigurableEnvironment environment = context.getEnvironment(); if (!environment.getProperty(PropertySourcesConstants.APOLLO_BOOTSTRAP_ENABLED, Boolean.class, false)) { logger.debug(&#34;Apollo bootstrap config is not enabled for context {}, see property: ${{}}&#34;, context, PropertySourcesConstants.APOLLO_BOOTSTRAP_ENABLED); return; } logger.debug(&#34;Apollo bootstrap config is enabled for context {}&#34;, context); initialize(environment); } /** * Initialize Apollo Configurations Just after environment is ready." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/spring/spring-plugin/" />
+
+<title>Spring 插件扩展 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/annotations/" >
+      Spring 常用注解
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/resttemplate/" >
+      RestTemplate
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/ots-parsing-error/" >
+      ots parsing error
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/deploy-to-tomcat/" >
+      SpringBoot 打包成 WAR 部署到 Tomcat
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/transactional/" >
+      Transactional
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-plugin/"  class="active">
+      Spring 插件扩展
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-read-properties/" >
+      Spring 读取 Properties 实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-ioc/" >
+      Spring IOC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-aop/" >
+      Spring AOP
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-webmvc/" >
+      Spring WebMVC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/springboot-autoconfig/" >
+      SpringBoot 自动配置原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/springboot-startup/" >
+      SpringBoot 启动过程
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Spring 插件扩展</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#自定义加载-properties-文件">自定义加载 Properties 文件</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="spring-插件扩展">Spring 插件扩展</h1>
+<p>本文汇总一些常见的扩展 Spring 的库的<strong>场景和扩展方法</strong>。</p>
+<h2 id="自定义加载-properties-文件">自定义加载 Properties 文件</h2>
+<p><a href="https://github.com/ctripcorp/apollo">Apollo</a> 是携程框架部门研发的分布式配置中心，它的 Java 客户端可以在 Spring 启动的时候将这些<strong>配置</strong>加载到本地，与 Spring 无缝整合，它的 Java 客户端使用文档请参考 <a href="https://ctripcorp.github.io/apollo/#/zh/usage/java-sdk-user-guide">Java 客户端使用指南</a>。无论是支持注解方式 <code>@Value(&quot;${someKeyFromApollo:someDefaultValue}&quot;)</code> 引用，还是在文件中引用 Apollo 服务器上的配置 <code>spring.datasource.url: ${someKeyFromApollo:someDefaultValue}</code> 都是没有问题的。</p>
+<p>它的实现原理如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ApolloApplicationContextInitializer</span> <span style="color:#66d9ef">implements</span>
+    ApplicationContextInitializer<span style="color:#f92672">&lt;</span>ConfigurableApplicationContext<span style="color:#f92672">&gt;</span> <span style="color:#f92672">,</span> EnvironmentPostProcessor<span style="color:#f92672">,</span> Ordered <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">initialize</span><span style="color:#f92672">(</span>ConfigurableApplicationContext context<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        ConfigurableEnvironment environment <span style="color:#f92672">=</span> context<span style="color:#f92672">.</span><span style="color:#a6e22e">getEnvironment</span><span style="color:#f92672">();</span>
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>environment<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>PropertySourcesConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">APOLLO_BOOTSTRAP_ENABLED</span><span style="color:#f92672">,</span> Boolean<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            logger<span style="color:#f92672">.</span><span style="color:#a6e22e">debug</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Apollo bootstrap config is not enabled for context {}, see property: ${{}}&#34;</span><span style="color:#f92672">,</span> context<span style="color:#f92672">,</span> PropertySourcesConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">APOLLO_BOOTSTRAP_ENABLED</span><span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+        logger<span style="color:#f92672">.</span><span style="color:#a6e22e">debug</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Apollo bootstrap config is enabled for context {}&#34;</span><span style="color:#f92672">,</span> context<span style="color:#f92672">);</span>
+
+        initialize<span style="color:#f92672">(</span>environment<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#75715e">/**
+</span><span style="color:#75715e">    * Initialize Apollo Configurations Just after environment is ready.
+</span><span style="color:#75715e">    *
+</span><span style="color:#75715e">    * @param environment
+</span><span style="color:#75715e">    */</span>
+    <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">initialize</span><span style="color:#f92672">(</span>ConfigurableEnvironment environment<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>environment<span style="color:#f92672">.</span><span style="color:#a6e22e">getPropertySources</span><span style="color:#f92672">().</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span>PropertySourcesConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">APOLLO_BOOTSTRAP_PROPERTY_SOURCE_NAME</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">//already initialized
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        String namespaces <span style="color:#f92672">=</span> environment<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>PropertySourcesConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">APOLLO_BOOTSTRAP_NAMESPACES</span><span style="color:#f92672">,</span> ConfigConsts<span style="color:#f92672">.</span><span style="color:#a6e22e">NAMESPACE_APPLICATION</span><span style="color:#f92672">);</span>
+        logger<span style="color:#f92672">.</span><span style="color:#a6e22e">debug</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Apollo bootstrap namespaces: {}&#34;</span><span style="color:#f92672">,</span> namespaces<span style="color:#f92672">);</span>
+        List<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;</span> namespaceList <span style="color:#f92672">=</span> NAMESPACE_SPLITTER<span style="color:#f92672">.</span><span style="color:#a6e22e">splitToList</span><span style="color:#f92672">(</span>namespaces<span style="color:#f92672">);</span>
+
+        CompositePropertySource composite <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> CompositePropertySource<span style="color:#f92672">(</span>PropertySourcesConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">APOLLO_BOOTSTRAP_PROPERTY_SOURCE_NAME</span><span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>String namespace <span style="color:#f92672">:</span> namespaceList<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            Config config <span style="color:#f92672">=</span> ConfigService<span style="color:#f92672">.</span><span style="color:#a6e22e">getConfig</span><span style="color:#f92672">(</span>namespace<span style="color:#f92672">);</span>
+
+            composite<span style="color:#f92672">.</span><span style="color:#a6e22e">addPropertySource</span><span style="color:#f92672">(</span>configPropertySourceFactory<span style="color:#f92672">.</span><span style="color:#a6e22e">getConfigPropertySource</span><span style="color:#f92672">(</span>namespace<span style="color:#f92672">,</span> config<span style="color:#f92672">));</span>
+        <span style="color:#f92672">}</span>
+
+        environment<span style="color:#f92672">.</span><span style="color:#a6e22e">getPropertySources</span><span style="color:#f92672">().</span><span style="color:#a6e22e">addFirst</span><span style="color:#f92672">(</span>composite<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#75715e">/**
+</span><span style="color:#75715e">    * To fill system properties from environment config
+</span><span style="color:#75715e">    */</span>
+    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">initializeSystemProperty</span><span style="color:#f92672">(</span>ConfigurableEnvironment environment<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>String propertyName <span style="color:#f92672">:</span> APOLLO_SYSTEM_PROPERTIES<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            fillSystemPropertyFromEnvironment<span style="color:#f92672">(</span>environment<span style="color:#f92672">,</span> propertyName<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">fillSystemPropertyFromEnvironment</span><span style="color:#f92672">(</span>ConfigurableEnvironment environment<span style="color:#f92672">,</span> String propertyName<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>System<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>propertyName<span style="color:#f92672">)</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        String propertyValue <span style="color:#f92672">=</span> environment<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>propertyName<span style="color:#f92672">);</span>
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>Strings<span style="color:#f92672">.</span><span style="color:#a6e22e">isNullOrEmpty</span><span style="color:#f92672">(</span>propertyValue<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        System<span style="color:#f92672">.</span><span style="color:#a6e22e">setProperty</span><span style="color:#f92672">(</span>propertyName<span style="color:#f92672">,</span> propertyValue<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#75715e">/**
+</span><span style="color:#75715e">    *
+</span><span style="color:#75715e">    * In order to load Apollo configurations as early as even before Spring loading logging system phase,
+</span><span style="color:#75715e">    * this EnvironmentPostProcessor can be called Just After ConfigFileApplicationListener has succeeded.
+</span><span style="color:#75715e">    *
+</span><span style="color:#75715e">    * &lt;br /&gt;
+</span><span style="color:#75715e">    * The processing sequence would be like this: &lt;br /&gt;
+</span><span style="color:#75715e">    * Load Bootstrap properties and application properties -----&gt; load Apollo configuration properties ----&gt; Initialize Logging systems
+</span><span style="color:#75715e">    *
+</span><span style="color:#75715e">    * @param configurableEnvironment
+</span><span style="color:#75715e">    * @param springApplication
+</span><span style="color:#75715e">    */</span>
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">postProcessEnvironment</span><span style="color:#f92672">(</span>ConfigurableEnvironment configurableEnvironment<span style="color:#f92672">,</span> SpringApplication springApplication<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+        <span style="color:#75715e">// should always initialize system properties like app.id in the first place
+</span><span style="color:#75715e"></span>        initializeSystemProperty<span style="color:#f92672">(</span>configurableEnvironment<span style="color:#f92672">);</span>
+
+        Boolean eagerLoadEnabled <span style="color:#f92672">=</span> configurableEnvironment<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>PropertySourcesConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">APOLLO_BOOTSTRAP_EAGER_LOAD_ENABLED</span><span style="color:#f92672">,</span> Boolean<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">);</span>
+
+        <span style="color:#75715e">//EnvironmentPostProcessor should not be triggered if you don&#39;t want Apollo Loading before Logging System Initialization
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>eagerLoadEnabled<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        Boolean bootstrapEnabled <span style="color:#f92672">=</span> configurableEnvironment<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>PropertySourcesConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">APOLLO_BOOTSTRAP_ENABLED</span><span style="color:#f92672">,</span> Boolean<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">);</span>
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>bootstrapEnabled<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            initialize<span style="color:#f92672">(</span>configurableEnvironment<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>从上述代码可以看出，最主要的是在 <code>initialize</code> 和 <code>postProcessEnvironment</code> 方法中，将从服务器获取好的 <code>Config</code> ，添加到 <code>environment.getPropertySources()</code> 中，并且添加的时候是用的 <code>addFirst()</code> 方法添加到了<strong>首位</strong>。</p>
+<p>而 SpringBoot 框架的 <code>SpringApplication</code> 在启动的时候，会扫描所有 JAR 包中的每一个 <code>/META-INF/spring.factories</code> 文件，下面是 <code>apollo-client</code> 的该文件内容：</p>
+<pre><code class="language-properties" data-lang="properties">org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.ctrip.framework.apollo.spring.boot.ApolloAutoConfiguration
+org.springframework.context.ApplicationContextInitializer=\
+com.ctrip.framework.apollo.spring.boot.ApolloApplicationContextInitializer
+org.springframework.boot.env.EnvironmentPostProcessor=\
+com.ctrip.framework.apollo.spring.boot.ApolloApplicationContextInitializer
+</code></pre><p><code>SpringApplication</code> 在<strong>构造器内部</strong>，会自动加载所有声明在 <code>/META-INF/spring.factories</code> 文件中且实现了 <code>org.springframework.context.ApplicationContextInitializer</code> 接口的类，然后根据 <code>Ordered</code> 接口的 <code>getOrder()</code> 方法将这些类进行排序，并在 <code>applyInitializers</code> 方法中，依次调用 <code>initialize(context)</code> 方法。</p>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#自定义加载-properties-文件">自定义加载 Properties 文件</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

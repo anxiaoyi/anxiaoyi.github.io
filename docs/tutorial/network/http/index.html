@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -965,6 +965,8 @@ var _hmt = _hmt || [];
         <li><a href="#http-11">HTTP 1.1</a></li>
       </ul>
     </li>
+    <li><a href="#设计-http-长连接">设计 HTTP 长连接</a></li>
+    <li><a href="#设计-http-幂等接口">设计 HTTP 幂等接口</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -1418,7 +1420,22 @@ Upgrade: h2c
 </code></pre><h3 id="http-11">HTTP 1.1</h3>
 <p>所有连接<strong>默认</strong>都是持久连接。除非在请求头部显式加上 <code>Connection:Close</code> 属性，服务器才会处理完请求主动关闭连接。<code>Content-Length</code> 对于服务器计算比较困难、耗时，因此引入 <code>Transfer-Encoding: chunked</code> 属性，告诉客户端，响应的 Body 分成了一块块的，块与块之间有间隔符，所有块结尾有特殊标记，<strong>方便客户端判断出响应的末尾</strong>。</p>
 <p><img src="/images/docs/tutorial/network/http/Snipaste_2020-12-27_21-56-07.png" alt=""></p>
-<h2 id="参考">参考</h2>
+<h2 id="设计-http-长连接">设计 HTTP 长连接</h2>
+<p>携程的 DCC 客户端设计了一个 <a href="https://github.com/ctripcorp/apollo/blob/849ad711058b0a553e6192bae31e3fb0fb8daec8/apollo-client/src/main/java/com/ctrip/framework/apollo/internals/RemoteConfigLongPollService.java"><code>LongPollService</code></a>。</p>
+<p>看源码其实就是有一个<strong>线程池</strong>，<strong>定时</strong>去请求远程的服务：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">//90 seconds, should be longer than server side&#39;s long polling timeout, which is now 60 seconds
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> LONG_POLLING_READ_TIMEOUT <span style="color:#f92672">=</span> 90 <span style="color:#f92672">*</span> 1000<span style="color:#f92672">;</span>
+
+HttpRequest request <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HttpRequest<span style="color:#f92672">(</span>url<span style="color:#f92672">);</span>
+request<span style="color:#f92672">.</span><span style="color:#a6e22e">setReadTimeout</span><span style="color:#f92672">(</span>LONG_POLLING_READ_TIMEOUT<span style="color:#f92672">);</span>
+</code></pre></div><h2 id="设计-http-幂等接口">设计 HTTP 幂等接口</h2>
+<p>生成唯一的处理号，用于标识后续操作。</p>
+<p>取钱的 API 设计：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">bool</span> withdraw(account_id, amount)
+</code></pre></div><p>如果取钱的 API 设计需要考虑幂等性：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">int</span> create_ticket() 
+<span style="color:#66d9ef">bool</span> idempotent_withdraw(ticket_id, account_id, amount)
+</code></pre></div><h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://en.wikipedia.org/wiki/List_of_HTTP_status_codes">List of HTTP status codes</a></li>
 <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers">Headers</a></li>
@@ -1482,6 +1499,8 @@ data-full-width-responsive="true"></ins>
         <li><a href="#http-11">HTTP 1.1</a></li>
       </ul>
     </li>
+    <li><a href="#设计-http-长连接">设计 HTTP 长连接</a></li>
+    <li><a href="#设计-http-幂等接口">设计 HTTP 幂等接口</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>

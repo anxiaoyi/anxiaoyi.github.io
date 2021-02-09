@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="限流实现原理"><meta property="og:title" content="限流实现原理" />
+<meta property="og:description" content="限流实现原理 本文以最常见的限流场景来讲述 Sentinel 基础的工作原理。
+限流架构图 限流原理的总的架构图如下：
+FlowSlot 从 FlowRuleManager 中根据用当前资源名称作为 Key，然后读取出来这个资源绑定的 FlowRule 规则。然后将这些规则作为方法的参数，来调用 FlowRuleChecker 的 checkFlow 方法。
+在 checkFlow 内部，遍历这每一个 FlowRule，逐次判断是否可以通过限流检查：
+// FlowRuleChecker.java public void checkFlow(Function&lt;String, Collection&lt;FlowRule&gt;&gt; ruleProvider, ResourceWrapper resource, Context context, DefaultNode node, int count, boolean prioritized) throws BlockException { Collection&lt;FlowRule&gt; rules = ruleProvider.apply(resource.getName()); if (rules != null) { for (FlowRule rule : rules) { if (!canPassCheck(rule, context, node, count, prioritized)) { throw new FlowException(rule.getLimitApp(), rule); } } } } 每一个 FlowRule 内部都可以关联不同的 TrafficShapingController，关联不同的流量整形器的代码如下：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/sentinel/flow/" />
+
+<title>限流实现原理 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/architecture/" >
+      架构
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/leaparray/" >
+      基于 LeapArray 的统计
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/flow/"  class="active">
+      限流实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/distributed-flow/" >
+      分布式限流实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/webmvc-flow/" >
+      WebMVC 限流实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/spi/" >
+      可扩展性
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>限流实现原理</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#限流架构图">限流架构图</a></li>
+    <li><a href="#构造-slot-链">构造 Slot 链</a>
+      <ul>
+        <li><a href="#nodeselectorslot">NodeSelectorSlot</a></li>
+        <li><a href="#clusterbuilderslot">ClusterBuilderSlot</a></li>
+        <li><a href="#statisticslot">StatisticSlot</a></li>
+        <li><a href="#其它-slot">其它 Slot</a></li>
+      </ul>
+    </li>
+    <li><a href="#node-树">Node 树</a>
+      <ul>
+        <li><a href="#context">Context</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="限流实现原理">限流实现原理</h1>
+<p>本文以最常见的限流场景来讲述 Sentinel 基础的工作原理。</p>
+<h2 id="限流架构图">限流架构图</h2>
+<p>限流原理的总的<strong>架构图</strong>如下：</p>
+<p><img src="/images/docs/tutorial/sentinel/flow/flow-architecture.png" alt=""></p>
+<p><code>FlowSlot</code> 从 <code>FlowRuleManager</code> 中根据用当前资源名称作为 Key，然后读取出来这个资源绑定的 <code>FlowRule</code> 规则。然后将这些规则作为方法的参数，来调用 <code>FlowRuleChecker</code> 的 <code>checkFlow</code> 方法。</p>
+<p>在 <code>checkFlow</code> 内部，遍历这每一个 <code>FlowRule</code>，逐次判断是否可以通过<strong>限流</strong>检查：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// FlowRuleChecker.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">checkFlow</span><span style="color:#f92672">(</span>Function<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> Collection<span style="color:#f92672">&lt;</span>FlowRule<span style="color:#f92672">&gt;&gt;</span> ruleProvider<span style="color:#f92672">,</span> ResourceWrapper resource<span style="color:#f92672">,</span>
+                        Context context<span style="color:#f92672">,</span> DefaultNode node<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> count<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> BlockException <span style="color:#f92672">{</span>
+    Collection<span style="color:#f92672">&lt;</span>FlowRule<span style="color:#f92672">&gt;</span> rules <span style="color:#f92672">=</span> ruleProvider<span style="color:#f92672">.</span><span style="color:#a6e22e">apply</span><span style="color:#f92672">(</span>resource<span style="color:#f92672">.</span><span style="color:#a6e22e">getName</span><span style="color:#f92672">());</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>rules <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>FlowRule rule <span style="color:#f92672">:</span> rules<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>canPassCheck<span style="color:#f92672">(</span>rule<span style="color:#f92672">,</span> context<span style="color:#f92672">,</span> node<span style="color:#f92672">,</span> count<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> FlowException<span style="color:#f92672">(</span>rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getLimitApp</span><span style="color:#f92672">(),</span> rule<span style="color:#f92672">);</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>每一个 <code>FlowRule</code> 内部都可以关联不同的 <code>TrafficShapingController</code>，关联不同的流量整形器的代码如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> TrafficShapingController <span style="color:#a6e22e">generateRater</span><span style="color:#f92672">(</span><span style="color:#75715e">/*@Valid*/</span> FlowRule rule<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getGrade</span><span style="color:#f92672">()</span> <span style="color:#f92672">==</span> RuleConstant<span style="color:#f92672">.</span><span style="color:#a6e22e">FLOW_GRADE_QPS</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">switch</span> <span style="color:#f92672">(</span>rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getControlBehavior</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">case</span> RuleConstant<span style="color:#f92672">.</span><span style="color:#a6e22e">CONTROL_BEHAVIOR_WARM_UP</span><span style="color:#f92672">:</span>
+                <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> WarmUpController<span style="color:#f92672">(</span>rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getCount</span><span style="color:#f92672">(),</span> rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getWarmUpPeriodSec</span><span style="color:#f92672">(),</span>
+                        ColdFactorProperty<span style="color:#f92672">.</span><span style="color:#a6e22e">coldFactor</span><span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">case</span> RuleConstant<span style="color:#f92672">.</span><span style="color:#a6e22e">CONTROL_BEHAVIOR_RATE_LIMITER</span><span style="color:#f92672">:</span>
+                <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> RateLimiterController<span style="color:#f92672">(</span>rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxQueueingTimeMs</span><span style="color:#f92672">(),</span> rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getCount</span><span style="color:#f92672">());</span>
+            <span style="color:#66d9ef">case</span> RuleConstant<span style="color:#f92672">.</span><span style="color:#a6e22e">CONTROL_BEHAVIOR_WARM_UP_RATE_LIMITER</span><span style="color:#f92672">:</span>
+                <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> WarmUpRateLimiterController<span style="color:#f92672">(</span>rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getCount</span><span style="color:#f92672">(),</span> rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getWarmUpPeriodSec</span><span style="color:#f92672">(),</span>
+                        rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxQueueingTimeMs</span><span style="color:#f92672">(),</span> ColdFactorProperty<span style="color:#f92672">.</span><span style="color:#a6e22e">coldFactor</span><span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">case</span> RuleConstant<span style="color:#f92672">.</span><span style="color:#a6e22e">CONTROL_BEHAVIOR_DEFAULT</span><span style="color:#f92672">:</span>
+            <span style="color:#66d9ef">default</span><span style="color:#f92672">:</span>
+                <span style="color:#75715e">// Default mode or unknown mode: default traffic shaping controller (fast-reject).
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> DefaultController<span style="color:#f92672">(</span>rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getCount</span><span style="color:#f92672">(),</span> rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getGrade</span><span style="color:#f92672">());</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>所以最终是否可以通过限流检查，是由不同的 <code>TrafficShapingController</code> 所决定的。</p>
+<h2 id="构造-slot-链">构造 Slot 链</h2>
+<p>第一次调用 <code>entry</code> 方法的时候，会根据 <code>resourceWrapper</code> 寻找或者新建属于这个资源的 <code>ProcessorSlot</code> 链，每个资源的 <code>ProcessorSlotChain</code> 会放到一个 <code>chainMap</code> 中：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// CtSph.java
+</span><span style="color:#75715e"></span>ProcessorSlot<span style="color:#f92672">&lt;</span>Object<span style="color:#f92672">&gt;</span> chain <span style="color:#f92672">=</span> lookProcessChain<span style="color:#f92672">(</span>resourceWrapper<span style="color:#f92672">);</span>
+
+ProcessorSlot<span style="color:#f92672">&lt;</span>Object<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">lookProcessChain</span><span style="color:#f92672">(</span>ResourceWrapper resourceWrapper<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    ProcessorSlotChain chain <span style="color:#f92672">=</span> chainMap<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>resourceWrapper<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>chain <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>LOCK<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            chain <span style="color:#f92672">=</span> chainMap<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>resourceWrapper<span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>chain <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#75715e">// Entry size limit.
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>chainMap<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;=</span> Constants<span style="color:#f92672">.</span><span style="color:#a6e22e">MAX_SLOT_CHAIN_SIZE</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+
+                chain <span style="color:#f92672">=</span> SlotChainProvider<span style="color:#f92672">.</span><span style="color:#a6e22e">newSlotChain</span><span style="color:#f92672">();</span>
+                Map<span style="color:#f92672">&lt;</span>ResourceWrapper<span style="color:#f92672">,</span> ProcessorSlotChain<span style="color:#f92672">&gt;</span> newMap <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HashMap<span style="color:#f92672">&lt;</span>ResourceWrapper<span style="color:#f92672">,</span> ProcessorSlotChain<span style="color:#f92672">&gt;(</span>
+                    chainMap<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">()</span> <span style="color:#f92672">+</span> 1<span style="color:#f92672">);</span>
+                newMap<span style="color:#f92672">.</span><span style="color:#a6e22e">putAll</span><span style="color:#f92672">(</span>chainMap<span style="color:#f92672">);</span>
+                newMap<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>resourceWrapper<span style="color:#f92672">,</span> chain<span style="color:#f92672">);</span>
+                chainMap <span style="color:#f92672">=</span> newMap<span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> chain<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>新建 <code>SlotChain</code> 的过程，会首先通过 <code>SpiLoader</code> 寻找用户提供的自定义 <code>SlotChainBuilder</code> 实现类，如果没有，那么就使用默认的 <code>DefaultSlotChainBuilder</code>。这个 Builder 会使用 <code>SpiLoader</code> 查找所有实现了 <code>ProcessorSlot</code> 的类，并且按照这些 <code>Slot</code> 类上面的 <code>SpiOrder</code> 注解所声明的顺序，来对所有的 <code>Slot</code> 进行排序。</p>
+<p>Sentinel 框架默认提供的 Builder 的实现类如下 (文件 <code>com.alibaba.csp.sentinel.slotchain.SlotChainBuilder</code> 的内容)：</p>
+<pre><code># Default slot chain builder
+com.alibaba.csp.sentinel.slots.DefaultSlotChainBuilder
+</code></pre><p>默认提供的 ProcessorSlot 的实现类如下 (文件 <code>com.alibaba.csp.sentinel.slotchain.ProcessorSlot</code> 的内容)：</p>
+<pre><code># Sentinel default ProcessorSlots
+com.alibaba.csp.sentinel.slots.nodeselector.NodeSelectorSlot
+com.alibaba.csp.sentinel.slots.clusterbuilder.ClusterBuilderSlot
+com.alibaba.csp.sentinel.slots.logger.LogSlot
+com.alibaba.csp.sentinel.slots.statistic.StatisticSlot
+com.alibaba.csp.sentinel.slots.block.authority.AuthoritySlot
+com.alibaba.csp.sentinel.slots.system.SystemSlot
+com.alibaba.csp.sentinel.slots.block.flow.FlowSlot
+com.alibaba.csp.sentinel.slots.block.degrade.DegradeSlot
+</code></pre><p>默认构造出来的 Slot 链如下所示：</p>
+<p><img src="/images/docs/tutorial/sentinel/flow/slot-chain.png" alt=""></p>
+<h3 id="nodeselectorslot">NodeSelectorSlot</h3>
+<p><code>NodeSelectorSlot</code> 用来构建<strong>调用树 (invocation tree)</strong>。每一个 Context 都有一颗调用树：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// NodeSelectorSlot.java
+</span><span style="color:#75715e"></span>
+DefaultNode node <span style="color:#f92672">=</span> map<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>context<span style="color:#f92672">.</span><span style="color:#a6e22e">getName</span><span style="color:#f92672">());</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>node <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        node <span style="color:#f92672">=</span> map<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>context<span style="color:#f92672">.</span><span style="color:#a6e22e">getName</span><span style="color:#f92672">());</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>node <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            node <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> DefaultNode<span style="color:#f92672">(</span>resourceWrapper<span style="color:#f92672">,</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
+            HashMap<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> DefaultNode<span style="color:#f92672">&gt;</span> cacheMap <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HashMap<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> DefaultNode<span style="color:#f92672">&gt;(</span>map<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">());</span>
+            cacheMap<span style="color:#f92672">.</span><span style="color:#a6e22e">putAll</span><span style="color:#f92672">(</span>map<span style="color:#f92672">);</span>
+            cacheMap<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>context<span style="color:#f92672">.</span><span style="color:#a6e22e">getName</span><span style="color:#f92672">(),</span> node<span style="color:#f92672">);</span>
+            map <span style="color:#f92672">=</span> cacheMap<span style="color:#f92672">;</span>
+            <span style="color:#75715e">// Build invocation tree
+</span><span style="color:#75715e"></span>            <span style="color:#f92672">((</span>DefaultNode<span style="color:#f92672">)</span> context<span style="color:#f92672">.</span><span style="color:#a6e22e">getLastNode</span><span style="color:#f92672">()).</span><span style="color:#a6e22e">addChild</span><span style="color:#f92672">(</span>node<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+
+context<span style="color:#f92672">.</span><span style="color:#a6e22e">setCurNode</span><span style="color:#f92672">(</span>node<span style="color:#f92672">);</span>
+fireEntry<span style="color:#f92672">(</span>context<span style="color:#f92672">,</span> resourceWrapper<span style="color:#f92672">,</span> node<span style="color:#f92672">,</span> count<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">,</span> args<span style="color:#f92672">);</span>
+</code></pre></div><h3 id="clusterbuilderslot">ClusterBuilderSlot</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ClusterBuilderSlot.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">volatile</span> Map<span style="color:#f92672">&lt;</span>ResourceWrapper<span style="color:#f92672">,</span> ClusterNode<span style="color:#f92672">&gt;</span> clusterNodeMap <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HashMap<span style="color:#f92672">&lt;&gt;();</span>
+
+<span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">entry</span><span style="color:#f92672">(</span>Context context<span style="color:#f92672">,</span> ResourceWrapper resourceWrapper<span style="color:#f92672">,</span> DefaultNode node<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> count<span style="color:#f92672">,</span>
+                    <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">,</span> Object<span style="color:#f92672">...</span> args<span style="color:#f92672">)</span>
+    <span style="color:#66d9ef">throws</span> Throwable <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>clusterNode <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>lock<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>clusterNode <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#75715e">// Create the cluster node.
+</span><span style="color:#75715e"></span>                clusterNode <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ClusterNode<span style="color:#f92672">(</span>resourceWrapper<span style="color:#f92672">.</span><span style="color:#a6e22e">getName</span><span style="color:#f92672">(),</span> resourceWrapper<span style="color:#f92672">.</span><span style="color:#a6e22e">getResourceType</span><span style="color:#f92672">());</span>
+                HashMap<span style="color:#f92672">&lt;</span>ResourceWrapper<span style="color:#f92672">,</span> ClusterNode<span style="color:#f92672">&gt;</span> newMap <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HashMap<span style="color:#f92672">&lt;&gt;(</span>Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>clusterNodeMap<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">(),</span> 16<span style="color:#f92672">));</span>
+                newMap<span style="color:#f92672">.</span><span style="color:#a6e22e">putAll</span><span style="color:#f92672">(</span>clusterNodeMap<span style="color:#f92672">);</span>
+                newMap<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>node<span style="color:#f92672">.</span><span style="color:#a6e22e">getId</span><span style="color:#f92672">(),</span> clusterNode<span style="color:#f92672">);</span>
+
+                clusterNodeMap <span style="color:#f92672">=</span> newMap<span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    node<span style="color:#f92672">.</span><span style="color:#a6e22e">setClusterNode</span><span style="color:#f92672">(</span>clusterNode<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="statisticslot">StatisticSlot</h3>
+<p><code>StatisticSlot</code> 作用主要就是在 <code>entry</code> 方法中增加线程的数量，记录通过请求的数量；并在方法退出的时候，递减线程的数量，记录响应时间，标识这是一条成功的请求：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">entry</span><span style="color:#f92672">(</span>Context context<span style="color:#f92672">,</span> ResourceWrapper resourceWrapper<span style="color:#f92672">,</span> DefaultNode node<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> count<span style="color:#f92672">,</span>
+                      <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">,</span> Object<span style="color:#f92672">...</span> args<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Throwable <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// Request passed, add thread count and pass count.
+</span><span style="color:#75715e"></span>    node<span style="color:#f92672">.</span><span style="color:#a6e22e">increaseThreadNum</span><span style="color:#f92672">();</span>
+    node<span style="color:#f92672">.</span><span style="color:#a6e22e">addPassRequest</span><span style="color:#f92672">(</span>count<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">exit</span><span style="color:#f92672">(</span>Context context<span style="color:#f92672">,</span> ResourceWrapper resourceWrapper<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> count<span style="color:#f92672">,</span> Object<span style="color:#f92672">...</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    node<span style="color:#f92672">.</span><span style="color:#a6e22e">addRtAndSuccess</span><span style="color:#f92672">(</span>rt<span style="color:#f92672">,</span> batchCount<span style="color:#f92672">);</span>
+    node<span style="color:#f92672">.</span><span style="color:#a6e22e">decreaseThreadNum</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="其它-slot">其它 Slot</h3>
+<ul>
+<li><code>LogSlot</code>：负责捕获 <code>BlockException</code> 并记录日志</li>
+<li><code>AuthoritySlot</code>：负责进行权限校验</li>
+<li><code>SystemSlot</code>：负责确保 QPS、线程总数量、响应时间、系统负载、CPU 使用率不过载</li>
+<li><code>FlowSlot</code>：负责限流</li>
+<li><code>DegradeSlot</code>：熔断器</li>
+</ul>
+<h2 id="node-树">Node 树</h2>
+<p><img src="/images/docs/tutorial/sentinel/flow/node-tree.png" alt=""></p>
+<p><code>Constants</code> 中默认新建了资源名称为 <code>machine-root</code> 的 <code>ROOT</code> 和名为 <code>__total_inbound_traffic__</code> 的 <code>ENTRY_NODE</code> 这两个节点，其中 <code>ENTRY_NODE</code> 是用于全局的 <code>SystemRule</code> 规则的：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">/**
+</span><span style="color:#75715e"> * Global ROOT statistic node that represents the universal parent node.
+</span><span style="color:#75715e"> */</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">static</span> DefaultNode ROOT <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> EntranceNode<span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> StringResourceWrapper<span style="color:#f92672">(</span>ROOT_ID<span style="color:#f92672">,</span> EntryType<span style="color:#f92672">.</span><span style="color:#a6e22e">IN</span><span style="color:#f92672">),</span>
+    <span style="color:#66d9ef">new</span> ClusterNode<span style="color:#f92672">(</span>ROOT_ID<span style="color:#f92672">,</span> ResourceTypeConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">COMMON</span><span style="color:#f92672">));</span>
+
+<span style="color:#75715e">/**
+</span><span style="color:#75715e"> * Global statistic node for inbound traffic. Usually used for {@code SystemRule} checking.
+</span><span style="color:#75715e"> */</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">static</span> ClusterNode ENTRY_NODE <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ClusterNode<span style="color:#f92672">(</span>TOTAL_IN_RESOURCE_NAME<span style="color:#f92672">,</span> ResourceTypeConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">COMMON</span><span style="color:#f92672">);</span>
+</code></pre></div><p><code>ContextUtil</code> 中默认给 <code>ROOT</code> 节点添加了资源名称为 <code>sentinel_default_context</code> 的 <code>EntranceNode</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">static</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// Cache the entrance node for default context.
+</span><span style="color:#75715e"></span>    initDefaultContext<span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">initDefaultContext</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    String defaultContextName <span style="color:#f92672">=</span> Constants<span style="color:#f92672">.</span><span style="color:#a6e22e">CONTEXT_DEFAULT_NAME</span><span style="color:#f92672">;</span>
+    EntranceNode node <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> EntranceNode<span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> StringResourceWrapper<span style="color:#f92672">(</span>defaultContextName<span style="color:#f92672">,</span> EntryType<span style="color:#f92672">.</span><span style="color:#a6e22e">IN</span><span style="color:#f92672">),</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
+    Constants<span style="color:#f92672">.</span><span style="color:#a6e22e">ROOT</span><span style="color:#f92672">.</span><span style="color:#a6e22e">addChild</span><span style="color:#f92672">(</span>node<span style="color:#f92672">);</span>
+    contextNameNodeMap<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>defaultContextName<span style="color:#f92672">,</span> node<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>在进入 <code>NodeSelectorSlot</code> 的时候，这个 Slot 会添加一个 <code>DefaultNode</code> 到树上：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">node <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> DefaultNode<span style="color:#f92672">(</span>resourceWrapper<span style="color:#f92672">,</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">((</span>DefaultNode<span style="color:#f92672">)</span> context<span style="color:#f92672">.</span><span style="color:#a6e22e">getLastNode</span><span style="color:#f92672">()).</span><span style="color:#a6e22e">addChild</span><span style="color:#f92672">(</span>node<span style="color:#f92672">);</span>
+</code></pre></div><h3 id="context">Context</h3>
+<p>可以手动指定资源所处的 <code>Context</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+        Context context<span style="color:#f92672">=</span>ContextUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">enter</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;context1&#34;</span><span style="color:#f92672">);</span>
+        Entry entry<span style="color:#f92672">=</span>SphU<span style="color:#f92672">.</span><span style="color:#a6e22e">entry</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;HelloWorld&#34;</span><span style="color:#f92672">);</span>
+        entry<span style="color:#f92672">.</span><span style="color:#a6e22e">exit</span><span style="color:#f92672">();</span>
+        ContextUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">exit</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>BlockException ex<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 处理被流控的逻辑
+</span><span style="color:#75715e"></span>        System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;blocked!&#34;</span><span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span><span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Exception e<span style="color:#f92672">){</span>
+        e<span style="color:#f92672">.</span><span style="color:#a6e22e">printStackTrace</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>每当我们调用 <code>SphU.entry()</code> 或者 <code>SphO.entry()</code> 获取访问资源许可的时候都需要当前线程处在某个context中，如果我们没有显式调用 <code>ContextUtil.enter()</code>，默认会使用 Default context。一个线程对应一个 Context，一个 ContextName 对应多个 Context，一个 ContextName 共享一个 EntranceNode。同一个资源在不同的Context下都有调用，它们使用的也会是同一个处理链条。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://github.com/sentinel-group/sentinel-awesome">Awesome Sentinel</a></li>
+</ul>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#限流架构图">限流架构图</a></li>
+    <li><a href="#构造-slot-链">构造 Slot 链</a>
+      <ul>
+        <li><a href="#nodeselectorslot">NodeSelectorSlot</a></li>
+        <li><a href="#clusterbuilderslot">ClusterBuilderSlot</a></li>
+        <li><a href="#statisticslot">StatisticSlot</a></li>
+        <li><a href="#其它-slot">其它 Slot</a></li>
+      </ul>
+    </li>
+    <li><a href="#node-树">Node 树</a>
+      <ul>
+        <li><a href="#context">Context</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -4,22 +4,22 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="LeapArray"><meta property="og:title" content="LeapArray" />
-<meta property="og:description" content="LeapArray Sentinel 底层采用高性能的滑动窗口数据结构 LeapArray 来统计实时的秒级指标数据，可以很好地支撑写多于读的高并发场景。
+<meta name="description" content="基于 LeapArray 的统计"><meta property="og:title" content="基于 LeapArray 的统计" />
+<meta property="og:description" content="基于 LeapArray 的统计 Sentinel 底层采用高性能的滑动窗口数据结构 LeapArray 来统计实时的秒级指标数据，可以很好地支撑写多于读的高并发场景。
 Metric 统计类 LeapArray 作为基础设施，其目的主要是为了在底层配合 Metric 类，以便对资源的各种信息做统计，我们来看 Metric 类都需要统计哪些信息：
 public interface Metric extends DebugSupport { // 获取总的成功数量  long success(); // 获取最大的成功数量  long maxSuccess(); // 获取异常数量  long exception(); // 获取阻塞的数量  long block(); // 获取总的通过数量  long pass(); // 获取总响应时间  long rt(); // 获取最小的响应时间  long minRt(); } 相应的，在 Metric 接口中，也有添加各种事件的方法：
 public interface Metric extends DebugSupport { // 添加 n 个异常  void addException(int n); // 添加 n 个阻塞  void addBlock(int n); // 添加 n 个成功的响应  void addSuccess(int n); // 添加 n 个通过  void addPass(int n); // 在总响应时间上，添加 rt 时间  void addRT(long rt); } 以 ArrayMetric 的 addSuccess(int count) 和 success() 为例，我们看下在内部是如何使用 LeapArray 提供资源统计服务的。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/sentinel/leaparray/" />
 
-<title>LeapArray | 赵坤的个人网站</title>
+<title>基于 LeapArray 的统计 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -344,7 +344,37 @@ var _hmt = _hmt || [];
         <li>
 
   <a href="/docs/tutorial/sentinel/leaparray/"  class="active">
-      LeapArray
+      基于 LeapArray 的统计
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/flow/" >
+      限流实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/distributed-flow/" >
+      分布式限流实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/sentinel/webmvc-flow/" >
+      WebMVC 限流实现原理
   </a>
 
 </li>
@@ -871,7 +901,7 @@ var _hmt = _hmt || [];
     <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
-  <strong>LeapArray</strong>
+  <strong>基于 LeapArray 的统计</strong>
 
   <label for="toc-control">
     <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
@@ -886,12 +916,15 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#metric-统计类">Metric 统计类</a></li>
-    <li><a href="#根据时间戳定位-bucket">根据时间戳定位 Bucket</a>
+    <li><a href="#leaparray-实现原理">LeapArray 实现原理</a>
       <ul>
         <li><a href="#数据结构">数据结构</a></li>
-        <li><a href="#currentwindow">currentWindow()</a></li>
+        <li><a href="#获取时间戳对应的-bucket">获取时间戳对应的 Bucket</a></li>
+        <li><a href="#窗口-wrapper">窗口 Wrapper</a></li>
       </ul>
     </li>
+    <li><a href="#leaparray-底层存储">LeapArray 底层存储</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -912,7 +945,7 @@ data-ad-format="auto"
 data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
-</script><h1 id="leaparray">LeapArray</h1>
+</script><h1 id="基于-leaparray-的统计">基于 LeapArray 的统计</h1>
 <p>Sentinel 底层采用高性能的<strong>滑动窗口</strong>数据结构 LeapArray 来统计<strong>实时的秒级指标数据</strong>，可以很好地支撑<strong>写多于读</strong>的高并发场景。</p>
 <p><img src="/images/docs/tutorial/sentinel/leaparray/51955215-0af7c500-247e-11e9-8895-9fc0e4c10c8c.png" alt=""></p>
 <h2 id="metric-统计类">Metric 统计类</h2>
@@ -966,7 +999,7 @@ data-full-width-responsive="true"></ins>
     <span style="color:#66d9ef">return</span> success<span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>所以，<code>currentWindow()</code> 方法可谓是重中之重，此方法的作用是<strong>获取当前时间戳对应的 Bucket</strong>。我们接下来就重点研究此方法。</p>
-<h2 id="根据时间戳定位-bucket">根据时间戳定位 Bucket</h2>
+<h2 id="leaparray-实现原理">LeapArray 实现原理</h2>
 <h3 id="数据结构">数据结构</h3>
 <p>首先来看 <code>LeapArray</code> 内部主要的使用的数据结构：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">int</span> windowLengthInMs<span style="color:#f92672">;</span>
@@ -987,78 +1020,159 @@ data-full-width-responsive="true"></ins>
 ||_______|_______|_______|_______|_______|_______||
 0       200     400     600     800     1000    1200  timestamp
 </code></pre><p>表示，将 <code>intervalInMs = 1200</code> 毫秒的总时间窗口，拆分为 <code>sampleCount = 6</code> 个 Bucket，每一个 Bucket 存储的时间长度为 <code>windowLengthInMs = 200</code> 毫秒，底层 <code>array</code> 的长度为 <code>6</code>。</p>
-<h3 id="currentwindow">currentWindow()</h3>
-<p>（1）获取对应的索引</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">long</span> timeId <span style="color:#f92672">=</span> timeMillis <span style="color:#f92672">/</span> windowLengthInMs<span style="color:#f92672">;</span>
-<span style="color:#75715e">// Calculate current index so we can map the timestamp to the leap array.
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">return</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">)(</span>timeId <span style="color:#f92672">%</span> array<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">());</span>
-</code></pre></div><p>（2）计算当前 Bucket 开始的时间</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">long</span> windowStart <span style="color:#f92672">=</span> timeMillis <span style="color:#f92672">-</span> timeMillis <span style="color:#f92672">%</span> windowLengthInMs<span style="color:#f92672">;</span>
-</code></pre></div><p>（3）如果此 Bucket 不存在，创建并 CAS 更新</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> old <span style="color:#f92672">=</span> array<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>idx<span style="color:#f92672">);</span>
-<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>old <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-    <span style="color:#75715e">/*
-</span><span style="color:#75715e">        *     B0       B1      B2    NULL      B4
-</span><span style="color:#75715e">        * ||_______|_______|_______|_______|_______||___
-</span><span style="color:#75715e">        * 200     400     600     800     1000    1200  timestamp
-</span><span style="color:#75715e">        *                             ^
-</span><span style="color:#75715e">        *                          time=888
-</span><span style="color:#75715e">        *            bucket is empty, so create new and update
-</span><span style="color:#75715e">        *
-</span><span style="color:#75715e">        * If the old bucket is absent, then we create a new bucket at {@code windowStart},
-</span><span style="color:#75715e">        * then try to update circular array via a CAS operation. Only one thread can
-</span><span style="color:#75715e">        * succeed to update, while other threads yield its time slice.
-</span><span style="color:#75715e">        */</span>
-    WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> window <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;(</span>windowLengthInMs<span style="color:#f92672">,</span> windowStart<span style="color:#f92672">,</span> newEmptyBucket<span style="color:#f92672">(</span>timeMillis<span style="color:#f92672">));</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>array<span style="color:#f92672">.</span><span style="color:#a6e22e">compareAndSet</span><span style="color:#f92672">(</span>idx<span style="color:#f92672">,</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">,</span> window<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
-        <span style="color:#75715e">// Successfully updated, return the created bucket.
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> window<span style="color:#f92672">;</span>
-    <span style="color:#f92672">}</span>
+<h3 id="获取时间戳对应的-bucket">获取时间戳对应的 Bucket</h3>
+<p><code>currentWindow()</code> 方法就是根据当前最新的<strong>时间戳</strong>，去获取或者更新数组中相应的索引处的值，更新值也就是达到了窗口滑动的效果。</p>
+<p>（1）根据时间戳获取对应的索引</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">calculateTimeIdx</span><span style="color:#f92672">(</span><span style="color:#75715e">/*@Valid*/</span> <span style="color:#66d9ef">long</span> timeMillis<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">long</span> timeId <span style="color:#f92672">=</span> timeMillis <span style="color:#f92672">/</span> windowLengthInMs<span style="color:#f92672">;</span>
+    <span style="color:#75715e">// Calculate current index so we can map the timestamp to the leap array.
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span><span style="color:#f92672">)(</span>timeId <span style="color:#f92672">%</span> array<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">());</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><p>（4）如果存在，且 <code>start</code> 一致</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>windowStart <span style="color:#f92672">==</span> old<span style="color:#f92672">.</span><span style="color:#a6e22e">windowStart</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-    <span style="color:#75715e">/*
-</span><span style="color:#75715e">    *     B0       B1      B2     B3      B4
-</span><span style="color:#75715e">    * ||_______|_______|_______|_______|_______||___
-</span><span style="color:#75715e">    * 200     400     600     800     1000    1200  timestamp
-</span><span style="color:#75715e">    *                             ^
-</span><span style="color:#75715e">    *                          time=888
-</span><span style="color:#75715e">    *            startTime of Bucket 3: 800, so it&#39;s up-to-date
-</span><span style="color:#75715e">    *
-</span><span style="color:#75715e">    * If current {@code windowStart} is equal to the start timestamp of old bucket,
-</span><span style="color:#75715e">    * that means the time is within the bucket, so directly return the bucket.
-</span><span style="color:#75715e">    */</span>
-    <span style="color:#66d9ef">return</span> old<span style="color:#f92672">;</span>
+</code></pre></div><p>比如数组长度为 <code>6</code>，<code>windowLengthInMs</code> 为 <code>200</code>，那么：</p>
+<ul>
+<li><code>[1200, 1400)</code> 的索引为 <code>0</code></li>
+<li><code>[1400, 1600)</code> 的索引为 <code>1</code></li>
+<li>以此类推&hellip;</li>
+</ul>
+<pre><code>    B0      B1       B2      B3     B4      B5
+||_______|_______|_______|_______|_______|_______||
+0       200     400     600     800     1000    1200  timestamp
+1200   1400    1600    1800    2000     2200    2400
+2400   2600    2800    3000    3200     3400    3600
+...
+</code></pre><p>（2）计算时间戳对应的 Bucket 开始的时间</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">calculateWindowStart</span><span style="color:#f92672">(</span><span style="color:#75715e">/*@Valid*/</span> <span style="color:#66d9ef">long</span> timeMillis<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> timeMillis <span style="color:#f92672">-</span> timeMillis <span style="color:#f92672">%</span> windowLengthInMs<span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><p>（5）如果存在，且原 <code>start</code> 已经落后</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>windowStart <span style="color:#f92672">&gt;</span> old<span style="color:#f92672">.</span><span style="color:#a6e22e">windowStart</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-    <span style="color:#75715e">/*
-</span><span style="color:#75715e">    *   (old)
-</span><span style="color:#75715e">    *             B0       B1      B2    NULL      B4
-</span><span style="color:#75715e">    * |_______||_______|_______|_______|_______|_______||___
-</span><span style="color:#75715e">    * ...    1200     1400    1600    1800    2000    2200  timestamp
-</span><span style="color:#75715e">    *                              ^
-</span><span style="color:#75715e">    *                           time=1676
-</span><span style="color:#75715e">    *          startTime of Bucket 2: 400, deprecated, should be reset
-</span><span style="color:#75715e">    *
-</span><span style="color:#75715e">    * If the start timestamp of old bucket is behind provided time, that means
-</span><span style="color:#75715e">    * the bucket is deprecated. We have to reset the bucket to current {@code windowStart}.
-</span><span style="color:#75715e">    * Note that the reset and clean-up operations are hard to be atomic,
-</span><span style="color:#75715e">    * so we need a update lock to guarantee the correctness of bucket update.
-</span><span style="color:#75715e">    *
-</span><span style="color:#75715e">    * The update lock is conditional (tiny scope) and will take effect only when
-</span><span style="color:#75715e">    * bucket is deprecated, so in most cases it won&#39;t lead to performance loss.
-</span><span style="color:#75715e">    */</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>updateLock<span style="color:#f92672">.</span><span style="color:#a6e22e">tryLock</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
-            <span style="color:#75715e">// Successfully get the update lock, now we reset the bucket.
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">return</span> resetWindowTo<span style="color:#f92672">(</span>old<span style="color:#f92672">,</span> windowStart<span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
-            updateLock<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">();</span>
+</code></pre></div><p>示例：</p>
+<ul>
+<li><code>1350 - 1350 % 200 = 1200</code></li>
+<li><code>1400 - 1400 % 200 = 1400</code></li>
+<li><code>1670 - 1670 % 200 = 1600</code></li>
+<li>&hellip;</li>
+</ul>
+<p>（3）根据时间戳找到数组中指定索引处的 Bucket</p>
+<ul>
+<li>Bucket 不存在，创建一个新的 Bucket，然后 CAS 更新到这个索引处</li>
+</ul>
+<pre><code>     B0       B1      B2    NULL      B4
+||_______|_______|_______|_______|_______||___
+200     400     600     800     1000    1200  timestamp
+                            ^
+                        time=888
+        bucket is empty, so create new and update
+</code></pre><ul>
+<li>Bucket 是最新的，直接返回这个 Bucket</li>
+</ul>
+<pre><code>    B0       B1      B2     B3      B4
+||_______|_______|_______|_______|_______||___
+200     400     600     800     1000    1200  timestamp
+                            ^
+                         time=888
+           startTime of Bucket 3: 800, so it's up-to-date
+</code></pre><ul>
+<li>Bucket 已经过时了，重置当前的 Bucket，并且将所有过时的 Bucket 都给清理掉</li>
+</ul>
+<pre><code>  (old)
+            B0       B1      B2    NULL      B4
+|_______||_______|_______|_______|_______|_______||___
+...    1200     1400    1600    1800    2000    2200  timestamp
+                             ^
+                          time=1676
+         startTime of Bucket 2: 400, deprecated, should be reset
+</code></pre><p>代码如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> old <span style="color:#f92672">=</span> array<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>idx<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>old <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> window <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;(</span>windowLengthInMs<span style="color:#f92672">,</span> windowStart<span style="color:#f92672">,</span> newEmptyBucket<span style="color:#f92672">(</span>timeMillis<span style="color:#f92672">));</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>array<span style="color:#f92672">.</span><span style="color:#a6e22e">compareAndSet</span><span style="color:#f92672">(</span>idx<span style="color:#f92672">,</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">,</span> window<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// Successfully updated, return the created bucket.
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">return</span> window<span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// Contention failed, the thread will yield its time slice to wait for bucket available.
+</span><span style="color:#75715e"></span>            Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">yield</span><span style="color:#f92672">();</span>
         <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>windowStart <span style="color:#f92672">==</span> old<span style="color:#f92672">.</span><span style="color:#a6e22e">windowStart</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> old<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>windowStart <span style="color:#f92672">&gt;</span> old<span style="color:#f92672">.</span><span style="color:#a6e22e">windowStart</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>updateLock<span style="color:#f92672">.</span><span style="color:#a6e22e">tryLock</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+                <span style="color:#75715e">// Successfully get the update lock, now we reset the bucket.
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">return</span> resetWindowTo<span style="color:#f92672">(</span>old<span style="color:#f92672">,</span> windowStart<span style="color:#f92672">);</span>
+            <span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
+                updateLock<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">();</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// Contention failed, the thread will yield its time slice to wait for bucket available.
+</span><span style="color:#75715e"></span>            Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">yield</span><span style="color:#f92672">();</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>windowStart <span style="color:#f92672">&lt;</span> old<span style="color:#f92672">.</span><span style="color:#a6e22e">windowStart</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// Should not go through here, as the provided time is already behind.
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;(</span>windowLengthInMs<span style="color:#f92672">,</span> windowStart<span style="color:#f92672">,</span> newEmptyBucket<span style="color:#f92672">(</span>timeMillis<span style="color:#f92672">));</span>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
-</code></pre></div>
+</code></pre></div><h3 id="窗口-wrapper">窗口 Wrapper</h3>
+<p><code>LeapArray</code> 内部的数组中存储的类型是 <code>WindowWrap&lt;T&gt;</code> 类型，即在内部存储的 <code>T</code> 类型之外又包裹了一层，这个 <code>WindowWrap</code> 就是<strong>窗口</strong>，窗口内部的 <code>T</code> 才是真正的内部数据：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">final</span> AtomicReferenceArray<span style="color:#f92672">&lt;</span>WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;&gt;</span> array<span style="color:#f92672">;</span>
+</code></pre></div><p><code>WindowWrap</code> 封装了和此窗口相关的一些属性：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WindowWrap</span><span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#75715e">// 一个窗口有多少毫秒
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> windowLengthInMs<span style="color:#f92672">;</span>
+
+    <span style="color:#75715e">// 窗口开始的时间-毫秒
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">long</span> windowStart<span style="color:#f92672">;</span>
+
+    <span style="color:#75715e">// 静态数据
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> T value<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>内部有一个比较重要的方法是 <code>resetTo</code>，可以将窗口的起始时间改为指定值，实现窗口<strong>滑动</strong>的效果：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> WindowWrap<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">resetTo</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> startTime<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">windowStart</span> <span style="color:#f92672">=</span> startTime<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="leaparray-底层存储">LeapArray 底层存储</h2>
+<p>继承 <code>LeapArray</code> 的有如下<strong>子类</strong>：</p>
+<p><img src="/images/docs/tutorial/sentinel/leaparray/Snipaste_2021-01-21_14-52-31.png" alt=""></p>
+<p>这些子类的定义如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">OccupiableBucketLeapArray</span> <span style="color:#66d9ef">extends</span> LeapArray<span style="color:#f92672">&lt;</span>MetricBucket<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{}</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BucketLeapArray</span> <span style="color:#66d9ef">extends</span> LeapArray<span style="color:#f92672">&lt;</span>MetricBucket<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{}</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FutureBucketLeapArray</span> <span style="color:#66d9ef">extends</span> LeapArray<span style="color:#f92672">&lt;</span>MetricBucket<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{}</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SimpleErrorCounterLeapArray</span> <span style="color:#66d9ef">extends</span> LeapArray<span style="color:#f92672">&lt;</span>SimpleErrorCounter<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{}</span>
+<span style="color:#66d9ef">public</span> SlowRequestLeapArray <span style="color:#66d9ef">extends</span> LeapArray<span style="color:#f92672">&lt;</span>SlowRequestCounter<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{}</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">UnaryLeapArray</span> <span style="color:#66d9ef">extends</span> LeapArray<span style="color:#f92672">&lt;</span>LongAdder<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{}</span>
+</code></pre></div><p>其中 <code>MetricBucket</code>、<code>XXCounter</code> 等在内部也是基于 <code>LongAdder</code> 实现的：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MetricBucket</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> LongAdder<span style="color:#f92672">[]</span> counters<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SlowRequestCounter</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">private</span> LongAdder slowCount<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">private</span> LongAdder totalCount<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SimpleErrorCounter</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">private</span> LongAdder errorCount<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">private</span> LongAdder totalCount<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>即最终的统计数据是存储在 <code>LongAdder</code> 中的，而这个 <code>LongAdder</code> 文件的源代码在一开始就标注上了，这个类的作者是 <strong>Doug Lea</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">/*
+</span><span style="color:#75715e"> * Written by Doug Lea with assistance from members of JCP JSR-166
+</span><span style="color:#75715e"> * Expert Group and released to the public domain, as explained at
+</span><span style="color:#75715e"> * http://creativecommons.org/publicdomain/zero/1.0/
+</span><span style="color:#75715e"> *
+</span><span style="color:#75715e"> * From http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/jsr166e/
+</span><span style="color:#75715e"> */</span>
+</code></pre></div><p>之所以没有用 Java 自身提供的 <code>LongAdder</code> 类，我猜测是因为当时 Java 类中还没有包含这个类。</p>
+<p>在多线程环境中，<code>LongAdder</code> 相比 <code>AtomicLong</code> 性能要高出不少，特别是<strong>写多</strong>的场景。</p>
+<p><code>LongAdder</code> 的原理是，在最初无竞争时，只更新 <code>base</code> 的值，当有多线程竞争时通过分段的思想，让不同的线程 CAS 更新不同的段，最后把这些段相加就得到了完整的 <code>LongAdder</code> 存储的值。</p>
+<p><img src="/images/docs/tutorial/sentinel/leaparray/20200318142810167.png" alt=""></p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://blog.csdn.net/luoqinglong850102/article/details/104944063">java 中的LongAdder</a></li>
+</ul>
+
 <ins class="adsbygoogle"
 style="display:block"
 data-ad-client="ca-pub-8950855178079071"
@@ -1094,12 +1208,15 @@ data-full-width-responsive="true"></ins>
   <nav id="TableOfContents">
   <ul>
     <li><a href="#metric-统计类">Metric 统计类</a></li>
-    <li><a href="#根据时间戳定位-bucket">根据时间戳定位 Bucket</a>
+    <li><a href="#leaparray-实现原理">LeapArray 实现原理</a>
       <ul>
         <li><a href="#数据结构">数据结构</a></li>
-        <li><a href="#currentwindow">currentWindow()</a></li>
+        <li><a href="#获取时间戳对应的-bucket">获取时间戳对应的 Bucket</a></li>
+        <li><a href="#窗口-wrapper">窗口 Wrapper</a></li>
       </ul>
     </li>
+    <li><a href="#leaparray-底层存储">LeapArray 底层存储</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 

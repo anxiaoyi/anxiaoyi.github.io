@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -435,7 +435,7 @@ var _hmt = _hmt || [];
 </blockquote>
 <p>有了这个定义，如果缓存不存储任何内容，它总是一致的。但那根本没什么意思，因为它完全没用。</p>
 <h2 id="为什么使用缓存">为什么使用缓存</h2>
-<p>通常部署缓存是为了提高读写性能。这里的性能可以是延迟、吞吐量、资源利用率等，并且通常是相关的。保护数据库通常也是构建缓存的一个非常重要的动机。但你可以说这也是它正在解决的一个性能问题。</p>
+<p>通常部署缓存是为了<strong>提高读写性能</strong>。这里的性能可以是延迟、吞吐量、资源利用率等，并且通常是相关的。保护数据库通常也是构建缓存的一个非常重要的动机。但你可以说这也是它正在解决的一个性能问题。</p>
 <h2 id="不同类型的缓存">不同类型的缓存</h2>
 <h3 id="look-aside--demand-fill-缓存">Look-aside / demand-fill 缓存</h3>
 <p><img src="/images/posts/maintaining-cache-consistency/Screen-Shot-2018-08-10-at-2.52.18-PM.png" alt=""></p>
@@ -445,7 +445,15 @@ var _hmt = _hmt || [];
 - client reads DB get value `A` (客户端从数据库读取值：A)
 - someone updates the DB to value `B` and invalidates the cache entry (某人刷新了数据库，值变为了 B)
 - client puts value `A` into cache (客户端将 A 放入了缓存)
-</code></pre><p>从那时起，客户端将继续从缓存中获取<code>A</code>，而不是<code>B</code>，后者是最新的值。取决于您的用例，这可能是正常的，也可能不是。它还取决于缓存条目是否有 <code>TTL</code>。但在使用 look aside/demand fill 缓存之前，您应该知道这一点。</p>
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 先从缓存中获取数据
+</span><span style="color:#75715e"></span>value <span style="color:#f92672">=</span> myCache<span style="color:#f92672">.</span><span style="color:#a6e22e">getIfPresent</span><span style="color:#f92672">(</span>key<span style="color:#f92672">);</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>value <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// 从 DB 获取数据
+</span><span style="color:#75715e"></span>    value <span style="color:#f92672">=</span> loadFromDB<span style="color:#f92672">(</span>key<span style="color:#f92672">);</span>
+    <span style="color:#75715e">// 数据放入缓存
+</span><span style="color:#75715e"></span>    myCache<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>key<span style="color:#f92672">,</span> value<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>从那时起，客户端将继续从缓存中获取<code>A</code>，而不是<code>B</code>，后者是最新的值。取决于您的用例，这可能是正常的，也可能不是。它还取决于缓存条目是否有 <code>TTL</code>。但在使用 look aside/demand fill 缓存之前，您应该知道这一点。</p>
 <p><strong>这个问题可以解决</strong>。Memcache使用 <code>lease</code> 来解决这个问题。因为从根本上讲，客户端在缓存上执行<strong>read-modify-write</strong>操作，而不使用<strong>原语</strong>来保证操作的安全性。在此设置中，<code>read</code> 从缓存中读取。<code>modify</code> 从数据库中读取。<code>write</code> 就是写回缓存。执行<strong>read-modify-write</strong>的一个简单解决方案是保留某种 “ticket” 来表示 <code>read</code> 时的缓存的状态，并比较 <code>write</code> 时的“ticket”。这就是 Memcache 解决问题的有效方法。Memcache 将其称为 <code>lease</code>，您可以将其作为简单的计数器，在每次缓存改变时都会碰到它。因此，在 <code>read</code> 时，它从 Memcache 主机获取 <code>lease</code>，在 <code>write</code> 时，客户端将 <code>lease</code> 一起传递。如果主机上的 <code>lease</code> 已更改，Memcache 将无法写入。现在回到前面的例子：</p>
 <pre><code>- client gets a MISS with lease `L0` (客户端未命中，租约: L0)
 - client reads DB get value `A` (客户端从数据库读取值: A)
@@ -454,9 +462,21 @@ var _hmt = _hmt || [];
 </code></pre><p>事情维持了一致：）</p>
 <h3 id="write-through--read-through-缓存">Write-through / read-through 缓存</h3>
 <p><img src="/images/posts/maintaining-cache-consistency/WechatIMG2.jpeg" alt=""></p>
-<p>Write-through 缓存方式意味着变异，客户端直接写入缓存。缓存负责同步写入到数据库中。它没有提到如何读取值的问题。客户端可以执行 look-aside 读或 read-through。</p>
+<p>Write-through 缓存方式意味着变异，客户端直接写入缓存。<strong>缓存负责同步写入到数据库中 (而不是客户端负责)</strong>。它没有提到如何读取值的问题。客户端可以执行 look-aside 读或 read-through。</p>
 <p>Read-through 缓存意味着读取，客户端直接从缓存中读取。如果是未命中，cache 负责填充数据存储中的数据并回复客户端的查询。它没有提到写作。客户端可以 demand-fill 写入缓存或 write-through。</p>
-<p>现在你得到一张表格 (TAO: Facebook’s Distributed Data Store for the Social Graph)：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// Read-through 模式
+</span><span style="color:#75715e"></span>LoadingCache<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">,</span> Result<span style="color:#f92672">&lt;</span>Category<span style="color:#f92672">&gt;&gt;</span> getCache <span style="color:#f92672">=</span> 
+    CacheBuilder<span style="color:#f92672">.</span><span style="color:#a6e22e">newBuilder</span><span style="color:#f92672">()</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">softValues</span><span style="color:#f92672">()</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">maximumSize</span><span style="color:#f92672">(</span>5000<span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">expireAfterWrite</span><span style="color:#f92672">(</span>2<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">MINUTES</span><span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span><span style="color:#a6e22e">build</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> CacheLoader<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">,</span> Result<span style="color:#f92672">&lt;</span>Category<span style="color:#f92672">&gt;&gt;()</span> <span style="color:#f92672">{</span>
+            <span style="color:#a6e22e">@Override</span>
+            <span style="color:#66d9ef">public</span> Result<span style="color:#f92672">&lt;</span>Category<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">load</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> Integer softId<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">return</span> categoryService<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>softId<span style="color:#f92672">);</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">})</span>
+</code></pre></div><p>现在你得到一张表格 (TAO: Facebook’s Distributed Data Store for the Social Graph)：</p>
 <p><img src="/images/posts/maintaining-cache-consistency/Screen-Shot-2018-08-10-at-3.21.50-PM.png" alt=""></p>
 <p>同时有 write-through 和 look-aside 缓存并不常见。既然您已经构建了一个位于客户端和数据存储中间的服务，知道如何与数据存储对话，那么为什么不同时为读写操作这样做呢。也就是说，在有限的缓存大小下，根据查询模式的不同，write-through 和 look-aside 缓存可能是命中率的最佳选择。例如，如果大多数读操作在写操作之后立即执行，那么 write-through 和 look-aside 缓存可能提供最佳命中率。Read-through 和 demand-fill 的结合没有意义。</p>
 <p>现在让我们来看看 write-through 和 read-through 缓存的一致性。对于单个问题，只要正确获取 <code>write</code> 的 <code>update lock</code> 和 <code>read</code> 的 <code>fill-lock</code>，就可以序列化对同一个 <code>key</code> 的读写操作，并且不难看出缓存的一致性将得到维护。如果存在多个缓存副本，这将成为一个分布式系统问题，可能存在一些潜在的解决方案。保持缓存的多个副本一致的最直接的解决方案是拥有一个突变/事件日志，并基于该日志更新缓存。此日志用于单点序列化。它可以是 Kafka 甚至 MySQL binlog。只要突变是以易于重放这些事件的方式进行了全局的排序，就可以保持最终的缓存一致性。注意，这背后的推理与分布式系统中的同步相同。</p>

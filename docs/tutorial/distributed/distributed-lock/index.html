@@ -5,11 +5,10 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="分布式锁 🔒"><meta property="og:title" content="分布式锁 🔒" />
-<meta property="og:description" content="分布式锁 🔒 Redis 分布式锁 Redis 实现的分布式锁，请阅读 Redis 分布式锁
-ZooKeeper 分布式锁 最简单锁实现  lock: 创建一个带有 EPHEMERAL 标志的 designated znode，创建成功，锁成功；否则，客户端可以设置上 watch 标志，当当前的 leader 挂掉的时候，即时地获得通知。 unlock: 客户端显示地删除 znode 的时候，或者客户端挂掉的时候，锁自动释放。znode 被删除的时候，其他想要获取锁的客户端可以获取到通知。  缺点：
- herd effect (羊群效应)：如果有许多客户端等待获取锁，那么当锁被释放时，他们都会争夺锁，即使只有一个客户端可以获取锁。 只实现了独占锁。  没有羊群效应的锁实现 顺序临时节点：Zookeeper 提供一个多层级的节点命名空间（节点称为 Znode），每个节点都用一个以斜杠（/）分隔的路径来表示，而且每个节点都有父节点（根节点除外），非常类似于文件系统。节点类型可以分为持久节点（PERSISTENT ）、临时节点（EPHEMERAL），每个节点还能被标记为有序性（SEQUENTIAL），一旦节点被标记为有序性，那么整个节点就具有顺序自增的特点。一般我们可以组合这几类节点来创建我们所需要的节点，例如，创建一个持久节点作为父节点，在父节点下面创建临时节点，并标记该临时节点为有序性。
-Lock:
-n = create(l &#43; “/lock-”, EPHEMERAL|SEQUENTIAL) C = getChildren(l, false) if n is lowest znode in C, exit p = znode in C ordered just before n if exists(p, true) wait for watch event goto 2 Unlock:" />
+<meta property="og:description" content="分布式锁 🔒 MySQL 分布式锁 表记录 CREATE TABLE `database_lock` ( `id` BIGINT NOT NULL AUTO_INCREMENT, `resource` int NOT NULL COMMENT &#39;锁定的资源&#39;, `description` varchar(1024) NOT NULL DEFAULT &#34;&#34; COMMENT &#39;描述&#39;, PRIMARY KEY (`id`), UNIQUE KEY `uiq_idx_resource` (`resource`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT=&#39;数据库分布式锁表&#39;; 获取锁：
+INSERT INTO database_lock(resource, description) VALUES (1, &#39;lock&#39;); 释放锁的时，可以删除这条数据：
+DELETE FROM database_lock WHERE resource = 1; 缺点：
+ 这种锁没有失效时间，一旦释放锁的操作失败就会导致锁记录一直在数据库中，其它线程无法获得锁。这个缺陷也很好解决，比如可以做一个定时任务去定时清理。 这种锁的可靠性依赖于数据库。建议设置备库，避免单点，进一步提高可靠性。 这种锁是非阻塞的，因为插入数据失败之后会直接报错，想要获得锁就需要再次操作。如果需要阻塞式的，可以弄个for循环、while循环之类的，直至INSERT成功再返回。 这种锁也是非可重入的，因为同一个线程在没有释放锁之前无法再次获得锁，因为数据库中已经存在同一份记录了。想要实现可重入锁，可以在数据库中添加一些字段，比如获得锁的主机信息、线程信息等，那么在再次获得锁的时候可以先查询数据，如果当前的主机信息和线程信息等能被查到的话，可以直接把锁分配给它。  悲观锁 我们必须关闭 MySQL 数据库的自动提交属性，因为 MySQL 默认使用autocommit 模式，也就是说，当你执行一个更新操作后，MySQL 会立刻将结果进行提交。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/distributed-lock/" />
 
@@ -20,7 +19,7 @@ n = create(l &#43; “/lock-”, EPHEMERAL|SEQUENTIAL) C = getChildren(l, false)
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -976,6 +975,12 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#mysql-分布式锁">MySQL 分布式锁</a>
+      <ul>
+        <li><a href="#表记录">表记录</a></li>
+        <li><a href="#悲观锁">悲观锁</a></li>
+      </ul>
+    </li>
     <li><a href="#redis-分布式锁">Redis 分布式锁</a></li>
     <li><a href="#zookeeper-分布式锁">ZooKeeper 分布式锁</a>
       <ul>
@@ -1006,6 +1011,39 @@ data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="分布式锁-">分布式锁 🔒</h1>
+<h2 id="mysql-分布式锁">MySQL 分布式锁</h2>
+<h3 id="表记录">表记录</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#f92672">`</span>database_lock<span style="color:#f92672">`</span> (
+	<span style="color:#f92672">`</span>id<span style="color:#f92672">`</span> BIGINT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> AUTO_INCREMENT,
+	<span style="color:#f92672">`</span>resource<span style="color:#f92672">`</span> int <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">COMMENT</span> <span style="color:#e6db74">&#39;锁定的资源&#39;</span>,
+	<span style="color:#f92672">`</span>description<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">1024</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#66d9ef">COMMENT</span> <span style="color:#e6db74">&#39;描述&#39;</span>,
+	<span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span> (<span style="color:#f92672">`</span>id<span style="color:#f92672">`</span>),
+	<span style="color:#66d9ef">UNIQUE</span> <span style="color:#66d9ef">KEY</span> <span style="color:#f92672">`</span>uiq_idx_resource<span style="color:#f92672">`</span> (<span style="color:#f92672">`</span>resource<span style="color:#f92672">`</span>) 
+) ENGINE<span style="color:#f92672">=</span>InnoDB <span style="color:#66d9ef">DEFAULT</span> CHARSET<span style="color:#f92672">=</span>utf8mb4 <span style="color:#66d9ef">COMMENT</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;数据库分布式锁表&#39;</span>;
+</code></pre></div><p>获取锁：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> database_lock(resource, description) <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;lock&#39;</span>);
+</code></pre></div><p>释放锁的时，可以删除这条数据：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">DELETE</span> <span style="color:#66d9ef">FROM</span> database_lock <span style="color:#66d9ef">WHERE</span> resource <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
+</code></pre></div><p>缺点：</p>
+<ul>
+<li>这种锁没有<strong>失效时间</strong>，一旦释放锁的操作失败就会导致锁记录一直在数据库中，其它线程无法获得锁。这个缺陷也很好解决，比如可以做一个定时任务去定时清理。</li>
+<li>这种锁的<strong>可靠性依赖于数据库</strong>。建议设置备库，避免单点，进一步提高可靠性。</li>
+<li>这种锁是<strong>非阻塞</strong>的，因为插入数据失败之后会直接报错，想要获得锁就需要再次操作。如果需要阻塞式的，可以弄个<code>for</code>循环、<code>while</code>循环之类的，直至<code>INSERT</code>成功再返回。</li>
+<li>这种锁也是<strong>非可重入</strong>的，因为同一个线程在没有释放锁之前无法再次获得锁，因为数据库中已经存在同一份记录了。想要实现可重入锁，可以在数据库中添加一些字段，比如<strong>获得锁的主机信息、线程信息</strong>等，那么在再次获得锁的时候可以<strong>先查询数据</strong>，如果当前的主机信息和线程信息等能被查到的话，可以直接把锁分配给它。</li>
+</ul>
+<h3 id="悲观锁">悲观锁</h3>
+<p>我们必须关闭 MySQL 数据库的自动提交属性，因为 MySQL 默认使用<code>autocommit</code> 模式，也就是说，当你执行一个更新操作后，MySQL 会立刻将结果进行提交。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">SET</span> AUTOCOMMIT <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</code></pre></div><p>获取锁：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> database_lock <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">FOR</span> <span style="color:#66d9ef">UPDATE</span>;
+</code></pre></div><p>释放锁：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">COMMIT</span>;
+</code></pre></div><blockquote>
+<p>MySQL InnoDB 引起在加锁的时候，只有明<strong>确地指定主键(或索引)<strong>的才会执行行锁 (只锁住被选取的数据)，否则 MySQL 将会执行</strong>表锁</strong>(将整个数据表单给锁住)。在<strong>悲观锁</strong>中，每一次行数据的访问都是<strong>独占</strong>的，只有当正在访问该行数据的请求事务提交以后，其他请求才能依次访问该数据，否则将阻塞等待锁的获取。</p>
+</blockquote>
+<ul>
+<li><a href="https://blog.csdn.net/u013474436/article/details/104924782/">参考</a></li>
+</ul>
 <h2 id="redis-分布式锁">Redis 分布式锁</h2>
 <p>Redis 实现的分布式锁，请阅读 <a href="/docs/tutorial/redis/distributed-lock/">Redis 分布式锁</a></p>
 <h2 id="zookeeper-分布式锁">ZooKeeper 分布式锁</h2>
@@ -1094,6 +1132,12 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#mysql-分布式锁">MySQL 分布式锁</a>
+      <ul>
+        <li><a href="#表记录">表记录</a></li>
+        <li><a href="#悲观锁">悲观锁</a></li>
+      </ul>
+    </li>
     <li><a href="#redis-分布式锁">Redis 分布式锁</a></li>
     <li><a href="#zookeeper-分布式锁">ZooKeeper 分布式锁</a>
       <ul>

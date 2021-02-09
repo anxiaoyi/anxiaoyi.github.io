@@ -13,7 +13,8 @@
       
       <guid>https://kunzhao.org/docs/tutorial/java/stream/</guid>
       <description>Stream 编程 String[] Stream Arrays.stream(lines.split(&amp;#34;\\s+&amp;#34;)) .map(String::toUpperCase) .toArray(String[]::new) Integer[] 或 int[] stream int[] num = {1, 2, 3, 4, 5}; Integer[] result = Arrays.stream(num) .map(x -&amp;gt; x * 2) .boxed() .toArray(Integer[]::new); int[]
-Stream&amp;lt;Integer&amp;gt; stream = Stream.of(1, 2, 3, 4, 5); int[] result = stream.map2Int(x -&amp;gt; x).toArray(); </description>
+Stream&amp;lt;Integer&amp;gt; stream = Stream.of(1, 2, 3, 4, 5); int[] result = stream.map2Int(x -&amp;gt; x).toArray(); lambda 引用外部变量  lambda 引用外部变量为什么必须声明为 final ?
+ Local variables in Java have until now been immune to race conditions and visibility problems because they are accessible only to the thread executing the method in which they are declared.</description>
     </item>
     
     <item>
@@ -37,6 +38,56 @@ LocalDateTime ldt = LocalDateTime.now(); DateTimeFormatter formatter = DateTimeF
 JVM 把 Class 文件加载到内存，然后进行校验、准备、解析、初始化，最终形成可以使用的 Java 类型，这就是类加载机制。其中，校验、准备、解析这三个阶段，放在一起是链接阶段。
  【加载】二进制字节流可以从 JAR、WAR、网络、运行时动态生成（动态代理）、JSP生成。 【验证】文件格式、元数据（信息语义）、字节码验证（类型转换是否有效、跳转指令不会跳到方法体以外的地方去）、符号引用验证 【准备】static final 变量赋值、各个基本数据类型的默认值 【解析】常量池内的符号引用（用符号描述引用目标）替换为直接引用（直接指向目标的指针） 【初始化】编译器收集 static 块、类变量的赋值放到 () 方法中  加载器类型  Bootstrap ClassLoader：加载 JAVA_HOME/lib、或者 -Xbootclasspath，并且是按照名字识别的，如 rt.jar Extension ClassLoader：JAVA_HOME/lib/ext、或者 java.ext.dirs 系统变量 Application ClassLoader：加载用户 ClassPath 上的类库  类加载器之间的层次关系，称之为双亲委派模型。如果一个类收到类加载请求，那么会首先委派给父类，父类反馈无法完成，自己才进行加载。
 何时初始化  遇到 new、getstatic、putstatic、invokestatic 这 4 条字节码指令。对应的是 new 一个对象、读取静态字段、设置静态字段（字段没有被 final 修饰，否则在编译器就已经将结果放在常量池了）、调用一个类的静态方法。 java.lang.reflect 进行反射。 初始化 A 类，其父类没有被初始化。 虚拟机启动时，包含 main() 方法的这个类  // 不会导致子类初始化 println(SubClass.</description>
+    </item>
+    
+    <item>
+      <title>JUC 并发包</title>
+      <link>https://kunzhao.org/docs/tutorial/java/juc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/java/juc/</guid>
+      <description>JUC 并发包 AQS (AbstractQueuedSynchronizer) AQS核心思想是，如果被请求的共享资源空闲，那么就将当前请求资源的线程设置为有效的工作线程，将共享资源设置为锁定状态；如果共享资源被占用，就需要一定的阻塞等待唤醒机制来保证锁分配。这个机制主要用的是CLH队列的变体实现的，将暂时获取不到锁的线程加入到队列中。
+CLH：Craig、Landin and Hagersten 队列，是单向链表，AQS中的队列是CLH变体的虚拟双向队列（FIFO），AQS是通过将每条请求共享资源的线程封装成一个节点来实现锁的分配。
+AQS 维护了一个 volatile int state（代表共享资源）和一个 FIFO 线程等待队列（多线程争用资源被阻塞时会进入此队列）。
+/** * The synchronization state. */ private volatile int state; protected final boolean compareAndSetState(int expect, int update) { // See below for intrinsics setup to support this  return unsafe.compareAndSwapInt(this, stateOffset, expect, update); } AQS 定义两种资源共享方式：
+ Exclusive（独占，只有一个线程能执行，如 ReentrantLock） Share（共享，多个线程可同时执行，如 Semaphore/CountDownLatch）。  不同的自定义同步器争用共享资源的方式也不同。自定义同步器在实现时只需要实现共享资源 state 的获取与释放方式即可，至于具体线程等待队列的维护（如获取资源失败入队/唤醒出队等），AQS 已经在顶层实现好了。自定义同步器实现时主要实现以下几种方法：
+ isHeldExclusively()：该线程是否正在独占资源。只有用到condition才需要去实现它。 tryAcquire(int)：独占方式。尝试获取资源，成功则返回true，失败则返回false。 tryRelease(int)：独占方式。尝试释放资源，成功则返回true，失败则返回false。 tryAcquireShared(int)：共享方式。尝试获取资源。负数表示失败；0表示成功，但没有剩余可用资源；正数表示成功，且有剩余资源。 tryReleaseShared(int)：共享方式。尝试释放资源，如果释放后允许唤醒后续等待结点返回true，否则返回false。  Node Node 结点是对每一个等待获取资源的线程的封装，其包含了需要同步的线程本身及其等待状态，如是否被阻塞、是否等待唤醒、是否已经被取消等。变量 waitStatus 则表示当前 Node 结点的等待状态。</description>
+    </item>
+    
+    <item>
+      <title>Java IO</title>
+      <link>https://kunzhao.org/docs/tutorial/java/java-io/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/java/java-io/</guid>
+      <description>Java IO BIO { ExecutorService executor = Excutors.newFixedThreadPollExecutor(100);//线程池  ServerSocket serverSocket = new ServerSocket(); serverSocket.bind(8088); while(!Thread.currentThread.isInturrupted()){//主线程死循环等待新连接到来  Socket socket = serverSocket.accept(); executor.submit(new ConnectIOnHandler(socket));//为新的连接创建新的线程 } class ConnectIOnHandler extends Thread{ private Socket socket; public ConnectIOnHandler(Socket socket){ this.socket = socket; } public void run(){ while(!Thread.currentThread.isInturrupted()&amp;amp;&amp;amp;!socket.isClosed()){死循环处理读写事件 String someThing = socket.read()....//读取数据  if(someThing!=null){ ......//处理数据  socket.write()....//写数据  } } } } 这个模型最本质的问题在于，严重依赖于线程。但线程是很”贵”的资源，主要表现在：
+   线程的创建和销毁成本很高，在Linux这样的操作系统中，线程本质上就是一个进程。创建和销毁都是重量级的系统函数。    线程本身占用较大内存，像Java的线程栈，一般至少分配512K～1M的空间，如果系统中的线程数过千，恐怕整个JVM的内存都会被吃掉一半。    线程的切换成本是很高的。操作系统发生线程切换的时候，需要保留线程的上下文，然后执行系统调用。如果线程数过高，可能执行线程切换的时间甚至会大于线程执行的时间，这时候带来的表现往往是系统load偏高、CPU sy使用率特别高（超过20%以上)，导致系统几乎陷入不可用的状态。    容易造成锯齿状的系统负载。因为系统负载是用活动线程数或CPU核心数，一旦线程数量高但外部网络环境不是很稳定，就很容易造成大量请求的结果同时返回，激活大量阻塞线程从而使系统负载压力过大。    NIO Channels 打开 SocketChannel：</description>
+    </item>
+    
+    <item>
+      <title>Java 基础</title>
+      <link>https://kunzhao.org/docs/tutorial/java/basic/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/java/basic/</guid>
+      <description>Java 基础 8 种基础数据类型    类型 字节数 范围     byte 1个字节 -2^7 ~ 2^7-1   char 2个字节 0～65535   short 2个字节 -2^15 ~ 2^15-1   int 4个字节 -2^31 ~ 2^31-1   float 4个字节 3.402823e+38 ~ 1.401298e-45   long 8个字节 -2^63 ～ 2^63-1   double 8个字节 1.797693e+308 ~ 4.9000000e-324   boolean       char 能存储中文字符吗</description>
+    </item>
+    
+    <item>
+      <title>Java 集合类</title>
+      <link>https://kunzhao.org/docs/tutorial/java/java-collection/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/java/java-collection/</guid>
+      <description>Java 集合类 HashMap  并发下的 HashMap 会有哪些安全问题？
+ 这里我只是简单的说了写覆盖跟不可重复读（联想到数据库了），面试官就放我过了。
+ 添加元素时头插还是尾插？
+ 1.7 头插，1.8 尾插。
+数组长度为什么必须是 2 的指数幂 减少哈希冲突，均匀分布元素。
+1）通过将 Key 的 hash 值与 length-1 进行 &amp;amp; 运算，实现了当前 Key 的定位，2 的幂次方可以减少冲突（碰撞）的次数，提高 HashMap 查询效率；
+2）如果 length 为 2 的次幂，则 length-1 转化为二进制必定是 11111…… 的形式，在于 h 的二进制与操作效率会非常的快，而且空间不浪费；如果 length 不是 2 的次幂，比如 length 为 15，则 length-1 为 14，对应的二进制为 1110，在于 h 与操作，最后一位都为 0，而 0001，0011，0101，1001，1011，0111，1101 这几个位置永远都不能存放元素了，空间浪费相当大，更糟的是这种情况中，数组可以使用的位置比数组长度小了很多，这意味着进一步增加了碰撞的几率，减慢了查询的效率！这样就会造成空间的浪费。
+如何扩容的 (1) 初始扩容因子
+static final int DEFAULT_INITIAL_CAPACITY = 1 &amp;lt;&amp;lt; 4; // aka 16 static final float DEFAULT_LOAD_FACTOR = 0.</description>
     </item>
     
   </channel>

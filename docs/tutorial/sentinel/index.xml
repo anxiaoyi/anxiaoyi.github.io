@@ -25,15 +25,51 @@
     </item>
     
     <item>
-      <title>LeapArray</title>
+      <title>基于 LeapArray 的统计</title>
       <link>https://kunzhao.org/docs/tutorial/sentinel/leaparray/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/sentinel/leaparray/</guid>
-      <description>LeapArray Sentinel 底层采用高性能的滑动窗口数据结构 LeapArray 来统计实时的秒级指标数据，可以很好地支撑写多于读的高并发场景。
+      <description>基于 LeapArray 的统计 Sentinel 底层采用高性能的滑动窗口数据结构 LeapArray 来统计实时的秒级指标数据，可以很好地支撑写多于读的高并发场景。
 Metric 统计类 LeapArray 作为基础设施，其目的主要是为了在底层配合 Metric 类，以便对资源的各种信息做统计，我们来看 Metric 类都需要统计哪些信息：
 public interface Metric extends DebugSupport { // 获取总的成功数量  long success(); // 获取最大的成功数量  long maxSuccess(); // 获取异常数量  long exception(); // 获取阻塞的数量  long block(); // 获取总的通过数量  long pass(); // 获取总响应时间  long rt(); // 获取最小的响应时间  long minRt(); } 相应的，在 Metric 接口中，也有添加各种事件的方法：
 public interface Metric extends DebugSupport { // 添加 n 个异常  void addException(int n); // 添加 n 个阻塞  void addBlock(int n); // 添加 n 个成功的响应  void addSuccess(int n); // 添加 n 个通过  void addPass(int n); // 在总响应时间上，添加 rt 时间  void addRT(long rt); } 以 ArrayMetric 的 addSuccess(int count) 和 success() 为例，我们看下在内部是如何使用 LeapArray 提供资源统计服务的。</description>
+    </item>
+    
+    <item>
+      <title>限流实现原理</title>
+      <link>https://kunzhao.org/docs/tutorial/sentinel/flow/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/sentinel/flow/</guid>
+      <description>限流实现原理 本文以最常见的限流场景来讲述 Sentinel 基础的工作原理。
+限流架构图 限流原理的总的架构图如下：
+FlowSlot 从 FlowRuleManager 中根据用当前资源名称作为 Key，然后读取出来这个资源绑定的 FlowRule 规则。然后将这些规则作为方法的参数，来调用 FlowRuleChecker 的 checkFlow 方法。
+在 checkFlow 内部，遍历这每一个 FlowRule，逐次判断是否可以通过限流检查：
+// FlowRuleChecker.java public void checkFlow(Function&amp;lt;String, Collection&amp;lt;FlowRule&amp;gt;&amp;gt; ruleProvider, ResourceWrapper resource, Context context, DefaultNode node, int count, boolean prioritized) throws BlockException { Collection&amp;lt;FlowRule&amp;gt; rules = ruleProvider.apply(resource.getName()); if (rules != null) { for (FlowRule rule : rules) { if (!canPassCheck(rule, context, node, count, prioritized)) { throw new FlowException(rule.getLimitApp(), rule); } } } } 每一个 FlowRule 内部都可以关联不同的 TrafficShapingController，关联不同的流量整形器的代码如下：</description>
+    </item>
+    
+    <item>
+      <title>分布式限流实现原理</title>
+      <link>https://kunzhao.org/docs/tutorial/sentinel/distributed-flow/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/sentinel/distributed-flow/</guid>
+      <description>分布式限流实现原理  本文讲述 Sentinel 的分布式限流原理。
+ 模块构成 Sentinel 的分布式限流模块包含：
+ sentinel-cluster-common-default: 集群通信的一些通用的类、常量等实现 sentinel-cluster-client-default: 默认的使用 Netty 作为底层通讯的集群 Client 端 sentinel-cluster-server-default: 默认的集群 Server 端  common-default 模块并没有实际的逻辑，只是一些共用的类之类的实现，不再赘述。
+Client 端 初始化 Bootstrap Client 端初始化 Bootstrap 并尝试连接 Server 端：
+// NettyTransportClient.java private Bootstrap initClientBootstrap() { Bootstrap b = new Bootstrap(); eventLoopGroup = new NioEventLoopGroup(); b.group(eventLoopGroup) .channel(NioSocketChannel.class) .option(ChannelOption.TCP_NODELAY, true) .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT) .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, ClusterClientConfigManager.getConnectTimeout()) .handler(new ChannelInitializer&amp;lt;SocketChannel&amp;gt;() { @Override public void initChannel(SocketChannel ch) throws Exception { clientHandler = new TokenClientHandler(currentState, disconnectCallback); ChannelPipeline pipeline = ch.</description>
+    </item>
+    
+    <item>
+      <title>WebMVC 限流实现原理</title>
+      <link>https://kunzhao.org/docs/tutorial/sentinel/webmvc-flow/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/sentinel/webmvc-flow/</guid>
+      <description>WebMVC 限流实现原理 简介 Sentinel 提供了基于 SpringMVC 的限流方式：
+@Configuration public class InterceptorConfig implements WebMvcConfigurer { @Override public void addInterceptors(InterceptorRegistry registry) { SentinelWebMvcConfig config = new SentinelWebMvcConfig(); // Enable the HTTP method prefix.  config.setHttpMethodSpecify(true); // Add to the interceptor list.  registry.addInterceptor(new SentinelWebInterceptor(config)).addPathPatterns(&amp;#34;/**&amp;#34;); } } </description>
     </item>
     
     <item>

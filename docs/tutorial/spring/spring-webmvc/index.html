@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Spring WebMVC"><meta property="og:title" content="Spring WebMVC" />
+<meta property="og:description" content="Spring WebMVC  Spring 接受前端请求的处理过程，根据 SpringBoot 2.4.2 版本。
+ doService 放入各种属性到 request 对象上，然后交给 doDispatch 进行代理转发：
+public class DispatcherServlet extends FrameworkServlet { protected void doService(HttpServletRequest request, HttpServletResponse response) throws Exception { // ...  request.setAttribute(WEB_APPLICATION_CONTEXT_ATTRIBUTE, getWebApplicationContext()); request.setAttribute(LOCALE_RESOLVER_ATTRIBUTE, this.localeResolver); request.setAttribute(THEME_RESOLVER_ATTRIBUTE, this.themeResolver); // ...  doDispatch(request, response); } } doDispatcher public class DispatcherServlet extends FrameworkServlet { protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception { // 用哪个 Handler 链处理请求  mappedHandler = getHandler(processedRequest); // 用哪个 Handler adapter 处理请求  HandlerAdapter ha = getHandlerAdapter(mappedHandler." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/spring/spring-webmvc/" />
+
+<title>Spring WebMVC | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/annotations/" >
+      Spring 常用注解
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/resttemplate/" >
+      RestTemplate
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/ots-parsing-error/" >
+      ots parsing error
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/deploy-to-tomcat/" >
+      SpringBoot 打包成 WAR 部署到 Tomcat
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/transactional/" >
+      Transactional
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-plugin/" >
+      Spring 插件扩展
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-read-properties/" >
+      Spring 读取 Properties 实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-ioc/" >
+      Spring IOC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-aop/" >
+      Spring AOP
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-webmvc/"  class="active">
+      Spring WebMVC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/springboot-autoconfig/" >
+      SpringBoot 自动配置原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/springboot-startup/" >
+      SpringBoot 启动过程
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Spring WebMVC</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#doservice">doService</a></li>
+    <li><a href="#dodispatcher">doDispatcher</a>
+      <ul>
+        <li><a href="#gethandler">getHandler</a></li>
+        <li><a href="#gethandleradapter">getHandlerAdapter</a></li>
+        <li><a href="#处理-last-modified">处理 Last-Modified</a></li>
+        <li><a href="#请求拦截器">请求拦截器</a></li>
+        <li><a href="#处理结果">处理结果</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="spring-webmvc">Spring WebMVC</h1>
+<blockquote>
+<p>Spring 接受前端请求的处理过程，根据 SpringBoot 2.4.2 版本。</p>
+</blockquote>
+<h2 id="doservice">doService</h2>
+<p>放入各种属性到 <code>request</code> 对象上，然后交给 <code>doDispatch</code> 进行代理<strong>转发</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DispatcherServlet</span> <span style="color:#66d9ef">extends</span> FrameworkServlet <span style="color:#f92672">{</span>
+    
+    <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doService</span><span style="color:#f92672">(</span>HttpServletRequest request<span style="color:#f92672">,</span> HttpServletResponse response<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        request<span style="color:#f92672">.</span><span style="color:#a6e22e">setAttribute</span><span style="color:#f92672">(</span>WEB_APPLICATION_CONTEXT_ATTRIBUTE<span style="color:#f92672">,</span> getWebApplicationContext<span style="color:#f92672">());</span>
+		request<span style="color:#f92672">.</span><span style="color:#a6e22e">setAttribute</span><span style="color:#f92672">(</span>LOCALE_RESOLVER_ATTRIBUTE<span style="color:#f92672">,</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">localeResolver</span><span style="color:#f92672">);</span>
+		request<span style="color:#f92672">.</span><span style="color:#a6e22e">setAttribute</span><span style="color:#f92672">(</span>THEME_RESOLVER_ATTRIBUTE<span style="color:#f92672">,</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">themeResolver</span><span style="color:#f92672">);</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>
+        doDispatch<span style="color:#f92672">(</span>request<span style="color:#f92672">,</span> response<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="dodispatcher">doDispatcher</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DispatcherServlet</span> <span style="color:#66d9ef">extends</span> FrameworkServlet <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doDispatch</span><span style="color:#f92672">(</span>HttpServletRequest request<span style="color:#f92672">,</span> HttpServletResponse response<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 用哪个 Handler 链处理请求
+</span><span style="color:#75715e"></span>        mappedHandler <span style="color:#f92672">=</span> getHandler<span style="color:#f92672">(</span>processedRequest<span style="color:#f92672">);</span>
+
+        <span style="color:#75715e">// 用哪个 Handler adapter 处理请求
+</span><span style="color:#75715e"></span>        HandlerAdapter ha <span style="color:#f92672">=</span> getHandlerAdapter<span style="color:#f92672">(</span>mappedHandler<span style="color:#f92672">.</span><span style="color:#a6e22e">getHandler</span><span style="color:#f92672">());</span>
+
+        <span style="color:#75715e">// 处理 last-modified 头
+</span><span style="color:#75715e"></span>        String method <span style="color:#f92672">=</span> request<span style="color:#f92672">.</span><span style="color:#a6e22e">getMethod</span><span style="color:#f92672">();</span>
+        <span style="color:#66d9ef">boolean</span> isGet <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;GET&#34;</span><span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>method<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>isGet <span style="color:#f92672">||</span> <span style="color:#e6db74">&#34;HEAD&#34;</span><span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>method<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">long</span> lastModified <span style="color:#f92672">=</span> ha<span style="color:#f92672">.</span><span style="color:#a6e22e">getLastModified</span><span style="color:#f92672">(</span>request<span style="color:#f92672">,</span> mappedHandler<span style="color:#f92672">.</span><span style="color:#a6e22e">getHandler</span><span style="color:#f92672">());</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> ServletWebRequest<span style="color:#f92672">(</span>request<span style="color:#f92672">,</span> response<span style="color:#f92672">).</span><span style="color:#a6e22e">checkNotModified</span><span style="color:#f92672">(</span>lastModified<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;&amp;</span> isGet<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#75715e">// 请求拦截器
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>mappedHandler<span style="color:#f92672">.</span><span style="color:#a6e22e">applyPreHandle</span><span style="color:#f92672">(</span>processedRequest<span style="color:#f92672">,</span> response<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#75715e">// 开始实际处理请求
+</span><span style="color:#75715e"></span>        mv <span style="color:#f92672">=</span> ha<span style="color:#f92672">.</span><span style="color:#a6e22e">handle</span><span style="color:#f92672">(</span>processedRequest<span style="color:#f92672">,</span> response<span style="color:#f92672">,</span> mappedHandler<span style="color:#f92672">.</span><span style="color:#a6e22e">getHandler</span><span style="color:#f92672">());</span>
+
+        <span style="color:#75715e">// 请求拦截器
+</span><span style="color:#75715e"></span>        mappedHandler<span style="color:#f92672">.</span><span style="color:#a6e22e">applyPostHandle</span><span style="color:#f92672">(</span>processedRequest<span style="color:#f92672">,</span> response<span style="color:#f92672">,</span> mv<span style="color:#f92672">);</span>
+
+        <span style="color:#75715e">// 处理请求的结果
+</span><span style="color:#75715e"></span>        processDispatchResult<span style="color:#f92672">(</span>processedRequest<span style="color:#f92672">,</span> response<span style="color:#f92672">,</span> mappedHandler<span style="color:#f92672">,</span> mv<span style="color:#f92672">,</span> dispatchException<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="gethandler">getHandler</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DispatcherServlet.java
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">@Nullable</span>
+<span style="color:#66d9ef">protected</span> HandlerExecutionChain <span style="color:#a6e22e">getHandler</span><span style="color:#f92672">(</span>HttpServletRequest request<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">handlerMappings</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>HandlerMapping mapping <span style="color:#f92672">:</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">handlerMappings</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            HandlerExecutionChain handler <span style="color:#f92672">=</span> mapping<span style="color:#f92672">.</span><span style="color:#a6e22e">getHandler</span><span style="color:#f92672">(</span>request<span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>handler <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">return</span> handler<span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>handlerMappings</code> 有哪些：</p>
+<p><img src="/images/docs/tutorial/spring/spring-webmvc/Snipaste_2021-02-09_12-19-52.png" alt=""></p>
+<p>找到最匹配的 <code>HandlerExecutionChain</code> 以后，这个类内部的 <code>handler</code> 指向的就是 <code>XXXController</code> 这个类。</p>
+<p><img src="/images/docs/tutorial/spring/spring-webmvc/Snipaste_2021-02-09_13-20-29.png" alt=""></p>
+<h3 id="gethandleradapter">getHandlerAdapter</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> HandlerAdapter <span style="color:#a6e22e">getHandlerAdapter</span><span style="color:#f92672">(</span>Object handler<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> ServletException <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">handlerAdapters</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>HandlerAdapter adapter <span style="color:#f92672">:</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">handlerAdapters</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>adapter<span style="color:#f92672">.</span><span style="color:#a6e22e">supports</span><span style="color:#f92672">(</span>handler<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">return</span> adapter<span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> ServletException<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;No adapter for handler [&#34;</span> <span style="color:#f92672">+</span> handler <span style="color:#f92672">+</span>
+            <span style="color:#e6db74">&#34;]: The DispatcherServlet configuration needs to include a HandlerAdapter that supports this handler&#34;</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>handlerAdapters</code> 有哪些：</p>
+<p><img src="/images/docs/tutorial/spring/spring-webmvc/Snipaste_2021-02-09_13-21-30.png" alt=""></p>
+<h3 id="处理-last-modified">处理 Last-Modified</h3>
+<p>如果是 <code>GET</code> 或者 <code>HEAD</code> 请求，检查是否是携带了 <code>last-modified</code> 头：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ServletWebRequest.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">checkNotModified</span><span style="color:#f92672">(</span><span style="color:#a6e22e">@Nullable</span> String etag<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> lastModifiedTimestamp<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    HttpServletResponse response <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getResponse</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notModified</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">(</span>response <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">||</span> HttpStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">OK</span><span style="color:#f92672">.</span><span style="color:#a6e22e">value</span><span style="color:#f92672">()</span> <span style="color:#f92672">==</span> response<span style="color:#f92672">.</span><span style="color:#a6e22e">getStatus</span><span style="color:#f92672">()))</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">validateIfUnmodifiedSince</span><span style="color:#f92672">(</span>lastModifiedTimestamp<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notModified</span> <span style="color:#f92672">&amp;&amp;</span> response <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                response<span style="color:#f92672">.</span><span style="color:#a6e22e">setStatus</span><span style="color:#f92672">(</span>HttpStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">PRECONDITION_FAILED</span><span style="color:#f92672">.</span><span style="color:#a6e22e">value</span><span style="color:#f92672">());</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notModified</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">boolean</span> validated <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">validateIfNoneMatch</span><span style="color:#f92672">(</span>etag<span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>validated<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">validateIfModifiedSince</span><span style="color:#f92672">(</span>lastModifiedTimestamp<span style="color:#f92672">);</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>response <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">boolean</span> isHttpGetOrHead <span style="color:#f92672">=</span> SAFE_METHODS<span style="color:#f92672">.</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getRequest</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getMethod</span><span style="color:#f92672">());</span>
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notModified</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    response<span style="color:#f92672">.</span><span style="color:#a6e22e">setStatus</span><span style="color:#f92672">(</span>isHttpGetOrHead <span style="color:#f92672">?</span> HttpStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">NOT_MODIFIED</span><span style="color:#f92672">.</span><span style="color:#a6e22e">value</span><span style="color:#f92672">()</span> <span style="color:#f92672">:</span> HttpStatus<span style="color:#f92672">.</span><span style="color:#a6e22e">PRECONDITION_FAILED</span><span style="color:#f92672">.</span><span style="color:#a6e22e">value</span><span style="color:#f92672">());</span>
+                <span style="color:#f92672">}</span>
+
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>isHttpGetOrHead<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>lastModifiedTimestamp <span style="color:#f92672">&gt;</span> 0L <span style="color:#f92672">&amp;&amp;</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">parseDateValue</span><span style="color:#f92672">(</span>response<span style="color:#f92672">.</span><span style="color:#a6e22e">getHeader</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Last-Modified&#34;</span><span style="color:#f92672">))</span> <span style="color:#f92672">==</span> <span style="color:#f92672">-</span>1L<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                        response<span style="color:#f92672">.</span><span style="color:#a6e22e">setDateHeader</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Last-Modified&#34;</span><span style="color:#f92672">,</span> lastModifiedTimestamp<span style="color:#f92672">);</span>
+                    <span style="color:#f92672">}</span>
+
+                    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>StringUtils<span style="color:#f92672">.</span><span style="color:#a6e22e">hasLength</span><span style="color:#f92672">(</span>etag<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;&amp;</span> response<span style="color:#f92672">.</span><span style="color:#a6e22e">getHeader</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;ETag&#34;</span><span style="color:#f92672">)</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                        response<span style="color:#f92672">.</span><span style="color:#a6e22e">setHeader</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;ETag&#34;</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">padEtagIfNecessary</span><span style="color:#f92672">(</span>etag<span style="color:#f92672">));</span>
+                    <span style="color:#f92672">}</span>
+                <span style="color:#f92672">}</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notModified</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notModified</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>检查 <code>Last-Modified</code> 的处理过程如下：</p>
+<p>(1) 自上次某个修改时间以来是否没有变化过</p>
+<p>查看 <code>If-Unmodified-Since</code> 头：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">validateIfUnmodifiedSince</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> lastModifiedTimestamp<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>lastModifiedTimestamp <span style="color:#f92672">&lt;</span> 0L<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">long</span> ifUnmodifiedSince <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">parseDateHeader</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;If-Unmodified-Since&#34;</span><span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ifUnmodifiedSince <span style="color:#f92672">==</span> <span style="color:#f92672">-</span>1L<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notModified</span> <span style="color:#f92672">=</span> ifUnmodifiedSince <span style="color:#f92672">&lt;</span> lastModifiedTimestamp <span style="color:#f92672">/</span> 1000L <span style="color:#f92672">*</span> 1000L<span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>(2) 是否 Non-Match</p>
+<p>上述如果不匹配，那么就会检查 <code>etag</code> 和 <code>If-None-Match</code> 是否匹配：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">validateIfNoneMatch</span><span style="color:#f92672">(</span><span style="color:#a6e22e">@Nullable</span> String etag<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>StringUtils<span style="color:#f92672">.</span><span style="color:#a6e22e">hasLength</span><span style="color:#f92672">(</span>etag<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        Enumeration ifNoneMatch<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+            ifNoneMatch <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getRequest</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getHeaders</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;If-None-Match&#34;</span><span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>IllegalArgumentException var5<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>ifNoneMatch<span style="color:#f92672">.</span><span style="color:#a6e22e">hasMoreElements</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+            etag <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">padEtagIfNecessary</span><span style="color:#f92672">(</span>etag<span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>etag<span style="color:#f92672">.</span><span style="color:#a6e22e">startsWith</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;W/&#34;</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+                etag <span style="color:#f92672">=</span> etag<span style="color:#f92672">.</span><span style="color:#a6e22e">substring</span><span style="color:#f92672">(</span>2<span style="color:#f92672">);</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#66d9ef">while</span><span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">while</span><span style="color:#f92672">(</span>ifNoneMatch<span style="color:#f92672">.</span><span style="color:#a6e22e">hasMoreElements</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+                    String clientETags <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>String<span style="color:#f92672">)</span>ifNoneMatch<span style="color:#f92672">.</span><span style="color:#a6e22e">nextElement</span><span style="color:#f92672">();</span>
+                    Matcher etagMatcher <span style="color:#f92672">=</span> ETAG_HEADER_VALUE_PATTERN<span style="color:#f92672">.</span><span style="color:#a6e22e">matcher</span><span style="color:#f92672">(</span>clientETags<span style="color:#f92672">);</span>
+
+                    <span style="color:#66d9ef">while</span><span style="color:#f92672">(</span>etagMatcher<span style="color:#f92672">.</span><span style="color:#a6e22e">find</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+                        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>StringUtils<span style="color:#f92672">.</span><span style="color:#a6e22e">hasLength</span><span style="color:#f92672">(</span>etagMatcher<span style="color:#f92672">.</span><span style="color:#a6e22e">group</span><span style="color:#f92672">())</span> <span style="color:#f92672">&amp;&amp;</span> etag<span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>etagMatcher<span style="color:#f92672">.</span><span style="color:#a6e22e">group</span><span style="color:#f92672">(</span>3<span style="color:#f92672">)))</span> <span style="color:#f92672">{</span>
+                            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notModified</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+                            <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+                        <span style="color:#f92672">}</span>
+                    <span style="color:#f92672">}</span>
+                <span style="color:#f92672">}</span>
+
+                <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>(3) 是否自某个时间开始后修改了</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">validateIfModifiedSince</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> lastModifiedTimestamp<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>lastModifiedTimestamp <span style="color:#f92672">&lt;</span> 0L<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">long</span> ifModifiedSince <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">parseDateHeader</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;If-Modified-Since&#34;</span><span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ifModifiedSince <span style="color:#f92672">==</span> <span style="color:#f92672">-</span>1L<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">notModified</span> <span style="color:#f92672">=</span> ifModifiedSince <span style="color:#f92672">&gt;=</span> lastModifiedTimestamp <span style="color:#f92672">/</span> 1000L <span style="color:#f92672">*</span> 1000L<span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="请求拦截器">请求拦截器</h3>
+<p>请求拦截器在真正处理请求前进行拦截器的 <code>preHandle</code> 和 <code>postHandle</code> 处理：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">applyPreHandle</span><span style="color:#f92672">(</span>HttpServletRequest request<span style="color:#f92672">,</span> HttpServletResponse response<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">interceptorList</span><span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">();</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+        HandlerInterceptor interceptor <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">interceptorList</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>i<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>interceptor<span style="color:#f92672">.</span><span style="color:#a6e22e">preHandle</span><span style="color:#f92672">(</span>request<span style="color:#f92672">,</span> response<span style="color:#f92672">,</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">handler</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            triggerAfterCompletion<span style="color:#f92672">(</span>request<span style="color:#f92672">,</span> response<span style="color:#f92672">,</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">interceptorIndex</span> <span style="color:#f92672">=</span> i<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">applyPostHandle</span><span style="color:#f92672">(</span>HttpServletRequest request<span style="color:#f92672">,</span> HttpServletResponse response<span style="color:#f92672">,</span> <span style="color:#a6e22e">@Nullable</span> ModelAndView mv<span style="color:#f92672">)</span>
+        <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">interceptorList</span><span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> 1<span style="color:#f92672">;</span> i <span style="color:#f92672">&gt;=</span> 0<span style="color:#f92672">;</span> i<span style="color:#f92672">--)</span> <span style="color:#f92672">{</span>
+        HandlerInterceptor interceptor <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">interceptorList</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>i<span style="color:#f92672">);</span>
+        interceptor<span style="color:#f92672">.</span><span style="color:#a6e22e">postHandle</span><span style="color:#f92672">(</span>request<span style="color:#f92672">,</span> response<span style="color:#f92672">,</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">handler</span><span style="color:#f92672">,</span> mv<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="处理结果">处理结果</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">processDispatchResult</span><span style="color:#f92672">(</span>HttpServletRequest request<span style="color:#f92672">,</span> HttpServletResponse response<span style="color:#f92672">,</span>
+			<span style="color:#a6e22e">@Nullable</span> HandlerExecutionChain mappedHandler<span style="color:#f92672">,</span> <span style="color:#a6e22e">@Nullable</span> ModelAndView mv<span style="color:#f92672">,</span>
+			<span style="color:#a6e22e">@Nullable</span> Exception exception<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>exception <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>mv <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">!</span>mv<span style="color:#f92672">.</span><span style="color:#a6e22e">wasCleared</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        render<span style="color:#f92672">(</span>mv<span style="color:#f92672">,</span> request<span style="color:#f92672">,</span> response<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>render</code> 会渲染 <code>ModelAndView</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">render</span><span style="color:#f92672">(</span>ModelAndView mv<span style="color:#f92672">,</span> HttpServletRequest request<span style="color:#f92672">,</span> HttpServletResponse response<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
+    String viewName <span style="color:#f92672">=</span> mv<span style="color:#f92672">.</span><span style="color:#a6e22e">getViewName</span><span style="color:#f92672">();</span>
+    View view <span style="color:#f92672">=</span> resolveViewName<span style="color:#f92672">(</span>viewName<span style="color:#f92672">,</span> mv<span style="color:#f92672">.</span><span style="color:#a6e22e">getModelInternal</span><span style="color:#f92672">(),</span> locale<span style="color:#f92672">,</span> request<span style="color:#f92672">);</span>
+    view<span style="color:#f92672">.</span><span style="color:#a6e22e">render</span><span style="color:#f92672">(</span>mv<span style="color:#f92672">.</span><span style="color:#a6e22e">getModelInternal</span><span style="color:#f92672">(),</span> request<span style="color:#f92672">,</span> response<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div>
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#doservice">doService</a></li>
+    <li><a href="#dodispatcher">doDispatcher</a>
+      <ul>
+        <li><a href="#gethandler">getHandler</a></li>
+        <li><a href="#gethandleradapter">getHandlerAdapter</a></li>
+        <li><a href="#处理-last-modified">处理 Last-Modified</a></li>
+        <li><a href="#请求拦截器">请求拦截器</a></li>
+        <li><a href="#处理结果">处理结果</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

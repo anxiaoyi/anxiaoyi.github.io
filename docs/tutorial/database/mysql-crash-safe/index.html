@@ -5,7 +5,9 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="MySQL Crash Safe"><meta property="og:title" content="MySQL Crash Safe" />
-<meta property="og:description" content="MySQL Crash Safe binlog 的写入机制 其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。
+<meta property="og:description" content="MySQL Crash Safe  MySQL 是如何保证数据不丢的？
+ WAL 机制 只要 redo log 和 binlog 保证持久化到磁盘，就能确保 MySQL 异常重启后，数据可以恢复。
+binlog 的写入机制 其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。
 系统给 binlog cache 分配了一片内存，每个线程一个，参数 binlog_cache_size 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。
 事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。
 每个线程有自己 binlog cache，但是共用同一份 binlog 文件。
@@ -21,7 +23,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -937,6 +939,7 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#wal-机制">WAL 机制</a></li>
     <li><a href="#binlog-的写入机制">binlog 的写入机制</a></li>
     <li><a href="#redo-log-写入机制">redo log 写入机制</a></li>
   </ul>
@@ -960,6 +963,11 @@ data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="mysql-crash-safe">MySQL Crash Safe</h1>
+<blockquote>
+<p>MySQL 是如何保证数据不丢的？</p>
+</blockquote>
+<h2 id="wal-机制">WAL 机制</h2>
+<p>只要 <strong>redo log</strong> 和 <strong>binlog</strong> 保证<strong>持久化到磁盘</strong>，就能确保 MySQL 异常重启后，数据可以恢复。</p>
 <h2 id="binlog-的写入机制">binlog 的写入机制</h2>
 <p>其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。</p>
 <p>系统给 binlog cache 分配了一片内存，每个线程一个，参数 <code>binlog_cache_size</code> 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。</p>
@@ -1026,6 +1034,7 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#wal-机制">WAL 机制</a></li>
     <li><a href="#binlog-的写入机制">binlog 的写入机制</a></li>
     <li><a href="#redo-log-写入机制">redo log 写入机制</a></li>
   </ul>

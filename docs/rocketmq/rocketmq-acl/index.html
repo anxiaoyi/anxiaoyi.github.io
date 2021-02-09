@@ -21,7 +21,7 @@ DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(&#34;please_rename_un
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -713,7 +713,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
     <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><ul>
-<li>（3）校验签名，校验不通过，抛出异常；校验通过，则走 4；</li>
+<li>（3）校验<strong>签名</strong>，校验不通过，抛出异常；校验通过，则走 4；</li>
 </ul>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PlainPermissionManager.java
 </span><span style="color:#75715e"></span>String signature <span style="color:#f92672">=</span> AclUtils<span style="color:#f92672">.</span><span style="color:#a6e22e">calSignature</span><span style="color:#f92672">(</span>plainAccessResource<span style="color:#f92672">.</span><span style="color:#a6e22e">getContent</span><span style="color:#f92672">(),</span> ownedAccess<span style="color:#f92672">.</span><span style="color:#a6e22e">getSecretKey</span><span style="color:#f92672">());</span>
@@ -723,7 +723,23 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
 </code></pre></div><ul>
 <li>（4）对用户请求所需的权限 和 用户所拥有的权限进行校验；不通过，抛出异常；</li>
 </ul>
-<p>用户所需权限的校验需要注意已下内容：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 如果是 Admin 那么直接通过
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ownedPermMap <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> ownedAccess<span style="color:#f92672">.</span><span style="color:#a6e22e">isAdmin</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// If the ownedPermMap is null and it is an admin user, then return
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#75715e">// Permission.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">checkPermission</span><span style="color:#f92672">(</span><span style="color:#66d9ef">byte</span> neededPerm<span style="color:#f92672">,</span> <span style="color:#66d9ef">byte</span> ownedPerm<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">((</span>ownedPerm <span style="color:#f92672">&amp;</span> DENY<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">((</span>neededPerm <span style="color:#f92672">&amp;</span> ANY<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#f92672">((</span>ownedPerm <span style="color:#f92672">&amp;</span> PUB<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">||</span> <span style="color:#f92672">((</span>ownedPerm <span style="color:#f92672">&amp;</span> SUB<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#f92672">(</span>neededPerm <span style="color:#f92672">&amp;</span> ownedPerm<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>用户所需权限的校验需要注意已下内容：</p>
 <ul>
 <li>（1）特殊的请求例如 <code>UPDATE_AND_CREATE_TOPIC</code> 等，只能由 admin 账户进行操作；</li>
 </ul>
@@ -779,7 +795,8 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">});</span>
 fileWatchService<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
-</code></pre></div>
+</code></pre></div><p>在 <code>FileWatchService</code> 内部，其每隔 <code>WATCH_INTERVAL = 500</code> 毫秒，扫描一次指定的所有文件列表。如果某个文件的 <code>MD5</code> 哈希值有变化，就会调用 <code>listener.onChanged</code> 方法来通知这个文件发生了变化。</p>
+
 <ins class="adsbygoogle"
 style="display:block"
 data-ad-client="ca-pub-8950855178079071"

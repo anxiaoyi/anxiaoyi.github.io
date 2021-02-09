@@ -21,7 +21,7 @@ if (workerCountOf(c) &lt; corePoolSize) { if (addWorker(command, true)) return; 
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -233,48 +233,8 @@ var _hmt = _hmt || [];
       
         <li>
 
-  <a href="/docs/programmer-interview/java/arraylist/" >
-      ArrayList
-  </a>
-
-</li>
-      
-    
-      
-        <li>
-
-  <a href="/docs/programmer-interview/java/hashmap/" >
-      HashMap
-  </a>
-
-</li>
-      
-    
-      
-        <li>
-
-  <a href="/docs/programmer-interview/java/treemap/" >
-      TreeMap
-  </a>
-
-</li>
-      
-    
-      
-        <li>
-
   <a href="/docs/programmer-interview/java/finally/" >
       基础 - finally
-  </a>
-
-</li>
-      
-    
-      
-        <li>
-
-  <a href="/docs/programmer-interview/java/char/" >
-      char
   </a>
 
 </li>
@@ -728,7 +688,13 @@ var _hmt = _hmt || [];
         <li><a href="#优雅关闭">优雅关闭</a></li>
       </ul>
     </li>
-    <li><a href="#executors-创建线程弊端">Executors 创建线程弊端</a></li>
+    <li><a href="#executors">Executors</a>
+      <ul>
+        <li><a href="#executors-创建线程弊端">Executors 创建线程弊端</a></li>
+        <li><a href="#linkedblockingqueue">LinkedBlockingQueue</a></li>
+        <li><a href="#synchronousqueue">SynchronousQueue</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 
@@ -867,12 +833,54 @@ data-full-width-responsive="true"></ins>
     <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduledExecutorService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">awaitTermination</span><span style="color:#f92672">(</span>5000<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">MILLISECONDS</span><span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>InterruptedException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><h2 id="executors-创建线程弊端">Executors 创建线程弊端</h2>
+</code></pre></div><h2 id="executors">Executors</h2>
+<p><code>Executors</code> 是创建线程池的<strong>工具</strong>类。</p>
+<h3 id="executors-创建线程弊端">Executors 创建线程弊端</h3>
 <p>线程池不允许使用 <code>Executors</code> 去创建，而是通过 <code>ThreadPoolExecutor</code> 的方式，这样的处理方式让写的同学更加明确线程池的运行规则，规避资源耗尽的风险。说明：<code>Executors</code> 返回的线程池对象的弊端如下：</p>
 <p>1） <code>FixedThreadPool</code> 和 <code>SingleThreadPool</code>：</p>
 <p>允许的请求队列长度为 <code>Integer.MAX_VALUE</code>，可能会<strong>堆积大量的请求</strong>，从而导致 OOM。</p>
 <p>2） <code>CachedThreadPool</code>：</p>
 <p>允许的创建线程数量为 <code>Integer.MAX_VALUE</code>，可能会<strong>创建大量的线程</strong>，从而导致 OOM。</p>
+<h3 id="linkedblockingqueue">LinkedBlockingQueue</h3>
+<p>单线程池和固定线程池使用的都是这个 Queue：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> ExecutorService <span style="color:#a6e22e">newFixedThreadPool</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> nThreads<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> ThreadPoolExecutor<span style="color:#f92672">(</span>nThreads<span style="color:#f92672">,</span> nThreads<span style="color:#f92672">,</span>
+                                    0L<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">MILLISECONDS</span><span style="color:#f92672">,</span>
+                                    <span style="color:#66d9ef">new</span> LinkedBlockingQueue<span style="color:#f92672">&lt;</span>Runnable<span style="color:#f92672">&gt;());</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> ExecutorService <span style="color:#a6e22e">newSingleThreadExecutor</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> FinalizableDelegatedExecutorService
+        <span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> ThreadPoolExecutor<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 1<span style="color:#f92672">,</span>
+                                0L<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">MILLISECONDS</span><span style="color:#f92672">,</span>
+                                <span style="color:#66d9ef">new</span> LinkedBlockingQueue<span style="color:#f92672">&lt;</span>Runnable<span style="color:#f92672">&gt;()));</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>两个基本的构造器如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">LinkedBlockingQueue</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">this</span><span style="color:#f92672">(</span>Integer<span style="color:#f92672">.</span><span style="color:#a6e22e">MAX_VALUE</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">public</span> <span style="color:#a6e22e">LinkedBlockingQueue</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> capacity<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">capacity</span> <span style="color:#f92672">=</span> capacity<span style="color:#f92672">;</span>
+    last <span style="color:#f92672">=</span> head <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Node<span style="color:#f92672">&lt;</span>E<span style="color:#f92672">&gt;(</span><span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>内部有<strong>两把锁</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> ReentrantLock takeLock <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ReentrantLock<span style="color:#f92672">();</span>
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> Condition notEmpty <span style="color:#f92672">=</span> takeLock<span style="color:#f92672">.</span><span style="color:#a6e22e">newCondition</span><span style="color:#f92672">();</span>
+
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> ReentrantLock putLock <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ReentrantLock<span style="color:#f92672">();</span>
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> Condition notFull <span style="color:#f92672">=</span> putLock<span style="color:#f92672">.</span><span style="color:#a6e22e">newCondition</span><span style="color:#f92672">();</span>
+</code></pre></div><h3 id="synchronousqueue">SynchronousQueue</h3>
+<p><code>SynchronousQueue</code> 的简介如下：</p>
+<p>A blocking queue in which each insert operation must wait for a corresponding remove operation by another thread, and vice versa. A synchronous queue does not have any internal capacity, not even a capacity of one. You cannot peek at a synchronous queue because an element is only present when you try to remove it; you cannot insert an element (using any method) unless another thread is trying to remove it; you cannot iterate as there is nothing to iterate.</p>
+<p><code>SynchronousQueue</code> 通过两个内部类实现了公平策略和非公平策略的无缓存阻塞队列，每种操作都需要对应的互补操作同时进行才能完成，例如，入队操作必然对应出队操作，在不涉及超时和中断的情况下，必须等待另一个线程进行出队操作，两两匹配才能执行，否则就<strong>阻塞等待</strong>。</p>
+<p><code>CachedThreadPool</code> 用的就是这个队列：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> ExecutorService <span style="color:#a6e22e">newCachedThreadPool</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> ThreadPoolExecutor<span style="color:#f92672">(</span>0<span style="color:#f92672">,</span> Integer<span style="color:#f92672">.</span><span style="color:#a6e22e">MAX_VALUE</span><span style="color:#f92672">,</span>
+                                    60L<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">SECONDS</span><span style="color:#f92672">,</span>
+                                    <span style="color:#66d9ef">new</span> SynchronousQueue<span style="color:#f92672">&lt;</span>Runnable<span style="color:#f92672">&gt;());</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>核心线程设置为<code>0</code>，最大线程池设置<code>Integer.MAX_VALUE</code>，存活时间<code>60s</code>，阻塞队列使用<code>SynchronousQueue</code>，默认非公平模式，可缓冲线程池通过<strong>复用空闲线程</strong>提高效率。这里最大线程数设置为<code>Integer.MAX_VALUE</code>，可能会创建非常多的线程，甚至导致<code>OOM</code>。</p>
 
 <ins class="adsbygoogle"
 style="display:block"
@@ -927,7 +935,13 @@ data-full-width-responsive="true"></ins>
         <li><a href="#优雅关闭">优雅关闭</a></li>
       </ul>
     </li>
-    <li><a href="#executors-创建线程弊端">Executors 创建线程弊端</a></li>
+    <li><a href="#executors">Executors</a>
+      <ul>
+        <li><a href="#executors-创建线程弊端">Executors 创建线程弊端</a></li>
+        <li><a href="#linkedblockingqueue">LinkedBlockingQueue</a></li>
+        <li><a href="#synchronousqueue">SynchronousQueue</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 

@@ -8,13 +8,14 @@
 <meta property="og:description" content="MySQL 索引 索引存储结构 InnoDB 的 B&#43; 树 每一个索引在 InnoDB 里面对应一棵 B&#43; 树。B&#43; 树能够很好地配合磁盘的读写特性，减少单次查询的磁盘访问次数。
 根据叶子节点的内容，索引类型分为主键索引和非主键索引。
  主键索引的叶子节点存的是整行数据。在 InnoDB 里，主键索引也被称为聚簇索引（clustered index）。 非主键索引的叶子节点内容是主键的值。在 InnoDB 里，非主键索引也被称为二级索引（secondary index）。  主键长度越小，普通索引的叶子节点就越小，普通索引占用的空间也就越小。
+MyISAM 的 B&#43; 树 MyISAM 索引文件和数据文件是分离的，索引文件仅保存数据记录的地址。
+B 树和 B&#43; 树 B 树示例：
+B&#43; 树示例：
+B 和 B&#43; 树的区别在于，B&#43; 树的非叶子结点只包含导航信息，不包含实际的值，所有的叶子结点和相连的节点使用链表相连，便于区间查找和遍历。
+B&#43; 树的优点在于：
+ 由于 B&#43; 树在内部节点上不好含数据信息，因此在内存页中能够存放更多的 key。 数据存放的更加紧密，具有更好的空间局部性。因此访问叶子几点上关联的数据也具有更好的缓存命中率。 B&#43; 树的叶子结点都是相链的，因此对整棵树的便利只需要一次线性遍历叶子结点即可。而且由于数据顺序排列并且相连，所以便于区间查找和搜索。而 B 树则需要进行每一层的递归遍历。相邻的元素可能在内存中不相邻，所以缓存命中性没有 B&#43; 树好。  但是 B 树也有优点，其优点在于，由于 B 树的每一个节点都包含 key 和 value，因此经常访问的元素可能离根节点更近，因此访问也更迅速。
 回表 回到主键索引树搜索的过程，我们称为回表。
-select * from T where k between 3 and 5 覆盖索引 ID 的值已经在 k 索引树上了，因此可以直接提供查询结果，不需要回表。也就是说，在这个查询里面，索引 k 已经“覆盖了”我们的查询需求，我们称为覆盖索引。
-select ID from T where k between 3 and 5 由于覆盖索引可以减少树的搜索次数，显著提升查询性能，所以使用覆盖索引是一个常用的性能优化手段。
-最左前缀原则 B&#43; 树这种索引结构，可以利用索引的“最左前缀”，来定位记录。
-上述联合索引对于如下查询请求，也是可以满足的：
- 查到所有名字是“张三”的人 查的是所有名字第一个字是“张”的人  不只是索引的全部定义，只要满足最左前缀，就可以利用索引来加速检索。这个最左前缀可以是联合索引的最左 N 个字段，也可以是字符串索引的最左 M 个字符。
-在建立联合索引的时候，如何安排索引内的字段顺序 ?" />
+select * from T where k between 3 and 5 覆盖索引 ID 的值已经在 k 索引树上了，因此可以直接提供查询结果，不需要回表。也就是说，在这个查询里面，索引 k 已经“覆盖了”我们的查询需求，我们称为覆盖索引。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-index/" />
 
@@ -25,7 +26,7 @@ select ID from T where k between 3 and 5 由于覆盖索引可以减少树的搜
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -944,8 +945,10 @@ var _hmt = _hmt || [];
     <li><a href="#索引存储结构">索引存储结构</a>
       <ul>
         <li><a href="#innodb-的-b-树">InnoDB 的 B+ 树</a></li>
+        <li><a href="#myisam-的-b-树">MyISAM 的 B+ 树</a></li>
       </ul>
     </li>
+    <li><a href="#b-树和-b-树">B 树和 B+ 树</a></li>
     <li><a href="#回表">回表</a></li>
     <li><a href="#覆盖索引">覆盖索引</a></li>
     <li><a href="#最左前缀原则">最左前缀原则</a></li>
@@ -974,6 +977,7 @@ var _hmt = _hmt || [];
         <li><a href="#子查询优化分页查询">子查询优化分页查询</a></li>
       </ul>
     </li>
+    <li><a href="#反范式设计">反范式设计</a></li>
   </ul>
 </nav>
 
@@ -1006,6 +1010,21 @@ data-full-width-responsive="true"></ins>
 <li>非主键索引的叶子节点内容是<strong>主键的值</strong>。在 InnoDB 里，非主键索引也被称为<strong>二级索引</strong>（secondary index）。</li>
 </ul>
 <p>主键长度越小，普通索引的叶子节点就越小，普通索引占用的空间也就越小。</p>
+<h3 id="myisam-的-b-树">MyISAM 的 B+ 树</h3>
+<p>MyISAM 索引文件和数据文件是分离的，索引文件仅保存数据记录的地址。</p>
+<p><img src="/images/docs/tutorial/database/mysql-index/myisam-btree.png" alt=""></p>
+<h2 id="b-树和-b-树">B 树和 B+ 树</h2>
+<p>B 树示例：</p>
+<p><img src="/images/docs/tutorial/database/mysql-index/Snipaste_2021-02-08_20-44-06.png" alt=""></p>
+<p>B+ 树示例：</p>
+<p><img src="/images/docs/tutorial/database/mysql-index/Snipaste_2021-02-08_20-45-52.png" alt=""></p>
+<p>B 和 B+ 树的区别在于，<strong>B+ 树的非叶子结点只包含导航信息</strong>，不包含实际的值，<strong>所有的叶子结点和相连的节点使用链表相连</strong>，便于区间查找和遍历。</p>
+<p>B+ 树的优点在于：</p>
+<ul>
+<li>由于 B+ 树在内部节点上不好含数据信息，因此在<strong>内存页中能够存放更多的 key</strong>。 数据存放的更加紧密，具有更好的空间局部性。因此访问叶子几点上关联的数据也具有更好的缓存命中率。</li>
+<li>B+ 树的叶子结点都是相链的，因此对整棵树的便利<strong>只需要一次线性遍历叶子结点</strong>即可。而且由于数据顺序排列并且相连，所以便于区间查找和搜索。而 B 树则需要进行每一层的递归遍历。相邻的元素可能在内存中不相邻，所以缓存命中性没有 B+ 树好。</li>
+</ul>
+<p>但是 B 树也有优点，其优点在于，由于 B 树的每一个节点都包含 key 和 value，因此<strong>经常访问的元素可能离根节点更近，因此访问也更迅速</strong>。</p>
 <h2 id="回表">回表</h2>
 <p>回到主键索引树搜索的过程，我们称为回表。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> T <span style="color:#66d9ef">where</span> k <span style="color:#66d9ef">between</span> <span style="color:#ae81ff">3</span> <span style="color:#66d9ef">and</span> <span style="color:#ae81ff">5</span>
@@ -1217,6 +1236,8 @@ type参数：
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> <span style="color:#f92672">`</span>demo<span style="color:#f92672">`</span>.<span style="color:#f92672">`</span><span style="color:#66d9ef">order</span><span style="color:#f92672">`</span> <span style="color:#66d9ef">where</span> id <span style="color:#f92672">&gt;</span> (<span style="color:#66d9ef">select</span> id <span style="color:#66d9ef">from</span> <span style="color:#f92672">`</span>demo<span style="color:#f92672">`</span>.<span style="color:#f92672">`</span><span style="color:#66d9ef">order</span><span style="color:#f92672">`</span> <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> order_no <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">10000</span>, <span style="color:#ae81ff">1</span>)  <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">20</span>;
 </code></pre></div><p>通过 EXPLAIN 分析可知：子查询遍历索引的范围跟上一个查询差不多，而主查询扫描了更多的行数，但执行时间却减少了，只有 0.004s。这就是因为返回行数只有 20 行了，执行效率得到了明显的提升。</p>
 <p><img src="/images/docs/tutorial/database/mysql-index/10e46817482166d205f319cd0512942e.jpg" alt=""></p>
+<h2 id="反范式设计">反范式设计</h2>
+<p>反范式化是针对范式化而言的，在前面介绍了数据库设计的范式，所谓的反范式化就是为了性能和读取效率的考虑而适当的对数据库设计范式的要求进行违反，而允许存在少量的数据冗余，换句话来说反范式化就是<strong>使用空间来换取时间</strong>。</p>
 
 <ins class="adsbygoogle"
 style="display:block"
@@ -1255,8 +1276,10 @@ data-full-width-responsive="true"></ins>
     <li><a href="#索引存储结构">索引存储结构</a>
       <ul>
         <li><a href="#innodb-的-b-树">InnoDB 的 B+ 树</a></li>
+        <li><a href="#myisam-的-b-树">MyISAM 的 B+ 树</a></li>
       </ul>
     </li>
+    <li><a href="#b-树和-b-树">B 树和 B+ 树</a></li>
     <li><a href="#回表">回表</a></li>
     <li><a href="#覆盖索引">覆盖索引</a></li>
     <li><a href="#最左前缀原则">最左前缀原则</a></li>
@@ -1285,6 +1308,7 @@ data-full-width-responsive="true"></ins>
         <li><a href="#子查询优化分页查询">子查询优化分页查询</a></li>
       </ul>
     </li>
+    <li><a href="#反范式设计">反范式设计</a></li>
   </ul>
 </nav>
 

@@ -169,11 +169,10 @@ Pipeline 也属于异步化，Leader 一批批地处理消息：
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/distributed/distributed-lock/</guid>
-      <description>分布式锁 🔒 Redis 分布式锁 Redis 实现的分布式锁，请阅读 Redis 分布式锁
-ZooKeeper 分布式锁 最简单锁实现  lock: 创建一个带有 EPHEMERAL 标志的 designated znode，创建成功，锁成功；否则，客户端可以设置上 watch 标志，当当前的 leader 挂掉的时候，即时地获得通知。 unlock: 客户端显示地删除 znode 的时候，或者客户端挂掉的时候，锁自动释放。znode 被删除的时候，其他想要获取锁的客户端可以获取到通知。  缺点：
- herd effect (羊群效应)：如果有许多客户端等待获取锁，那么当锁被释放时，他们都会争夺锁，即使只有一个客户端可以获取锁。 只实现了独占锁。  没有羊群效应的锁实现 顺序临时节点：Zookeeper 提供一个多层级的节点命名空间（节点称为 Znode），每个节点都用一个以斜杠（/）分隔的路径来表示，而且每个节点都有父节点（根节点除外），非常类似于文件系统。节点类型可以分为持久节点（PERSISTENT ）、临时节点（EPHEMERAL），每个节点还能被标记为有序性（SEQUENTIAL），一旦节点被标记为有序性，那么整个节点就具有顺序自增的特点。一般我们可以组合这几类节点来创建我们所需要的节点，例如，创建一个持久节点作为父节点，在父节点下面创建临时节点，并标记该临时节点为有序性。
-Lock:
-n = create(l + “/lock-”, EPHEMERAL|SEQUENTIAL) C = getChildren(l, false) if n is lowest znode in C, exit p = znode in C ordered just before n if exists(p, true) wait for watch event goto 2 Unlock:</description>
+      <description>分布式锁 🔒 MySQL 分布式锁 表记录 CREATE TABLE `database_lock` ( `id` BIGINT NOT NULL AUTO_INCREMENT, `resource` int NOT NULL COMMENT &amp;#39;锁定的资源&amp;#39;, `description` varchar(1024) NOT NULL DEFAULT &amp;#34;&amp;#34; COMMENT &amp;#39;描述&amp;#39;, PRIMARY KEY (`id`), UNIQUE KEY `uiq_idx_resource` (`resource`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT=&amp;#39;数据库分布式锁表&amp;#39;; 获取锁：
+INSERT INTO database_lock(resource, description) VALUES (1, &amp;#39;lock&amp;#39;); 释放锁的时，可以删除这条数据：
+DELETE FROM database_lock WHERE resource = 1; 缺点：
+ 这种锁没有失效时间，一旦释放锁的操作失败就会导致锁记录一直在数据库中，其它线程无法获得锁。这个缺陷也很好解决，比如可以做一个定时任务去定时清理。 这种锁的可靠性依赖于数据库。建议设置备库，避免单点，进一步提高可靠性。 这种锁是非阻塞的，因为插入数据失败之后会直接报错，想要获得锁就需要再次操作。如果需要阻塞式的，可以弄个for循环、while循环之类的，直至INSERT成功再返回。 这种锁也是非可重入的，因为同一个线程在没有释放锁之前无法再次获得锁，因为数据库中已经存在同一份记录了。想要实现可重入锁，可以在数据库中添加一些字段，比如获得锁的主机信息、线程信息等，那么在再次获得锁的时候可以先查询数据，如果当前的主机信息和线程信息等能被查到的话，可以直接把锁分配给它。  悲观锁 我们必须关闭 MySQL 数据库的自动提交属性，因为 MySQL 默认使用autocommit 模式，也就是说，当你执行一个更新操作后，MySQL 会立刻将结果进行提交。</description>
     </item>
     
     <item>

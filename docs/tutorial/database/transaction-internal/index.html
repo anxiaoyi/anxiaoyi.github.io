@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -949,6 +949,7 @@ var _hmt = _hmt || [];
       <ul>
         <li><a href="#四个属性">四个属性</a></li>
         <li><a href="#redo-log">Redo Log</a></li>
+        <li><a href="#redo-log-刷脏页">Redo Log 刷脏页</a></li>
         <li><a href="#binlog">binlog</a></li>
         <li><a href="#两阶段提交">两阶段提交</a></li>
         <li><a href="#undo-log">Undo Log</a></li>
@@ -960,6 +961,9 @@ var _hmt = _hmt || [];
         <li><a href="#表锁">表锁</a></li>
         <li><a href="#行锁">行锁</a></li>
         <li><a href="#行锁转为表锁">行锁转为表锁</a></li>
+        <li><a href="#乐观锁">乐观锁</a></li>
+        <li><a href="#悲观锁">悲观锁</a></li>
+        <li><a href="#减少死锁">减少死锁</a></li>
       </ul>
     </li>
   </ul>
@@ -1049,6 +1053,18 @@ mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select<
 <li>2: 不刷盘，根据 <code>innodb_flush_log_at_timeout</code> 设置的值决定刷盘频率</li>
 </ul>
 <p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2020-12-28_12-22-25.png" alt=""></p>
+<h3 id="redo-log-刷脏页">Redo Log 刷脏页</h3>
+<p>当<strong>内存数据页跟磁盘数据页内容不一致的时候</strong>，我们称这个内存页为“<strong>脏页</strong>”。内存数据写入到磁盘后，内存和磁盘上的数据页的内容就一致了，称为“<strong>干净页</strong>”。</p>
+<p>刷脏页时机：</p>
+<ul>
+<li>redo log 写满了，要 flush 脏页</li>
+<li><strong>内存</strong>不够用了，要先将脏页写到磁盘</li>
+</ul>
+<p>InnoDB 用缓冲池（<strong>buffer pool</strong>）管理内存，缓冲池中的内存页有三种状态：第一种是，<strong>还没有使用的</strong>；第二种是，<strong>使用了并且是干净页</strong>；第三种是，<strong>使用了并且是脏页</strong>。</p>
+<ul>
+<li>MySQL 认为**系统“空闲”**的时候。</li>
+<li>MySQL 正常关闭。</li>
+</ul>
 <h4 id="redo-log-逻辑与物理结构">Redo Log 逻辑与物理结构</h4>
 <blockquote>
 <p>为什么 Redo Log Block 是 512 字节?</p>
@@ -1163,7 +1179,14 @@ mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select<
 <span style="color:#75715e">-- 窗口二
 </span><span style="color:#75715e">--                              ↓ (非索引条件)
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">UPDATE</span> t <span style="color:#66d9ef">SET</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;d2&#39;</span> <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>; <span style="color:#75715e">-- 陷入表锁等待
-</span></code></pre></div>
+</span></code></pre></div><h3 id="乐观锁">乐观锁</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">update</span> <span style="color:#66d9ef">table</span> <span style="color:#66d9ef">set</span> x <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, <span style="color:#66d9ef">version</span> <span style="color:#f92672">=</span> <span style="color:#f92672">#</span><span style="color:#960050;background-color:#1e0010">{</span><span style="color:#66d9ef">version</span><span style="color:#960050;background-color:#1e0010">}</span> <span style="color:#66d9ef">where</span> id <span style="color:#f92672">=</span> <span style="color:#f92672">#</span><span style="color:#960050;background-color:#1e0010">{</span>id<span style="color:#960050;background-color:#1e0010">}</span> <span style="color:#66d9ef">and</span> <span style="color:#66d9ef">version</span> <span style="color:#f92672">=</span> <span style="color:#f92672">#</span><span style="color:#960050;background-color:#1e0010">{</span><span style="color:#66d9ef">version</span><span style="color:#960050;background-color:#1e0010">}</span>
+</code></pre></div><h3 id="悲观锁">悲观锁</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- (写锁，排他锁) 必须要在事务中才可以起作用
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> <span style="color:#66d9ef">table</span> <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">update</span>
+</code></pre></div><h3 id="减少死锁">减少死锁</h3>
+<p>减少死锁的主要方向，就是<strong>控制访问相同资源的并发事务量</strong>。</p>
+
 <ins class="adsbygoogle"
 style="display:block"
 data-ad-client="ca-pub-8950855178079071"
@@ -1214,6 +1237,7 @@ data-full-width-responsive="true"></ins>
       <ul>
         <li><a href="#四个属性">四个属性</a></li>
         <li><a href="#redo-log">Redo Log</a></li>
+        <li><a href="#redo-log-刷脏页">Redo Log 刷脏页</a></li>
         <li><a href="#binlog">binlog</a></li>
         <li><a href="#两阶段提交">两阶段提交</a></li>
         <li><a href="#undo-log">Undo Log</a></li>
@@ -1225,6 +1249,9 @@ data-full-width-responsive="true"></ins>
         <li><a href="#表锁">表锁</a></li>
         <li><a href="#行锁">行锁</a></li>
         <li><a href="#行锁转为表锁">行锁转为表锁</a></li>
+        <li><a href="#乐观锁">乐观锁</a></li>
+        <li><a href="#悲观锁">悲观锁</a></li>
+        <li><a href="#减少死锁">减少死锁</a></li>
       </ul>
     </li>
   </ul>

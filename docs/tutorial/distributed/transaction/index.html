@@ -24,7 +24,7 @@ RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认�
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.1b8c72779b437dbdd16e7a809d5467ac72aaeb0944f1c8f7e644c8ac48c82848.js" integrity="sha256-G4xyd5tDfb3RbnqAnVRnrHKq6wlE8cj35kTIrEjIKEg="></script>
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -984,6 +984,7 @@ var _hmt = _hmt || [];
     <li><a href="#3pc">3PC</a></li>
     <li><a href="#消息中间件-最终一致性">消息中间件-最终一致性</a></li>
     <li><a href="#tcc">TCC</a></li>
+    <li><a href="#xa-和-tcc">XA 和 TCC</a></li>
     <li><a href="#事务状态表--调用方重试--接受方幂等">事务状态表 + 调用方重试 + 接受方幂等</a></li>
     <li><a href="#对账">对账</a></li>
     <li><a href="#妥协方案弱一致性基于状态的补偿">妥协方案：弱一致性+基于状态的补偿</a></li>
@@ -1050,6 +1051,29 @@ data-full-width-responsive="true"></ins>
 <p>在转账操作中，Try 操作主要是为了<strong>锁定</strong>，是为了<strong>保证业务操作的前置条件都得到满足</strong>。然后 Confirm 阶段，才可以通过不断重试来保证成功。</p>
 <p>TCC 补偿性事务也有比较明显的缺点，那就是对<strong>业务的侵入性</strong>非常大。</p>
 <p>首先，我们需要在业务设计的时候考虑预留资源；然后，我们需要编写大量业务性代码，例如 Try、Confirm、Cancel 方法；最后，我们还需要为每个方法考虑幂等性。这种事务的实现和维护成本非常高，但综合来看，这种实现是目前大家最常用的分布式事务解决方案。</p>
+<h2 id="xa-和-tcc">XA 和 TCC</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>TCC</th>
+<th>XA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>主要限制</td>
+<td>业务有侵入性，需要提供了三个接口</td>
+<td>必须要拿到所有数据源，而且数据源还要支持XA协议。性能比较差，要把所有涉及到的数据都要锁定，是强一致性的，会产生长事务</td>
+</tr>
+<tr>
+<td>使用范围</td>
+<td>分布式架构。TCC是分布式事务，是最终一致性的，不会长期持有所有数据库资源的锁，原理上还是提交本地事务，所以不会存在长事务，这样就和本地事事务没有区别，性能很好</td>
+<td>适用于单体架构</td>
+</tr>
+</tbody>
+</table>
+<p><a href="https://blog.csdn.net/weixin_40462208/article/details/103754609">参考</a></p>
 <h2 id="事务状态表--调用方重试--接受方幂等">事务状态表 + 调用方重试 + 接受方幂等</h2>
 <p>这是一种类似 TCC 的方法，只是这个方法是<strong>业务方自己实现</strong>的。</p>
 <p>调用方维护一张<strong>事务状态表</strong>（或事务日志表、日志流水表），每次调用之前，落盘一条事务流水，生成一个<strong>全局的事务 ID</strong>。如下表所示，状态的设置也可以只设置 BEGIN 和 END，不保存中间状态：</p>
@@ -1165,6 +1189,7 @@ data-full-width-responsive="true"></ins>
     <li><a href="#3pc">3PC</a></li>
     <li><a href="#消息中间件-最终一致性">消息中间件-最终一致性</a></li>
     <li><a href="#tcc">TCC</a></li>
+    <li><a href="#xa-和-tcc">XA 和 TCC</a></li>
     <li><a href="#事务状态表--调用方重试--接受方幂等">事务状态表 + 调用方重试 + 接受方幂等</a></li>
     <li><a href="#对账">对账</a></li>
     <li><a href="#妥协方案弱一致性基于状态的补偿">妥协方案：弱一致性+基于状态的补偿</a></li>

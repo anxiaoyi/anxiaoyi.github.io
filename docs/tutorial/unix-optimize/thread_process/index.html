@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="线程和进程"><meta property="og:title" content="线程和进程" />
+<meta property="og:description" content="线程和进程 生命周期 另外一副 Java 线程的状态转换图：
+另外一副更为详细的：
+何时可以响应中断  线程在运行态是不响应中断的。
+    状态 中断效果 描述     NEW 无    RUNNABLE 设置中断标志位 用户自己判断是否中断，以及如何处理   BLOCKED 设置中断标志位 用户自己判断是否中断，以及如何处理   WAITING 抛InterruptedException异常，并清空中断标志位    TIMED_WAITING 抛InterruptedException异常，并清空中断标志位    TERMINATED 无     sleep vs wait  wait 可以被另外一个线程通过调用 notify 唤醒，wait/notify 必须放到 synchronized 块中，wait 之后在 notify 之前操作系统不会给这个线程任何的时间片。  Object mon = ...; synchronized (mon) { mon." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/thread_process/" />
+
+<title>线程和进程 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/avg-load/" >
+      平均负载
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/context-switch/" >
+      CPU 上下文切换
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/high-cpu-and-load/" >
+      CPU 飙升或 load 飙升
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/memory/" >
+      内存
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/io/" >
+      磁盘 I/O
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/zero-copy/" >
+      Linux 零拷贝
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/async_block/" >
+      同步/异步与阻塞/非阻塞
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/thread_process/"  class="active">
+      线程和进程
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>线程和进程</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#生命周期">生命周期</a></li>
+    <li><a href="#何时可以响应中断">何时可以响应中断</a></li>
+    <li><a href="#sleep-vs-wait">sleep vs wait</a></li>
+    <li><a href="#停止线程">停止线程</a>
+      <ul>
+        <li><a href="#volatile-标志位">volatile 标志位</a></li>
+        <li><a href="#interrupt-中断">interrupt 中断</a></li>
+      </ul>
+    </li>
+    <li><a href="#自发性上下文切换">自发性上下文切换</a></li>
+    <li><a href="#线程通信方式">线程通信方式</a></li>
+    <li><a href="#进程通信方式">进程通信方式</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="线程和进程">线程和进程</h1>
+<h2 id="生命周期">生命周期</h2>
+<p><img src="/images/docs/tutorial/unix-optimize/thread/14dde8a9486799ad1aa13aa06003757e.jpg" alt=""></p>
+<p>另外一副 Java 线程的<a href="https://www.cnblogs.com/waterystone/p/4920007.html">状态转换图</a>：</p>
+<p><img src="/images/docs/tutorial/unix-optimize/thread/thread-state.png" alt=""></p>
+<p>另外一副更为<a href="https://blog.csdn.net/u010841296/article/details/89613679">详细的</a>：</p>
+<p><img src="/images/docs/tutorial/unix-optimize/thread/Snipaste_2021-02-08_20-33-56.png" alt=""></p>
+<h2 id="何时可以响应中断">何时可以响应中断</h2>
+<blockquote>
+<p>线程在<strong>运行态</strong>是不响应中断的。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>状态</th>
+<th>中断效果</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NEW</td>
+<td>无</td>
+<td></td>
+</tr>
+<tr>
+<td>RUNNABLE</td>
+<td>设置中断标志位</td>
+<td>用户自己判断是否中断，以及如何处理</td>
+</tr>
+<tr>
+<td>BLOCKED</td>
+<td>设置中断标志位</td>
+<td>用户自己判断是否中断，以及如何处理</td>
+</tr>
+<tr>
+<td>WAITING</td>
+<td>抛InterruptedException异常，并清空中断标志位</td>
+<td></td>
+</tr>
+<tr>
+<td>TIMED_WAITING</td>
+<td>抛InterruptedException异常，并清空中断标志位</td>
+<td></td>
+</tr>
+<tr>
+<td>TERMINATED</td>
+<td>无</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="sleep-vs-wait">sleep vs wait</h2>
+<ul>
+<li><code>wait</code> 可以被另外一个线程通过调用 <code>notify</code> 唤醒，<code>wait</code>/<code>notify</code> 必须放到 <code>synchronized</code> 块中，<code>wait</code> 之后在 <code>notify</code> 之前操作系统不会给这个线程任何的时间片。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Object mon <span style="color:#f92672">=</span> <span style="color:#f92672">...;</span>
+<span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>mon<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    mon<span style="color:#f92672">.</span><span style="color:#a6e22e">wait</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span> 
+</code></pre></div><ul>
+<li>
+<p><code>sleep</code> 不能被唤醒 (除非调用 <code>t.interrupt()</code> 中断)，<code>sleep</code> 的时候也<strong>不会自动释放锁</strong>，<code>sleep(n)</code> 之后操作系统不会再调度这个线程，这段时间<strong>不会给它分配时间片</strong>。</p>
+</li>
+<li>
+<p><code>yield</code>：操作系统可能也可能不给这个线程时间片。</p>
+</li>
+</ul>
+<h2 id="停止线程">停止线程</h2>
+<h3 id="volatile-标志位">volatile 标志位</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// set this to true to stop the thread
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">boolean</span> shutdown <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">...</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span>shutdown<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// continue processing
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="interrupt-中断">interrupt 中断</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Thread t <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread<span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Runnable<span style="color:#f92672">(){</span>
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span>Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">().</span><span style="color:#a6e22e">isInterrupted</span><span style="color:#f92672">()){</span>
+            <span style="color:#75715e">// do stuff         
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span>   
+    <span style="color:#f92672">}});</span>
+t<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+
+<span style="color:#75715e">// Sleep a second, and then interrupt
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+    Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">sleep</span><span style="color:#f92672">(</span>1000<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>InterruptedException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    
+<span style="color:#f92672">}</span>
+
+t<span style="color:#f92672">.</span><span style="color:#a6e22e">interrupt</span><span style="color:#f92672">();</span>
+</code></pre></div><p>当 <code>interrupt</code> 的时候，如果线程正在 <code>Thread.sleep()</code>, <code>otherThread.join()</code>, <code>object.wait()</code>，那么这个线程应该会抛出 <code>InterruptedException</code>。</p>
+<h2 id="自发性上下文切换">自发性上下文切换</h2>
+<p>自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。<code>sleep()</code>、<code>wait()</code>、<code>yield()</code>、<code>join()</code>、<code>park()</code>、<code>synchronized</code>、<code>lock</code>。</p>
+<h2 id="线程通信方式">线程通信方式</h2>
+<ul>
+<li>POSIX <strong>信号量</strong></li>
+<li><strong>互斥锁 (互斥量)</strong>：<strong>独占</strong>方式访问关键代码段。</li>
+<li><strong>条件变量</strong>：某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程。</li>
+</ul>
+<h2 id="进程通信方式">进程通信方式</h2>
+<blockquote>
+<p>参考自 《Linux 高性能服务器编程》</p>
+</blockquote>
+<ul>
+<li><strong>信号</strong></li>
+</ul>
+<pre><code># kill -l
+ 1) SIGHUP       2) SIGINT       3) SIGQUIT      4) SIGILL       5) SIGTRAP
+ 6) SIGABRT      7) SIGBUS       8) SIGFPE       9) SIGKILL     10) SIGUSR1
+11) SIGSEGV     12) SIGUSR2     13) SIGPIPE     14) SIGALRM     15) SIGTERM
+16) SIGSTKFLT   17) SIGCHLD     18) SIGCONT     19) SIGSTOP     20) SIGTSTP
+21) SIGTTIN     22) SIGTTOU     23) SIGURG      24) SIGXCPU     25) SIGXFSZ
+26) SIGVTALRM   27) SIGPROF     28) SIGWINCH    29) SIGIO       30) SIGPWR
+31) SIGSYS      34) SIGRTMIN    35) SIGRTMIN+1  36) SIGRTMIN+2  37) SIGRTMIN+3
+38) SIGRTMIN+4  39) SIGRTMIN+5  40) SIGRTMIN+6  41) SIGRTMIN+7  42) SIGRTMIN+8
+43) SIGRTMIN+9  44) SIGRTMIN+10 45) SIGRTMIN+11 46) SIGRTMIN+12 47) SIGRTMIN+13
+48) SIGRTMIN+14 49) SIGRTMIN+15 50) SIGRTMAX-14 51) SIGRTMAX-13 52) SIGRTMAX-12
+53) SIGRTMAX-11 54) SIGRTMAX-10 55) SIGRTMAX-9  56) SIGRTMAX-8  57) SIGRTMAX-7
+58) SIGRTMAX-6  59) SIGRTMAX-5  60) SIGRTMAX-4  61) SIGRTMAX-3  62) SIGRTMAX-2
+63) SIGRTMAX-1  64) SIGRTMAX
+</code></pre><ul>
+<li><strong>匿名管道</strong>：<code>tail -f log.txt | grep abc | sort</code></li>
+<li><strong>管道</strong>：可以在父子进程传递数据，利用的是 <code>fork</code> 调用之后两个管道文件描述符都保持打开。</li>
+<li><strong>信号量</strong>：多个进程同时访问系统上某个资源，就需要考虑同步问题。</li>
+<li><strong>共享内存</strong>：<strong>最高效率</strong>的 IPC 机制，因为它在两个进程之间不需要传输任何数据。</li>
+<li><strong>消息队列</strong>：两个进程之间传递二进制块最简单有效的一种方式。</li>
+<li><strong>套接字</strong></li>
+</ul>
+<h2 id="参考">参考</h2>
+<ul>
+<li>《趣谈 Linux 操作系统》</li>
+</ul>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#生命周期">生命周期</a></li>
+    <li><a href="#何时可以响应中断">何时可以响应中断</a></li>
+    <li><a href="#sleep-vs-wait">sleep vs wait</a></li>
+    <li><a href="#停止线程">停止线程</a>
+      <ul>
+        <li><a href="#volatile-标志位">volatile 标志位</a></li>
+        <li><a href="#interrupt-中断">interrupt 中断</a></li>
+      </ul>
+    </li>
+    <li><a href="#自发性上下文切换">自发性上下文切换</a></li>
+    <li><a href="#线程通信方式">线程通信方式</a></li>
+    <li><a href="#进程通信方式">进程通信方式</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
