@@ -24,7 +24,7 @@ RedisCluser 采用虚拟槽分区，所有的键根据哈希函数映射到 0 ~ 
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -669,6 +669,16 @@ var _hmt = _hmt || [];
 </li>
       
     
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-transaction/" >
+      Redis 事务
+  </a>
+
+</li>
+      
+    
   </ul>
   
 
@@ -968,6 +978,8 @@ var _hmt = _hmt || [];
     <li><a href="#请求路由">请求路由</a></li>
     <li><a href="#故障转移">故障转移</a></li>
     <li><a href="#运维注意">运维注意</a></li>
+    <li><a href="#为什么-16384-个槽">为什么 16384 个槽</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -1006,7 +1018,7 @@ data-full-width-responsive="true"></ins>
 <li>key 批量操作支持有限。如<code>mset</code>、<code>mget</code>，目前只支持具有相同slot值的key执行批量操作。对于映射为不同slot值的key由于执行<code>mSet</code>、<code>mget</code>等操作可能存在于多个节点上因此不被支持。</li>
 <li>只支持多key在同一节点上的事务操作，当多个key分布在不同的节点上时无法使用事务功能。</li>
 <li>key作为数据分区的最小粒度，因此不能将一个大的键值对象如<code>hash</code>、<code>list</code>等映射到不同的节点。</li>
-<li>复制结构只支持一层，从节点只能复制主节点，<strong>不支持嵌套树状复制结构</strong>。</li>
+<li>复制结构<strong>只支持一层</strong>，从节点只能复制主节点，<strong>不支持嵌套树状复制结构</strong>。</li>
 </ul>
 <h2 id="集群搭建">集群搭建</h2>
 <ul>
@@ -1089,6 +1101,25 @@ data-full-width-responsive="true"></ins>
 <li>不用使用热键作为 <code>hash_tag</code></li>
 <li>一致性要求不高的，客户端使用本地缓存，渐少热键调用</li>
 </ul>
+<h2 id="为什么-16384-个槽">为什么 16384 个槽</h2>
+<p>作者在<a href="https://github.com/antirez/redis/issues/2576">这里</a> 给出了回答：</p>
+<ul>
+<li>如果槽位为 <code>65536</code>，发送心跳信息的消息头达<code>8k</code>，发送的心跳包过于庞大。</li>
+</ul>
+<p>如上所述，在消息头中，最占空间的是 <code>myslots[CLUSTER_SLOTS/8]</code>。 当槽位为<code>65536</code>时，这块的大小是: <code>65536÷8÷1024=8kb</code>因为每秒钟，redis节点需要发送一定数量的<code>ping</code>消息作为心跳包，如果槽位为<code>65536</code>，这个<code>ping</code>消息的消息头太大了，浪费带宽。</p>
+<ul>
+<li>redis的集群主节点数量基本不可能超过1000个。</li>
+</ul>
+<p>如上所述，集群节点越多，心跳包的消息体内携带的数据越多。如果节点过1000个，也会导致网络拥堵。因此redis作者，不建议redis cluster节点数量超过1000个。 那么，对于节点数在1000以内的redis cluster集群，16384个槽位够用了。没有必要拓展到65536个。</p>
+<ul>
+<li>槽位越小，节点少的情况下，<strong>压缩率高</strong></li>
+</ul>
+<p>Redis主节点的配置信息中，它所负责的<strong>哈希槽</strong>是通过一张<code>bitmap</code>的形式来保存的，在传输过程中，会对<code>bitmap</code>进行压缩，但是如果bitmap的填充率<code>slots / N</code>很高的话(N表示节点数)，bitmap的压缩率就很低。 如果节点数很少，而哈希槽数量很多的话，bitmap的压缩率就很低。</p>
+<p><img src="/images/docs/tutorial/redis/cluster/Snipaste_2021-02-12_11-09-42.png" alt=""></p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://zhuanlan.zhihu.com/p/99037321">京东面试题（Redis）：为啥RedisCluster设计成16384个槽</a></li>
+</ul>
 
 <ins class="adsbygoogle"
 style="display:block"
@@ -1132,6 +1163,8 @@ data-full-width-responsive="true"></ins>
     <li><a href="#请求路由">请求路由</a></li>
     <li><a href="#故障转移">故障转移</a></li>
     <li><a href="#运维注意">运维注意</a></li>
+    <li><a href="#为什么-16384-个槽">为什么 16384 个槽</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 

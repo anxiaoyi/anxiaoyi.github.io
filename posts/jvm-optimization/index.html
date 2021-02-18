@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -375,25 +375,13 @@ var _hmt = _hmt || [];
   <ul>
     <li><a href="#java-虚拟机内存模型">Java 虚拟机内存模型</a>
       <ul>
-        <li><a href="#pc-register">pc register</a></li>
         <li><a href="#stack">stack</a></li>
-        <li><a href="#native-method-stack">native method stack</a></li>
         <li><a href="#heap">HEAP</a></li>
         <li><a href="#method-area">method area</a></li>
-        <li><a href="#直接内存">直接内存</a></li>
       </ul>
     </li>
     <li><a href="#区域比例">区域比例</a></li>
     <li><a href="#垃圾回收算法">垃圾回收算法</a></li>
-    <li><a href="#谁才是真正的垃圾">谁才是真正的垃圾</a></li>
-    <li><a href="#垃圾回收器">垃圾回收器</a>
-      <ul>
-        <li><a href="#串行回收器">串行回收器</a></li>
-        <li><a href="#并行回收器">并行回收器</a></li>
-        <li><a href="#g1-garbage-first-垃圾收集器">G1 (Garbage-First) 垃圾收集器</a></li>
-        <li><a href="#g1-垃圾收集器-vs-cms-垃圾收集器">G1 垃圾收集器 VS CMS 垃圾收集器</a></li>
-      </ul>
-    </li>
     <li><a href="#实用-jvm-参数">实用 JVM 参数</a></li>
     <li><a href="#minor-gcmajor-gc-和-full-gc">Minor GC、Major GC 和 Full GC</a></li>
     <li><a href="#jvm-的工作模式">JVM 的工作模式</a></li>
@@ -430,11 +418,10 @@ var _hmt = _hmt || [];
     <li><a href="#jvm-分析">JVM 分析</a>
       <ul>
         <li><a href="#cpu-高">CPU 高</a></li>
+        <li><a href="#cpu-占用">CPU 占用</a></li>
         <li><a href="#oom">OOM</a></li>
       </ul>
     </li>
-    <li><a href="#内存泄漏代码示例">内存泄漏代码示例</a></li>
-    <li><a href="#interned-strings">Interned Strings</a></li>
     <li><a href="#mat">MAT</a></li>
     <li><a href="#jvm-诊断示例httpsplumbreublogmemory-leaksmemory-leaks-fallacies-and-misconceptions">JVM 诊断<a href="https://plumbr.eu/blog/memory-leaks/memory-leaks-fallacies-and-misconceptions">示例</a></a></li>
     <li><a href="#jvisualvm">JVisualVM</a></li>
@@ -488,21 +475,8 @@ var _hmt = _hmt || [];
 
   <p><p>JVM 如何进行性能调优？</p>
 <h2 id="java-虚拟机内存模型">Java 虚拟机内存模型</h2>
-<p>JVM 虚拟机将内存数据分为如下这几部分：</p>
-<p><img src="/images/posts/jvm-optimization/jvm_memory_overview.jpg" alt=""></p>
-<h3 id="pc-register">pc register</h3>
-<ul>
-<li><strong>pc register (program counter)</strong>： 一个包含当前时刻指令的地址的<strong>寄存器</strong></li>
-</ul>
-<p>程序寄存器区域是<strong>唯一一个</strong>在 Java 虚拟机规范中没有规定任何 <code>OutOfMemoryError</code> 情况的区域</p>
 <h3 id="stack">stack</h3>
-<p>栈会抛出两种异常：<code>StackOverflowError</code> 和 <code>OutOfMemoryError</code>，在 HotSpot 虚拟机栈中，可以使用参数 <code>-Xss1M</code> 来设置栈的大小为 <strong>1MB</strong>。随着<strong>调用函数参数的增加和局部变量的增加</strong>，单次函数调用对栈空间的需求也会增加，因此栈的最大递归次数不是一成不变的。函数嵌套调用的次数由栈的大小决定：栈越大，函数嵌套调用次数越多；对一个函数而言，它的参数越多，内部局部变量越多，它的栈帧就越大，其嵌套调用次数就会越少。</p>
 <p><img src="/images/posts/jvm-optimization/3558cf63-bac7-42b3-9f3b-bcdebffa40a6.png" alt=""></p>
-<ul>
-<li><code>Xss1M</code>: 设置栈的大小</li>
-</ul>
-<h3 id="native-method-stack">native method stack</h3>
-<p>与 <strong>stack</strong> 一样，同样抛出两种异常：<code>StackOverflowError</code> 和 <code>OutOfMemoryError</code>。在 sun 的 HOT SPOT 虚拟机中，不区分本地方法栈和虚拟机栈</p>
 <h3 id="heap">HEAP</h3>
 <p><img src="/images/posts/jvm-optimization/Java-Memory-Model.png" alt=""></p>
 <ul>
@@ -545,18 +519,14 @@ Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntim
 </ul>
 <p><img src="/images/posts/jvm-optimization/9906824978c891c86524f9394102de6c.png" alt=""></p>
 <blockquote>
-<p>那你可能又有疑问了，Java8 为什么使用元空间替代永久代，这样做有什么好处呢？</p>
+<p>Interned Strings 放在哪里 ?</p>
 </blockquote>
-<p>官方给出的解释是：</p>
+<p><code>String</code> 类型的常量池比较特殊。主要使用方法有两种:</p>
 <ul>
-<li>移除永久代是为了融合 HotSpot JVM 与 JRockit VM 而做出的努力，因为 JRockit 没有永久代，所以不需要配置永久代。</li>
-<li>永久代内存经常不够用或发生内存溢出，爆出异常 <code>java.lang.OutOfMemoryError: PermGen</code>。这是因为在 JDK1.7 版本中，指定的 <code>PermGen</code> 区大小为 8M，由于 <code>PermGen</code> 中类的元数据信息在每次 <code>FullGC</code> 的时候都可能被收集，回收率都偏低，成绩很难令人满意；还有，为 <code>PermGen</code> 分配多大的空间很难确定，·e 的大小依赖于很多因素，比如，JVM 加载的 class 总数、常量池的大小和方法的大小等。</li>
+<li>直接使用双引号声明出来的 <code>String</code> 对象会直接存储在<strong>常量池</strong>中。</li>
+<li>如果不是双引号声明的 <code>String</code> 对象，可以使用 <code>String</code> 提供的 <code>intern</code> 方法。<code>intern</code> 会先判断是否存在常量池中，如果不存在，则会将当前字符串放入常量池中。</li>
 </ul>
-<h3 id="直接内存">直接内存</h3>
-<p>使用 <strong>NIO</strong> 之后，直接内存的使用变得非常普遍，直接内存跳过了 Java 堆，可以直接访问原生堆空间。<strong>直接内存适合申请次数少、访问较为频繁的场合。如果需要频繁申请，则并不适合使用直接内存</strong>。</p>
-<ul>
-<li><code>-XX:MaxDirectMemorySize</code>: 最大可用直接内存，默认为 <code>-Xmx</code></li>
-</ul>
+<p>JDK 6 的常量池放在 <strong><code>Perm</code></strong> 区中，默认大小只有 4 MB。JDK 7开始，放在<strong>堆</strong>中。</p>
 <h2 id="区域比例">区域比例</h2>
 <p><img src="/images/posts/jvm-optimization/gc_s.png" alt=""></p>
 <ul>
@@ -599,142 +569,6 @@ Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntim
 </li>
 </ul>
 <p>为了支持高频率的新生代回收，虚拟机可能使用一种叫做<strong>卡表 (Card Table)</strong> 的数据结构。卡表为一个比特位集合，每一个比特位可以用来表示老年代的某一区域中的所有对象是否持有新生代对象的引用。这样在新生代 GC 时，只需先扫描卡表，就能快速知道用不用扫描特定的老年代对象，而卡表为 0 的所在区域一定不含有新生代对象的引用。</p>
-<h2 id="谁才是真正的垃圾">谁才是真正的垃圾</h2>
-<ul>
-<li><strong>可触及性</strong>: 根节点可到达</li>
-<li><strong>可复活</strong>: <code>finalize()</code> 中复活</li>
-<li><strong>不可触及</strong>: <code>finalize()</code> 中未复活</li>
-</ul>
-<p><code>finalize()</code> 方法只会被调用一次</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a6e22e">@Override</span>
-<span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">finalize</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> Throwable <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">super</span><span style="color:#f92672">.</span><span style="color:#a6e22e">finalize</span><span style="color:#f92672">();</span>
-    obj <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">;</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><hr>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">StringBuffer str <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StringBuffer<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Hello world&#34;</span><span style="color:#f92672">);</span>
-</code></pre></div><p>假设以上代码是在函数体内运行的，那么:</p>
-<p><img src="/images/posts/jvm-optimization/17-06-13-17-10-03_775_199.png" alt=""></p>
-<hr>
-<p><strong>软引用</strong>: <code>java.lang.ref.SoftReference</code> 可被回收的引用</p>
-<hr>
-<p><strong>弱引用</strong>: 发现即回收。由于垃圾回收器的线程通常优先级很大，因此并不一定很快地发现持有弱引用的对象。</p>
-<hr>
-<p><strong>虚引用</strong>: 跟踪垃圾回收过程</p>
-<h2 id="垃圾回收器">垃圾回收器</h2>
-<h3 id="串行回收器">串行回收器</h3>
-<ul>
-<li>新生代垃圾串行收集器，使用 <code>-XX:+UseSerialGC</code> 来指定新生代和老年代都是用串行收集器。这个收集器虽然古老，但却久经考验。使用单线程进行垃圾回收。虚拟机在 <code>Client</code> 模式下运行，它是默认的垃圾收集器。<strong>独占式回收</strong>。</li>
-</ul>
-<p><img src="/images/posts/jvm-optimization/17-06-13-17-38-50_1259_97.png" alt=""></p>
-<ul>
-<li>老年代串行收集器，使用的是<strong>标记-压缩</strong>算法。
-<ul>
-<li><code>-XX:+UseSerialGC</code>: 新生代、老生代都使用串行回收器</li>
-<li><code>-XX:+UseParNewGC</code></li>
-<li><code>-XX:+UseParallelGC</code></li>
-</ul>
-</li>
-</ul>
-<p><img src="/images/posts/jvm-optimization/17-06-13-17-39-16_1257_130.png" alt=""></p>
-<hr>
-<h3 id="并行回收器">并行回收器</h3>
-<p><strong>新生代 ParNew 回收器</strong>:</p>
-<ul>
-<li><code>-XX:+UseParNewGC</code></li>
-<li><code>-XX:+UseConcMarkSweepGC</code></li>
-</ul>
-<p>回收器工作时的线程数量可以使用 <code>-XX:ParallelGCThreads</code> 参数指。一般最好与 CPU 数量相当，避免过多的线程数。默认算法</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">getGCThreadsCount</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span> countOfCPU <span style="color:#f92672">&lt;</span> 8 <span style="color:#f92672">)</span>
-        <span style="color:#66d9ef">return</span> countOfCPU<span style="color:#f92672">;</span>
-    <span style="color:#66d9ef">else</span>
-        <span style="color:#66d9ef">return</span> 3 <span style="color:#f92672">+</span> <span style="color:#f92672">(</span> <span style="color:#f92672">(</span> 5 <span style="color:#f92672">*</span> countOfCPU <span style="color:#f92672">)</span> <span style="color:#f92672">/</span> 8 <span style="color:#f92672">);</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><p><img src="/images/posts/jvm-optimization/17-06-13-17-45-54_1260_94.png" alt=""></p>
-<hr>
-<p><strong>新生代 ParallelGC 回收器</strong>: 关注系统吞吐量</p>
-<ul>
-<li><code>-XX:+UseParallelGC</code></li>
-<li><code>-XX:+UseParallelOldGC</code></li>
-</ul>
-<p>两个重要参数控制系统吞吐量:</p>
-<ul>
-<li><strong><code>-XX:MaxGCPauseMillis</code></strong>: 设置最大垃圾收集停顿时间</li>
-<li><strong><code>-XX:GCTimeRatio</code></strong>: 设置吞吐量大小</li>
-<li><strong><code>-XX:+UseAdaptiveSizePolicy</code></strong>: 打开自适应 GC 策略</li>
-</ul>
-<p><img src="/images/posts/jvm-optimization/17-06-13-17-49-11_1247_81.png" alt=""></p>
-<hr>
-<p><strong>老年代 ParallelOldGC</strong>: 标记压缩算法</p>
-<p><img src="/images/posts/jvm-optimization/17-06-13-17-50-34_1253_127.png" alt=""></p>
-<hr>
-<ul>
-<li>并行收集器，将串行回收器多线程化。并行回收器工作时的线程数量可以使用 <code>-XX:ParallelGCThreads</code> 参数指定，一般最好与 CPU 数量相当，避免过多的线程数，影响垃圾收集性能。
-<ul>
-<li><code>-XX:+UseParNewGC</code>: 新生代使用并行回收收集器 (<code>ParNew</code>)，老年代使用串行收集器</li>
-<li><code>-XX:+UseConcMarkSweepGC</code>: 新生代使用并行收集器 (<code>ParNew</code>)，老年代使用 CMS</li>
-</ul>
-</li>
-<li>新生代并行回收收集器，使用复制算法
-<ul>
-<li><code>-XX:+UseParallelGC</code>: 新生代使用并行回收收集器 (<code>ParallelGC</code>)，老年代使用串行收集器</li>
-</ul>
-</li>
-<li>老年代并行回收收集器，使用<strong>标记-压缩</strong>算法
-<ul>
-<li>使用 <code>-XX:+UseParallelOldGC</code>: 新生代使用 <code>ParallelGC</code> ，老年代使用 <code>ParallelOldGC</code></li>
-</ul>
-</li>
-</ul>
-<hr>
-<p><strong>CMS (Concurrent Mark Sweep)</strong>: 关注系统停顿时间，非独占式</p>
-<ul>
-<li><strong>-XX:+UseConcMarkSweepGC</strong></li>
-<li><strong>-XX:CMSInitiatingOccupancyFraction</strong>: 当老年代的空间使用率达到 68% (默认) 时进行一次 CMS 垃圾回收</li>
-<li><strong>-XX:+UseCMSCompactAtFullCollection</strong>: 在垃圾收集完成之后，进行一次内存碎片整理</li>
-<li>CMS 收集器，这是一个关注停顿的垃圾收集器</li>
-</ul>
-<p><img src="/images/posts/jvm-optimization/17-06-13-18-03-12_1240_884.png" alt=""></p>
-<hr>
-<ul>
-<li>G1 收集器: JDK 1.7 正式启用</li>
-</ul>
-<p>新生代串行收集器和老年代串行收集器都是<strong>串行的、独占式的</strong>垃圾收集器。不要求整个 eden 区、年轻代或者老年代都连续</p>
-<hr>
-<p>使用 <code>-XX:+UseSerialGC</code> 打印出的 GC 信息:</p>
-<pre><code>[GC (Allocation Failure) 
-[DefNew: 18954K-&gt;897K(28864K), 0.0020543 secs]
-18954K-&gt;897K(93056K), 0.0020917 secs]
-[Times: user=0.00 sys=0.00, real=0.00 secs] 
-</code></pre><p>使用 <code>-XX:+UseParNewGC</code> 打印出的 GC 信息:</p>
-<pre><code>[GC (Allocation Failure) 
-[ParNew: 19468K-&gt;880K(28864K), 0.0033698 secs]
-19468K-&gt;880K(93056K), 0.0034037 secs]
-[Times: user=0.00 sys=0.00, real=0.00 secs] 
-</code></pre><p>使用 <code>-XX:+UseParallelOldGC</code> (默认) 打印出的 GC 信息:</p>
-<pre><code>[GC (Allocation Failure) 
-[PSYoungGen: 24485K-&gt;448K(28160K)]
-368549K-&gt;344520K(379904K), 0.0039329 secs]
-[Times: user=0.02 sys=0.00, real=0.01 secs] 
-</code></pre><h3 id="g1-garbage-first-垃圾收集器">G1 (Garbage-First) 垃圾收集器</h3>
-<p>以前的垃圾收集器 (serial, parallel, CMS) 将堆分为固定大小的三个区域: 年轻代、老年代和永久代:</p>
-<p><img src="/images/posts/jvm-optimization/HeapStructure.png" alt=""></p>
-<p>但是，G1 采取了一种不同的方法:</p>
-<p><img src="/images/posts/jvm-optimization/g1_heap_allocation.PNG" alt=""></p>
-<p>堆被分成了一系列相同大小的区域，并且相同角色的区域的大小不再是固定的，这样在内存使用上能够提供<strong>更大的灵活性</strong>。当垃圾收集开始的时候，G1 和 CMS 执行的操作其实是一样的:</p>
-<ol>
-<li>并发全局扫描标记检查存活的对象</li>
-<li>哪些区域垃圾对象最多，G1 就先收集哪些区域，这也是它为什么称为 <strong>Garbage-First</strong> 的原因</li>
-</ol>
-<hr>
-<p>其他垃圾收集器使用 jvm 内置线程回收，而 G1 采用应用线程承担回收工作。</p>
-<h3 id="g1-垃圾收集器-vs-cms-垃圾收集器">G1 垃圾收集器 VS CMS 垃圾收集器</h3>
-<p>G1 就是计划取代 Concurrent Mark-Sweep Collector (CMS). 与 CMS 相比，G1:</p>
-<ul>
-<li>G1 是一个 <strong>compacting collector</strong>. G1 compacts sufficiently to completely avoid the use of fine-grained free lists for allocation, and instead relies on regions. This considerably simplifies parts of the collector, and mostly eliminates potential fragmentation issues.</li>
-<li>G1 提供了更多的可预测的垃圾收集停顿，允许用户指定停顿时间</li>
-</ul>
 <h2 id="实用-jvm-参数">实用 JVM 参数</h2>
 <ul>
 <li>获取堆快照。</li>
@@ -1278,24 +1112,11 @@ echo <span style="color:#e6db74">&#34;\n&#34;</span>
 <hr>
 <p>问: 您好，想问一个 JVM 比较基础的知识，现在的垃圾收集都是分代回收，那么在回收新生代的时候是要同时扫描老年代吗？是全表还是有一种策略，比如 G1 的 Remembered set，这个 set 只是记录了一种引用关系；那其它的分代回收，比如 CMS 和 ParNew 组合时只能是回收新生代的时候扫描老年代吗？那这样效率不就是降低了不少吗？</p>
 <p>答：对于老年代指向新生代的引用，JVM提供了一种叫 <code>card table</code> 的数据结构，所以每次<strong>并不需要全量遍历老年代</strong>，只需要遍历 <code>card table</code> 就行了。</p>
+<h3 id="cpu-占用">CPU 占用</h3>
+<p>使用命令 <code>top -Hp pid</code> 这个时候 <code>top</code> 命令显示的最左侧的就是这个 java 应用内部的线程 id，不过是 10 进制的，使用 <code>printf &quot;%X\n&quot; pid</code> 转为 16 进制</p>
 <h3 id="oom">OOM</h3>
 <p>问: 线上定位内存 JVM 内存溢出，除了打印堆栈拿出来分析，还有没有其它的方式？</p>
 <p>答：<strong>导出 <code>JVM dump</code> 文件</strong>，在本地使用 <code>Eclipse</code> 插件 <strong><code>MAT</code></strong> 分析，可视化的分析最方便、直观、有效。</p>
-<h2 id="内存泄漏代码示例">内存泄漏代码示例</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-  <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i<span style="color:#f92672">=</span>0<span style="color:#f92672">;</span> i<span style="color:#f92672">&lt;</span>10000<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>m<span style="color:#f92672">.</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Key<span style="color:#f92672">(</span>i<span style="color:#f92672">)))</span> <span style="color:#f92672">{</span>
-      m<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Key<span style="color:#f92672">(</span>i<span style="color:#f92672">),</span> <span style="color:#e6db74">&#34;Number:&#34;</span> <span style="color:#f92672">+</span> i<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-  <span style="color:#f92672">}</span>
-<span style="color:#f92672">}</span>
-</code></pre></div><h2 id="interned-strings">Interned Strings</h2>
-<p><code>String</code> 类型的常量池比较特殊。主要使用方法有两种:</p>
-<ul>
-<li>直接使用双引号声明出来的 <code>String</code> 对象会直接存储在常量池中。</li>
-<li>如果不是双引号声明的 <code>String</code> 对象，可以使用 <code>String</code> 提供的 <code>intern</code> 方法。<code>intern</code> 会先判断是否存在常量池中，如果不存在，则会将当前字符串放入常量池中。</li>
-</ul>
-<p>JDK 6的常量池放在 <strong><code>Perm</code></strong> 区中，默认大小只有 4 MB。JDK 7开始，放在<strong>堆</strong>中。</p>
 <h2 id="mat">MAT</h2>
 <p><strong>1) The Dominator Tree</strong>:</p>
 <p>The key to understanding your retained heap, is looking at the dominator tree. The dominator tree is a tree produced by the <strong>complex object graph</strong> in your system. The dominator tree allows you to identify the largest memory graphs. An Object X is said to dominate an Object Y if every path from the Root to Y must pass through X.</p>
@@ -1438,25 +1259,13 @@ echo <span style="color:#e6db74">&#34;\n&#34;</span>
   <ul>
     <li><a href="#java-虚拟机内存模型">Java 虚拟机内存模型</a>
       <ul>
-        <li><a href="#pc-register">pc register</a></li>
         <li><a href="#stack">stack</a></li>
-        <li><a href="#native-method-stack">native method stack</a></li>
         <li><a href="#heap">HEAP</a></li>
         <li><a href="#method-area">method area</a></li>
-        <li><a href="#直接内存">直接内存</a></li>
       </ul>
     </li>
     <li><a href="#区域比例">区域比例</a></li>
     <li><a href="#垃圾回收算法">垃圾回收算法</a></li>
-    <li><a href="#谁才是真正的垃圾">谁才是真正的垃圾</a></li>
-    <li><a href="#垃圾回收器">垃圾回收器</a>
-      <ul>
-        <li><a href="#串行回收器">串行回收器</a></li>
-        <li><a href="#并行回收器">并行回收器</a></li>
-        <li><a href="#g1-garbage-first-垃圾收集器">G1 (Garbage-First) 垃圾收集器</a></li>
-        <li><a href="#g1-垃圾收集器-vs-cms-垃圾收集器">G1 垃圾收集器 VS CMS 垃圾收集器</a></li>
-      </ul>
-    </li>
     <li><a href="#实用-jvm-参数">实用 JVM 参数</a></li>
     <li><a href="#minor-gcmajor-gc-和-full-gc">Minor GC、Major GC 和 Full GC</a></li>
     <li><a href="#jvm-的工作模式">JVM 的工作模式</a></li>
@@ -1493,11 +1302,10 @@ echo <span style="color:#e6db74">&#34;\n&#34;</span>
     <li><a href="#jvm-分析">JVM 分析</a>
       <ul>
         <li><a href="#cpu-高">CPU 高</a></li>
+        <li><a href="#cpu-占用">CPU 占用</a></li>
         <li><a href="#oom">OOM</a></li>
       </ul>
     </li>
-    <li><a href="#内存泄漏代码示例">内存泄漏代码示例</a></li>
-    <li><a href="#interned-strings">Interned Strings</a></li>
     <li><a href="#mat">MAT</a></li>
     <li><a href="#jvm-诊断示例httpsplumbreublogmemory-leaksmemory-leaks-fallacies-and-misconceptions">JVM 诊断<a href="https://plumbr.eu/blog/memory-leaks/memory-leaks-fallacies-and-misconceptions">示例</a></a></li>
     <li><a href="#jvisualvm">JVisualVM</a></li>

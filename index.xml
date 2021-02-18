@@ -349,7 +349,9 @@ ResultSet 的数据存放在哪里 实际上，服务端并不需要保存一个
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/redis/datastructure/</guid>
-      <description>Redis 数据结构 字符串 struct SDS&amp;lt;T&amp;gt; { T capacity; // 数组容量  T len; // 数组长度  byte flags; // 特殊标识位，不理睬它  byte[] content; // 数组内容 } 字典 struct RedisDb { dict* dict; // all keys key=&amp;gt;value  dict* expires; // all expired keys key=&amp;gt;long(timestamp)  ... } struct zset { dict *dict; // all values value=&amp;gt;score  zskiplist *zsl; } dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后进行渐进式搬迁，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新的 hashtable 取而代之。</description>
+      <description>Redis 数据结构 字符串 struct SDS&amp;lt;T&amp;gt; { T capacity; // 数组容量  T len; // 数组长度  byte flags; // 特殊标识位，不理睬它  byte[] content; // 数组内容 } 当字符串比较短时，len 和 capacity 可以使用 byte 和 short 来表示，Redis 为了对内存做极致的优化，不同长度的字符串使用不同的结构体来表示。当字符串长度小于 1M 时，扩容都是加倍现有的空间，如果超过 1M，扩容时一次只会多扩 1M 的空间。需要注意的是字符串最大长度为 512M。
+哈希 存储形式：压缩列表 ziplist 和哈希表 hash
+struct RedisDb { dict* dict; // all keys key=&amp;gt;value  dict* expires; // all expired keys key=&amp;gt;long(timestamp)  ... } struct zset { dict *dict; // all values value=&amp;gt;score  zskiplist *zsl; } dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后进行渐进式搬迁，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新的 hashtable 取而代之。</description>
     </item>
     
     <item>
@@ -857,8 +859,10 @@ HTTP/2 中新的二进制分帧层突破了这些限制，实现了完整的请�
       <description>Java 类加载 类编译  .class 文件包含哪些信息 ?
  类加载的过程 参考：《深入理解 Java 虚拟机》
 JVM 把 Class 文件加载到内存，然后进行校验、准备、解析、初始化，最终形成可以使用的 Java 类型，这就是类加载机制。其中，校验、准备、解析这三个阶段，放在一起是链接阶段。
- 【加载】二进制字节流可以从 JAR、WAR、网络、运行时动态生成（动态代理）、JSP生成。 【验证】文件格式、元数据（信息语义）、字节码验证（类型转换是否有效、跳转指令不会跳到方法体以外的地方去）、符号引用验证 【准备】static final 变量赋值、各个基本数据类型的默认值 【解析】常量池内的符号引用（用符号描述引用目标）替换为直接引用（直接指向目标的指针） 【初始化】编译器收集 static 块、类变量的赋值放到 () 方法中  加载器类型  Bootstrap ClassLoader：加载 JAVA_HOME/lib、或者 -Xbootclasspath，并且是按照名字识别的，如 rt.jar Extension ClassLoader：JAVA_HOME/lib/ext、或者 java.ext.dirs 系统变量 Application ClassLoader：加载用户 ClassPath 上的类库  类加载器之间的层次关系，称之为双亲委派模型。如果一个类收到类加载请求，那么会首先委派给父类，父类反馈无法完成，自己才进行加载。
-何时初始化  遇到 new、getstatic、putstatic、invokestatic 这 4 条字节码指令。对应的是 new 一个对象、读取静态字段、设置静态字段（字段没有被 final 修饰，否则在编译器就已经将结果放在常量池了）、调用一个类的静态方法。 java.lang.reflect 进行反射。 初始化 A 类，其父类没有被初始化。 虚拟机启动时，包含 main() 方法的这个类  // 不会导致子类初始化 println(SubClass.</description>
+ 【加载】二进制字节流可以从 JAR、WAR、网络、运行时动态生成（动态代理）、JSP生成。 【验证】文件格式、元数据（信息语义）、字节码验证（类型转换是否有效、跳转指令不会跳到方法体以外的地方去）、符号引用验证。在同一个类中，如果同时出现多个名字相同且描述符也相同的方法，那么 Java 虚拟机会在此阶段报错。 【准备】static final 变量赋值、各个基本数据类型的默认值 【解析】常量池内的符号引用（用符号描述引用目标）替换为直接引用（直接指向目标的指针） 【初始化】编译器收集 static 块、类变量的赋值放到 () 方法中   符号引用存储在哪里
+ 在编译过程中，我们并不知道目标方法的具体内存地址。因此，Java 编译器会暂时用符号引用来表示该目标方法。符号引用存储在 class 文件的常量池之中。根据目标方法是否为接口方法，这些引用可分为接口符号引用和非接口符号引用。利用“javap -v”打印某个类的常量池。
+加载器类型  Bootstrap ClassLoader：加载 JAVA_HOME/lib、或者 -Xbootclasspath，并且是按照名字识别的，如 rt.jar Extension ClassLoader：JAVA_HOME/lib/ext、或者 java.ext.dirs 系统变量 Application ClassLoader：加载用户 ClassPath 上的类库  类加载器之间的层次关系，称之为双亲委派模型。如果一个类收到类加载请求，那么会首先委派给父类，父类反馈无法完成，自己才进行加载。
+何时初始化  遇到 new、getstatic、putstatic、invokestatic 这 4 条字节码指令。对应的是 new 一个对象、读取静态字段、设置静态字段（字段没有被 final 修饰，否则在编译器就已经将结果放在常量池了）、调用一个类的静态方法。 java.</description>
     </item>
     
     <item>
@@ -1113,12 +1117,18 @@ HTTP3 协议特点 协议栈 可靠性 虽然 UDP 不提供可靠的传输，但
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/java/juc/</guid>
-      <description>JUC 并发包 AQS (AbstractQueuedSynchronizer) AQS核心思想是，如果被请求的共享资源空闲，那么就将当前请求资源的线程设置为有效的工作线程，将共享资源设置为锁定状态；如果共享资源被占用，就需要一定的阻塞等待唤醒机制来保证锁分配。这个机制主要用的是CLH队列的变体实现的，将暂时获取不到锁的线程加入到队列中。
-CLH：Craig、Landin and Hagersten 队列，是单向链表，AQS中的队列是CLH变体的虚拟双向队列（FIFO），AQS是通过将每条请求共享资源的线程封装成一个节点来实现锁的分配。
-AQS 维护了一个 volatile int state（代表共享资源）和一个 FIFO 线程等待队列（多线程争用资源被阻塞时会进入此队列）。
-/** * The synchronization state. */ private volatile int state; protected final boolean compareAndSetState(int expect, int update) { // See below for intrinsics setup to support this  return unsafe.compareAndSwapInt(this, stateOffset, expect, update); } AQS 定义两种资源共享方式：
- Exclusive（独占，只有一个线程能执行，如 ReentrantLock） Share（共享，多个线程可同时执行，如 Semaphore/CountDownLatch）。  不同的自定义同步器争用共享资源的方式也不同。自定义同步器在实现时只需要实现共享资源 state 的获取与释放方式即可，至于具体线程等待队列的维护（如获取资源失败入队/唤醒出队等），AQS 已经在顶层实现好了。自定义同步器实现时主要实现以下几种方法：
- isHeldExclusively()：该线程是否正在独占资源。只有用到condition才需要去实现它。 tryAcquire(int)：独占方式。尝试获取资源，成功则返回true，失败则返回false。 tryRelease(int)：独占方式。尝试释放资源，成功则返回true，失败则返回false。 tryAcquireShared(int)：共享方式。尝试获取资源。负数表示失败；0表示成功，但没有剩余可用资源；正数表示成功，且有剩余资源。 tryReleaseShared(int)：共享方式。尝试释放资源，如果释放后允许唤醒后续等待结点返回true，否则返回false。  Node Node 结点是对每一个等待获取资源的线程的封装，其包含了需要同步的线程本身及其等待状态，如是否被阻塞、是否等待唤醒、是否已经被取消等。变量 waitStatus 则表示当前 Node 结点的等待状态。</description>
+      <description>JUC 并发包 Java 内存模型 (JMM) 在并发编程中，需要处理两个关键问题：线程之间如何通信及线程之间如何同步。在命令式编程中，线程之间的通信机制有两种：共享内存和消息传递。
+Java的并发采用的是共享内存模型，Java线程之间的通信总是隐式进行，整个通信过程对程序员完全透明。
+ 线程之间共享程序的公共状态，通过写读内存中的公共状态进行隐式通信。 在共享内存并发模型里，同步是显式进行的。程序员必须显式指定某个方法或某段代码需要在线程之间互斥执行。  Java 线程之间的通信 由 Java 内存模型（本文简称为 JMM ）控制，JMM 决定一个线程对共享变量的写入何时对另一个线程可见。
+本地内存是 JMM 的一个抽象概念，并不真实存在。它涵盖了缓存、写缓冲区、寄存器以及其他的硬件和编译器优化。Java内存模型的抽象结构示意图如下:
+JMM 通过控制主内存与每个线程的本地内存之间的交互，来为 Java 程序员提供内存可见性保证。
+由于 JVM 运行程序的实体是线程，而每个线程创建时JVM都会为其创建一个工作内存(有些地方称为栈空间)，用于存储线程私有的数据，线程与主内存中的变量操作必须通过工作内存间接完成，主要过程是将变量从主内存拷贝的每个线程各自的工作内存空间，然后对变量进行操作，操作完成后再将变量写回主内存，如果存在两个线程同时对一个主内存中的实例对象的变量进行操作就有可能诱发线程安全问题。为了解决类似上述的问题，JVM定义了一组规则，通过这组规则来决定一个线程对共享变量的写入何时对另一个线程可见，这组规则也称为Java内存模型（即JMM），JMM是围绕着程序执行的原子性、有序性、可见性展开的，下面我们看看这三个特性。
+可见性 可见性是怎么导致的: 是因为每个 CPU 都有自己的缓存导致的。可见性指的是当一个线程修改了某个共享变量的值，其他线程是否能够马上得知这个修改的值。
+ 禁止编译器/处理器重排序：JMM属于语言级的内存模型，它确保在不同的编译器和不同的处理器平台之上，通过禁止特定类型的编译器重排序和处理器重排序，为程序员提供一致的内存可见性保证。处理器重排序，是通过在生成指令序列时，插入内存屏障来保证可见性。 synchronized：当线程获取锁时会从主内存中获取共享变量的最新值，释放锁的时候会将共享变量同步到主内存中。从而，synchronized具有可见性。 volatile：通过在指令中添加 lock 指令，以实现内存可见性  原子性 原子性指的是一个操作是不可中断的，即使是在多线程环境下，一个操作一旦开始就不会被其他线程影响。 基本数据类型
+JMM 定义了 8 种操作都是原子的，不可再分的。
+ lock(锁定)：作用于主内存中的变量，它把一个变量标识为一个线程独占的状态； unlock(解锁):作用于主内存中的变量，它把一个处于锁定状态的变量释放出来，释放后的变量才可以被其他线程锁定 read（读取）：作用于主内存的变量，它把一个变量的值从主内存传输到线程的工作内存中，以便后面的load动作使用； load（载入）：作用于工作内存中的变量，它把read操作从主内存中得到的变量值放入工作内存中的变量副本 use（使用）：作用于工作内存中的变量，它把工作内存中一个变量的值传递给执行引擎，每当虚拟机遇到一个需要使用到变量的值的字节码指令时将会执行这个操作； assign（赋值）：作用于工作内存中的变量，它把一个从执行引擎接收到的值赋给工作内存的变量，每当虚拟机遇到一个给变量赋值的字节码指令时执行这个操作； store（存储）：作用于工作内存的变量，它把工作内存中一个变量的值传送给主内存中以便随后的write操作使用； write（操作）：作用于主内存的变量，它把store操作从工作内存中得到的变量的值放入主内存的变量中。  上面一共有八条原子操作，其中六条可以满足基本数据类型的访问读写具备原子性，还剩下lock和unlock两条原子操作。
+ synchronized：如果我们需要更大范围的原子性操作就可以使用lock和unlock原子操作。尽管jvm没有把lock和unlock开放给我们使用，但jvm以更高层次的指令monitorenter和monitorexit指令开放给我们使用，反应到java代码中就是synchronized关键字，也就是说synchronized满足原子性。 volatile：volatile 能保证对这个单个变量的写入、读取的原子性，但是不保证复合操作的原子性。  有序性 synchronized：synchronized 语义就要求线程在访问读写共享变量时只能“串行”执行，因此synchronized具有有序性 volatile：为了性能优化，编译器和处理器会进行指令重排序；也就是说java程序天然的有序性可以总结为：如果在本线程内观察，所有的操作都是有序的；如果在一个线程观察另一个线程，所有的操作都是无序的。
+volatile 包含禁止指令重排序的语义，其具有有序性。</description>
     </item>
     
     <item>
@@ -1301,6 +1311,23 @@ Bob 想要给 Alice 发送 &amp;ldquo;Hello Alice!&amp;rdquo; 这个信息：
       <guid>https://kunzhao.org/docs/tutorial/java/java-io/</guid>
       <description>Java IO BIO { ExecutorService executor = Excutors.newFixedThreadPollExecutor(100);//线程池  ServerSocket serverSocket = new ServerSocket(); serverSocket.bind(8088); while(!Thread.currentThread.isInturrupted()){//主线程死循环等待新连接到来  Socket socket = serverSocket.accept(); executor.submit(new ConnectIOnHandler(socket));//为新的连接创建新的线程 } class ConnectIOnHandler extends Thread{ private Socket socket; public ConnectIOnHandler(Socket socket){ this.socket = socket; } public void run(){ while(!Thread.currentThread.isInturrupted()&amp;amp;&amp;amp;!socket.isClosed()){死循环处理读写事件 String someThing = socket.read()....//读取数据  if(someThing!=null){ ......//处理数据  socket.write()....//写数据  } } } } 这个模型最本质的问题在于，严重依赖于线程。但线程是很”贵”的资源，主要表现在：
    线程的创建和销毁成本很高，在Linux这样的操作系统中，线程本质上就是一个进程。创建和销毁都是重量级的系统函数。    线程本身占用较大内存，像Java的线程栈，一般至少分配512K～1M的空间，如果系统中的线程数过千，恐怕整个JVM的内存都会被吃掉一半。    线程的切换成本是很高的。操作系统发生线程切换的时候，需要保留线程的上下文，然后执行系统调用。如果线程数过高，可能执行线程切换的时间甚至会大于线程执行的时间，这时候带来的表现往往是系统load偏高、CPU sy使用率特别高（超过20%以上)，导致系统几乎陷入不可用的状态。    容易造成锯齿状的系统负载。因为系统负载是用活动线程数或CPU核心数，一旦线程数量高但外部网络环境不是很稳定，就很容易造成大量请求的结果同时返回，激活大量阻塞线程从而使系统负载压力过大。    NIO Channels 打开 SocketChannel：</description>
+    </item>
+    
+    <item>
+      <title>JVM</title>
+      <link>https://kunzhao.org/docs/tutorial/java/jvm/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/java/jvm/</guid>
+      <description>JVM 虚拟机内存模型 程序寄存器 pc register (program counter)： 一个包含当前时刻指令的地址的寄存器，程序寄存器区域是唯一一个在 Java 虚拟机规范中没有规定任何 OutOfMemoryError 情况的区域
+虚拟机栈 栈会抛出两种异常：StackOverflowError 和 OutOfMemoryError，在 HotSpot 虚拟机栈中，可以使用参数 -Xss1M 来设置栈的大小为 1MB。随着调用函数参数的增加和局部变量的增加，单次函数调用对栈空间的需求也会增加，因此栈的最大递归次数不是一成不变的。函数嵌套调用的次数由栈的大小决定：栈越大，函数嵌套调用次数越多；对一个函数而言，它的参数越多，内部局部变量越多，它的栈帧就越大，其嵌套调用次数就会越少。
+本地方法栈 与 stack 一样，同样抛出两种异常：StackOverflowError 和 OutOfMemoryError。在 sun 的 HOT SPOT 虚拟机中，不区分本地方法栈和虚拟机栈。
+元数据区 在 Java 8 中，永久代已经被移除，被一个称为“元数据区”（元空间）的区域所取代。元空间的本质和永久代类似，元空间与永久代之间最大的区别在于：元空间并不在虚拟机中，而是使用本地内存。因此，默认情况下，元空间的大小仅受本地内存限制。类的元数据放入 native memory, 字符串池和类的静态变量放入 java 堆中，这样可以加载多少类的元数据就不再由 MaxPermSize 控制, 而由系统的实际可用空间来控制。
+如果不指定元数据区大小的话，默认情况下，虚拟机会耗尽所有的可用系统内存。-XX:MaxMetaspaceSize 可以指定元数据区大小。
+ String 字符串哪个区
+ Metaspace 元数据区中的常量池里面。
+ Perm 为啥被淘汰
+  移除永久代是为了融合 HotSpot JVM 与 JRockit VM 而做出的努力，因为 JRockit 没有永久代，所以不需要配置永久代。 永久代内存经常不够用或发生内存溢出，爆出异常 java.lang.OutOfMemoryError: PermGen。这是因为在 JDK1.</description>
     </item>
     
     <item>
@@ -1632,6 +1659,17 @@ DNS 层次结构  根 DNS 服务器 ：返回顶级域 DNS 服务器的 IP 地�
     </item>
     
     <item>
+      <title>MyBatis</title>
+      <link>https://kunzhao.org/docs/tutorial/database/mybatis/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/mybatis/</guid>
+      <description>MyBatis 防止 SQL 注入 $ vs # # 将传入的数据都当成一个字符串，会对自动传入的数据加一个双引号 (底层基于 PreparedStatement)。如：where username=#{username}，如果传入的值是 111,那么解析成 sql 时的值为 where username=&amp;quot;111&amp;quot;, 如果传入的值是id，则解析成的 sql 为 where username=&amp;quot;id&amp;quot;：
+&amp;lt;select id=&amp;#34;selectByNameAndPassword&amp;#34; parameterType=&amp;#34;java.util.Map&amp;#34; resultMap=&amp;#34;BaseResultMap&amp;#34;&amp;gt; select id, username, password, role from user where username = #{username,jdbcType=VARCHAR} and password = #{password,jdbcType=VARCHAR} &amp;lt;/select&amp;gt; $ 将传入的数据直接显示生成在 sql 中：
+&amp;lt;select id=&amp;#34;selectByNameAndPassword&amp;#34; parameterType=&amp;#34;java.util.Map&amp;#34; resultMap=&amp;#34;BaseResultMap&amp;#34;&amp;gt; select id, username, password, role from user where username = ${username,jdbcType=VARCHAR} and password = ${password,jdbcType=VARCHAR} &amp;lt;/select&amp;gt; # 方式能够很大程度防止sql注入，$ 方式无法防止Sql注入。$ 方式一般用于传入数据库对象，例如传入表名。</description>
+    </item>
+    
+    <item>
       <title>os-release</title>
       <link>https://kunzhao.org/docs/tutorial/unix-command/os-release/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1792,7 +1830,7 @@ TCP/IP 定义了一个值 MSL，表示数据包在网络上最长逗留时间，
  因为上图第 4 次发送的数据包，服务器是否收到是不确定的。而如果服务器没有收到，那么服务器会重新发送第三次的数据包。所以整个的时间，最长是两个 MSL。
  为何服务器收到第 4 个 ACK 之后，立刻进入 CLOSED 状态，而不是也进入 TIME_WAIT 状态 ?
  没有必要，因为客户端处于 TIME_WAIT 状态，意味着四元组代表的这个连接要到 2 × MSL 时间之后才能重新启用，服务器即使想要立即连接也无法实现。
-起始序列号 ISN ISN 为什么不从 1 开始 client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成数据错误)。</description>
+大量 TIME_WAIT 状态 如果存在大量的 TIME_WAIT，往往是因为短连接太多，不断的创建连接，然后释放连接，从而导致很多连接在这个状态，可能会导致无法发起新的连接。解决的方式往往是：</description>
     </item>
     
     <item>
@@ -1971,15 +2009,13 @@ git reset 参考  How to resolve merge conflicts in Git  扫描下面二维码�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/java/java-collection/</guid>
-      <description>Java 集合类 HashMap  并发下的 HashMap 会有哪些安全问题？
+      <description>Java 集合类 Collections 框架图 List 框架图 Set 框架图 Map 框架图 Queue 框架图 HashMap  并发下的 HashMap 会有哪些安全问题？
  这里我只是简单的说了写覆盖跟不可重复读（联想到数据库了），面试官就放我过了。
  添加元素时头插还是尾插？
  1.7 头插，1.8 尾插。
 数组长度为什么必须是 2 的指数幂 减少哈希冲突，均匀分布元素。
 1）通过将 Key 的 hash 值与 length-1 进行 &amp;amp; 运算，实现了当前 Key 的定位，2 的幂次方可以减少冲突（碰撞）的次数，提高 HashMap 查询效率；
-2）如果 length 为 2 的次幂，则 length-1 转化为二进制必定是 11111…… 的形式，在于 h 的二进制与操作效率会非常的快，而且空间不浪费；如果 length 不是 2 的次幂，比如 length 为 15，则 length-1 为 14，对应的二进制为 1110，在于 h 与操作，最后一位都为 0，而 0001，0011，0101，1001，1011，0111，1101 这几个位置永远都不能存放元素了，空间浪费相当大，更糟的是这种情况中，数组可以使用的位置比数组长度小了很多，这意味着进一步增加了碰撞的几率，减慢了查询的效率！这样就会造成空间的浪费。
-如何扩容的 (1) 初始扩容因子
-static final int DEFAULT_INITIAL_CAPACITY = 1 &amp;lt;&amp;lt; 4; // aka 16 static final float DEFAULT_LOAD_FACTOR = 0.</description>
+2）如果 length 为 2 的次幂，则 length-1 转化为二进制必定是 11111…… 的形式，在于 h 的二进制与操作效率会非常的快，而且空间不浪费；如果 length 不是 2 的次幂，比如 length 为 15，则 length-1 为 14，对应的二进制为 1110，在于 h 与操作，最后一位都为 0，而 0001，0011，0101，1001，1011，0111，1101 这几个位置永远都不能存放元素了，空间浪费相当大，更糟的是这种情况中，数组可以使用的位置比数组长度小了很多，这意味着进一步增加了碰撞的几率，减慢了查询的效率！这样就会造成空间的浪费。</description>
     </item>
     
     <item>
@@ -2071,6 +2107,19 @@ DNS 返回多个 A 记录，客户端随机选择。有两个问题：
     </item>
     
     <item>
+      <title>Redis 事务</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/redis-transaction/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/redis-transaction/</guid>
+      <description>Redis 事务 事务的使用 Redis 在形式上分别是 multi/exec/discard。multi 指示事务的开始，exec 指示事务的执行，discard 指示事务的丢弃。
+&amp;gt; multi OK &amp;gt; incr books QUEUED &amp;gt; incr books QUEUED &amp;gt; exec (integer) 1 (integer) 2 所有的指令在 exec 之前不执行，而是缓存在服务器的一个事务队列中，服务器一旦收到 exec 指令，才开始执行整个事务队列，执行完毕后一次性返回所有指令的运行结果。因为 Redis 的单线程特性，它不用担心自己在执行队列的时候被其它指令打搅，可以保证他们能得到的「原子性」执行。
+Redis 为事务提供了一个 discard 指令，用于丢弃事务缓存队列中的所有指令，在 exec 执行之前。
+&amp;gt; get books (nil) &amp;gt; multi OK &amp;gt; incr books QUEUED &amp;gt; incr books QUEUED &amp;gt; discard OK &amp;gt; get books (nil) 我们可以看到 discard 之后，队列中的所有指令都没执行，就好像 multi 和 discard 中间的所有指令从未发生过一样。
+不满足原子性 事务的原子性是指要么事务全部成功，要么全部失败，那么 Redis 事务执行是原子性的么？</description>
+    </item>
+    
+    <item>
       <title>Spring WebMVC</title>
       <link>https://kunzhao.org/docs/tutorial/spring/spring-webmvc/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -2121,9 +2170,9 @@ DELETE FROM database_lock WHERE resource = 1; 缺点：
       
       <guid>https://kunzhao.org/docs/tutorial/spring/springboot-autoconfig/</guid>
       <description>SpringBoot 自动配置原理  application.properties 配置是如何在 Spring Boot 项目中生效的呢？
- Spring Boot 关于自动配置的源码在spring-boot-autoconfigure-x.x.x.x.jar中。@SpringBootApplication 引用了 @EnableAutoConfiguration：
+ 扫描 spring.factories 文件 Spring Boot 关于自动配置的源码在spring-boot-autoconfigure-x.x.x.x.jar中。@SpringBootApplication 引用了 @EnableAutoConfiguration：
 @Target({ElementType.TYPE}) @Retention(RetentionPolicy.RUNTIME) @Documented @Inherited @SpringBootConfiguration @EnableAutoConfiguration @ComponentScan( excludeFilters = {@Filter( type = FilterType.CUSTOM, classes = {TypeExcludeFilter.class} ), @Filter( type = FilterType.CUSTOM, classes = {AutoConfigurationExcludeFilter.class} )} ) public @interface SpringBootApplication { } @EnableAutoConfiguration 引入了 AutoConfigurationImportSelector.class：
-@Target({ElementType.TYPE}) @Retention(RetentionPolicy.RUNTIME) @Documented @Inherited @AutoConfigurationPackage @Import({AutoConfigurationImportSelector.class}) public @interface EnableAutoConfiguration { } 参考  Spring Boot面试杀手锏-自动配置原理  </description>
+@Target({ElementType.TYPE}) @Retention(RetentionPolicy.RUNTIME) @Documented @Inherited @AutoConfigurationPackage @Import({AutoConfigurationImportSelector.class}) public @interface EnableAutoConfiguration { } AutoConfigurationImportSelector 的 selectImports 方法通过 SpringFactoriesLoader.loadFactoryNames() 扫描所有具有 META-INF/spring.factories 的 jar 包。</description>
     </item>
     
     <item>
@@ -2168,7 +2217,9 @@ git push &amp;lt;remote_name&amp;gt; &amp;lt;branch_name&amp;gt; git pull &amp;l
       
       <guid>https://kunzhao.org/docs/tutorial/spring/springboot-startup/</guid>
       <description>SpringBoot 启动过程  基于 Spring 的事件发布和监听机制开始说起。
- </description>
+ 初始化 启动流程主要分为三个部分，第一部分进行 SpringApplication 的初始化模块，配置一些基本的环境变量、资源、构造器、监听器。
+开始启动 第二部分实现了应用具体的启动方案，包括启动流程的监听模块、加载配置环境模块、及核心的创建上下文环境模块。
+自动化配置模块 参考  SpringBoot启动流程解析  </description>
     </item>
     
     <item>
@@ -2178,6 +2229,18 @@ git push &amp;lt;remote_name&amp;gt; &amp;lt;branch_name&amp;gt; git pull &amp;l
       
       <guid>https://kunzhao.org/docs/programmer-interview/algorithm/findmedianfromdatastream/</guid>
       <description>数据流寻找中位数 import java.util.Comparator; import java.util.PriorityQueue; // https://leetcode.com/problems/find-median-from-data-stream/ // 剑指 Offer 41 题 // public class FindMedianfromDataStream { // 堆顶是最小的  // 最小堆的堆顶是最大值  //  private PriorityQueue&amp;lt;Integer&amp;gt; minQueue = new PriorityQueue&amp;lt;&amp;gt;(); // 堆顶是最大的  // 最大堆的堆顶是最小的值  private PriorityQueue&amp;lt;Integer&amp;gt; maxQueue = new PriorityQueue&amp;lt;&amp;gt;(new Comparator&amp;lt;Integer&amp;gt;() { @Override public int compare(Integer o1, Integer o2) { return o2.compareTo(o1); } }); private boolean sameSize = true; public FindMedianfromDataStream() { } public void addNum(int num) { if (sameSize) { minQueue.</description>
+    </item>
+    
+    <item>
+      <title>设计微博系统</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/design-weibo/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/design-weibo/</guid>
+      <description>设计微博系统 架构 信息流聚合一般有三种架构：推模式、拉模式以及推拉结合。
+针对关注的粉丝量大的用户采用拉模式，而对于一般用户来说，他们的粉丝量有限，采用推模式问题不大，这样的话一个用户要获取所有关注人的微博，一方面要请求粉丝量大的关注人的发件箱列表，另一方面要请求自己的收件箱列表，再把两者聚合在一起就可以得到完整的 Feed 了。虽然推拉结合的方式看似更加合理，但是由此带来的业务复杂度就比较高了，因为用户的粉丝数是不断变化的，所以对于哪些用户使用推模式，哪些用户使用拉模式，维护起来成本就很高了。所以综合考量下来，微博 Feed 采用了拉模式。
+前面提到采用拉模式的话，需要拉取所有关注人的发件箱，在关注人只有几十几百个的时候，获取效率还是非常高的。但是当关注人上千以后，耗时就会增加很多，实际验证获取超过 4000 个用户的发件箱，耗时要几百 ms，并且长尾请求（也就是单次请求耗时超过 1s）的概率也会大大增加。为了解决关注人数上千的用户拉取 Feed 效率低的问题，我们采用了分而治之的思想，在拉取之前把用户的关注人分为几组，并行拉取，这样的话就把一次性的聚合计算操作给分解成多次聚合计算操作，最后再把多次聚合计算操作的结果汇总在一起，类似于 MapReduce 的思路。经过我们的实际验证，通过这种方法可以有效地降级关注人数上千用户拉取 Feed 的耗时，长尾请求的数量也大大减少了。
+存储 UID range 作为分片 UID hash 作为分片 </description>
     </item>
     
     <item>
@@ -2933,14 +2996,10 @@ Combination Sum 原题 一个数组，从这个数组中找出所有相加等于
  缺点：无法处理循环引用的问题。
  可达性分析算法 通过一系列的称为 GC Roots 的对象作为起始点，从这些节点开始向下搜索，搜索所走过的循环称为引用链。当一个对象到 GC Roots 没有任何引用链的时候，则证明此对象是不可达的，因此它们会被判定为可回收对象。
 可以作为 GC Roots 的对象：
- 类静态属性中引用的对象 常量引用的对象 虚拟机栈中引用的对象 本地方法栈中引用的对象  垃圾回收算法 标记-清除算法 从每个 GC Roots 对象出发，依次标记有引用关系的对象，最后将没有被标记的对象清除。
- 缺点：带来大量空间碎片，导致需要分配一个较大连续空间时，容易触发 GC。
- 标记-整理(标记-压缩)算法 从每个 GC Roots 对象出发，标记存活的对象，然后将存活的对象整理到内存空间的一端，形成连续的已使用空间，最后将已使用空间外的部分全部清理掉，消除空间碎片问题。
-标记-复制算法 为了能够并行的标记和整理，将整个空间分为两块，每次只激活一块，垃圾回收只需把存活的对象复制到另一块未激活的空间上，将未激活空间标记为已激活，将已激活空间标记为未激活，然后清除原空间中的原对象。
-分代收集算法 垃圾收集器一般根据对象存活周期的不同，将内存划分为几块，根据每块内存空间的特点，使用不同的回收算法，提供回收效率。
-分区算法 将整个堆空间划分为连续的不同小空间，每一个小空间独立使用，独立回收。
- 优点：可以控制一次回收多少个小区间。
- HotSpot 虚拟机垃圾收集器 Serial 新生代 Serial 收集器采用复制算法，使用单线程进行垃圾回收，回收时 Java 应用程序中的线程都需要暂停 (Stop-The-World)，以等待回收完成。使用 -XX:+UseSerialGC 可以指定新生代采用 Serial 收集器，老年代采用 Serial Old 收集器。</description>
+ 类静态属性中引用的对象 常量引用的对象 虚拟机栈中引用的对象 本地方法栈中引用的对象  finalize 方法中复活 finalize() 方法只会被调用一次：
+@Override protected void finalize() throws Throwable { super.finalize(); obj = this; } 下述代码在内存中如何放置的示例：
+StringBuffer str = new StringBuffer(&amp;#34;Hello world&amp;#34;); 假设以上代码是在函数体内运行的，那么:
+四个引用  软引用: java.lang.ref.SoftReference 可被回收的引用 弱引用: 发现即回收。由于垃圾回收器的线程通常优先级很大，因此并不一定很快地发现持有弱引用的对象。 虚引用: 跟踪垃圾回收过程  内存泄露 while (true) { for (int i=0; i&amp;lt;10000; i++) { if (!</description>
     </item>
     
     <item>
@@ -3120,7 +3179,7 @@ W3C 盒模型 （标准模型） .myClass { box-sizing: content-box; }  box-sizi
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/programmer-interview/java/threadpool/</guid>
-      <description>线程池 好处 说明：线程池的好处是减少在创建和销毁线程上所消耗的时间以及系统资源的开销，解决资源不足的问题。如果不使用线程池，有可能造成系统创建大量同类线程而导致消耗完内存或者“过度切换”的问题。
+      <description>线程池 简介 好处 说明：线程池的好处是减少在创建和销毁线程上所消耗的时间以及系统资源的开销，解决资源不足的问题。如果不使用线程池，有可能造成系统创建大量同类线程而导致消耗完内存或者“过度切换”的问题。
 设计哲学 将任务的提交与执行解耦开，从而无须太大的困难就能为某种类型的任务指定和修改执行策略。
 用法 任务无须返回值，调用这个方法：
 public void execute(Runnable command) {} 需要返回值的任务，调用 submit：
@@ -3595,8 +3654,11 @@ online_table1, online_table2, online_table3, offline_table1, offline_table2, off
 在 C 语言中，内存分配采用 malloc() 函数进行分配。底层实现：
  申请的内存小于 128K，使用 brk() 函数完成，也就是从上图中的堆中分配的内存 申请的内存大于 128K，使用 mmap() 内存映射函数完成，也就是从上图中的文件映射中分配的内存  内存回收 应用程序应通过 free() 或 unmap() 来释放内存。
 当然，系统也会监管进程的内存，当发现系统内存不足时，会采取措施：
- 使用 LRU 算法回收缓存 回收不常访问的内存，写到 Swap 区（位于硬盘上） 杀死进程  查看整个系统的内存 $ free total used free shared buff/cache available Mem: 6030036 2312004 266488 624252 3451544 2911700 Swap: 2097148 256 2096892 查看某个进程的内存 使用 top 或 ps：
-$ top PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 8883 zk 20 0 16.</description>
+ 使用 LRU 算法回收缓存 回收不常访问的内存，写到 Swap 区（位于硬盘上） 杀死进程  虚拟内存 分段机制 分段机制下的虚拟地址由两部分组成，段选择子和段内偏移量。段选择子就保存在咱们前面讲过的段寄存器里面。段选择子里面最重要的是段号，用作段表的索引。段表里面保存的是这个段的基地址、段的界限和特权等级等。虚拟地址中的段内偏移量应该位于 0 和段界限之间。如果段内偏移量是合法的，就将段基地址加上段内偏移量得到物理内存地址。
+分页 (Paging) 对于物理内存，操作系统把它分成一块一块大小相同的页，这样更方便管理，例如有的内存页面长时间不用了，可以暂时写到硬盘上，称为换出。一旦需要的时候，再加载进来，叫做换入。这样可以扩大可用物理内存的大小，提高物理内存的利用率。
+这个换入和换出都是以页为单位的。页面的大小一般为 4KB。为了能够定位和访问每个页，需要有个页表，保存每个页的起始地址，再加上在页内的偏移量，组成线性地址，就能对于内存中的每个位置进行访问了。
+虚拟地址分为两部分，页号和页内偏移。页号作为页表的索引，页表包含物理页每页所在物理内存的基地址。这个基地址与页内偏移的组合就形成了物理内存地址。
+内存映射  用户态内存映射函数 mmap，包括用它来做匿名映射和文件映射。 用户态的页表结构，存储位置在 mm_struct 中。 在用户态访问没有映射的内存会引发缺页异常，分配物理页表、补齐页表。如果是匿名映射则分配物理内存；如果是 swap，则将 swap 文件读入；如果是文件映射，则将文件读入。  查看整个系统的内存 $ free total used free shared buff/cache available Mem: 6030036 2312004 266488 624252 3451544 2911700 Swap: 2097148 256 2096892 查看某个进程的内存 使用 top 或 ps：</description>
     </item>
     
     <item>
@@ -3726,15 +3788,6 @@ charset 属性 &amp;lt;head&amp;gt; &amp;lt;meta charset=&amp;#34;UTF-8&amp;#34;
       <guid>https://kunzhao.org/docs/programmer-interview/algorithm/binary-tree-right-side-view/</guid>
       <description>二叉树右视图  微软问的其实是左视图。 原题
  递归 public class Solution { public List&amp;lt;Integer&amp;gt; rightSideView(TreeNode root) { List&amp;lt;Integer&amp;gt; result = new ArrayList&amp;lt;Integer&amp;gt;(); rightView(root, result, 0); return result; } public void rightView(TreeNode curr, List&amp;lt;Integer&amp;gt; result, int currDepth){ if (curr == null){ return; } if (currDepth == result.size()){ result.add(curr.val); } rightView(curr.right, result, currDepth + 1); rightView(curr.left, result, currDepth + 1); } } 层次遍历 public class Solution { public List&amp;lt;Integer&amp;gt; rightSideView(TreeNode root) { Queue&amp;lt;TreeNode&amp;gt; queue = new LinkedList&amp;lt;&amp;gt;(); List&amp;lt;Integer&amp;gt; rst = new ArrayList&amp;lt;&amp;gt;(); if (root == null) return rst; queue.</description>
-    </item>
-    
-    <item>
-      <title>Java 集合类框架图</title>
-      <link>https://kunzhao.org/docs/programmer-interview/java/collections/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://kunzhao.org/docs/programmer-interview/java/collections/</guid>
-      <description>Java 集合类框架图 Collections 框架图 List 框架图 Set 框架图 Map 框架图 Queue 框架图 参考  Overview of Java Collections Framework API (UML diagram)  </description>
     </item>
     
     <item>
@@ -4055,10 +4108,12 @@ handleCallback({&amp;#34;status&amp;#34;: true, &amp;#34;user&amp;#34;: &amp;#34
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/unix-optimize/thread_process/</guid>
-      <description>线程和进程 生命周期 另外一副 Java 线程的状态转换图：
+      <description>线程和进程 线程 线程通信方式  POSIX 信号量 互斥锁 (互斥量)：独占方式访问关键代码段。 条件变量：某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程。  线程的数据 生命周期 另外一副 Java 线程的状态转换图：
 另外一副更为详细的：
 何时可以响应中断  线程在运行态是不响应中断的。
-    状态 中断效果 描述     NEW 无    RUNNABLE 设置中断标志位 用户自己判断是否中断，以及如何处理   BLOCKED 设置中断标志位 用户自己判断是否中断，以及如何处理   WAITING 抛InterruptedException异常，并清空中断标志位    TIMED_WAITING 抛InterruptedException异常，并清空中断标志位    TERMINATED 无     sleep vs wait  wait 可以被另外一个线程通过调用 notify 唤醒，wait/notify 必须放到 synchronized 块中，wait 之后在 notify 之前操作系统不会给这个线程任何的时间片。  Object mon = ...; synchronized (mon) { mon.</description>
+    状态 中断效果 描述     NEW 无    RUNNABLE 设置中断标志位 用户自己判断是否中断，以及如何处理   BLOCKED 设置中断标志位 用户自己判断是否中断，以及如何处理   WAITING 抛InterruptedException异常，并清空中断标志位    TIMED_WAITING 抛InterruptedException异常，并清空中断标志位    TERMINATED 无     自发性上下文切换 自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。sleep()、wait()、yield()、join()、park()、synchronized、lock。
+停止线程 (1) volatile 标志位
+// set this to true to stop the thread volatile boolean shutdown = false; .</description>
     </item>
     
     <item>

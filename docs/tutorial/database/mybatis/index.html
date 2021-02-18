@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MyBatis"><meta property="og:title" content="MyBatis" />
+<meta property="og:description" content="MyBatis 防止 SQL 注入 $ vs # # 将传入的数据都当成一个字符串，会对自动传入的数据加一个双引号 (底层基于 PreparedStatement)。如：where username=#{username}，如果传入的值是 111,那么解析成 sql 时的值为 where username=&quot;111&quot;, 如果传入的值是id，则解析成的 sql 为 where username=&quot;id&quot;：
+&lt;select id=&#34;selectByNameAndPassword&#34; parameterType=&#34;java.util.Map&#34; resultMap=&#34;BaseResultMap&#34;&gt; select id, username, password, role from user where username = #{username,jdbcType=VARCHAR} and password = #{password,jdbcType=VARCHAR} &lt;/select&gt; $ 将传入的数据直接显示生成在 sql 中：
+&lt;select id=&#34;selectByNameAndPassword&#34; parameterType=&#34;java.util.Map&#34; resultMap=&#34;BaseResultMap&#34;&gt; select id, username, password, role from user where username = ${username,jdbcType=VARCHAR} and password = ${password,jdbcType=VARCHAR} &lt;/select&gt; # 方式能够很大程度防止sql注入，$ 方式无法防止Sql注入。$ 方式一般用于传入数据库对象，例如传入表名。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mybatis/" />
+
+<title>MyBatis | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-query/" >
+      MySQL 查询
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/transaction-internal/" >
+      MySQL 事务实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-crash-safe/" >
+      MySQL Crash Safe
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-index/" >
+      MySQL 索引
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/auto-increment-id/" >
+      MySQL 自增键
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-high-availablity/" >
+      MySQL 高可用
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mybatis/"  class="active">
+      MyBatis
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/oracls-vs-mysql/" >
+      Oracle VS MySQL
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/sharding-sphere/" >
+      ShardingSphere 3.X
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>MyBatis</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#防止-sql-注入">防止 SQL 注入</a>
+      <ul>
+        <li><a href="#-vs-"><code>$</code> vs <code>#</code></a></li>
+        <li><a href="#preparedstatement">PreparedStatement</a></li>
+      </ul>
+    </li>
+    <li><a href="#缓存">缓存</a>
+      <ul>
+        <li><a href="#一级缓存">一级缓存</a></li>
+        <li><a href="#二级缓存">二级缓存</a></li>
+      </ul>
+    </li>
+    <li><a href="#分页">分页</a>
+      <ul>
+        <li><a href="#使用示例">使用示例</a></li>
+        <li><a href="#分页原理">分页原理</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="mybatis">MyBatis</h1>
+<h2 id="防止-sql-注入">防止 SQL 注入</h2>
+<h3 id="-vs-"><code>$</code> vs <code>#</code></h3>
+<p><code>#</code> 将传入的数据都当成一个字符串，会对自动传入的数据加一个双引号 (底层基于 <code>PreparedStatement</code>)。如：<code>where username=#{username}</code>，如果传入的值是 <code>111</code>,那么解析成 sql 时的值为 <code>where username=&quot;111&quot;</code>, 如果传入的值是id，则解析成的 sql 为 <code>where username=&quot;id&quot;</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-XML" data-lang="XML"><span style="color:#f92672">&lt;select</span> <span style="color:#a6e22e">id=</span><span style="color:#e6db74">&#34;selectByNameAndPassword&#34;</span> <span style="color:#a6e22e">parameterType=</span><span style="color:#e6db74">&#34;java.util.Map&#34;</span> <span style="color:#a6e22e">resultMap=</span><span style="color:#e6db74">&#34;BaseResultMap&#34;</span><span style="color:#f92672">&gt;</span>
+    select id, username, password, role
+    from user
+    where username = #{username,jdbcType=VARCHAR}
+    and password = #{password,jdbcType=VARCHAR}
+<span style="color:#f92672">&lt;/select&gt;</span>
+</code></pre></div><p><code>$</code> 将传入的数据直接显示生成在 sql 中：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-XML" data-lang="XML"><span style="color:#f92672">&lt;select</span> <span style="color:#a6e22e">id=</span><span style="color:#e6db74">&#34;selectByNameAndPassword&#34;</span> <span style="color:#a6e22e">parameterType=</span><span style="color:#e6db74">&#34;java.util.Map&#34;</span> <span style="color:#a6e22e">resultMap=</span><span style="color:#e6db74">&#34;BaseResultMap&#34;</span><span style="color:#f92672">&gt;</span>
+    select id, username, password, role
+    from user
+    where username = ${username,jdbcType=VARCHAR}
+    and password = ${password,jdbcType=VARCHAR}
+<span style="color:#f92672">&lt;/select&gt;</span>
+</code></pre></div><p><code>#</code> 方式能够很大程度防止sql注入，<code>$</code> 方式无法防止Sql注入。<code>$</code> 方式一般用于传入数据库对象，例如传入表名。</p>
+<h3 id="preparedstatement">PreparedStatement</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">String param <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#39;test&#39; or 1=1&#34;</span><span style="color:#f92672">;</span>
+String sql <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;select file from file where name = ?&#34;</span><span style="color:#f92672">;</span>
+</code></pre></div><p>对于上述 SQL 语句和参数，如果使用拼接方式，就会构成 SQL 注入，而如果使用 <code>PreparedStatement</code> 执行的 SQL 语句就会如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> file <span style="color:#66d9ef">from</span> file <span style="color:#66d9ef">where</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;\&#39;</span>test<span style="color:#960050;background-color:#1e0010">\</span><span style="color:#e6db74">&#39; or 1=1&#39;</span>
+</code></pre></div><p>SQL 把整个参数用引号包起来，并把参数中的引号作为转义字符，从而避免了参数也作为条件的一部分。下面来看 <code>com.mysql.jdbc.PreparedStatement</code> 的 <code>setString</code> 方法：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setString</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> parameterIndex<span style="color:#f92672">,</span> String x<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> SQLException <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>checkClosed<span style="color:#f92672">().</span><span style="color:#a6e22e">getConnectionMutex</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// if the passed string is null, then set this column to null
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>x <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                setNull<span style="color:#f92672">(</span>parameterIndex<span style="color:#f92672">,</span> Types<span style="color:#f92672">.</span><span style="color:#a6e22e">CHAR</span><span style="color:#f92672">);</span>
+            <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+                checkClosed<span style="color:#f92672">();</span>
+
+                <span style="color:#66d9ef">int</span> stringLength <span style="color:#f92672">=</span> x<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">();</span>
+
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">connection</span><span style="color:#f92672">.</span><span style="color:#a6e22e">isNoBackslashEscapesSet</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+                    <span style="color:#75715e">// Scan for any nasty chars                    // 判断是否需要转义处理（比如包含引号，换行等字符）
+</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">boolean</span> needsHexEscape <span style="color:#f92672">=</span> isEscapeNeededForString<span style="color:#f92672">(</span>x<span style="color:#f92672">,</span> stringLength<span style="color:#f92672">);</span>                     <span style="color:#75715e">// 如果不需要转义，则在两边加上单引号
+</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>needsHexEscape<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                        <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]</span> parameterAsBytes <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+
+                        StringBuilder quotedString <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StringBuilder<span style="color:#f92672">(</span>x<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">()</span> <span style="color:#f92672">+</span> 2<span style="color:#f92672">);</span>
+                        quotedString<span style="color:#f92672">.</span><span style="color:#a6e22e">append</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#39;\&#39;&#39;</span><span style="color:#f92672">);</span>
+                        quotedString<span style="color:#f92672">.</span><span style="color:#a6e22e">append</span><span style="color:#f92672">(</span>x<span style="color:#f92672">);</span>
+                        quotedString<span style="color:#f92672">.</span><span style="color:#a6e22e">append</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#39;\&#39;&#39;</span><span style="color:#f92672">);</span>
+
+                        <span style="color:#f92672">...</span>
+                    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+                        <span style="color:#f92672">...</span>
+                <span style="color:#f92672">}</span>
+
+                String parameterAsString <span style="color:#f92672">=</span> x<span style="color:#f92672">;</span>
+                <span style="color:#66d9ef">boolean</span> needsQuoted <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+                <span style="color:#75715e">// 如果需要转义，则做转义处理
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">isLoadDataQuery</span> <span style="color:#f92672">||</span> isEscapeNeededForString<span style="color:#f92672">(</span>x<span style="color:#f92672">,</span> stringLength<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+                <span style="color:#f92672">...</span>
+</code></pre></div><h2 id="缓存">缓存</h2>
+<p>MyBatis 有一级缓存和二级缓存，并且预留了集成第三方缓存的接口。</p>
+<h3 id="一级缓存">一级缓存</h3>
+<p>一级缓存也叫本地缓存，MyBatis 的一级缓存是在会话（SqlSession）层面进行缓存的。MyBatis 的<strong>一级缓存是默认开启</strong>的，不需要任何的配置。</p>
+<p>在对数据库的一次会话中，我们有可能会反复地执行完全相同的查询语句，如果不采取一些措施的话，每一次查询都会查询一次数据库,而我们在极短的时间内做了完全相同的查询，那么它们的结果极有可能完全相同，由于查询一次数据库的代价很大，这有可能造成很大的资源浪费。为了解决这一问题，减少资源的浪费，MyBatis 会在表示会话的 <code>SqlSession</code> 对象中建立一个简单的缓存，将每次查询到的结果结果缓存起来，当下次查询的时候，如果判断先前有个完全一样的查询，会直接从缓存中直接将结果取出，返回给用户，不需要再进行一次数据库查询了。</p>
+<p><img src="/images/docs/tutorial/database/mybatis/1383365-20190628172851422-987384747.png" alt=""></p>
+<blockquote>
+<p>一级缓存的生命周期有多长？</p>
+</blockquote>
+<ul>
+<li>MyBatis在开启一个数据库会话时，会创建一个新的SqlSession对象，SqlSession对象中会有一个新的Executor对象，Executor对象中持有一个新的 <code>PerpetualCache</code> 对象；当会话结束时，<code>SqlSession</code> 对象及其内部的Executor对象还有 <code>PerpetualCache</code> 对象也一并释放掉。</li>
+<li>如果 <code>SqlSession</code> 调用了 <code>close()</code> 方法，会释放掉一级缓存 <code>PerpetualCache</code> 对象，一级缓存将不可用；</li>
+<li>如果 <code>SqlSession</code> 调用了 <code>clearCache()</code>，会清空 <code>PerpetualCache</code> 对象中的数据，但是该对象仍可使用；</li>
+<li><code>SqlSession</code> 中执行了任何一个 update 操作(<code>update()</code>、<code>delete()</code>、<code>insert()</code>) ，都会清空 <code>PerpetualCache</code> 对象的数据，但是该对象可以继续使用；</li>
+</ul>
+<h3 id="二级缓存">二级缓存</h3>
+<p>二级缓存是用来解决一级缓存不能跨会话共享的问题的，范围是 namespace 级别的，可以被多个<code>SqlSession</code> 共享（只要是同一个接口里面的相同方法，都可以共享），生命周期和应用同步。如果你的MyBatis使用了二级缓存，并且你的<code>Mapper</code>和select语句也配置使用了二级缓存，那么在执行select查询的时候，MyBatis会先从二级缓存中取输入，其次才是一级缓存，即MyBatis查询数据的顺序是：二级缓存 -&gt; 一级缓存 -&gt; 数据库。</p>
+<p><img src="/images/docs/tutorial/database/mybatis/1383365-20190628180149776-546074458.png" alt=""></p>
+<blockquote>
+<p>开启二级缓存的方法</p>
+</blockquote>
+<ul>
+<li>第一步：配置 <code>mybatis.configuration.cache-enabled=true</code>。</li>
+<li>第二步：在 <code>Mapper.xml</code> 中配置 <code>&lt;cache/&gt;</code> 标签：</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-XML" data-lang="XML"><span style="color:#f92672">&lt;cache</span> <span style="color:#a6e22e">type=</span><span style="color:#e6db74">&#34;org.apache.ibatis.cache.impl.PerpetualCache&#34;</span>
+    <span style="color:#a6e22e">size=</span><span style="color:#e6db74">&#34;1024&#34;</span>
+    <span style="color:#a6e22e">eviction=</span><span style="color:#e6db74">&#34;LRU&#34;</span>
+    <span style="color:#a6e22e">flushInterval=</span><span style="color:#e6db74">&#34;120000&#34;</span>
+    <span style="color:#a6e22e">readOnly=</span><span style="color:#e6db74">&#34;false&#34;</span><span style="color:#f92672">/&gt;</span>
+</code></pre></div><blockquote>
+<p>某个方法不需要二级缓存</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-XML" data-lang="XML"><span style="color:#f92672">&lt;select</span> <span style="color:#a6e22e">id=</span><span style="color:#e6db74">&#34;selectBlog&#34;</span> <span style="color:#a6e22e">resultMap=</span><span style="color:#e6db74">&#34;BaseResultMap&#34;</span> <span style="color:#a6e22e">useCache=</span><span style="color:#e6db74">&#34;false&#34;</span><span style="color:#f92672">&gt;</span>
+</code></pre></div><h2 id="分页">分页</h2>
+<p><a href="https://baomidou.com/">MyBatis-Plus</a>（简称 MP）是一个 MyBatis 的<strong>增强工具</strong>，在 MyBatis 的基础上只做增强不做改变，为简化开发、提高效率而生。</p>
+<p>这个库提供了一个分页插件，下面简单看下此分页插件的用法和原理。</p>
+<h3 id="使用示例">使用示例</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">//Spring boot方式
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">@Configuration</span>
+<span style="color:#a6e22e">@MapperScan</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;com.baomidou.cloud.service.*.mapper*&#34;</span><span style="color:#f92672">)</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MybatisPlusConfig</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Bean</span>
+    <span style="color:#66d9ef">public</span> MybatisPlusInterceptor <span style="color:#a6e22e">mybatisPlusInterceptor</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        MybatisPlusInterceptor interceptor <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> MybatisPlusInterceptor<span style="color:#f92672">();</span>
+        interceptor<span style="color:#f92672">.</span><span style="color:#a6e22e">addInnerInterceptor</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> PaginationInnerInterceptor<span style="color:#f92672">(</span>DbType<span style="color:#f92672">.</span><span style="color:#a6e22e">H2</span><span style="color:#f92672">));</span>
+        <span style="color:#66d9ef">return</span> interceptor<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+<span style="color:#f92672">}</span>
+</code></pre></div><p>然后查看 <code>Mapper.java</code> 如何使用分页：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">UserMapper</span> <span style="color:#f92672">{</span><span style="color:#75715e">//可以继承或者不继承BaseMapper
+</span><span style="color:#75715e"></span>    IPage<span style="color:#f92672">&lt;</span>User<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">selectPageVo</span><span style="color:#f92672">(</span>Page<span style="color:#f92672">&lt;?&gt;</span> page<span style="color:#f92672">,</span> Integer state<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>UserMapper.xml</code> 的内容如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-XML" data-lang="XML"><span style="color:#f92672">&lt;select</span> <span style="color:#a6e22e">id=</span><span style="color:#e6db74">&#34;selectPageVo&#34;</span> <span style="color:#a6e22e">resultType=</span><span style="color:#e6db74">&#34;com.baomidou.cloud.entity.UserVo&#34;</span><span style="color:#f92672">&gt;</span>
+    SELECT id,name FROM user WHERE state=#{state}
+<span style="color:#f92672">&lt;/select&gt;</span>
+</code></pre></div><p>然后当调用 <code>selectPageVo</code> 的时候，Mybatis-Plus 自动替你分页。</p>
+<h3 id="分页原理">分页原理</h3>
+<blockquote>
+<p>基于 MyBatis-Plus 3.0 版本的源码进行的分析。</p>
+</blockquote>
+<p>处理分页的主要逻辑在 <code>PaginationInterceptor</code> 这个类的 <code>intercept</code> 方法里面：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> Object <span style="color:#a6e22e">intercept</span><span style="color:#f92672">(</span>Invocation invocation<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Throwable <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// SQL 解析
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">sqlParser</span><span style="color:#f92672">(</span>metaObject<span style="color:#f92672">);</span>
+
+    <span style="color:#75715e">// 先判断是不是SELECT操作
+</span><span style="color:#75715e"></span>    MappedStatement mappedStatement <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>MappedStatement<span style="color:#f92672">)</span> metaObject<span style="color:#f92672">.</span><span style="color:#a6e22e">getValue</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;delegate.mappedStatement&#34;</span><span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>SqlCommandType<span style="color:#f92672">.</span><span style="color:#a6e22e">SELECT</span> <span style="color:#f92672">!=</span> mappedStatement<span style="color:#f92672">.</span><span style="color:#a6e22e">getSqlCommandType</span><span style="color:#f92672">()</span>
+        <span style="color:#f92672">||</span> StatementType<span style="color:#f92672">.</span><span style="color:#a6e22e">CALLABLE</span> <span style="color:#f92672">==</span> mappedStatement<span style="color:#f92672">.</span><span style="color:#a6e22e">getStatementType</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 如果不是 SELECT 那么直接返回
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> invocation<span style="color:#f92672">.</span><span style="color:#a6e22e">proceed</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#75715e">// 判断参数里是否有page对象
+</span><span style="color:#75715e"></span>    IPage<span style="color:#f92672">&lt;?&gt;</span> page <span style="color:#f92672">=</span> ParameterUtils<span style="color:#f92672">.</span><span style="color:#a6e22e">findPage</span><span style="color:#f92672">(</span>paramObj<span style="color:#f92672">).</span><span style="color:#a6e22e">orElse</span><span style="color:#f92672">(</span><span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
+
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>page<span style="color:#f92672">.</span><span style="color:#a6e22e">isSearchCount</span><span style="color:#f92672">()</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">!</span>page<span style="color:#f92672">.</span><span style="color:#a6e22e">isHitCount</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        SqlInfo sqlInfo <span style="color:#f92672">=</span> SqlParserUtils<span style="color:#f92672">.</span><span style="color:#a6e22e">getOptimizeCountSql</span><span style="color:#f92672">(</span>page<span style="color:#f92672">.</span><span style="color:#a6e22e">optimizeCountSql</span><span style="color:#f92672">(),</span> countSqlParser<span style="color:#f92672">,</span> originalSql<span style="color:#f92672">,</span> metaObject<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">queryTotal</span><span style="color:#f92672">(</span>sqlInfo<span style="color:#f92672">.</span><span style="color:#a6e22e">getSql</span><span style="color:#f92672">(),</span> mappedStatement<span style="color:#f92672">,</span> boundSql<span style="color:#f92672">,</span> page<span style="color:#f92672">,</span> connection<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">continueLimit</span><span style="color:#f92672">(</span>page<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+    IDialect dialect <span style="color:#f92672">=</span> Optional<span style="color:#f92672">.</span><span style="color:#a6e22e">ofNullable</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">dialect</span><span style="color:#f92672">).</span><span style="color:#a6e22e">orElseGet</span><span style="color:#f92672">(()</span> <span style="color:#f92672">-&gt;</span> DialectFactory<span style="color:#f92672">.</span><span style="color:#a6e22e">getDialect</span><span style="color:#f92672">(</span>dbType<span style="color:#f92672">));</span>
+    String buildSql <span style="color:#f92672">=</span> concatOrderBy<span style="color:#f92672">(</span>originalSql<span style="color:#f92672">,</span> page<span style="color:#f92672">);</span>
+    DialectModel model <span style="color:#f92672">=</span> dialect<span style="color:#f92672">.</span><span style="color:#a6e22e">buildPaginationSql</span><span style="color:#f92672">(</span>buildSql<span style="color:#f92672">,</span> page<span style="color:#f92672">.</span><span style="color:#a6e22e">offset</span><span style="color:#f92672">(),</span> page<span style="color:#f92672">.</span><span style="color:#a6e22e">getSize</span><span style="color:#f92672">());</span>
+
+    metaObject<span style="color:#f92672">.</span><span style="color:#a6e22e">setValue</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;delegate.boundSql.sql&#34;</span><span style="color:#f92672">,</span> model<span style="color:#f92672">.</span><span style="color:#a6e22e">getDialectSql</span><span style="color:#f92672">());</span>
+    metaObject<span style="color:#f92672">.</span><span style="color:#a6e22e">setValue</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;delegate.boundSql.parameterMappings&#34;</span><span style="color:#f92672">,</span> mappings<span style="color:#f92672">);</span>
+
+    <span style="color:#66d9ef">return</span> invocation<span style="color:#f92672">.</span><span style="color:#a6e22e">proceed</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>上述主要逻辑就是先进行 SQL 解析，如果是 SELECT 操作的话，那么用 <code>queryTotal</code> 方法查询总 count，期内部的大致的执行的 SQL 语句的写法如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"> <span style="color:#75715e">/**
+</span><span style="color:#75715e">  * 获取 COUNT 原生 SQL 包装
+</span><span style="color:#75715e">  *
+</span><span style="color:#75715e">  * @param originalSql ignore
+</span><span style="color:#75715e">  * @return ignore
+</span><span style="color:#75715e">  */</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> String <span style="color:#a6e22e">getOriginalCountSql</span><span style="color:#f92672">(</span>String originalSql<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> String<span style="color:#f92672">.</span><span style="color:#a6e22e">format</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;SELECT COUNT(*) FROM (%s) TOTAL&#34;</span><span style="color:#f92672">,</span> originalSql<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>获取到 <code>count</code> 信息后，会放到 <code>page</code> 对象的 <code>total</code> 字段上。随后根据数据库的不同，在 SQL 语句后面拼接成不同的分页 SQL 语句。</p>
+<p>Oracle12c 数据库拼凑分页的 SQL 语句如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Oracle12cDialect</span> <span style="color:#66d9ef">implements</span> IDialect <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> DialectModel <span style="color:#a6e22e">buildPaginationSql</span><span style="color:#f92672">(</span>String originalSql<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> offset<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> limit<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        String sql <span style="color:#f92672">=</span> originalSql <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; OFFSET &#34;</span> <span style="color:#f92672">+</span> FIRST_MARK <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; ROWS FETCH NEXT &#34;</span> <span style="color:#f92672">+</span> SECOND_MARK <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; ROWS ONLY&#34;</span><span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> DialectModel<span style="color:#f92672">(</span>sql<span style="color:#f92672">,</span> offset<span style="color:#f92672">,</span> limit<span style="color:#f92672">).</span><span style="color:#a6e22e">setConsumerChain</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>MySQL 数据库拼凑分页的 SQL 语句如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MySqlDialect</span> <span style="color:#66d9ef">implements</span> IDialect <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> DialectModel <span style="color:#a6e22e">buildPaginationSql</span><span style="color:#f92672">(</span>String originalSql<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> offset<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> limit<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        StringBuilder sql <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StringBuilder<span style="color:#f92672">(</span>originalSql<span style="color:#f92672">).</span><span style="color:#a6e22e">append</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34; LIMIT &#34;</span><span style="color:#f92672">).</span><span style="color:#a6e22e">append</span><span style="color:#f92672">(</span>FIRST_MARK<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>offset <span style="color:#f92672">!=</span> 0L<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            sql<span style="color:#f92672">.</span><span style="color:#a6e22e">append</span><span style="color:#f92672">(</span>StringPool<span style="color:#f92672">.</span><span style="color:#a6e22e">COMMA</span><span style="color:#f92672">).</span><span style="color:#a6e22e">append</span><span style="color:#f92672">(</span>SECOND_MARK<span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> DialectModel<span style="color:#f92672">(</span>sql<span style="color:#f92672">.</span><span style="color:#a6e22e">toString</span><span style="color:#f92672">(),</span> offset<span style="color:#f92672">,</span> limit<span style="color:#f92672">).</span><span style="color:#a6e22e">setConsumerChain</span><span style="color:#f92672">();</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> DialectModel<span style="color:#f92672">(</span>sql<span style="color:#f92672">.</span><span style="color:#a6e22e">toString</span><span style="color:#f92672">(),</span> limit<span style="color:#f92672">).</span><span style="color:#a6e22e">setConsumer</span><span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>拼接好分页 SQL 语句以后，将其放到 <code>metaObject</code> 上，以供下游进行消费。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://www.cnblogs.com/wuzhenzhao/p/11103043.html">mybatis缓存机制</a></li>
+</ul>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#防止-sql-注入">防止 SQL 注入</a>
+      <ul>
+        <li><a href="#-vs-"><code>$</code> vs <code>#</code></a></li>
+        <li><a href="#preparedstatement">PreparedStatement</a></li>
+      </ul>
+    </li>
+    <li><a href="#缓存">缓存</a>
+      <ul>
+        <li><a href="#一级缓存">一级缓存</a></li>
+        <li><a href="#二级缓存">二级缓存</a></li>
+      </ul>
+    </li>
+    <li><a href="#分页">分页</a>
+      <ul>
+        <li><a href="#使用示例">使用示例</a></li>
+        <li><a href="#分页原理">分页原理</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

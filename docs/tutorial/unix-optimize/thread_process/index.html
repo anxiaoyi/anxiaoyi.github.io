@@ -5,10 +5,12 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="线程和进程"><meta property="og:title" content="线程和进程" />
-<meta property="og:description" content="线程和进程 生命周期 另外一副 Java 线程的状态转换图：
+<meta property="og:description" content="线程和进程 线程 线程通信方式  POSIX 信号量 互斥锁 (互斥量)：独占方式访问关键代码段。 条件变量：某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程。  线程的数据 生命周期 另外一副 Java 线程的状态转换图：
 另外一副更为详细的：
 何时可以响应中断  线程在运行态是不响应中断的。
-    状态 中断效果 描述     NEW 无    RUNNABLE 设置中断标志位 用户自己判断是否中断，以及如何处理   BLOCKED 设置中断标志位 用户自己判断是否中断，以及如何处理   WAITING 抛InterruptedException异常，并清空中断标志位    TIMED_WAITING 抛InterruptedException异常，并清空中断标志位    TERMINATED 无     sleep vs wait  wait 可以被另外一个线程通过调用 notify 唤醒，wait/notify 必须放到 synchronized 块中，wait 之后在 notify 之前操作系统不会给这个线程任何的时间片。  Object mon = ...; synchronized (mon) { mon." />
+    状态 中断效果 描述     NEW 无    RUNNABLE 设置中断标志位 用户自己判断是否中断，以及如何处理   BLOCKED 设置中断标志位 用户自己判断是否中断，以及如何处理   WAITING 抛InterruptedException异常，并清空中断标志位    TIMED_WAITING 抛InterruptedException异常，并清空中断标志位    TERMINATED 无     自发性上下文切换 自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。sleep()、wait()、yield()、join()、park()、synchronized、lock。
+停止线程 (1) volatile 标志位
+// set this to true to stop the thread volatile boolean shutdown = false; ." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/thread_process/" />
 
@@ -19,7 +21,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -935,18 +937,27 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#生命周期">生命周期</a></li>
-    <li><a href="#何时可以响应中断">何时可以响应中断</a></li>
-    <li><a href="#sleep-vs-wait">sleep vs wait</a></li>
-    <li><a href="#停止线程">停止线程</a>
+    <li><a href="#线程">线程</a>
       <ul>
-        <li><a href="#volatile-标志位">volatile 标志位</a></li>
-        <li><a href="#interrupt-中断">interrupt 中断</a></li>
+        <li><a href="#线程通信方式">线程通信方式</a></li>
+        <li><a href="#线程的数据">线程的数据</a></li>
+        <li><a href="#生命周期">生命周期</a></li>
+        <li><a href="#何时可以响应中断">何时可以响应中断</a></li>
+        <li><a href="#自发性上下文切换">自发性上下文切换</a></li>
+        <li><a href="#停止线程">停止线程</a></li>
+        <li><a href="#sleep-vs-wait">sleep vs wait</a></li>
+        <li><a href="#线程的调用方式">线程的调用方式</a></li>
       </ul>
     </li>
-    <li><a href="#自发性上下文切换">自发性上下文切换</a></li>
-    <li><a href="#线程通信方式">线程通信方式</a></li>
-    <li><a href="#进程通信方式">进程通信方式</a></li>
+    <li><a href="#进程">进程</a>
+      <ul>
+        <li><a href="#进程的数据结构">进程的数据结构</a></li>
+        <li><a href="#创建进程">创建进程</a></li>
+        <li><a href="#进程状态">进程状态</a></li>
+        <li><a href="#进程通信方式">进程通信方式</a></li>
+        <li><a href="#进程调度算法">进程调度算法</a></li>
+      </ul>
+    </li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -969,13 +980,22 @@ data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="线程和进程">线程和进程</h1>
-<h2 id="生命周期">生命周期</h2>
+<h2 id="线程">线程</h2>
+<h3 id="线程通信方式">线程通信方式</h3>
+<ul>
+<li>POSIX <strong>信号量</strong></li>
+<li><strong>互斥锁 (互斥量)</strong>：<strong>独占</strong>方式访问关键代码段。</li>
+<li><strong>条件变量</strong>：某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程。</li>
+</ul>
+<h3 id="线程的数据">线程的数据</h3>
+<p><img src="/images/docs/tutorial/unix-optimize/thread/Snipaste_2021-02-14_22-16-34.png" alt=""></p>
+<h3 id="生命周期">生命周期</h3>
 <p><img src="/images/docs/tutorial/unix-optimize/thread/14dde8a9486799ad1aa13aa06003757e.jpg" alt=""></p>
 <p>另外一副 Java 线程的<a href="https://www.cnblogs.com/waterystone/p/4920007.html">状态转换图</a>：</p>
 <p><img src="/images/docs/tutorial/unix-optimize/thread/thread-state.png" alt=""></p>
 <p>另外一副更为<a href="https://blog.csdn.net/u010841296/article/details/89613679">详细的</a>：</p>
 <p><img src="/images/docs/tutorial/unix-optimize/thread/Snipaste_2021-02-08_20-33-56.png" alt=""></p>
-<h2 id="何时可以响应中断">何时可以响应中断</h2>
+<h3 id="何时可以响应中断">何时可以响应中断</h3>
 <blockquote>
 <p>线程在<strong>运行态</strong>是不响应中断的。</p>
 </blockquote>
@@ -1020,24 +1040,10 @@ data-full-width-responsive="true"></ins>
 </tr>
 </tbody>
 </table>
-<h2 id="sleep-vs-wait">sleep vs wait</h2>
-<ul>
-<li><code>wait</code> 可以被另外一个线程通过调用 <code>notify</code> 唤醒，<code>wait</code>/<code>notify</code> 必须放到 <code>synchronized</code> 块中，<code>wait</code> 之后在 <code>notify</code> 之前操作系统不会给这个线程任何的时间片。</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Object mon <span style="color:#f92672">=</span> <span style="color:#f92672">...;</span>
-<span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>mon<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-    mon<span style="color:#f92672">.</span><span style="color:#a6e22e">wait</span><span style="color:#f92672">();</span>
-<span style="color:#f92672">}</span> 
-</code></pre></div><ul>
-<li>
-<p><code>sleep</code> 不能被唤醒 (除非调用 <code>t.interrupt()</code> 中断)，<code>sleep</code> 的时候也<strong>不会自动释放锁</strong>，<code>sleep(n)</code> 之后操作系统不会再调度这个线程，这段时间<strong>不会给它分配时间片</strong>。</p>
-</li>
-<li>
-<p><code>yield</code>：操作系统可能也可能不给这个线程时间片。</p>
-</li>
-</ul>
-<h2 id="停止线程">停止线程</h2>
-<h3 id="volatile-标志位">volatile 标志位</h3>
+<h3 id="自发性上下文切换">自发性上下文切换</h3>
+<p>自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。<code>sleep()</code>、<code>wait()</code>、<code>yield()</code>、<code>join()</code>、<code>park()</code>、<code>synchronized</code>、<code>lock</code>。</p>
+<h3 id="停止线程">停止线程</h3>
+<p>(1) volatile 标志位</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// set this to true to stop the thread
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">boolean</span> shutdown <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
 <span style="color:#f92672">...</span>
@@ -1046,7 +1052,7 @@ data-full-width-responsive="true"></ins>
         <span style="color:#75715e">// continue processing
 </span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><h3 id="interrupt-中断">interrupt 中断</h3>
+</code></pre></div><p>(2) interrupt 中断</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Thread t <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread<span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Runnable<span style="color:#f92672">(){</span>
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
@@ -1065,15 +1071,64 @@ t<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><sp
 
 t<span style="color:#f92672">.</span><span style="color:#a6e22e">interrupt</span><span style="color:#f92672">();</span>
 </code></pre></div><p>当 <code>interrupt</code> 的时候，如果线程正在 <code>Thread.sleep()</code>, <code>otherThread.join()</code>, <code>object.wait()</code>，那么这个线程应该会抛出 <code>InterruptedException</code>。</p>
-<h2 id="自发性上下文切换">自发性上下文切换</h2>
-<p>自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。<code>sleep()</code>、<code>wait()</code>、<code>yield()</code>、<code>join()</code>、<code>park()</code>、<code>synchronized</code>、<code>lock</code>。</p>
-<h2 id="线程通信方式">线程通信方式</h2>
+<h3 id="sleep-vs-wait">sleep vs wait</h3>
 <ul>
-<li>POSIX <strong>信号量</strong></li>
-<li><strong>互斥锁 (互斥量)</strong>：<strong>独占</strong>方式访问关键代码段。</li>
-<li><strong>条件变量</strong>：某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程。</li>
+<li><code>wait</code> 可以被另外一个线程通过调用 <code>notify</code> 唤醒，<code>wait</code>/<code>notify</code> 必须放到 <code>synchronized</code> 块中，<code>wait</code> 之后在 <code>notify</code> 之前操作系统不会给这个线程任何的时间片。</li>
 </ul>
-<h2 id="进程通信方式">进程通信方式</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Object mon <span style="color:#f92672">=</span> <span style="color:#f92672">...;</span>
+<span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>mon<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    mon<span style="color:#f92672">.</span><span style="color:#a6e22e">wait</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span> 
+</code></pre></div><ul>
+<li>
+<p><code>sleep</code> 不能被唤醒 (除非调用 <code>t.interrupt()</code> 中断)，<code>sleep</code> 的时候也<strong>不会自动释放锁</strong>，<code>sleep(n)</code> 之后操作系统不会再调度这个线程，这段时间<strong>不会给它分配时间片</strong>。</p>
+</li>
+<li>
+<p><code>yield</code>：操作系统可能也可能不给这个线程时间片。</p>
+</li>
+</ul>
+<h3 id="线程的调用方式">线程的调用方式</h3>
+<p>函数的调用过程，A 调用 B、调用 C、调用 D，然后返回 C、返回 B、返回 A，这是一个后进先出的过程，可以利用<strong>栈</strong>来保存这个调用过程，如果去看函数调用汇编语言的代码，其实就是<strong>指令跳转</strong>，从代码的一个地方跳到另外一个地方。</p>
+<p>在进程的内存空间里面，栈是一个从高地址到低地址，<strong>往下增长</strong>的结构，也就是上面是栈底，下面是栈顶，入栈和出栈的操作都是从下面的栈顶开始的。</p>
+<p><img src="/images/docs/tutorial/unix-optimize/thread/aec865abccf0308155f4138cc905972e.jpg" alt=""></p>
+<p>我们来看 32 位操作系统的情况。在 CPU 里，ESP（Extended Stack Pointer）是栈顶指针寄存器，入栈操作 Push 和出栈操作 Pop 指令，会自动调整 ESP 的值。另外有一个寄存器 EBP（Extended Base Pointer），是栈基地址指针寄存器，指向当前栈帧的最底部。</p>
+<p>例如，A 调用 B，A 的栈里面包含 A 函数的局部变量，然后是调用 B 的时候要传给它的参数，然后返回 A 的地址，这个地址也应该入栈，这就形成了 A 的栈帧。接下来就是 B 的栈帧部分了，先保存的是 A 栈帧的栈底位置，也就是 EBP。因为在 B 函数里面获取 A 传进来的参数，就是通过这个指针获取的，接下来保存的是 B 的局部变量等等。</p>
+<p>当 B 返回的时候，返回值会保存在 EAX 寄存器中，从栈中弹出返回地址，将指令跳转回去，参数也从栈中弹出，然后继续执行 A。</p>
+<h2 id="进程">进程</h2>
+<h3 id="进程的数据结构">进程的数据结构</h3>
+<p><img src="/images/docs/tutorial/unix-optimize/thread/1c91956b52574b62a4418a7c6993d8bc.jpeg" alt=""></p>
+<h3 id="创建进程">创建进程</h3>
+<p><code>fork</code> 函数主要做了哪些事情：</p>
+<ul>
+<li>复制结构</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">// 复制结构
+</span><span style="color:#75715e"></span>p <span style="color:#f92672">=</span> dup_task_struct(current, node);
+<span style="color:#75715e">// 重新设置进程运行的统计量
+</span><span style="color:#75715e"></span>retval <span style="color:#f92672">=</span> copy_creds(p, clone_flags);
+<span style="color:#75715e">// 设置调度相关的变量
+</span><span style="color:#75715e"></span>retval <span style="color:#f92672">=</span> sched_fork(clone_flags, p);
+<span style="color:#75715e">// 初始化与文件和文件系统相关的变量：
+</span><span style="color:#75715e">// 复制一个进程打开的文件信息
+</span><span style="color:#75715e">// 复制一个进程的目录信息
+</span><span style="color:#75715e"></span>retval <span style="color:#f92672">=</span> copy_files(clone_flags, p);
+retval <span style="color:#f92672">=</span> copy_fs(clone_flags, p);
+<span style="color:#75715e">// 初始化与信号相关的变量
+</span><span style="color:#75715e"></span>init_sigpending(<span style="color:#f92672">&amp;</span>p<span style="color:#f92672">-&gt;</span>pending);
+retval <span style="color:#f92672">=</span> copy_sighand(clone_flags, p);
+retval <span style="color:#f92672">=</span> copy_signal(clone_flags, p);
+<span style="color:#75715e">// 复制进程内存空间
+</span><span style="color:#75715e"></span>retval <span style="color:#f92672">=</span> copy_mm(clone_flags, p);
+</code></pre></div><ul>
+<li>唤醒新进程</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C">p<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">=</span> TASK_RUNNING;
+enqueue_task_fair(); <span style="color:#75715e">// 放入到 CFS 调度队列
+</span></code></pre></div><p>创建进程的话，调用的系统调用是 <code>fork</code>，在 <code>copy_process</code> 函数里面，会将五大结构 <code>files_struct</code>、<code>fs_struct</code>、<code>sighand_struct</code>、<code>signal_struct</code>、<code>mm_struct</code> 都复制一遍，从此<strong>父进程和子进程各用各的数据结构</strong>。而创建线程的话，调用的是系统调用 <code>clone</code>，在 <code>copy_process</code> 函数里面， 五大结构<strong>仅仅是引用计数加一</strong>，也即线程共享进程的数据结构。</p>
+<h3 id="进程状态">进程状态</h3>
+<p><img src="/images/docs/tutorial/unix-optimize/thread/Snipaste_2021-02-12_17-34-43.png" alt=""></p>
+<p>一旦一个进程要结束，先进入的是 <code>EXIT_ZOMBIE</code> 状态，但是这个时候它的父进程还没有使用 <code>wait()</code> 等系统调用来<strong>获知它的终止信息</strong>，此时进程就成了<strong>僵尸进程</strong>。</p>
+<h3 id="进程通信方式">进程通信方式</h3>
 <blockquote>
 <p>参考自 《Linux 高性能服务器编程》</p>
 </blockquote>
@@ -1084,24 +1139,34 @@ t<span style="color:#f92672">.</span><span style="color:#a6e22e">interrupt</span
  1) SIGHUP       2) SIGINT       3) SIGQUIT      4) SIGILL       5) SIGTRAP
  6) SIGABRT      7) SIGBUS       8) SIGFPE       9) SIGKILL     10) SIGUSR1
 11) SIGSEGV     12) SIGUSR2     13) SIGPIPE     14) SIGALRM     15) SIGTERM
-16) SIGSTKFLT   17) SIGCHLD     18) SIGCONT     19) SIGSTOP     20) SIGTSTP
-21) SIGTTIN     22) SIGTTOU     23) SIGURG      24) SIGXCPU     25) SIGXFSZ
-26) SIGVTALRM   27) SIGPROF     28) SIGWINCH    29) SIGIO       30) SIGPWR
-31) SIGSYS      34) SIGRTMIN    35) SIGRTMIN+1  36) SIGRTMIN+2  37) SIGRTMIN+3
-38) SIGRTMIN+4  39) SIGRTMIN+5  40) SIGRTMIN+6  41) SIGRTMIN+7  42) SIGRTMIN+8
-43) SIGRTMIN+9  44) SIGRTMIN+10 45) SIGRTMIN+11 46) SIGRTMIN+12 47) SIGRTMIN+13
-48) SIGRTMIN+14 49) SIGRTMIN+15 50) SIGRTMAX-14 51) SIGRTMAX-13 52) SIGRTMAX-12
-53) SIGRTMAX-11 54) SIGRTMAX-10 55) SIGRTMAX-9  56) SIGRTMAX-8  57) SIGRTMAX-7
-58) SIGRTMAX-6  59) SIGRTMAX-5  60) SIGRTMAX-4  61) SIGRTMAX-3  62) SIGRTMAX-2
-63) SIGRTMAX-1  64) SIGRTMAX
+...
 </code></pre><ul>
 <li><strong>匿名管道</strong>：<code>tail -f log.txt | grep abc | sort</code></li>
-<li><strong>管道</strong>：可以在父子进程传递数据，利用的是 <code>fork</code> 调用之后两个管道文件描述符都保持打开。</li>
+<li><strong>管道</strong>：可以在父子进程传递数据，利用的是 <code>fork</code> 调用之后两个管道文件描述符都保持打开。<code>mkfifo hello</code></li>
 <li><strong>信号量</strong>：多个进程同时访问系统上某个资源，就需要考虑同步问题。</li>
 <li><strong>共享内存</strong>：<strong>最高效率</strong>的 IPC 机制，因为它在两个进程之间不需要传输任何数据。</li>
 <li><strong>消息队列</strong>：两个进程之间传递二进制块最简单有效的一种方式。</li>
 <li><strong>套接字</strong></li>
 </ul>
+<p><strong>共享内存加信号量</strong>是常用的模式。这个需要牢记，常见到一些知名的以 C 语言开发的开源软件都会用到它。</p>
+<h3 id="进程调度算法">进程调度算法</h3>
+<p>在 Linux 里面，进程大概可以分成两种：<strong>实时进程</strong>和<strong>普通进程</strong>。在 <code>task_struct</code> 结构体中的 <code>policy</code> 是这个进程的调度策略：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> policy;
+</code></pre></div><p>配合调度策略的，还有<strong>优先级</strong>，也在 <code>task_struct</code> 中。优先级其实就是一个数值，对于实时进程，优先级的范围是 <code>0～99</code>；对于普通进程，优先级的范围是 <code>100～139</code>。<strong>数值越小，优先级越高</strong>。从这里可以看出，所有的实时进程都比普通进程优先级要高。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">int</span> prio, static_prio, normal_prio;
+<span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> rt_priority;
+</code></pre></div><p>(1) 实时调度策略</p>
+<p>其中 <code>SCHED_FIFO</code>、<code>SCHED_RR</code>、<code>SCHED_DEADLINE</code> 是实时进程的调度策略。</p>
+<ul>
+<li><code>SCHED_FIFO</code>：交了相同钱的，先来先服务，但是有的加钱多，可以分配更高的优先级，也就是说，高优先级的进程可以抢占低优先级的进程，而相同优先级的进程，我们遵循先来先得。</li>
+<li><code>SCHED_RR</code>：轮流调度算法，采用时间片，相同优先级的任务当用完时间片会被放到队列尾部，以保证公平性，而高优先级的任务也是可以抢占低优先级的任务。</li>
+<li><code>SCHED_DEADLINE</code>：按照任务的 <code>deadline</code> 进行调度的。当产生一个调度点的时候，DL 调度器总是选择其 deadline 距离当前时间点最近的那个任务，并调度它执行。</li>
+</ul>
+<p>(2) 普通调度策略</p>
+<p>对于普通进程的调度策略有，<code>SCHED_NORMAL</code>、<code>SCHED_BATCH</code>、<code>SCHED_IDLE</code>。普通进程使用的调度策略是 <code>fair_sched_class</code>，在 Linux 里面，实现了一个基于 CFS 的调度算法。CFS 全称 Completely Fair Scheduling，叫<strong>完全公平调度</strong>。</p>
+<p>CFS 会为每一个进程安排一个虚拟运行时间 <code>vruntime</code>，用红黑树进行排序。所有可运行的进程通过不断地插入操作最终都存储在以时间为顺序的红黑树中，vruntime 最小的在树的左侧，vruntime 最大的在树的右侧。</p>
+<p><img src="/images/docs/tutorial/unix-optimize/thread/c2b86e79f19d811ce10774688fc0c093.jpeg" alt=""></p>
+<p>每个 CPU 都有自己的 <code>struct rq</code> 结构，其用于描述在此 CPU 上所运行的所有进程，其包括一个实时进程队列 <code>rt_rq</code> 和一个 CFS 运行队列 <code>cfs_rq</code>，在调度时，调度器首先会先去实时进程队列找是否有实时进程需要运行，如果没有才会去 CFS 运行队列找是否有进程需要运行。</p>
 <h2 id="参考">参考</h2>
 <ul>
 <li>《趣谈 Linux 操作系统》</li>
@@ -1141,18 +1206,27 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#生命周期">生命周期</a></li>
-    <li><a href="#何时可以响应中断">何时可以响应中断</a></li>
-    <li><a href="#sleep-vs-wait">sleep vs wait</a></li>
-    <li><a href="#停止线程">停止线程</a>
+    <li><a href="#线程">线程</a>
       <ul>
-        <li><a href="#volatile-标志位">volatile 标志位</a></li>
-        <li><a href="#interrupt-中断">interrupt 中断</a></li>
+        <li><a href="#线程通信方式">线程通信方式</a></li>
+        <li><a href="#线程的数据">线程的数据</a></li>
+        <li><a href="#生命周期">生命周期</a></li>
+        <li><a href="#何时可以响应中断">何时可以响应中断</a></li>
+        <li><a href="#自发性上下文切换">自发性上下文切换</a></li>
+        <li><a href="#停止线程">停止线程</a></li>
+        <li><a href="#sleep-vs-wait">sleep vs wait</a></li>
+        <li><a href="#线程的调用方式">线程的调用方式</a></li>
       </ul>
     </li>
-    <li><a href="#自发性上下文切换">自发性上下文切换</a></li>
-    <li><a href="#线程通信方式">线程通信方式</a></li>
-    <li><a href="#进程通信方式">进程通信方式</a></li>
+    <li><a href="#进程">进程</a>
+      <ul>
+        <li><a href="#进程的数据结构">进程的数据结构</a></li>
+        <li><a href="#创建进程">创建进程</a></li>
+        <li><a href="#进程状态">进程状态</a></li>
+        <li><a href="#进程通信方式">进程通信方式</a></li>
+        <li><a href="#进程调度算法">进程调度算法</a></li>
+      </ul>
+    </li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>

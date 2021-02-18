@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -511,6 +511,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/java/jvm/" >
+      JVM
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/java/basic/" >
       Java 基础
   </a>
@@ -930,6 +940,9 @@ var _hmt = _hmt || [];
         <li><a href="#buffers">Buffers</a></li>
         <li><a href="#selectors">Selectors</a></li>
         <li><a href="#nio-编程示例">NIO 编程示例</a></li>
+        <li><a href="#select">select</a></li>
+        <li><a href="#poll">poll</a></li>
+        <li><a href="#epoll">epoll</a></li>
       </ul>
     </li>
     <li><a href="#aio">AIO</a></li>
@@ -1055,6 +1068,34 @@ ch<span style="color:#f92672">.</span><span style="color:#a6e22e">socket</span><
     <span style="color:#f92672">}</span>
     Map<span style="color:#f92672">&lt;</span>Channel<span style="color:#960050;background-color:#1e0010">，</span>ChannelHandler<span style="color:#f92672">&gt;</span> handlerMap<span style="color:#f92672">;</span><span style="color:#75715e">//所有channel的对应事件处理器
 </span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+</code></pre></div><h3 id="select">select</h3>
+<p><code>select</code> 不断轮循去监听 socket，socket 个数有限制，一般是 <code>1024/2048</code>，<code>FD_SETSIZE</code> 控制，需要重新编译内核才可以修改宏。<strong>线性扫描</strong>全部 socket 集合。</p>
+<p><code>select</code> 缺点：每次调用 <code>select</code> 都需要把 fd 集合从<strong>用户态拷贝到内核态</strong>。<code>epoll</code> 对于每个文件描述符只会拷贝一次到内核，不用重复拷贝。</p>
+<h3 id="poll">poll</h3>
+<p><code>poll</code> 轮循方式监听，只不过<strong>没有最大连接数</strong>的限制。<strong>线性扫描</strong>。</p>
+<h3 id="epoll">epoll</h3>
+<p><code>epoll</code> 不是轮循监听，而是 socket 有变化时通过<strong>回调</strong>的方式主动告知用户进程。</p>
+<blockquote>
+<p><code>epoll</code> 缺点：</p>
+</blockquote>
+<ul>
+<li>大部分套接字活跃的情况下，性能比不上 <code>select/poll</code>。它更适合处理大量的 fd，且活跃 fd 不是很多的情，反之如果处理的 fd 量不大，且基本都是活跃的，过多使用 <code>epoll_ctl</code>，效率相比还有稍微的下降。</li>
+<li>跨平台性差</li>
+</ul>
+<blockquote>
+<p><code>epoll</code> 原理：</p>
+</blockquote>
+<p>epoll 由 <code>epoll_create</code> 、<code>epoll_ctl</code> 和 <code>epoll_wait</code> 这三个底层函数支持，使用的时候用 <code>epoll_create</code> 创建对象，参数 site 是保证内核保证能正确处理的最大句柄数。<code>epoll_ctl</code> 可以添加/移除 socket。<code>epoll_wait</code> 在给定的 timeout 时间内，如果有事件发生，那么就返回变化的文件句柄。</p>
+<p>socket 在 epoll 内部以红黑树形式存储，支持快速查找、删除和插入。除了这个红黑树，还会建立一个链表，用来存储准备就绪的事件，当 <code>epoll_wait</code> 调用时，就查看这个链表里是不是为空就可以。所以 <code>epoll_wait</code> 仅仅<strong>拷贝少量的句柄</strong>返回给内核态，所以比较高效。</p>
+<p>当调用 <code>epoll_ctl</code> 时候，除了把 socket 放入红黑树，还会向内核注册一个回调函数，中断到了，那么就将它放到这个就绪链表里面。</p>
+<p>另外 epoll 有 ET 和 LT 两种触发模式，LT 的话，只要一个句柄上的事件没有处理完，以后调用 <code>epoll_wait</code> 还会返回这个句柄，而 ET 仅仅在第一次返回。</p>
+<blockquote>
+<p><code>epoll</code> 使用流程：</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">int</span> epoll_fd <span style="color:#f92672">=</span> epoll_create(<span style="color:#ae81ff">0</span>);
+epoll_ctl(epoll_fd, EPOLL_CTL_ADD, <span style="color:#ae81ff">0</span>, <span style="color:#f92672">&amp;</span>event);
+<span style="color:#66d9ef">while</span>(running) 
+    event_count <span style="color:#f92672">=</span> epoll_wait(epoll_fd, events, MAX_EVENTS, <span style="color:#ae81ff">30000</span>);
 </code></pre></div><h2 id="aio">AIO</h2>
 <h2 id="参考">参考</h2>
 <ul>
@@ -1103,6 +1144,9 @@ data-full-width-responsive="true"></ins>
         <li><a href="#buffers">Buffers</a></li>
         <li><a href="#selectors">Selectors</a></li>
         <li><a href="#nio-编程示例">NIO 编程示例</a></li>
+        <li><a href="#select">select</a></li>
+        <li><a href="#poll">poll</a></li>
+        <li><a href="#epoll">epoll</a></li>
       </ul>
     </li>
     <li><a href="#aio">AIO</a></li>

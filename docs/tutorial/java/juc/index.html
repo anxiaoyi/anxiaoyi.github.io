@@ -5,12 +5,18 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="JUC 并发包"><meta property="og:title" content="JUC 并发包" />
-<meta property="og:description" content="JUC 并发包 AQS (AbstractQueuedSynchronizer) AQS核心思想是，如果被请求的共享资源空闲，那么就将当前请求资源的线程设置为有效的工作线程，将共享资源设置为锁定状态；如果共享资源被占用，就需要一定的阻塞等待唤醒机制来保证锁分配。这个机制主要用的是CLH队列的变体实现的，将暂时获取不到锁的线程加入到队列中。
-CLH：Craig、Landin and Hagersten 队列，是单向链表，AQS中的队列是CLH变体的虚拟双向队列（FIFO），AQS是通过将每条请求共享资源的线程封装成一个节点来实现锁的分配。
-AQS 维护了一个 volatile int state（代表共享资源）和一个 FIFO 线程等待队列（多线程争用资源被阻塞时会进入此队列）。
-/** * The synchronization state. */ private volatile int state; protected final boolean compareAndSetState(int expect, int update) { // See below for intrinsics setup to support this  return unsafe.compareAndSwapInt(this, stateOffset, expect, update); } AQS 定义两种资源共享方式：
- Exclusive（独占，只有一个线程能执行，如 ReentrantLock） Share（共享，多个线程可同时执行，如 Semaphore/CountDownLatch）。  不同的自定义同步器争用共享资源的方式也不同。自定义同步器在实现时只需要实现共享资源 state 的获取与释放方式即可，至于具体线程等待队列的维护（如获取资源失败入队/唤醒出队等），AQS 已经在顶层实现好了。自定义同步器实现时主要实现以下几种方法：
- isHeldExclusively()：该线程是否正在独占资源。只有用到condition才需要去实现它。 tryAcquire(int)：独占方式。尝试获取资源，成功则返回true，失败则返回false。 tryRelease(int)：独占方式。尝试释放资源，成功则返回true，失败则返回false。 tryAcquireShared(int)：共享方式。尝试获取资源。负数表示失败；0表示成功，但没有剩余可用资源；正数表示成功，且有剩余资源。 tryReleaseShared(int)：共享方式。尝试释放资源，如果释放后允许唤醒后续等待结点返回true，否则返回false。  Node Node 结点是对每一个等待获取资源的线程的封装，其包含了需要同步的线程本身及其等待状态，如是否被阻塞、是否等待唤醒、是否已经被取消等。变量 waitStatus 则表示当前 Node 结点的等待状态。" />
+<meta property="og:description" content="JUC 并发包 Java 内存模型 (JMM) 在并发编程中，需要处理两个关键问题：线程之间如何通信及线程之间如何同步。在命令式编程中，线程之间的通信机制有两种：共享内存和消息传递。
+Java的并发采用的是共享内存模型，Java线程之间的通信总是隐式进行，整个通信过程对程序员完全透明。
+ 线程之间共享程序的公共状态，通过写读内存中的公共状态进行隐式通信。 在共享内存并发模型里，同步是显式进行的。程序员必须显式指定某个方法或某段代码需要在线程之间互斥执行。  Java 线程之间的通信 由 Java 内存模型（本文简称为 JMM ）控制，JMM 决定一个线程对共享变量的写入何时对另一个线程可见。
+本地内存是 JMM 的一个抽象概念，并不真实存在。它涵盖了缓存、写缓冲区、寄存器以及其他的硬件和编译器优化。Java内存模型的抽象结构示意图如下:
+JMM 通过控制主内存与每个线程的本地内存之间的交互，来为 Java 程序员提供内存可见性保证。
+由于 JVM 运行程序的实体是线程，而每个线程创建时JVM都会为其创建一个工作内存(有些地方称为栈空间)，用于存储线程私有的数据，线程与主内存中的变量操作必须通过工作内存间接完成，主要过程是将变量从主内存拷贝的每个线程各自的工作内存空间，然后对变量进行操作，操作完成后再将变量写回主内存，如果存在两个线程同时对一个主内存中的实例对象的变量进行操作就有可能诱发线程安全问题。为了解决类似上述的问题，JVM定义了一组规则，通过这组规则来决定一个线程对共享变量的写入何时对另一个线程可见，这组规则也称为Java内存模型（即JMM），JMM是围绕着程序执行的原子性、有序性、可见性展开的，下面我们看看这三个特性。
+可见性 可见性是怎么导致的: 是因为每个 CPU 都有自己的缓存导致的。可见性指的是当一个线程修改了某个共享变量的值，其他线程是否能够马上得知这个修改的值。
+ 禁止编译器/处理器重排序：JMM属于语言级的内存模型，它确保在不同的编译器和不同的处理器平台之上，通过禁止特定类型的编译器重排序和处理器重排序，为程序员提供一致的内存可见性保证。处理器重排序，是通过在生成指令序列时，插入内存屏障来保证可见性。 synchronized：当线程获取锁时会从主内存中获取共享变量的最新值，释放锁的时候会将共享变量同步到主内存中。从而，synchronized具有可见性。 volatile：通过在指令中添加 lock 指令，以实现内存可见性  原子性 原子性指的是一个操作是不可中断的，即使是在多线程环境下，一个操作一旦开始就不会被其他线程影响。 基本数据类型
+JMM 定义了 8 种操作都是原子的，不可再分的。
+ lock(锁定)：作用于主内存中的变量，它把一个变量标识为一个线程独占的状态； unlock(解锁):作用于主内存中的变量，它把一个处于锁定状态的变量释放出来，释放后的变量才可以被其他线程锁定 read（读取）：作用于主内存的变量，它把一个变量的值从主内存传输到线程的工作内存中，以便后面的load动作使用； load（载入）：作用于工作内存中的变量，它把read操作从主内存中得到的变量值放入工作内存中的变量副本 use（使用）：作用于工作内存中的变量，它把工作内存中一个变量的值传递给执行引擎，每当虚拟机遇到一个需要使用到变量的值的字节码指令时将会执行这个操作； assign（赋值）：作用于工作内存中的变量，它把一个从执行引擎接收到的值赋给工作内存的变量，每当虚拟机遇到一个给变量赋值的字节码指令时执行这个操作； store（存储）：作用于工作内存的变量，它把工作内存中一个变量的值传送给主内存中以便随后的write操作使用； write（操作）：作用于主内存的变量，它把store操作从工作内存中得到的变量的值放入主内存的变量中。  上面一共有八条原子操作，其中六条可以满足基本数据类型的访问读写具备原子性，还剩下lock和unlock两条原子操作。
+ synchronized：如果我们需要更大范围的原子性操作就可以使用lock和unlock原子操作。尽管jvm没有把lock和unlock开放给我们使用，但jvm以更高层次的指令monitorenter和monitorexit指令开放给我们使用，反应到java代码中就是synchronized关键字，也就是说synchronized满足原子性。 volatile：volatile 能保证对这个单个变量的写入、读取的原子性，但是不保证复合操作的原子性。  有序性 synchronized：synchronized 语义就要求线程在访问读写共享变量时只能“串行”执行，因此synchronized具有有序性 volatile：为了性能优化，编译器和处理器会进行指令重排序；也就是说java程序天然的有序性可以总结为：如果在本线程内观察，所有的操作都是有序的；如果在一个线程观察另一个线程，所有的操作都是无序的。
+volatile 包含禁止指令重排序的语义，其具有有序性。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/juc/" />
 
@@ -21,7 +27,7 @@ AQS 维护了一个 volatile int state（代表共享资源）和一个 FIFO 线
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -515,6 +521,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/java/jvm/" >
+      JVM
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/java/basic/" >
       Java 基础
   </a>
@@ -927,6 +943,15 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#java-内存模型-jmm">Java 内存模型 (JMM)</a>
+      <ul>
+        <li><a href="#可见性">可见性</a></li>
+        <li><a href="#原子性">原子性</a></li>
+        <li><a href="#有序性">有序性</a></li>
+        <li><a href="#happens-before-原则">happens-before 原则</a></li>
+        <li><a href="#禁止指令重排序">禁止指令重排序</a></li>
+      </ul>
+    </li>
     <li><a href="#aqs-abstractqueuedsynchronizer">AQS (AbstractQueuedSynchronizer)</a>
       <ul>
         <li><a href="#node">Node</a></li>
@@ -966,6 +991,8 @@ var _hmt = _hmt || [];
     </li>
     <li><a href="#reentrantlock">ReentrantLock</a>
       <ul>
+        <li><a href="#获取锁">获取锁</a></li>
+        <li><a href="#释放锁">释放锁</a></li>
         <li><a href="#可重入性">可重入性</a></li>
       </ul>
     </li>
@@ -1001,6 +1028,63 @@ data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="juc-并发包">JUC 并发包</h1>
+<h2 id="java-内存模型-jmm">Java 内存模型 (JMM)</h2>
+<p>在并发编程中，需要处理两个关键问题：线程之间如何通信及线程之间如何同步。在命令式编程中，线程之间的通信机制有两种：共享内存和消息传递。</p>
+<p>Java的并发采用的是<strong>共享内存模型</strong>，Java线程之间的通信总是隐式进行，整个通信过程对程序员完全透明。</p>
+<ul>
+<li>线程之间共享程序的公共状态，通过写读内存中的公共状态进行隐式通信。</li>
+<li>在共享内存并发模型里，同步是显式进行的。程序员必须显式指定某个方法或某段代码需要在线程之间互斥执行。</li>
+</ul>
+<p>Java 线程之间的通信 由 Java 内存模型（本文简称为 JMM ）控制，<strong>JMM 决定一个线程对共享变量的写入何时对另一个线程可见</strong>。</p>
+<p>本地内存是 JMM 的一个抽象概念，并不真实存在。它涵盖了缓存、写缓冲区、寄存器以及其他的硬件和编译器优化。Java内存模型的抽象结构示意图如下:</p>
+<p><img src="/images/docs/tutorial/java/juc/jmm_thread_communication.png" alt=""></p>
+<p>JMM 通过控制主内存与每个线程的本地内存之间的交互，来为 Java 程序员提供内存可见性保证。</p>
+<p>由于 JVM 运行程序的实体是线程，而每个线程创建时JVM都会为其创建一个<strong>工作内存</strong>(有些地方称为栈空间)，用于存储线程私有的数据，线程与主内存中的变量操作必须通过工作内存间接完成，主要过程是将变量从主内存拷贝的每个线程各自的工作内存空间，然后对变量进行操作，操作完成后再将变量写回主内存，如果存在两个线程同时对一个主内存中的实例对象的变量进行操作就有可能诱发线程安全问题。为了解决类似上述的问题，JVM定义了一组规则，通过这组规则来决定一个线程对共享变量的写入何时对另一个线程可见，这组规则也称为Java内存模型（即JMM），JMM是围绕着程序执行的<strong>原子性、有序性、可见性</strong>展开的，下面我们看看这三个特性。</p>
+<h3 id="可见性">可见性</h3>
+<p>可见性是怎么导致的: 是因为<strong>每个 CPU 都有自己的缓存</strong>导致的。可见性指的是当一个线程修改了某个共享变量的值，其他线程是否能够马上得知这个修改的值。</p>
+<ul>
+<li>禁止编译器/处理器重排序：JMM属于语言级的内存模型，它确保在不同的编译器和不同的处理器平台之上，通过禁止特定类型的编译器重排序和处理器重排序，为程序员提供一致的内存可见性保证。处理器重排序，是通过在生成指令序列时，插入内存屏障来保证可见性。</li>
+<li>synchronized：当线程<strong>获取锁时会从主内存中获取共享变量的最新值</strong>，释放锁的时候会将共享变量同步到主内存中。从而，synchronized具有可见性。</li>
+<li>volatile：通过在<strong>指令中添加 lock 指令</strong>，以实现内存可见性</li>
+</ul>
+<h3 id="原子性">原子性</h3>
+<p>原子性指的是一个操作是不可中断的，即使是在多线程环境下，一个操作一旦开始就不会被其他线程影响。
+基本数据类型</p>
+<p>JMM 定义了 8 种操作都是原子的，不可再分的。</p>
+<ul>
+<li>lock(锁定)：作用于主内存中的变量，它把一个变量标识为一个线程独占的状态；</li>
+<li>unlock(解锁):作用于主内存中的变量，它把一个处于锁定状态的变量释放出来，释放后的变量才可以被其他线程锁定</li>
+<li>read（读取）：作用于主内存的变量，它把一个变量的值从主内存传输到线程的工作内存中，以便后面的load动作使用；</li>
+<li>load（载入）：作用于工作内存中的变量，它把read操作从主内存中得到的变量值放入工作内存中的变量副本</li>
+<li>use（使用）：作用于工作内存中的变量，它把工作内存中一个变量的值传递给执行引擎，每当虚拟机遇到一个需要使用到变量的值的字节码指令时将会执行这个操作；</li>
+<li>assign（赋值）：作用于工作内存中的变量，它把一个从执行引擎接收到的值赋给工作内存的变量，每当虚拟机遇到一个给变量赋值的字节码指令时执行这个操作；</li>
+<li>store（存储）：作用于工作内存的变量，它把工作内存中一个变量的值传送给主内存中以便随后的write操作使用；</li>
+<li>write（操作）：作用于主内存的变量，它把store操作从工作内存中得到的变量的值放入主内存的变量中。</li>
+</ul>
+<p>上面一共有八条原子操作，其中六条可以满足<strong>基本数据类型的访问读写具备原子性</strong>，还剩下<code>lock</code>和<code>unlock</code>两条原子操作。</p>
+<ul>
+<li>synchronized：如果我们需要更大范围的原子性操作就可以使用lock和unlock原子操作。尽管jvm没有把lock和unlock开放给我们使用，但jvm以更高层次的指令monitorenter和monitorexit指令开放给我们使用，反应到java代码中就是synchronized关键字，也就是说synchronized满足原子性。</li>
+<li>volatile：volatile 能保证对这个单个变量的写入、读取的原子性，但是不保证复合操作的原子性。</li>
+</ul>
+<h3 id="有序性">有序性</h3>
+<p>synchronized：synchronized 语义就要求线程在访问读写共享变量时只能“串行”执行，因此synchronized具有有序性
+volatile：为了性能优化，编译器和处理器会进行指令重排序；也就是说java程序天然的有序性可以总结为：如果在本线程内观察，所有的操作都是有序的；如果在一个线程观察另一个线程，所有的操作都是无序的。</p>
+<p>volatile 包含禁止指令重排序的语义，其具有有序性。</p>
+<h3 id="happens-before-原则">happens-before 原则</h3>
+<p>倘若在程序开发中，仅靠<code>sychronized</code>和<code>volatile</code>关键字来保证原子性、可见性以及有序性，那么编写并发程序可能会显得十分麻烦，幸运的是，在Java内存模型中，还提供了happens-before 原则来<strong>辅助</strong>保证程序执行的原子性、可见性以及有序性的问题。</p>
+<ul>
+<li>解锁必然发生在后续的加锁之前</li>
+<li>程序顺序原则，即在一个线程内必须保证语义串行性，也就是说按照代码顺序执行</li>
+<li>volatile 变量的写，先发生于读</li>
+<li>线程启动规则: 线程的 start() 方法先于它的每一个动作，即如果线程A在执行线程B的start方法之前修改了共享变量的值，那么当线程B执行start方法时，线程A对共享变量的修改对线程B可见</li>
+<li>线程终止规则: 线程的所有操作先于线程的终结，Thread.join()方法的作用是等待当前执行的线程终止</li>
+<li>传递性: A先于B ，B先于C 那么A必然先于C</li>
+<li>线程中断规则: 对线程 interrupt() 方法的调用先行发生于被中断线程的代码检测到中断事件的发生，可以通过 Thread.interrupted() 方法检测线程是否中断</li>
+<li>对象终结规则: 对象的构造函数执行，结束先于finalize()方法</li>
+</ul>
+<h3 id="禁止指令重排序">禁止指令重排序</h3>
+<p>Java 内存模型是通过<strong>内存屏障 memory barrier 来禁止重排序</strong>的。对于即时编译器来说，内存屏障将限制它所能做的重排序优化。对于处理器来说，内存屏障会导致缓存的刷新操作。</p>
+<p>对于即时编译器来说，它会针对前面提到的每一个 happens-before 关系，向正在编译的目标方法中插入相应的读读、读写、写读以及写写内存屏障。</p>
 <h2 id="aqs-abstractqueuedsynchronizer">AQS (AbstractQueuedSynchronizer)</h2>
 <p>AQS核心思想是，如果被请求的共享资源空闲，那么就将当前请求资源的线程设置为有效的工作线程，将共享资源设置为锁定状态；如果共享资源被占用，就需要一定的阻塞等待唤醒机制来保证锁分配。这个机制主要用的是CLH队列的变体实现的，将暂时获取不到锁的线程加入到队列中。</p>
 <p><strong>CLH</strong>：Craig、Landin and Hagersten 队列，是单向链表，AQS中的队列是CLH变体的虚拟双向队列（FIFO），AQS是通过将每条请求共享资源的线程封装成一个节点来实现锁的分配。</p>
@@ -1576,7 +1660,39 @@ data-full-width-responsive="true"></ins>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="reentrantlock">ReentrantLock</h2>
-<h3 id="可重入性">可重入性</h3>
+<h3 id="获取锁">获取锁</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">nonfairTryAcquire</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> acquires<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">final</span> Thread current <span style="color:#f92672">=</span> Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">int</span> c <span style="color:#f92672">=</span> getState<span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>c <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>compareAndSetState<span style="color:#f92672">(</span>0<span style="color:#f92672">,</span> acquires<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            setExclusiveOwnerThread<span style="color:#f92672">(</span>current<span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>current <span style="color:#f92672">==</span> getExclusiveOwnerThread<span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">int</span> nextc <span style="color:#f92672">=</span> c <span style="color:#f92672">+</span> acquires<span style="color:#f92672">;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>nextc <span style="color:#f92672">&lt;</span> 0<span style="color:#f92672">)</span> <span style="color:#75715e">// overflow
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> Error<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Maximum lock count exceeded&#34;</span><span style="color:#f92672">);</span>
+        setState<span style="color:#f92672">(</span>nextc<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="释放锁">释放锁</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">tryRelease</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> releases<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">int</span> c <span style="color:#f92672">=</span> getState<span style="color:#f92672">()</span> <span style="color:#f92672">-</span> releases<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">()</span> <span style="color:#f92672">!=</span> getExclusiveOwnerThread<span style="color:#f92672">())</span>
+        <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> IllegalMonitorStateException<span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">boolean</span> free <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>c <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        free <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+        setExclusiveOwnerThread<span style="color:#f92672">(</span><span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+    setState<span style="color:#f92672">(</span>c<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">return</span> free<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="可重入性">可重入性</h3>
 <p>首先在 AQS 中有一个放置当前<strong>独占线程</strong>的变量：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> Thread exclusiveOwnerThread<span style="color:#f92672">;</span>
 
@@ -1689,6 +1805,15 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#java-内存模型-jmm">Java 内存模型 (JMM)</a>
+      <ul>
+        <li><a href="#可见性">可见性</a></li>
+        <li><a href="#原子性">原子性</a></li>
+        <li><a href="#有序性">有序性</a></li>
+        <li><a href="#happens-before-原则">happens-before 原则</a></li>
+        <li><a href="#禁止指令重排序">禁止指令重排序</a></li>
+      </ul>
+    </li>
     <li><a href="#aqs-abstractqueuedsynchronizer">AQS (AbstractQueuedSynchronizer)</a>
       <ul>
         <li><a href="#node">Node</a></li>
@@ -1728,6 +1853,8 @@ data-full-width-responsive="true"></ins>
     </li>
     <li><a href="#reentrantlock">ReentrantLock</a>
       <ul>
+        <li><a href="#获取锁">获取锁</a></li>
+        <li><a href="#释放锁">释放锁</a></li>
         <li><a href="#可重入性">可重入性</a></li>
       </ul>
     </li>

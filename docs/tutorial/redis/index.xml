@@ -12,7 +12,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/redis/datastructure/</guid>
-      <description>Redis 数据结构 字符串 struct SDS&amp;lt;T&amp;gt; { T capacity; // 数组容量  T len; // 数组长度  byte flags; // 特殊标识位，不理睬它  byte[] content; // 数组内容 } 字典 struct RedisDb { dict* dict; // all keys key=&amp;gt;value  dict* expires; // all expired keys key=&amp;gt;long(timestamp)  ... } struct zset { dict *dict; // all values value=&amp;gt;score  zskiplist *zsl; } dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后进行渐进式搬迁，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新的 hashtable 取而代之。</description>
+      <description>Redis 数据结构 字符串 struct SDS&amp;lt;T&amp;gt; { T capacity; // 数组容量  T len; // 数组长度  byte flags; // 特殊标识位，不理睬它  byte[] content; // 数组内容 } 当字符串比较短时，len 和 capacity 可以使用 byte 和 short 来表示，Redis 为了对内存做极致的优化，不同长度的字符串使用不同的结构体来表示。当字符串长度小于 1M 时，扩容都是加倍现有的空间，如果超过 1M，扩容时一次只会多扩 1M 的空间。需要注意的是字符串最大长度为 512M。
+哈希 存储形式：压缩列表 ziplist 和哈希表 hash
+struct RedisDb { dict* dict; // all keys key=&amp;gt;value  dict* expires; // all expired keys key=&amp;gt;long(timestamp)  ... } struct zset { dict *dict; // all values value=&amp;gt;score  zskiplist *zsl; } dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后进行渐进式搬迁，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新的 hashtable 取而代之。</description>
     </item>
     
     <item>
@@ -170,6 +172,19 @@ Redis 2.8 合并 setnx 和 expire 指令 合并为原子操作。
 # 在目标过期时间上增加一天的随机时间 redis.expire_at(key, random.randint(86400) + expire_ts)  从库的过期策略
  从库不会进行过期扫描，从库对过期的处理是被动的。主库在 key 到期时，会在 AOF 文件里增加一条 del 指令，同步到所有的从库，从库通过执行这条 del 指令来删除过期的 key。
 因为指令同步是异步进行的，所以主库过期的 key 的 del 指令没有及时同步到从库的话，会出现主从数据的不一致，主库没有的数据在从库里还存在，比如集群环境分布式锁的算法漏洞就是因为这个同步延迟产生的。</description>
+    </item>
+    
+    <item>
+      <title>Redis 事务</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/redis-transaction/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/redis-transaction/</guid>
+      <description>Redis 事务 事务的使用 Redis 在形式上分别是 multi/exec/discard。multi 指示事务的开始，exec 指示事务的执行，discard 指示事务的丢弃。
+&amp;gt; multi OK &amp;gt; incr books QUEUED &amp;gt; incr books QUEUED &amp;gt; exec (integer) 1 (integer) 2 所有的指令在 exec 之前不执行，而是缓存在服务器的一个事务队列中，服务器一旦收到 exec 指令，才开始执行整个事务队列，执行完毕后一次性返回所有指令的运行结果。因为 Redis 的单线程特性，它不用担心自己在执行队列的时候被其它指令打搅，可以保证他们能得到的「原子性」执行。
+Redis 为事务提供了一个 discard 指令，用于丢弃事务缓存队列中的所有指令，在 exec 执行之前。
+&amp;gt; get books (nil) &amp;gt; multi OK &amp;gt; incr books QUEUED &amp;gt; incr books QUEUED &amp;gt; discard OK &amp;gt; get books (nil) 我们可以看到 discard 之后，队列中的所有指令都没执行，就好像 multi 和 discard 中间的所有指令从未发生过一样。
+不满足原子性 事务的原子性是指要么事务全部成功，要么全部失败，那么 Redis 事务执行是原子性的么？</description>
     </item>
     
   </channel>

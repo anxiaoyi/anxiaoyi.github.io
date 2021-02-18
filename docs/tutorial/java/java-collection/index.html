@@ -5,15 +5,13 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Java 集合类"><meta property="og:title" content="Java 集合类" />
-<meta property="og:description" content="Java 集合类 HashMap  并发下的 HashMap 会有哪些安全问题？
+<meta property="og:description" content="Java 集合类 Collections 框架图 List 框架图 Set 框架图 Map 框架图 Queue 框架图 HashMap  并发下的 HashMap 会有哪些安全问题？
  这里我只是简单的说了写覆盖跟不可重复读（联想到数据库了），面试官就放我过了。
  添加元素时头插还是尾插？
  1.7 头插，1.8 尾插。
 数组长度为什么必须是 2 的指数幂 减少哈希冲突，均匀分布元素。
 1）通过将 Key 的 hash 值与 length-1 进行 &amp; 运算，实现了当前 Key 的定位，2 的幂次方可以减少冲突（碰撞）的次数，提高 HashMap 查询效率；
-2）如果 length 为 2 的次幂，则 length-1 转化为二进制必定是 11111…… 的形式，在于 h 的二进制与操作效率会非常的快，而且空间不浪费；如果 length 不是 2 的次幂，比如 length 为 15，则 length-1 为 14，对应的二进制为 1110，在于 h 与操作，最后一位都为 0，而 0001，0011，0101，1001，1011，0111，1101 这几个位置永远都不能存放元素了，空间浪费相当大，更糟的是这种情况中，数组可以使用的位置比数组长度小了很多，这意味着进一步增加了碰撞的几率，减慢了查询的效率！这样就会造成空间的浪费。
-如何扩容的 (1) 初始扩容因子
-static final int DEFAULT_INITIAL_CAPACITY = 1 &lt;&lt; 4; // aka 16 static final float DEFAULT_LOAD_FACTOR = 0." />
+2）如果 length 为 2 的次幂，则 length-1 转化为二进制必定是 11111…… 的形式，在于 h 的二进制与操作效率会非常的快，而且空间不浪费；如果 length 不是 2 的次幂，比如 length 为 15，则 length-1 为 14，对应的二进制为 1110，在于 h 与操作，最后一位都为 0，而 0001，0011，0101，1001，1011，0111，1101 这几个位置永远都不能存放元素了，空间浪费相当大，更糟的是这种情况中，数组可以使用的位置比数组长度小了很多，这意味着进一步增加了碰撞的几率，减慢了查询的效率！这样就会造成空间的浪费。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/java-collection/" />
 
@@ -24,7 +22,7 @@ static final int DEFAULT_INITIAL_CAPACITY = 1 &lt;&lt; 4; // aka 16 static final
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -518,6 +516,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/java/jvm/" >
+      JVM
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/java/basic/" >
       Java 基础
   </a>
@@ -930,6 +938,11 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#collections-框架图">Collections 框架图</a></li>
+    <li><a href="#list-框架图">List 框架图</a></li>
+    <li><a href="#set-框架图">Set 框架图</a></li>
+    <li><a href="#map-框架图">Map 框架图</a></li>
+    <li><a href="#queue-框架图">Queue 框架图</a></li>
     <li><a href="#hashmap">HashMap</a>
       <ul>
         <li><a href="#数组长度为什么必须是-2-的指数幂">数组长度为什么必须是 2 的指数幂</a></li>
@@ -959,6 +972,7 @@ var _hmt = _hmt || [];
         <li><a href="#如何扩容">如何扩容</a></li>
         <li><a href="#放满了会发生什么">放满了会发生什么</a></li>
         <li><a href="#多线程使用">多线程使用</a></li>
+        <li><a href="#transient">transient</a></li>
       </ul>
     </li>
     <li><a href="#参考">参考</a></li>
@@ -983,6 +997,16 @@ data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="java-集合类">Java 集合类</h1>
+<h2 id="collections-框架图">Collections 框架图</h2>
+<p><img src="/images/docs/programmer-interview/java/collections/collections-framework-overview.png" alt=""></p>
+<h2 id="list-框架图">List 框架图</h2>
+<p><img src="/images/docs/tutorial/java/java-collection/List-API-class-diagram.png" alt=""></p>
+<h2 id="set-框架图">Set 框架图</h2>
+<p><img src="/images/docs/tutorial/java/java-collection/Set-API-class-diagram.png" alt=""></p>
+<h2 id="map-框架图">Map 框架图</h2>
+<p><img src="/images/docs/tutorial/java/java-collection/Map-API-class-diagram.png" alt=""></p>
+<h2 id="queue-框架图">Queue 框架图</h2>
+<p><img src="/images/docs/tutorial/java/java-collection/Queue-API-class-diagram.png" alt=""></p>
 <h2 id="hashmap">HashMap</h2>
 <blockquote>
 <p>并发下的 HashMap 会有哪些安全问题？</p>
@@ -1194,7 +1218,11 @@ newThr <span style="color:#f92672">=</span> oldThr <span style="color:#f92672">&
 <li>元素值覆盖和为空问题</li>
 </ul>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">elementData<span style="color:#f92672">[</span>size<span style="color:#f92672">++]</span> <span style="color:#f92672">=</span> e
-</code></pre></div><h2 id="参考">参考</h2>
+</code></pre></div><h3 id="transient">transient</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">transient</span> Object<span style="color:#f92672">[]</span> elementData<span style="color:#f92672">;</span>
+</code></pre></div><p><code>ArrayList</code>在序列化的时候会调用<code>writeObject</code>，直接将<code>size</code>和<code>element</code>写入<code>ObjectOutputStream</code>；反序列化时调用<code>readObject</code>，从<code>ObjectInputStream</code>获取<code>size</code>和<code>element</code>，再恢复到<code>elementData</code>。</p>
+<p>为什么不直接用<code>elementData</code>来序列化，而采用上诉的方式来实现序列化呢？原因在于<code>elementData</code>是一个缓存数组，它通常会预留一些容量，等容量不足时再扩充容量，那么有些空间可能就没有实际存储元素，采用上诉的方式来实现序列化时，就可以保证<strong>只序列化实际存储的那些元素</strong>，而不是整个数组，从而节省空间和时间。</p>
+<h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://zhuanlan.zhihu.com/p/106638832">Java集合之LinkedHashMap实现与原理</a></li>
 </ul>
@@ -1233,6 +1261,11 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#collections-框架图">Collections 框架图</a></li>
+    <li><a href="#list-框架图">List 框架图</a></li>
+    <li><a href="#set-框架图">Set 框架图</a></li>
+    <li><a href="#map-框架图">Map 框架图</a></li>
+    <li><a href="#queue-框架图">Queue 框架图</a></li>
     <li><a href="#hashmap">HashMap</a>
       <ul>
         <li><a href="#数组长度为什么必须是-2-的指数幂">数组长度为什么必须是 2 的指数幂</a></li>
@@ -1262,6 +1295,7 @@ data-full-width-responsive="true"></ins>
         <li><a href="#如何扩容">如何扩容</a></li>
         <li><a href="#放满了会发生什么">放满了会发生什么</a></li>
         <li><a href="#多线程使用">多线程使用</a></li>
+        <li><a href="#transient">transient</a></li>
       </ul>
     </li>
     <li><a href="#参考">参考</a></li>

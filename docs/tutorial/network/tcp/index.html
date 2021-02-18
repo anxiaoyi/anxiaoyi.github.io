@@ -13,7 +13,7 @@ TCP/IP 定义了一个值 MSL，表示数据包在网络上最长逗留时间，
  因为上图第 4 次发送的数据包，服务器是否收到是不确定的。而如果服务器没有收到，那么服务器会重新发送第三次的数据包。所以整个的时间，最长是两个 MSL。
  为何服务器收到第 4 个 ACK 之后，立刻进入 CLOSED 状态，而不是也进入 TIME_WAIT 状态 ?
  没有必要，因为客户端处于 TIME_WAIT 状态，意味着四元组代表的这个连接要到 2 × MSL 时间之后才能重新启用，服务器即使想要立即连接也无法实现。
-起始序列号 ISN ISN 为什么不从 1 开始 client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成数据错误)。" />
+大量 TIME_WAIT 状态 如果存在大量的 TIME_WAIT，往往是因为短连接太多，不断的创建连接，然后释放连接，从而导致很多连接在这个状态，可能会导致无法发起新的连接。解决的方式往往是：" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/network/tcp/" />
 
@@ -24,7 +24,7 @@ TCP/IP 定义了一个值 MSL，表示数据包在网络上最长逗留时间，
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -955,12 +955,21 @@ var _hmt = _hmt || [];
     <li><a href="#四次挥手">四次挥手</a>
       <ul>
         <li><a href="#time_wait-状态的设计">TIME_WAIT 状态的设计</a></li>
+        <li><a href="#大量-time_wait-状态">大量 TIME_WAIT 状态</a></li>
       </ul>
     </li>
     <li><a href="#起始序列号-isn">起始序列号 ISN</a>
       <ul>
         <li><a href="#isn-为什么不从-1-开始">ISN 为什么不从 1 开始</a></li>
         <li><a href="#起始序列号-isn-如何计算">起始序列号 ISN 如何计算</a></li>
+      </ul>
+    </li>
+    <li><a href="#特点">特点</a>
+      <ul>
+        <li><a href="#滑动窗口">滑动窗口</a></li>
+        <li><a href="#丢包算法">丢包算法</a></li>
+        <li><a href="#流量控制">流量控制</a></li>
+        <li><a href="#拥塞控制">拥塞控制</a></li>
       </ul>
     </li>
     <li><a href="#异常情况如何响应">异常情况如何响应</a>
@@ -972,17 +981,24 @@ var _hmt = _hmt || [];
       </ul>
     </li>
     <li><a href="#tcp-close-vs-shutdown">TCP close() vs shutdown()</a></li>
-    <li><a href="#大量-time_wait-状态">大量 TIME_WAIT 状态</a></li>
     <li><a href="#什么时候发送-rst-响应">什么时候发送 RST 响应</a></li>
-    <li><a href="#一台-linux-服务器最多能支撑多少个-tcp-连接">一台 Linux 服务器最多能支撑多少个 TCP 连接？</a>
+    <li><a href="#linux-服务器最多能支撑多少个-tcp-连接">Linux 服务器最多能支撑多少个 TCP 连接？</a>
       <ul>
         <li><a href="#client-最大-tcp-连接">Client 最大 TCP 连接</a></li>
         <li><a href="#server-端最大-tcp-连接">Server 端最大 TCP 连接</a></li>
+        <li><a href="#查看当前活动的-tcp-连接数">查看当前活动的 TCP 连接数</a></li>
       </ul>
     </li>
-    <li><a href="#查看当前活动的-tcp-连接数">查看当前活动的 TCP 连接数</a></li>
     <li><a href="#半连接全连接队列">半连接全连接队列</a></li>
     <li><a href="#tcp-是否丢包">TCP 是否丢包</a></li>
+    <li><a href="#攻击">攻击</a>
+      <ul>
+        <li><a href="#dos-攻击">Dos 攻击</a></li>
+        <li><a href="#ddos-攻击">DDos 攻击</a></li>
+        <li><a href="#drdos-攻击">DRDoS 攻击</a></li>
+        <li><a href="#syn-flood">SYN Flood</a></li>
+      </ul>
+    </li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -1006,7 +1022,7 @@ data-full-width-responsive="true"></ins>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="tcp">TCP</h1>
 <h2 id="tcp-头">TCP 头</h2>
-<p><img src="/images/docs/tutorial/network/tcp/tcp-header.png" alt=""></p>
+<p><img src="/images/docs/tutorial/network/tcp/tcp-header-1.png" alt=""></p>
 <h2 id="三次握手">三次握手</h2>
 <blockquote>
 <p>三次握手恰好可以保证 Client 和 Server 对自己的发送、接受能力<strong>做了一次确认</strong>。</p>
@@ -1028,6 +1044,13 @@ data-full-width-responsive="true"></ins>
 <p>为何服务器收到第 4 个 ACK 之后，立刻进入 CLOSED 状态，而不是也进入 TIME_WAIT 状态 ?</p>
 </blockquote>
 <p><strong>没有必要</strong>，因为客户端处于 TIME_WAIT 状态，意味着四元组代表的这个连接要到 2 × MSL 时间之后才能重新启用，服务器即使想要立即连接也无法实现。</p>
+<h3 id="大量-time_wait-状态">大量 TIME_WAIT 状态</h3>
+<p>如果存在大量的 <code>TIME_WAIT</code>，往往是因为<strong>短连接太多</strong>，不断的创建连接，然后释放连接，从而导致很多连接在这个状态，可能会导致无法发起新的连接。解决的方式往往是：</p>
+<ul>
+<li>打开 <code>tcp_tw_recycle</code> 和 <code>tcp_timestamps</code> 选项；</li>
+<li>打开 <code>tcp_tw_reuse</code> 和 <code>tcp_timestamps</code> 选项；</li>
+<li>程序中使用 <code>SO_LINGER</code>，应用强制使用 <code>rst</code> 关闭。</li>
+</ul>
 <h2 id="起始序列号-isn">起始序列号 ISN</h2>
 <h3 id="isn-为什么不从-1-开始">ISN 为什么不从 1 开始</h3>
 <p>client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成<strong>数据错误</strong>)。</p>
@@ -1036,6 +1059,41 @@ data-full-width-responsive="true"></ins>
 <p>TCP 初始化序列号不能设置为一个固定值，因为这样<strong>容易被攻击者猜出后续序列号，从而遭到攻击</strong>。 RFC1948 中提出了一个较好的初始化序列号 ISN 随机生成算法。</p>
 <pre><code>ISN = M + F (localhost, localport, remotehost, remoteport)
 </code></pre><p><code>M</code> 是一个计时器，这个计时器每隔 4 毫秒加 1。<code>F</code> 是一个 Hash 算法，根据源 IP、目的 IP、源端口、目的端口生成一个随机数值。要保证 Hash 算法不能被外部轻易推算得出，用 MD5 算法是一个比较好的选择。</p>
+<h2 id="特点">特点</h2>
+<h3 id="滑动窗口">滑动窗口</h3>
+<p><strong>顺序问题、丢包问题、流量控制都是通过滑动窗口来解决的</strong>。</p>
+<p>发送端维持如下数据结构：</p>
+<p><img src="/images/docs/tutorial/network/tcp/Snipaste_2021-02-17_15-23-52.png" alt=""></p>
+<p>接收端维持如下数据结构：</p>
+<p><img src="/images/docs/tutorial/network/tcp/Snipaste_2021-02-17_15-24-50.png" alt=""></p>
+<h3 id="丢包算法">丢包算法</h3>
+<p>某个包发送出去，没有收到 ACK，那么应该怎么办？</p>
+<p>一种方法就是<strong>超时重试</strong>，也即对每一个发送了，但是没有 ACK 的包，都有设一个定时器，超过了一定的时间，就重新尝试。但是这个超时的时间如何评估呢？这个时间不宜过短，<strong>时间必须大于往返时间 RTT，否则会引起不必要的重传</strong>。也不宜过长，这样超时时间变长，访问就变慢了。</p>
+<p>估计往返时间，需要 TCP 通过采样 RTT 的时间，然后进行加权平均，算出一个值，而且这个值还是要不断变化的，因为网络状况不断地变化。除了采样 RTT，还要采样 RTT 的波动范围，计算出一个估计的超时时间。由于重传时间是不断变化的，我们称为<strong>自适应重传算法（Adaptive Retransmission Algorithm）</strong>。</p>
+<p>每当遇到一次超时重传的时候，都会将<strong>下一次超时时间间隔设为先前值的两倍</strong>。两次超时，就说明<strong>网络环境差</strong>，不宜频繁反复发送。</p>
+<p>超时触发重传存在的问题是，超时周期可能相对较长。那是不是可以有更快的方式呢？</p>
+<p>有一个可以<strong>快速重传</strong>的机制，当接收方收到一个序号大于下一个所期望的报文段时，就会检测到数据流中的一个间隔，于是它就会<strong>发送冗余的 ACK</strong>，仍然 ACK 的是期望接收的报文段。而当客户端收到三个冗余的 ACK 后，就会在定时器过期之前，<strong>重传丢失的报文段</strong>。</p>
+<p>例如，接收方发现 6 收到了，8 也收到了，但是 7 还没来，那肯定是丢了，于是<strong>发送 6 的 ACK</strong>，要求下一个是 7。接下来，收到后续的包，仍然发送 6 的 ACK，要求下一个是 7。当客户端收到 3 个重复 ACK，就会发现 7 的确丢了，不等超时，马上重发。</p>
+<p>还有一种方式称为 <strong>Selective Acknowledgment （SACK）</strong>。这种方式需要在 TCP 头里加一个 SACK 的东西，可以将缓存的地图发送给发送方。例如可以发送 ACK6、SACK8、SACK9，有了地图，发送方一下子就能看出来是 7 丢了。</p>
+<h3 id="流量控制">流量控制</h3>
+<p>在对于包的确认中，同时会携带一个窗口的大小。如果接收方实在处理的太慢，导致缓存中没有空间了，可以<strong>通过确认信息修改窗口的大小</strong>，甚至可以设置为 0，则发送方将暂时停止发送。</p>
+<p>如果这样的话，发送方会<strong>定时发送窗口探测数据包</strong>，看是否有机会调整窗口的大小。当接收方比较慢的时候，要防止<strong>低能窗口综合症</strong>，别空出一个字节来就赶快告诉发送方，然后马上又填满了，可以当窗口太小的时候，不更新窗口，直到达到一定大小，或者缓冲区一半为空，才更新窗口。</p>
+<p>这就是我们常说的流量控制。</p>
+<h3 id="拥塞控制">拥塞控制</h3>
+<p>TCP 的拥塞控制主要来避免两种现象，<strong>包丢失</strong>和<strong>超时重传</strong>。一旦出现了这些现象就说明，发送速度太快了，要慢一点。但是一开始我怎么知道速度多快呢，我怎么知道应该把窗口调整到多大呢？</p>
+<p>一条 TCP 连接开始，<code>cwnd</code> 设置为一个报文段，一次只能发送一个；当收到这一个确认的时候，<code>cwnd</code> 加一，于是一次能够发送两个；当这两个的确认到来的时候，每个确认 <code>cwnd</code> 加一，两个确认 <code>cwnd</code> 加二，于是一次能够发送四个；当这四个的确认到来的时候，每个确认 <code>cwnd</code> 加一，四个确认 <code>cwnd</code> 加四，于是一次能够发送八个。可以看出这是<strong>指数性的增长</strong>。</p>
+<p>涨到什么时候是个头呢？有一个值 <code>ssthresh</code> 为 <code>65535</code> 个字节，当超过这个值的时候，就要小心一点了，不能倒这么快了，可能快满了，再慢下来。</p>
+<p>每收到一个确认后，cwnd 增加 1/cwnd，我们接着上面的过程来，一次发送八个，当八个确认到来的时候，每个确认增加 1/8，八个确认一共 cwnd 增加 1，于是一次能够发送九个，变成了<strong>线性增长</strong>。</p>
+<p>但是线性增长还是增长，还是越来越多，直到有一天，水满则溢，出现了<strong>拥塞</strong>，这时候一般就会一下子降低倒水的速度，等待溢出的水慢慢渗下去。</p>
+<p>拥塞的一种表现形式是<strong>丢包</strong>，需要<strong>超时重传</strong>，这个时候，将 <code>sshresh</code> 设为 <code>cwnd/2</code>，将 <code>cwnd</code> 设为 1，<strong>重新开始慢启动</strong>。这真是一旦超时重传，马上回到解放前。但是这种方式太激进了，将一个高速的传输速度一下子停了下来，会造成网络卡顿。</p>
+<p>前面我们讲过<strong>快速重传</strong>算法。当<strong>接收端发现丢了一个中间包的时候，发送三次前一个包的 ACK</strong>，于是发送端就会快速地重传，不必等待超时再重传。TCP 认为这种情况不严重，因为大部分没丢，只丢了一小部分，cwnd 减半为 <code>cwnd/2</code>，然后 <code>sshthresh = cwnd</code>，当三个包返回的时候，<code>cwnd = sshthresh + 3</code>，也就是没有一夜回到解放前，而是还在比较高的值，呈线性增长。</p>
+<p><img src="/images/docs/tutorial/network/tcp/1910bc1a0048d4de7b2128eb0f5dbcd2.jpg" alt=""></p>
+<p>就像前面说的一样，正是这种知进退，使得时延很重要的情况下，反而降低了速度。但是如果你仔细想一下，TCP 的拥塞控制主要来避免的两个现象都是有问题的。</p>
+<ul>
+<li>第一个问题是<strong>丢包并不代表着通道满了</strong>，也可能是管子本来就漏水。例如公网上带宽不满也会丢包，这个时候就认为拥塞了，退缩了，其实是不对的。</li>
+<li>第二个问题是 TCP 的拥塞控制<strong>要等到将中间设备都填充满了</strong>，才发生丢包，从而降低速度，这时候已经晚了。其实 TCP 只要填满管道就可以了，不应该接着填，直到连缓存也填满。</li>
+</ul>
+<p>为了优化这两个问题，后来有了 <strong>TCP BBR</strong> 拥塞算法。它企图找到一个平衡点，就是通过不断地加快发送速度，将管道填满，但是不要填满中间设备的缓存，因为这样时延会增加，在这个平衡点可以很好的达到高带宽和低时延的平衡。</p>
 <h2 id="异常情况如何响应">异常情况如何响应</h2>
 <p>出现如下异常情况，TCP 会如何响应。</p>
 <h3 id="server-端口没有打开">Server 端口没有打开</h3>
@@ -1052,13 +1110,6 @@ data-full-width-responsive="true"></ins>
 <li>调用 <code>shutdown()</code> 可以只关闭一半的 TCP 连接。</li>
 </ul>
 <p><img src="/images/docs/tutorial/network/tcp/tcp_close_vs_shutdown.png" alt=""></p>
-<h2 id="大量-time_wait-状态">大量 TIME_WAIT 状态</h2>
-<p>如果存在大量的 <code>TIME_WAIT</code>，往往是因为<strong>短连接太多</strong>，不断的创建连接，然后释放连接，从而导致很多连接在这个状态，可能会导致无法发起新的连接。解决的方式往往是：</p>
-<ul>
-<li>打开 <code>tcp_tw_recycle</code> 和 <code>tcp_timestamps</code> 选项；</li>
-<li>打开 <code>tcp_tw_reuse</code> 和 <code>tcp_timestamps</code> 选项；</li>
-<li>程序中使用 <code>SO_LINGER</code>，应用强制使用 <code>rst</code> 关闭。</li>
-</ul>
 <h2 id="什么时候发送-rst-响应">什么时候发送 RST 响应</h2>
 <p>当客户端收到 Connection Reset，往往是收到了 TCP 的 RST 消息，RST 消息一般在下面的情况下发送：</p>
 <ul>
@@ -1067,7 +1118,7 @@ data-full-width-responsive="true"></ins>
 <li>发起连接时超时，重传超时，keepalive 超时</li>
 <li>在程序中使用 <code>SO_LINGER</code>，关闭连接时，放弃缓存中的数据，给对方发送 RST</li>
 </ul>
-<h2 id="一台-linux-服务器最多能支撑多少个-tcp-连接">一台 Linux 服务器最多能支撑多少个 TCP 连接？</h2>
+<h2 id="linux-服务器最多能支撑多少个-tcp-连接">Linux 服务器最多能支撑多少个 TCP 连接？</h2>
 <h3 id="client-最大-tcp-连接">Client 最大 TCP 连接</h3>
 <p>Client每次发起tcp连接请求时，除非绑定端口，通常会让系统选取一个空闲的本地端口（local port），该端口是独占的，不能和其他tcp连接共享。tcp端口的数据类型是<code>unsigned short</code>，因此本地端口个数最大只有<code>65536</code>，端口0有特殊含义，不能使用，这样可用端口最多只有<code>65535</code>，所以在全部作为client端的情况下，最大tcp连接数为65535，这些连接可以连到不同的server ip。</p>
 <h3 id="server-端最大-tcp-连接">Server 端最大 TCP 连接</h3>
@@ -1098,16 +1149,111 @@ net.ipv4.tcp_wmem <span style="color:#f92672">=</span> <span style="color:#ae81f
 net.core.wmem_default <span style="color:#f92672">=</span> <span style="color:#ae81ff">212992</span>
 net.core.wmem_max <span style="color:#f92672">=</span> <span style="color:#ae81ff">8388608</span>
 </code></pre></div><p>在<code>net.ipv4.tcp_wmem</code>中的第一个值是发送缓存区的最小值，默认也是4K。当然了如果数据很大的话，该缓存区实际分配的也会比默认值大。</p>
-<h2 id="查看当前活动的-tcp-连接数">查看当前活动的 TCP 连接数</h2>
+<h3 id="查看当前活动的-tcp-连接数">查看当前活动的 TCP 连接数</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ ss -n | grep ESTAB | wc -l  
 <span style="color:#ae81ff">1000024</span>
 </code></pre></div><h2 id="半连接全连接队列">半连接全连接队列</h2>
 <p><img src="/images/docs/tutorial/network/tcp/tcp-sync-queue-and-accept-queue-small-1024x747.jpg" alt=""></p>
 <h2 id="tcp-是否丢包">TCP 是否丢包</h2>
 <p>请参考<a href="https://leeweir.github.io/posts/linux-packet-loss/">Linux 丢包那些事</a></p>
+<h2 id="攻击">攻击</h2>
+<h3 id="dos-攻击">Dos 攻击</h3>
+<p>DoS：是Denial of Service的简称，即<strong>拒绝服务</strong>，造成DoS的攻击行为被称为DoS攻击，其目的是使计算机或网络无法提供正常的服务。最常见的DoS攻击有计算机网络带宽攻击和连通性攻击。</p>
+<ul>
+<li><code>SYN FLOOD</code>。</li>
+<li>利用 RST 位来实现。假设现在有一个合法用户(1.1.1.1)已经同服务器建立了正常的连接，攻击者构造攻击的TCP数据，伪装自己的IP为1.1.1.1，并向服务器发送一个带有RST位的TCP数据段。服务器接收到这样的数据后，认为从1.1.1.1发送的连接有错误，就会清空缓冲区中建立好的连接。这时，如果合法用户1.1.1.1再发送合法数据，服务器就已经没有这样的连接了，该用户就必须从新开始建立连接。攻击时，<strong>伪造大量的IP地址，向目标发送RST数据</strong>，使服务器不对合法用户服务。</li>
+</ul>
+<h3 id="ddos-攻击">DDos 攻击</h3>
+<p>DDoS即Distributed Denial of Service，DDoS攻击即是分布式DoS攻击。攻击者借助客户/服务器技术，控制并利用多个傀儡机（肉鸡），对一个或多个攻击目标发起DDoS攻击，从而成倍地提高DoS攻击的威力。</p>
+<p>DDOS 只不过是一个概称，其下有各种攻击方式，比如“<strong>CC攻击、SYN攻击、NTP攻击、TCP攻击、DNS攻击</strong>等等”，现在DDOS发展变得越来越可怕，NTP攻击渐渐成为主流了，这意味着可以将每秒的攻击流量放大几百倍，比如每秒1G的SYN碎片攻击换成NTP放大攻击，就成为了200G或者更多。</p>
+<ul>
+<li>CC 攻击。CC 攻击是目前应用层攻击的主要手段之一，借助代理服务器生成指向目标系统的合法请求，实现伪装和 DDoS。CC 攻击<strong>模拟多个正常用户不停地访问如论坛这些需要大量数据操作的页面</strong>，造成服务器资源的浪费，CPU长时间处于100%，永远都有处理不完的请求，网络拥塞，正常访问被中止。这种攻击技术性含量高，见不到真实源IP，见不到特别大的异常流量，但服务器就是无法进行正常连接。</li>
+</ul>
+<p><img src="/images/docs/tutorial/network/tcp/Snipaste_2021-02-12_21-14-05.png" alt=""></p>
+<p>CC攻击中最重要的方式之一<strong>HTTP Flood</strong>，不仅会直接导致被攻击的Web前端响应缓慢，对承载的业务造成致命的影响，还可能会引起连锁反应，间接攻击到后端的Java等业务层逻辑以及更后端的数据库服务。</p>
+<ul>
+<li>DNS 攻击</li>
+</ul>
+<p><img src="/images/docs/tutorial/network/tcp/Snipaste_2021-02-12_21-20-39.png" alt=""></p>
+<ul>
+<li>NTP 攻击</li>
+</ul>
+<p>NTP是标准的基于<strong>UDP协议传输的网络时间同步协议</strong>，由于UDP协议的无连接性，方便伪造源地址。攻击者使用特殊的数据包，也就是IP地址指向作为反射器的服务器，源IP地址被伪造成攻击目标的IP，反射器接收到数据包时就被骗了，会将响应数据发送给被攻击目标，耗尽目标网络的带宽资源。一般的NTP服务器都有很大的带宽，攻击者可能只需要1Mbps的上传带宽欺骗NTP服务器，就可给目标服务器带来几百上千Mbps的攻击流量。</p>
+<ul>
+<li>ICMP Flood</li>
+</ul>
+<p>ICMP（Internet控制报文协议）用于在IP主机、路由器之间传递控制消息，控制消息是指网络通不通、主机是否可达、路由是否可用等网络本身的消息，虽然并不传输用户数据，但是对于用户数据的传递起着重要的作用。通过对目标系统发送海量数据包，就可以令目标主机瘫痪，如果大量发送就成了洪水攻击。</p>
+<h3 id="drdos-攻击">DRDoS 攻击</h3>
+<p>DRDoS 即 Distributed Reflection Denial of Service，DRDoS攻击即是<strong>分布式反射DoS攻击</strong>。DRDoS攻击与DoS攻击、DDoS攻击不同，它不是直接对攻击目标发起请求，而是通过IP欺骗，发送大量源IP地址为攻击目标IP地址的数据包给攻击主机（第三方），然后攻击主机对IP地址源（即攻击目标）做出大量回应，从而形成DoS攻击。攻击者往往会选择那些<strong>响应包远大于请求包的第三方服务来利用</strong>，以达到放大反射攻击的效果，这样的服务包括<code>DNS</code>、<code>NTP</code>、<code>SSDP</code>、<code>Chargen</code>、<code>Memcached</code>等。</p>
+<h3 id="syn-flood">SYN Flood</h3>
+<p>攻击者大量发送这种伪造源地址的 SYN 请求，服务器端将会消耗非常多的资源来处理这种半连接，保存遍历会消耗非常多的CPU时间和内存，何况还要不断对这个列表中的IP进行<code>SYN+ACK</code>的重试。TCP是可靠协议，这时就会重传报文，默认重试次数为5次，重试的间隔时间从1s开始每次都番倍，分别为1s + 2s + 4s + 8s +16s = 31s,第5次发出后还要等32s才知道第5次也超时了，所以一共是31 + 32 = 63s。</p>
+<p>也就是说一共假的syn报文，会占用TCP准备队列63s之久，而半连接队列默认为1024，系统默认不同，可 cat /proc/sys/net/ipv4/tcp_max_syn_backlog c查看。也就是说在没有任何防护的情况下，每秒发送200个伪造syn包，就足够撑爆半连接队列，从而使真正的连接无法建立，无法响应正常请求。</p>
+<blockquote>
+<p>如何检测 Syn Flood 攻击 ?</p>
+</blockquote>
+<p>首先使用 <code>tcpdump</code> 抓包：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ tcpdump -i eth0 -n tcp port <span style="color:#ae81ff">80</span>
+09:15:48.287047 IP 192.168.0.2.27095 &gt; 192.168.0.30: Flags <span style="color:#f92672">[</span>S<span style="color:#f92672">]</span>, seq 1288268370, win 512, length <span style="color:#ae81ff">0</span>
+09:15:48.287050 IP 192.168.0.2.27131 &gt; 192.168.0.30: Flags <span style="color:#f92672">[</span>S<span style="color:#f92672">]</span>, seq 2084255254, win 512, length <span style="color:#ae81ff">0</span>
+...
+</code></pre></div><ul>
+<li><code>-i</code> 只抓取 eth0</li>
+<li><code>-n</code> 不解析协议名和主机名</li>
+<li><code>tcp port 80</code> 只抓取 tcp 协议端口号为 80 的网络帧</li>
+</ul>
+<p>你能看到，此时，服务器端的 TCP 连接，会处于 <code>SYN_RECEIVED</code> 状态。这其实提示了我们，查看 TCP 半开连接的方法，关键在于 <code>SYN_RECEIVED</code> 状态的连接。我们可以使用 netstat ，来查看所有连接的状态，不过要注意，<code>SYN_REVEIVED</code> 的状态，通常被缩写为 <code>SYN_RECV</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ netstat -n -p | grep SYN_REC
+tcp        <span style="color:#ae81ff">0</span>      <span style="color:#ae81ff">0</span> 192.168.0.30:80          192.168.0.2:12503      SYN_RECV    -
+tcp        <span style="color:#ae81ff">0</span>      <span style="color:#ae81ff">0</span> 192.168.0.30:80          192.168.0.2:13502      SYN_RECV    -
+tcp        <span style="color:#ae81ff">0</span>      <span style="color:#ae81ff">0</span> 192.168.0.30:80          192.168.0.2:15256      SYN_RECV    -
+tcp        <span style="color:#ae81ff">0</span>      <span style="color:#ae81ff">0</span> 192.168.0.30:80          192.168.0.2:18117      SYN_RECV    -
+...
+</code></pre></div><p><code>-n</code> 表示不解析名字，<code>-p</code> 表示显示连接所属进程</p>
+<p>从结果中，你可以发现大量 <code>SYN_RECV</code> 状态的连接，并且源 IP 地址为 <code>192.168.0.2</code>。</p>
+<blockquote>
+<p>如何抵抗 Syn Flood ?</p>
+</blockquote>
+<p>可以使用 <code>iptables</code> 过滤来自 <code>192.168.0.2</code> 的包：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ iptables -I INPUT -s 192.168.0.2 -p tcp -j REJECT
+</code></pre></div><p>如果源 IP 不固定，那么可以限制 <code>syn</code> 的并发数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash"><span style="color:#75715e"># 限制 syn 并发数为每秒 1 次</span>
+$ iptables -A INPUT -p tcp --syn -m limit --limit 1/s -j ACCEPT
+
+<span style="color:#75715e"># 限制单个 IP 在 60 秒新建立的连接数为 10</span>
+$ iptables -I INPUT -p tcp --dport <span style="color:#ae81ff">80</span> --syn -m recent --name SYN_FLOOD --update --seconds <span style="color:#ae81ff">60</span> --hitcount <span style="color:#ae81ff">10</span> -j REJECT
+</code></pre></div><blockquote>
+<p>多台机器同时发送 syn flood</p>
+</blockquote>
+<p>如果是多台机器同时发送 SYN Flood，这种方法可能就直接无效了，因为数据量特别大，刚才那种数据量小。因为你很可能无法 SSH 登录（SSH 也是基于 TCP 的）到机器上去，更别提执行上述所有的排查命令。</p>
+<p>比如，SYN Flood 会导致 <code>SYN_RECV</code> 状态的连接急剧增大。在上面的 <code>netstat</code> 命令中，你也可以看到 190 多个处于半开状态的连接。</p>
+<p>不过，<strong>半开状态的连接数</strong>是有限制的，执行下面的命令，你就可以看到，默认的半连接容量只有 256：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ sysctl net.ipv4.tcp_max_syn_backlog
+net.ipv4.tcp_max_syn_backlog <span style="color:#f92672">=</span> <span style="color:#ae81ff">256</span>
+</code></pre></div><p>换句话说， SYN 包数再稍微增大一些，就不能 SSH 登录机器了。 所以，你还应该<strong>增大半连接的容量</strong>，比如，你可以用下面的命令，将其增大为 1024：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ sysctl -w net.ipv4.tcp_max_syn_backlog<span style="color:#f92672">=</span><span style="color:#ae81ff">1024</span>
+net.ipv4.tcp_max_syn_backlog <span style="color:#f92672">=</span> <span style="color:#ae81ff">1024</span>
+</code></pre></div><p>另外，连接每个 <code>SYN_RECV</code> 时，如果失败的话，内核还会<strong>自动重试</strong>，并且默认的重试次数是 5 次。你可以执行下面的命令，将其减小为 1 次：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ sysctl -w net.ipv4.tcp_synack_retries<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>
+net.ipv4.tcp_synack_retries <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+</code></pre></div><blockquote>
+<p>TCP SYN Cookies</p>
+</blockquote>
+<p>除此之外，TCP SYN Cookies 也是一种专门防御 SYN Flood 攻击的方法。SYN Cookies 基于<strong>连接信息</strong>（包括源地址、源端口、目的地址、目的端口等）以及一个加密种子（如系统启动时间），计算出一个哈希值（SHA1），这个哈希值称为 cookie。</p>
+<p>然后，这个 cookie 就被用作序列号，来应答 <code>SYN + ACK</code> 包，并释放连接状态。当客户端发送完三次握手的最后一次 ACK 后，服务器就会再次计算这个哈希值，确认是上次返回的 <code>SYN + ACK</code> 的返回包，才会进入 TCP 的连接状态。</p>
+<p>因而，开启 SYN Cookies 后，就<strong>不需要维护半开连接状态</strong>了，进而也就没有了半连接数的限制。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ sysctl -w net.ipv4.tcp_syncookies<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>
+net.ipv4.tcp_syncookies <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+</code></pre></div><p>注意，上述 sysctl 命令修改的配置都是临时的，重启后这些配置就会丢失。所以，为了保证配置持久化，你还应该把这些配置，写入 <code>/etc/sysctl.conf</code> 文件中。比如：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ cat /etc/sysctl.conf
+net.ipv4.tcp_syncookies <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+net.ipv4.tcp_synack_retries <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+net.ipv4.tcp_max_syn_backlog <span style="color:#f92672">=</span> <span style="color:#ae81ff">1024</span>
+</code></pre></div><p>不过要记得，写入 <code>/etc/sysctl.conf</code> 的配置，需要执行 <code>sysctl -p</code> 命令后，才会动态生效。</p>
 <h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://mp.weixin.qq.com/s/Lkyj42NtvqEj63DoCY5btQ">漫画 | 一台Linux服务器最多能支撑多少个TCP连接？</a></li>
+<li><a href="https://www.zhihu.com/question/409020799/answer/1458182990">什么是Dos攻击？</a></li>
+<li><a href="https://www.zhihu.com/question/22259175">什么是 DDoS 攻击？</a></li>
 </ul>
 
 <ins class="adsbygoogle"
@@ -1149,12 +1295,21 @@ data-full-width-responsive="true"></ins>
     <li><a href="#四次挥手">四次挥手</a>
       <ul>
         <li><a href="#time_wait-状态的设计">TIME_WAIT 状态的设计</a></li>
+        <li><a href="#大量-time_wait-状态">大量 TIME_WAIT 状态</a></li>
       </ul>
     </li>
     <li><a href="#起始序列号-isn">起始序列号 ISN</a>
       <ul>
         <li><a href="#isn-为什么不从-1-开始">ISN 为什么不从 1 开始</a></li>
         <li><a href="#起始序列号-isn-如何计算">起始序列号 ISN 如何计算</a></li>
+      </ul>
+    </li>
+    <li><a href="#特点">特点</a>
+      <ul>
+        <li><a href="#滑动窗口">滑动窗口</a></li>
+        <li><a href="#丢包算法">丢包算法</a></li>
+        <li><a href="#流量控制">流量控制</a></li>
+        <li><a href="#拥塞控制">拥塞控制</a></li>
       </ul>
     </li>
     <li><a href="#异常情况如何响应">异常情况如何响应</a>
@@ -1166,17 +1321,24 @@ data-full-width-responsive="true"></ins>
       </ul>
     </li>
     <li><a href="#tcp-close-vs-shutdown">TCP close() vs shutdown()</a></li>
-    <li><a href="#大量-time_wait-状态">大量 TIME_WAIT 状态</a></li>
     <li><a href="#什么时候发送-rst-响应">什么时候发送 RST 响应</a></li>
-    <li><a href="#一台-linux-服务器最多能支撑多少个-tcp-连接">一台 Linux 服务器最多能支撑多少个 TCP 连接？</a>
+    <li><a href="#linux-服务器最多能支撑多少个-tcp-连接">Linux 服务器最多能支撑多少个 TCP 连接？</a>
       <ul>
         <li><a href="#client-最大-tcp-连接">Client 最大 TCP 连接</a></li>
         <li><a href="#server-端最大-tcp-连接">Server 端最大 TCP 连接</a></li>
+        <li><a href="#查看当前活动的-tcp-连接数">查看当前活动的 TCP 连接数</a></li>
       </ul>
     </li>
-    <li><a href="#查看当前活动的-tcp-连接数">查看当前活动的 TCP 连接数</a></li>
     <li><a href="#半连接全连接队列">半连接全连接队列</a></li>
     <li><a href="#tcp-是否丢包">TCP 是否丢包</a></li>
+    <li><a href="#攻击">攻击</a>
+      <ul>
+        <li><a href="#dos-攻击">Dos 攻击</a></li>
+        <li><a href="#ddos-攻击">DDos 攻击</a></li>
+        <li><a href="#drdos-攻击">DRDoS 攻击</a></li>
+        <li><a href="#syn-flood">SYN Flood</a></li>
+      </ul>
+    </li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>

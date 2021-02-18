@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="JVM"><meta property="og:title" content="JVM" />
+<meta property="og:description" content="JVM 虚拟机内存模型 程序寄存器 pc register (program counter)： 一个包含当前时刻指令的地址的寄存器，程序寄存器区域是唯一一个在 Java 虚拟机规范中没有规定任何 OutOfMemoryError 情况的区域
+虚拟机栈 栈会抛出两种异常：StackOverflowError 和 OutOfMemoryError，在 HotSpot 虚拟机栈中，可以使用参数 -Xss1M 来设置栈的大小为 1MB。随着调用函数参数的增加和局部变量的增加，单次函数调用对栈空间的需求也会增加，因此栈的最大递归次数不是一成不变的。函数嵌套调用的次数由栈的大小决定：栈越大，函数嵌套调用次数越多；对一个函数而言，它的参数越多，内部局部变量越多，它的栈帧就越大，其嵌套调用次数就会越少。
+本地方法栈 与 stack 一样，同样抛出两种异常：StackOverflowError 和 OutOfMemoryError。在 sun 的 HOT SPOT 虚拟机中，不区分本地方法栈和虚拟机栈。
+元数据区 在 Java 8 中，永久代已经被移除，被一个称为“元数据区”（元空间）的区域所取代。元空间的本质和永久代类似，元空间与永久代之间最大的区别在于：元空间并不在虚拟机中，而是使用本地内存。因此，默认情况下，元空间的大小仅受本地内存限制。类的元数据放入 native memory, 字符串池和类的静态变量放入 java 堆中，这样可以加载多少类的元数据就不再由 MaxPermSize 控制, 而由系统的实际可用空间来控制。
+如果不指定元数据区大小的话，默认情况下，虚拟机会耗尽所有的可用系统内存。-XX:MaxMetaspaceSize 可以指定元数据区大小。
+ String 字符串哪个区
+ Metaspace 元数据区中的常量池里面。
+ Perm 为啥被淘汰
+  移除永久代是为了融合 HotSpot JVM 与 JRockit VM 而做出的努力，因为 JRockit 没有永久代，所以不需要配置永久代。 永久代内存经常不够用或发生内存溢出，爆出异常 java.lang.OutOfMemoryError: PermGen。这是因为在 JDK1." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/jvm/" />
+
+<title>JVM | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/stream/" >
+      Stream 编程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/date-time/" >
+      Java Date 和 Time
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/classloader/" >
+      Java 类加载
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/juc/" >
+      JUC 并发包
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/java-io/" >
+      Java IO
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/jvm/"  class="active">
+      JVM
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/basic/" >
+      Java 基础
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/java-collection/" >
+      Java 集合类
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>JVM</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#虚拟机内存模型">虚拟机内存模型</a>
+      <ul>
+        <li><a href="#程序寄存器">程序寄存器</a></li>
+        <li><a href="#虚拟机栈">虚拟机栈</a></li>
+        <li><a href="#本地方法栈">本地方法栈</a></li>
+        <li><a href="#元数据区">元数据区</a></li>
+        <li><a href="#堆">堆</a></li>
+        <li><a href="#直接内存">直接内存</a></li>
+        <li><a href="#对象的内存布局">对象的内存布局</a></li>
+      </ul>
+    </li>
+    <li><a href="#反射">反射</a>
+      <ul>
+        <li><a href="#五种指令">五种指令</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="jvm">JVM</h1>
+<h2 id="虚拟机内存模型">虚拟机内存模型</h2>
+<p><img src="/images/docs/tutorial/java/jvm/memory-modal.png" alt=""></p>
+<h3 id="程序寄存器">程序寄存器</h3>
+<p><strong>pc register (program counter)</strong>： 一个包含当前时刻指令的地址的<strong>寄存器</strong>，程序寄存器区域是<strong>唯一一个</strong>在 Java 虚拟机规范中没有规定任何 <code>OutOfMemoryError</code> 情况的区域</p>
+<h3 id="虚拟机栈">虚拟机栈</h3>
+<p>栈会抛出两种异常：<code>StackOverflowError</code> 和 <code>OutOfMemoryError</code>，在 HotSpot 虚拟机栈中，可以使用参数 <code>-Xss1M</code> 来设置栈的大小为 <strong>1MB</strong>。随着<strong>调用函数参数的增加和局部变量的增加</strong>，单次函数调用对栈空间的需求也会增加，因此栈的最大递归次数不是一成不变的。函数嵌套调用的次数由栈的大小决定：栈越大，函数嵌套调用次数越多；对一个函数而言，它的参数越多，内部局部变量越多，它的栈帧就越大，其嵌套调用次数就会越少。</p>
+<h3 id="本地方法栈">本地方法栈</h3>
+<p>与 <strong>stack</strong> 一样，同样抛出两种异常：<code>StackOverflowError</code> 和 <code>OutOfMemoryError</code>。在 sun 的 HOT SPOT 虚拟机中，不区分本地方法栈和虚拟机栈。</p>
+<h3 id="元数据区">元数据区</h3>
+<p>在 Java 8 中，永久代已经被移除，被一个称为“元数据区”（元空间）的区域所取代。元空间的本质和永久代类似，元空间与永久代之间最大的区别在于：<strong>元空间并不在虚拟机中，而是使用本地内存</strong>。因此，默认情况下，元空间的大小仅受本地内存限制。<strong>类的元数据放入 native memory, 字符串池和类的静态变量放入 java 堆</strong>中，这样可以加载多少类的元数据就不再由 MaxPermSize 控制, 而由系统的实际可用空间来控制。</p>
+<p>如果不指定元数据区大小的话，默认情况下，虚拟机会耗尽所有的可用系统内存。<code>-XX:MaxMetaspaceSize</code> 可以指定元数据区大小。</p>
+<blockquote>
+<p>String 字符串哪个区</p>
+</blockquote>
+<p>Metaspace 元数据区中的<strong>常量池</strong>里面。</p>
+<blockquote>
+<p>Perm 为啥被淘汰</p>
+</blockquote>
+<ul>
+<li>移除永久代是为了融合 HotSpot JVM 与 JRockit VM 而做出的努力，因为 JRockit 没有永久代，所以不需要配置永久代。</li>
+<li>永久代内存经常不够用或发生内存溢出，爆出异常 <code>java.lang.OutOfMemoryError: PermGen</code>。这是因为在 JDK1.7 版本中，指定的 <code>PermGen</code> 区大小为 8M，由于 <code>PermGen</code> 中类的元数据信息在每次 <code>FullGC</code> 的时候都可能被收集，回收率都偏低，成绩很难令人满意；还有，为 <code>PermGen</code> 分配多大的空间很难确定，它的大小依赖于很多因素，比如，JVM 加载的 class 总数、常量池的大小和方法的大小等。</li>
+</ul>
+<h3 id="堆">堆</h3>
+<blockquote>
+<p>所有对象都是分配在堆上吗？</p>
+</blockquote>
+<p>Java 7 开始支持<strong>对象的栈分配和逃逸分析机制</strong>，这样的机制能够将<strong>堆分配对象变成栈分配对象</strong>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">myMethod</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    V v <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> V<span style="color:#f92672">();</span>
+    <span style="color:#75715e">// use v
+</span><span style="color:#75715e"></span>    v <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><ul>
+<li><strong><code>-server</code></strong>: <code>server</code> 模式下，才可以启用逃逸分析</li>
+<li><strong><code>-XX:DoEscapeAnalysis</code></strong>: 启用逃逸分析</li>
+</ul>
+<h3 id="直接内存">直接内存</h3>
+<p>使用 <strong>NIO</strong> 之后，直接内存的使用变得非常普遍，直接内存跳过了 Java 堆，可以直接访问原生堆空间。<strong>直接内存适合申请次数少、访问较为频繁的场合。如果需要频繁申请，则并不适合使用直接内存</strong>。</p>
+<ul>
+<li><code>-XX:MaxDirectMemorySize</code>: 最大可用直接内存，默认为 <code>-Xmx</code></li>
+</ul>
+<h3 id="对象的内存布局">对象的内存布局</h3>
+<p>每个 Java 对象都有一个对象头（object header），这个由标记字段和类型指针所构成。其中，标记字段用以存储 Java 虚拟机有关该对象的运行数据，如哈希码、GC 信息以及锁信息，而类型指针则指向该对象的类。</p>
+<p>在 64 位的 Java 虚拟机中，对象头的标记字段占 64 位，而类型指针又占了 64 位。也就是说，每一个 Java 对象在内存中的额外开销就是 16 个字节。以 Integer 类为例，它仅有一个 int 类型的私有字段，占 4 个字节。因此，每一个 Integer 对象的额外内存开销至少是 400%。这也是为什么 Java 要引入基本类型的原因之一。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// Maven 库 com.carrotsearch:java-sizeof:0.0.5
+</span><span style="color:#75715e">// 16 Bytes = 8 Bytes (标记字段) + 4 Bytes (压缩指针) = 12 Bytes 对齐到 8 的倍数 = 16 Bytes
+</span><span style="color:#75715e"></span>RamUsageEstimator<span style="color:#f92672">.</span><span style="color:#a6e22e">sizeOf</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Object<span style="color:#f92672">());</span>
+</code></pre></div><p>为了尽量较少对象的内存使用量，64 位 Java 虚拟机引入了压缩指针 的概念（对应虚拟机选项 <code>-XX:+UseCompressedOops</code>，默认开启），将堆中原本 64 位的 Java 对象指针压缩成 32 位的。</p>
+<p>默认情况下，Java 虚拟机堆中对象的起始地址需要对齐至 8 (<code>-XX:ObjectAlignmentInBytes</code> ) 的倍数 (如果一个对象实际占用 17 直接，那么最终也会分配 24 字节)。如果一个对象用不到 8N 个字节，那么空白的那部分空间就浪费掉了。这些浪费掉的空间我们称之为对象间的填充（padding）。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Point</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">int</span> x<span style="color:#f92672">;</span> <span style="color:#75715e">// 4
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">int</span> y<span style="color:#f92672">;</span> <span style="color:#75715e">// 4
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">char</span> z<span style="color:#f92672">;</span> <span style="color:#75715e">// 2
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+
+<span style="color:#75715e">// 24 Bytes = (8 Bytes 标记字段 + 4 Bytes 引用指针) + 
+</span><span style="color:#75715e">//             4 Bytes + 4 Bytes + 2 Bytes = 22 Bytes 对齐到 8 的倍数 = 24 Bytes
+</span><span style="color:#75715e"></span>RamUsageEstimator<span style="color:#f92672">.</span><span style="color:#a6e22e">sizeOf</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Point<span style="color:#f92672">());</span>
+</code></pre></div><p>内存对齐不仅存在于对象与对象之间，也存在于对象中的字段之间。比如说，Java 虚拟机要求 long 字段、double 字段，以及非压缩指针状态下的引用字段地址为 8 的倍数。</p>
+<p>对于<strong>对象数组</strong>的内存大小的计算方式如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Object<span style="color:#f92672">[]</span> objArray <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Object<span style="color:#f92672">[</span>5<span style="color:#f92672">];</span>
+<span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> objArray<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+    objArray<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Object<span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#75715e">// (NUM_BYTES_ARRAY_HEADER (16 Bytes) + NUM_BYTES_OBJECT_REF (4 Bytes) * 数组长度 5) = 36 Bytes
+</span><span style="color:#75715e">// 36 Bytes 需要对齐到 40 Bytes
+</span><span style="color:#75715e">//
+</span><span style="color:#75715e">// 内部 5 个 Object，每个 Object 是 16 Bytes，5 个 Bytes 总共 80 Bytes
+</span><span style="color:#75715e">//
+</span><span style="color:#75715e">// 总大小 = 40 Bytes + 80 Bytes = 120 Bytes
+</span><span style="color:#75715e"></span>RamUsageEstimator<span style="color:#f92672">.</span><span style="color:#a6e22e">sizeOf</span><span style="color:#f92672">(</span>objArray<span style="color:#f92672">);</span>
+</code></pre></div><p>对于<strong>基础类型的数组</strong>的内存大小计算方式如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">char</span><span style="color:#f92672">[]</span> charArray <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">[</span>5<span style="color:#f92672">];</span>
+<span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> charArray<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+    charArray<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;c&#39;</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#75715e">// NUM_BYTES_ARRAY_HEADER (16 Bytes) +
+</span><span style="color:#75715e">// NUM_BYTES_CHAR (2 Bytes) * arr.length (5)
+</span><span style="color:#75715e">// = 26 Bytes --&gt; 对齐到 32 Bytes
+</span><span style="color:#75715e"></span>RamUsageEstimator<span style="color:#f92672">.</span><span style="color:#a6e22e">sizeOf</span><span style="color:#f92672">(</span>charArray<span style="color:#f92672">);</span>
+</code></pre></div><p>字段重排列，Java 虚拟机重新分配字段的先后顺序，以达到内存对齐的目的。Java 8 还引入了一个新的注释 @Contended，用来解决对象字段之间的虚共享（false sharing）问题。这个注释也会影响到字段的排列。虚共享是怎么回事呢？假设两个线程分别访问同一对象中不同的 volatile 字段，逻辑上它们并没有共享内容，因此不需要同步。然而，如果这两个字段恰好在同一个缓存行中，那么对这些字段的写操作会导致缓存行的写回，也就造成了实质上的共享。Java 虚拟机会让不同的 @Contended 字段处于独立的缓存行中，因此你会看到大量的空间被浪费掉。</p>
+<p><img src="/images/docs/tutorial/java/jvm/object-header.png" alt=""></p>
+<h2 id="反射">反射</h2>
+<p>在 Web 开发中，我们经常能够接触到各种可配置的通用框架。为了保证框架的可扩展性，它们往往借助 Java 的反射机制，根据配置文件来加载不同的类。举例来说，Spring 框架的依赖反转（IoC），便是依赖于反射机制。</p>
+<p><code>Method.invoke()</code> 有三种实现方式:</p>
+<ul>
+<li>➡ 委派实现 ➡ 本地方法</li>
+<li>➡ 本地方法实现</li>
+<li>➡ 字节码直接使用 <code>invoke</code> 指令来调用目标方法。动态实现和本地实现相比，其运行效率要快上 20 倍，这是因为动态实现无需经过 Java 到 C++ 再到 Java 的切换，但生成字节码十分耗时。</li>
+</ul>
+<p>考虑到许多反射调用仅会执行一次，Java 虚拟机设置了一个阈值 15（可以通过 <code>-Dsun.reflect.inflationThreshold=</code> 来调整），当某个反射调用的调用次数在 15 之下时，采用本地实现；当达到 15 时，便开始动态生成字节码，并将委派实现的委派对象切换至动态实现，这个过程我们称之为 Inflation。</p>
+<p>反射调用的 Inflation 机制是可以通过参数（<code>-Dsun.reflect.noInflation=true</code>）来关闭的。这样一来，在反射调用一开始便会直接生成动态实现，而不会使用委派实现或者本地实现。</p>
+<p>方法的反射调用会带来不少性能开销，原因主要有三个：变长参数方法导致的 Object 数组_循环外新建，基本类型的自动装箱、拆箱 (扩大缓存范围 <code>-Djava.lang.Integer.IntegerCache.high=128</code>_或者循环外缓存 <code>Integer</code> 对象)，还有最重要的方法内联。</p>
+<p>在 VM options 加入参数: <code>-XX:AutoBoxCacheMax=7777</code>，可以设置最大缓存值 7777。</p>
+<h3 id="五种指令">五种指令</h3>
+<p>Java 字节码中与调用相关的指令共有五种：</p>
+<ul>
+<li><code>invokestatic</code>：用于调用静态方法。Java 虚拟机明确要求方法调用需要提供目标方法的类名。</li>
+<li><code>invokespecial</code>：用于调用私有实例方法、构造器，以及使用 super 关键字调用父类的实例方法或构造器，和所实现接口的默认方法。Java 虚拟机明确要求方法调用需要提供目标方法的类名。</li>
+<li><code>invokevirtual</code>：用于调用非私有实例方法。Java 虚拟机明确要求方法调用需要提供目标方法的类名。</li>
+<li><code>invokeinterface</code>：用于调用接口方法。Java 虚拟机明确要求方法调用需要提供目标方法的类名。</li>
+<li><code>invokedynamic</code>：用于调用动态方法。Java 7。该指令的调用机制抽象出调用点这一个概念，并允许应用程序将调用点链接至任意符合条件的方法上。Java 7 引入了更加底层、更加灵活的方法抽象 ：方法句柄（MethodHandle）。方法句柄是一个强类型的、能够被直接执行的引用。它仅关心所指向方法的参数类型以及返回类型，而不关心方法所在的类以及方法名。方法句柄的权限检查发生在创建过程中，相较于反射调用节省了调用时反复权限检查的开销。</li>
+</ul>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#虚拟机内存模型">虚拟机内存模型</a>
+      <ul>
+        <li><a href="#程序寄存器">程序寄存器</a></li>
+        <li><a href="#虚拟机栈">虚拟机栈</a></li>
+        <li><a href="#本地方法栈">本地方法栈</a></li>
+        <li><a href="#元数据区">元数据区</a></li>
+        <li><a href="#堆">堆</a></li>
+        <li><a href="#直接内存">直接内存</a></li>
+        <li><a href="#对象的内存布局">对象的内存布局</a></li>
+      </ul>
+    </li>
+    <li><a href="#反射">反射</a>
+      <ul>
+        <li><a href="#五种指令">五种指令</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -8,8 +8,10 @@
 <meta property="og:description" content="Java 类加载 类编译  .class 文件包含哪些信息 ?
  类加载的过程 参考：《深入理解 Java 虚拟机》
 JVM 把 Class 文件加载到内存，然后进行校验、准备、解析、初始化，最终形成可以使用的 Java 类型，这就是类加载机制。其中，校验、准备、解析这三个阶段，放在一起是链接阶段。
- 【加载】二进制字节流可以从 JAR、WAR、网络、运行时动态生成（动态代理）、JSP生成。 【验证】文件格式、元数据（信息语义）、字节码验证（类型转换是否有效、跳转指令不会跳到方法体以外的地方去）、符号引用验证 【准备】static final 变量赋值、各个基本数据类型的默认值 【解析】常量池内的符号引用（用符号描述引用目标）替换为直接引用（直接指向目标的指针） 【初始化】编译器收集 static 块、类变量的赋值放到 () 方法中  加载器类型  Bootstrap ClassLoader：加载 JAVA_HOME/lib、或者 -Xbootclasspath，并且是按照名字识别的，如 rt.jar Extension ClassLoader：JAVA_HOME/lib/ext、或者 java.ext.dirs 系统变量 Application ClassLoader：加载用户 ClassPath 上的类库  类加载器之间的层次关系，称之为双亲委派模型。如果一个类收到类加载请求，那么会首先委派给父类，父类反馈无法完成，自己才进行加载。
-何时初始化  遇到 new、getstatic、putstatic、invokestatic 这 4 条字节码指令。对应的是 new 一个对象、读取静态字段、设置静态字段（字段没有被 final 修饰，否则在编译器就已经将结果放在常量池了）、调用一个类的静态方法。 java.lang.reflect 进行反射。 初始化 A 类，其父类没有被初始化。 虚拟机启动时，包含 main() 方法的这个类  // 不会导致子类初始化 println(SubClass." />
+ 【加载】二进制字节流可以从 JAR、WAR、网络、运行时动态生成（动态代理）、JSP生成。 【验证】文件格式、元数据（信息语义）、字节码验证（类型转换是否有效、跳转指令不会跳到方法体以外的地方去）、符号引用验证。在同一个类中，如果同时出现多个名字相同且描述符也相同的方法，那么 Java 虚拟机会在此阶段报错。 【准备】static final 变量赋值、各个基本数据类型的默认值 【解析】常量池内的符号引用（用符号描述引用目标）替换为直接引用（直接指向目标的指针） 【初始化】编译器收集 static 块、类变量的赋值放到 () 方法中   符号引用存储在哪里
+ 在编译过程中，我们并不知道目标方法的具体内存地址。因此，Java 编译器会暂时用符号引用来表示该目标方法。符号引用存储在 class 文件的常量池之中。根据目标方法是否为接口方法，这些引用可分为接口符号引用和非接口符号引用。利用“javap -v”打印某个类的常量池。
+加载器类型  Bootstrap ClassLoader：加载 JAVA_HOME/lib、或者 -Xbootclasspath，并且是按照名字识别的，如 rt.jar Extension ClassLoader：JAVA_HOME/lib/ext、或者 java.ext.dirs 系统变量 Application ClassLoader：加载用户 ClassPath 上的类库  类加载器之间的层次关系，称之为双亲委派模型。如果一个类收到类加载请求，那么会首先委派给父类，父类反馈无法完成，自己才进行加载。
+何时初始化  遇到 new、getstatic、putstatic、invokestatic 这 4 条字节码指令。对应的是 new 一个对象、读取静态字段、设置静态字段（字段没有被 final 修饰，否则在编译器就已经将结果放在常量池了）、调用一个类的静态方法。 java." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/classloader/" />
 
@@ -20,7 +22,7 @@ JVM 把 Class 文件加载到内存，然后进行校验、准备、解析、初
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -514,6 +516,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/java/jvm/" >
+      JVM
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/java/basic/" >
       Java 基础
   </a>
@@ -934,6 +946,9 @@ var _hmt = _hmt || [];
     </li>
     <li><a href="#何时初始化">何时初始化</a></li>
     <li><a href="#静态变量何时加载">静态变量何时加载</a></li>
+    <li><a href="#tomcat-类加载机制">Tomcat 类加载机制</a></li>
+    <li><a href="#tomcat-热修改">Tomcat 热修改</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -965,12 +980,16 @@ data-full-width-responsive="true"></ins>
 <p>JVM 把 Class 文件加载到内存，然后进行校验、准备、解析、初始化，最终形成可以使用的 Java 类型，这就是类加载机制。其中，<strong>校验、准备、解析这三个阶段，放在一起是链接阶段</strong>。</p>
 <ul>
 <li>【加载】二进制字节流可以从 JAR、WAR、网络、运行时动态生成（动态代理）、JSP生成。</li>
-<li>【验证】文件格式、元数据（信息语义）、字节码验证（类型转换是否有效、跳转指令不会跳到方法体以外的地方去）、符号引用验证</li>
-<li>【准备】static final 变量赋值、各个基本数据类型的默认值</li>
+<li>【验证】文件格式、元数据（信息语义）、字节码验证（类型转换是否有效、跳转指令不会跳到方法体以外的地方去）、符号引用验证。在同一个类中，如果同时出现多个名字相同且描述符也相同的方法，那么 Java 虚拟机会在此阶段报错。</li>
+<li>【准备】<code>static final</code> 变量赋值、各个基本数据类型的默认值</li>
 <li>【解析】常量池内的符号引用（用符号描述引用目标）替换为直接引用（直接指向目标的指针）</li>
 <li>【初始化】编译器收集 static 块、类变量的赋值放到 <!-- raw HTML omitted -->() 方法中</li>
 </ul>
 <p><img src="/images/docs/tutorial/java/classloader/8d4ec9c73ec37d69adb105aa7d052717.jpg" alt=""></p>
+<blockquote>
+<p>符号引用存储在哪里</p>
+</blockquote>
+<p>在编译过程中，我们并不知道目标方法的具体内存地址。因此，Java 编译器会暂时用符号引用来表示该目标方法。符号引用存储在 class 文件的常量池之中。根据目标方法是否为接口方法，这些引用可分为接口符号引用和非接口符号引用。利用“javap -v”打印某个类的常量池。</p>
 <h3 id="加载器类型">加载器类型</h3>
 <ul>
 <li><code>Bootstrap ClassLoader</code>：加载 <code>JAVA_HOME/lib</code>、或者 <code>-Xbootclasspath</code>，并且是按照名字识别的，如 rt.jar</li>
@@ -997,6 +1016,23 @@ data-full-width-responsive="true"></ins>
 <ul>
 <li><code>static final</code>: 编译器优化这种常量，然后将这个值直接内嵌到 bytecode 里面</li>
 <li><code>static</code>: 随着这个类的加载而加载</li>
+</ul>
+<h2 id="tomcat-类加载机制">Tomcat 类加载机制</h2>
+<p>Tomcat 的类加载机制是<strong>违反了双亲委托原则</strong>的，对于一些未加载的非基础类(<code>Object</code>,<code>String</code>等)，各个 web 应用自己的类加载器(<code>WebAppClassLoader</code>)会优先加载，<strong>加载不到时再交给 <code>CommonClassLoader</code> 走双亲委托</strong>。</p>
+<p><img src="/images/docs/tutorial/java/classloader/Snipaste_2021-02-12_11-22-42.png" alt=""></p>
+<blockquote>
+<p>如果我自己定义一个恶意的 <code>HashMap</code>，会不会有风险呢？</p>
+</blockquote>
+<p>Tomcat 不遵循双亲委派机制，只是<strong>自定义的 ClassLoader 顺序不同</strong>，但<strong>顶层还是相同</strong>的，还是要去顶层请求 <code>ClassLoader</code>。</p>
+<blockquote>
+<p>Tomcat 如果使用默认的类加载机制行不行？</p>
+</blockquote>
+<p>如果使用默认的类加载器机制，那么是<strong>无法加载两个相同类库的不同版本的</strong>，默认的类加载器是不管你是什么版本的，只在乎你的<strong>全限定类名</strong>，并且只有一份。</p>
+<h2 id="tomcat-热修改">Tomcat 热修改</h2>
+<p>Jsp 文件其实也就是 <code>class</code> 文件，那么如果修改了，但类名还是一样，<strong>类加载器会直接取方法区中已经存在的</strong>，修改后的 Jsp 是不会重新加载的。那么怎么办呢？我们可以直接卸载掉这 Jsp 文件的类加载器，所以你应该想到了，<strong>每个 Jsp 文件对应一个唯一的类加载器</strong>，当一个 Jsp 文件修改了，就直接卸载这个 Jsp 类加载器。<strong>重新创建类加载器，重新加载 Jsp 文件</strong>。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://www.cnblogs.com/aspirant/p/8991830.html">图解Tomcat类加载机制(阿里面试题)</a></li>
 </ul>
 
 <ins class="adsbygoogle"
@@ -1041,6 +1077,9 @@ data-full-width-responsive="true"></ins>
     </li>
     <li><a href="#何时初始化">何时初始化</a></li>
     <li><a href="#静态变量何时加载">静态变量何时加载</a></li>
+    <li><a href="#tomcat-类加载机制">Tomcat 类加载机制</a></li>
+    <li><a href="#tomcat-热修改">Tomcat 热修改</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 

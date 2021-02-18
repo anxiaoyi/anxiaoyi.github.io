@@ -17,14 +17,10 @@
  缺点：无法处理循环引用的问题。
  可达性分析算法 通过一系列的称为 GC Roots 的对象作为起始点，从这些节点开始向下搜索，搜索所走过的循环称为引用链。当一个对象到 GC Roots 没有任何引用链的时候，则证明此对象是不可达的，因此它们会被判定为可回收对象。
 可以作为 GC Roots 的对象：
- 类静态属性中引用的对象 常量引用的对象 虚拟机栈中引用的对象 本地方法栈中引用的对象  垃圾回收算法 标记-清除算法 从每个 GC Roots 对象出发，依次标记有引用关系的对象，最后将没有被标记的对象清除。
- 缺点：带来大量空间碎片，导致需要分配一个较大连续空间时，容易触发 GC。
- 标记-整理(标记-压缩)算法 从每个 GC Roots 对象出发，标记存活的对象，然后将存活的对象整理到内存空间的一端，形成连续的已使用空间，最后将已使用空间外的部分全部清理掉，消除空间碎片问题。
-标记-复制算法 为了能够并行的标记和整理，将整个空间分为两块，每次只激活一块，垃圾回收只需把存活的对象复制到另一块未激活的空间上，将未激活空间标记为已激活，将已激活空间标记为未激活，然后清除原空间中的原对象。
-分代收集算法 垃圾收集器一般根据对象存活周期的不同，将内存划分为几块，根据每块内存空间的特点，使用不同的回收算法，提供回收效率。
-分区算法 将整个堆空间划分为连续的不同小空间，每一个小空间独立使用，独立回收。
- 优点：可以控制一次回收多少个小区间。
- HotSpot 虚拟机垃圾收集器 Serial 新生代 Serial 收集器采用复制算法，使用单线程进行垃圾回收，回收时 Java 应用程序中的线程都需要暂停 (Stop-The-World)，以等待回收完成。使用 -XX:+UseSerialGC 可以指定新生代采用 Serial 收集器，老年代采用 Serial Old 收集器。</description>
+ 类静态属性中引用的对象 常量引用的对象 虚拟机栈中引用的对象 本地方法栈中引用的对象  finalize 方法中复活 finalize() 方法只会被调用一次：
+@Override protected void finalize() throws Throwable { super.finalize(); obj = this; } 下述代码在内存中如何放置的示例：
+StringBuffer str = new StringBuffer(&amp;#34;Hello world&amp;#34;); 假设以上代码是在函数体内运行的，那么:
+四个引用  软引用: java.lang.ref.SoftReference 可被回收的引用 弱引用: 发现即回收。由于垃圾回收器的线程通常优先级很大，因此并不一定很快地发现持有弱引用的对象。 虚引用: 跟踪垃圾回收过程  内存泄露 while (true) { for (int i=0; i&amp;lt;10000; i++) { if (!</description>
     </item>
     
     <item>
@@ -70,7 +66,7 @@ public class Thread implements Runnable { ThreadLocal.ThreadLocalMap threadLocal
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/programmer-interview/java/threadpool/</guid>
-      <description>线程池 好处 说明：线程池的好处是减少在创建和销毁线程上所消耗的时间以及系统资源的开销，解决资源不足的问题。如果不使用线程池，有可能造成系统创建大量同类线程而导致消耗完内存或者“过度切换”的问题。
+      <description>线程池 简介 好处 说明：线程池的好处是减少在创建和销毁线程上所消耗的时间以及系统资源的开销，解决资源不足的问题。如果不使用线程池，有可能造成系统创建大量同类线程而导致消耗完内存或者“过度切换”的问题。
 设计哲学 将任务的提交与执行解耦开，从而无须太大的困难就能为某种类型的任务指定和修改执行策略。
 用法 任务无须返回值，调用这个方法：
 public void execute(Runnable command) {} 需要返回值的任务，调用 submit：
@@ -134,15 +130,6 @@ try{ int divideByZeroException = 5 / 0; } catch (Exception e){ System.</descript
       
       <guid>https://kunzhao.org/docs/programmer-interview/java/java-exception/</guid>
       <description>Java 异常 异常架构图 </description>
-    </item>
-    
-    <item>
-      <title>Java 集合类框架图</title>
-      <link>https://kunzhao.org/docs/programmer-interview/java/collections/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://kunzhao.org/docs/programmer-interview/java/collections/</guid>
-      <description>Java 集合类框架图 Collections 框架图 List 框架图 Set 框架图 Map 框架图 Queue 框架图 参考  Overview of Java Collections Framework API (UML diagram)  </description>
     </item>
     
     <item>

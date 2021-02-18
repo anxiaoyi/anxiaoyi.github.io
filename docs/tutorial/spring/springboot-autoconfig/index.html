@@ -6,9 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="SpringBoot 自动配置原理"><meta property="og:title" content="SpringBoot 自动配置原理" />
 <meta property="og:description" content="SpringBoot 自动配置原理  application.properties 配置是如何在 Spring Boot 项目中生效的呢？
- Spring Boot 关于自动配置的源码在spring-boot-autoconfigure-x.x.x.x.jar中。@SpringBootApplication 引用了 @EnableAutoConfiguration：
+ 扫描 spring.factories 文件 Spring Boot 关于自动配置的源码在spring-boot-autoconfigure-x.x.x.x.jar中。@SpringBootApplication 引用了 @EnableAutoConfiguration：
 @Target({ElementType.TYPE}) @Retention(RetentionPolicy.RUNTIME) @Documented @Inherited @SpringBootConfiguration @EnableAutoConfiguration @ComponentScan( excludeFilters = {@Filter( type = FilterType.CUSTOM, classes = {TypeExcludeFilter.class} ), @Filter( type = FilterType.CUSTOM, classes = {AutoConfigurationExcludeFilter.class} )} ) public @interface SpringBootApplication { } @EnableAutoConfiguration 引入了 AutoConfigurationImportSelector.class：
-@Target({ElementType.TYPE}) @Retention(RetentionPolicy.RUNTIME) @Documented @Inherited @AutoConfigurationPackage @Import({AutoConfigurationImportSelector.class}) public @interface EnableAutoConfiguration { } 参考  Spring Boot面试杀手锏-自动配置原理  " />
+@Target({ElementType.TYPE}) @Retention(RetentionPolicy.RUNTIME) @Documented @Inherited @AutoConfigurationPackage @Import({AutoConfigurationImportSelector.class}) public @interface EnableAutoConfiguration { } AutoConfigurationImportSelector 的 selectImports 方法通过 SpringFactoriesLoader.loadFactoryNames() 扫描所有具有 META-INF/spring.factories 的 jar 包。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/spring/springboot-autoconfig/" />
 
@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.7edde1c7c0cec69be3f17c936c12b56c6b3967da602c4bd11478a7bb6794110e.js" integrity="sha256-ft3hx8DOxpvj8XyTbBK1bGs5Z9pgLEvRFHinu2eUEQ4="></script>
+<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -975,6 +975,9 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#扫描-springfactories-文件">扫描 <code>spring.factories</code> 文件</a></li>
+    <li><a href="#自动配置生效">自动配置生效</a></li>
+    <li><a href="#总结">总结</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -1000,6 +1003,7 @@ data-full-width-responsive="true"></ins>
 <blockquote>
 <p><code>application.properties</code> 配置是如何在 Spring Boot 项目中生效的呢？</p>
 </blockquote>
+<h2 id="扫描-springfactories-文件">扫描 <code>spring.factories</code> 文件</h2>
 <p>Spring Boot 关于自动配置的源码在<code>spring-boot-autoconfigure-x.x.x.x.jar</code>中。<code>@SpringBootApplication</code> 引用了 <code>@EnableAutoConfiguration</code>：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Target</span><span style="color:#f92672">({</span>ElementType<span style="color:#f92672">.</span><span style="color:#a6e22e">TYPE</span><span style="color:#f92672">})</span>
 <span style="color:#a6e22e">@Retention</span><span style="color:#f92672">(</span>RetentionPolicy<span style="color:#f92672">.</span><span style="color:#a6e22e">RUNTIME</span><span style="color:#f92672">)</span>
@@ -1027,7 +1031,50 @@ data-full-width-responsive="true"></ins>
 <span style="color:#a6e22e">@Import</span><span style="color:#f92672">({</span>AutoConfigurationImportSelector<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">})</span>
 <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">@interface</span> EnableAutoConfiguration <span style="color:#f92672">{</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><h2 id="参考">参考</h2>
+</code></pre></div><p><code>AutoConfigurationImportSelector</code> 的 <code>selectImports</code> 方法通过 <code>SpringFactoriesLoader.loadFactoryNames()</code> 扫描所有具有 <code>META-INF/spring.factories</code> 的 jar 包。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> String<span style="color:#f92672">[]</span> <span style="color:#a6e22e">selectImports</span><span style="color:#f92672">(</span>AnnotationMetadata annotationMetadata<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">isEnabled</span><span style="color:#f92672">(</span>annotationMetadata<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> NO_IMPORTS<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        AutoConfigurationImportSelector<span style="color:#f92672">.</span><span style="color:#a6e22e">AutoConfigurationEntry</span> autoConfigurationEntry <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getAutoConfigurationEntry</span><span style="color:#f92672">(</span>annotationMetadata<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">return</span> StringUtils<span style="color:#f92672">.</span><span style="color:#a6e22e">toStringArray</span><span style="color:#f92672">(</span>autoConfigurationEntry<span style="color:#f92672">.</span><span style="color:#a6e22e">getConfigurations</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#75715e">// AutoConfigurationImportSelector.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">protected</span> List<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">getCandidateConfigurations</span><span style="color:#f92672">(</span>AnnotationMetadata metadata<span style="color:#f92672">,</span> AnnotationAttributes attributes<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    List<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;</span> configurations <span style="color:#f92672">=</span> SpringFactoriesLoader<span style="color:#f92672">.</span><span style="color:#a6e22e">loadFactoryNames</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getSpringFactoriesLoaderFactoryClass</span><span style="color:#f92672">(),</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBeanClassLoader</span><span style="color:#f92672">());</span>
+    <span style="color:#66d9ef">return</span> configurations<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>这个 <code>spring.factories</code> 文件是一组一组的 <code>key=value</code> 的形式，其中一个 key 是 <code>org.springframework.boot.autoconfigure.EnableAutoConfiguration</code>，这个 key 对应的 value 是以逗号分隔的各种<strong>配置类的全称</strong>：</p>
+<p><img src="/images/docs/tutorial/spring/springboot-autoconfig/Snipaste_2021-02-10_09-53-18.png" alt=""></p>
+<p>找到所有这些配置类后，会将这些自动配置类加载到 Spring 容器中。</p>
+<h2 id="自动配置生效">自动配置生效</h2>
+<p>每一个 XxxxAutoConfiguration 自动配置类都是在<strong>某些条件之下才会生效</strong>的，这些条件的限制在 Spring Boot 中以注解的形式体现。以 <code>ServletWebServerFactoryAutoConfiguration</code> 为例，它上面有一些 <code>ConditionalOnClass</code>、<code>ConditionalOnWebApplication</code> 等条件，这个配置才会生效：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Configuration</span><span style="color:#f92672">(</span>proxyBeanMethods <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">)</span>
+<span style="color:#a6e22e">@AutoConfigureOrder</span><span style="color:#f92672">(</span>Ordered<span style="color:#f92672">.</span><span style="color:#a6e22e">HIGHEST_PRECEDENCE</span><span style="color:#f92672">)</span>
+<span style="color:#a6e22e">@ConditionalOnClass</span><span style="color:#f92672">(</span>ServletRequest<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">)</span>
+<span style="color:#a6e22e">@ConditionalOnWebApplication</span><span style="color:#f92672">(</span>type <span style="color:#f92672">=</span> Type<span style="color:#f92672">.</span><span style="color:#a6e22e">SERVLET</span><span style="color:#f92672">)</span>
+<span style="color:#a6e22e">@EnableConfigurationProperties</span><span style="color:#f92672">(</span>ServerProperties<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">)</span>
+<span style="color:#a6e22e">@Import</span><span style="color:#f92672">({</span> ServletWebServerFactoryAutoConfiguration<span style="color:#f92672">.</span><span style="color:#a6e22e">BeanPostProcessorsRegistrar</span><span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">,</span>
+		ServletWebServerFactoryConfiguration<span style="color:#f92672">.</span><span style="color:#a6e22e">EmbeddedTomcat</span><span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">,</span>
+		ServletWebServerFactoryConfiguration<span style="color:#f92672">.</span><span style="color:#a6e22e">EmbeddedJetty</span><span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">,</span>
+		ServletWebServerFactoryConfiguration<span style="color:#f92672">.</span><span style="color:#a6e22e">EmbeddedUndertow</span><span style="color:#f92672">.</span><span style="color:#a6e22e">class</span> <span style="color:#f92672">})</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ServletWebServerFactoryAutoConfiguration</span> <span style="color:#f92672">{</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>在它上面还有一个 <code>EnableConfigurationProperties</code> 配置项，其参数是 <code>ServerProperties</code>，在这个类中其通过 <code>ConfigurationProperties</code> 从配置文件中读取 <code>server.port</code> 的值，然后绑定到 <code>ServerProperties</code> 上，并通过 <code>EnableConfigurationProperties</code> 导入到 Spring 容器中：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@ConfigurationProperties</span><span style="color:#f92672">(</span>prefix <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;server&#34;</span><span style="color:#f92672">,</span> ignoreUnknownFields <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">)</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ServerProperties</span> <span style="color:#f92672">{</span>
+
+	<span style="color:#66d9ef">private</span> Integer port<span style="color:#f92672">;</span>
+
+	<span style="color:#66d9ef">private</span> InetAddress address<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="总结">总结</h2>
+<p>Spring Boot 启动的时候会通过 <code>@EnableAutoConfiguration</code> 注解找到 <code>META-INF/spring.factories</code> 配置文件中的所有自动配置类，并对其进行加载，而这些自动配置类都是以 <code>AutoConfiguration</code> 结尾来命名的，它实际上就是一个<code>JavaConfig</code> 形式的 Spring 容器配置类，它能通过以 <code>Properties</code> 结尾命名的类中取得在全局配置文件中配置的属性如：<code>server.port</code>，而 XxxxProperties 类是通过 <code>@ConfigurationProperties</code> 注解与全局配置文件中对应的属性进行绑定的。</p>
+<p><img src="/images/docs/tutorial/spring/springboot-autoconfig/how-spring-boot-autoconfigure-works.png" alt=""></p>
+<h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://blog.csdn.net/u014745069/article/details/83820511">Spring Boot面试杀手锏-自动配置原理</a></li>
 </ul>
@@ -1066,6 +1113,9 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#扫描-springfactories-文件">扫描 <code>spring.factories</code> 文件</a></li>
+    <li><a href="#自动配置生效">自动配置生效</a></li>
+    <li><a href="#总结">总结</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
