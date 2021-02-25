@@ -5,10 +5,17 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Redis 缓存"><meta property="og:title" content="Redis 缓存" />
-<meta property="og:description" content="Redis 缓存 缓存更新策略  低一致性业务建议配置最大内存和淘汰策略的方式使用。 高一致性业务可以结合使用超时剔除和主动更新，这样即使主动更新出了问题，也能保证数据过期时间后删除脏数据。  穿透优化 缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常出于容错的考虑，如果从存储层查不到数据则不写入缓存层。缓存穿透将导致不存在的数据每次请求都要到存储层去查询，失去了缓存保护后端存储的意义。
+<meta property="og:description" content="Redis 缓存 缓存更新策略  低一致性业务建议配置最大内存和淘汰策略的方式使用。 高一致性业务可以结合使用超时剔除和主动更新，这样即使主动更新出了问题，也能保证数据过期时间后删除脏数据。  缓存击穿 为了避免缓存击穿给数据库带来的激增压力，我们的解决方法也比较直接，对于访问特别频繁的热点数据，我们就不设置过期时间了。这样一来，对热点数据的访问请求，都可以在缓存中进行处理，而Redis数万级别的高吞吐量可以很好地应对大量的并发请求访问。
+穿透优化 缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常出于容错的考虑，如果从存储层查不到数据则不写入缓存层。缓存穿透将导致不存在的数据每次请求都要到存储层去查询，失去了缓存保护后端存储的意义。
 通常可以在程序中分别统计总调用数、缓存层命中数、存储层命中数，如果发现大量存储层空命中，可能就是出现了缓存穿透问题。造成缓存穿透的基本原因有两个。第一，自身业务代码或者数据出现问题，第二，一些恶意攻击、爬虫等造成大量空命中。下面我们来看一下如何解决缓存穿透问题。
- 缓存空对象。设置较短过期时间，自动剔除，可以减少内存占用；存储层有了数据，可以利用消息系统或其它方式清楚掉缓存中的空对象。   布隆过滤器拦截  雪崩优化  保证缓存层服务高可用性。和飞机都有多个引擎一样。 依赖隔离组件为后端限流并降级  热点 Key 重建优化 在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。
- 互斥锁  " />
+ 缓存空对象。设置较短过期时间，自动剔除，可以减少内存占用；存储层有了数据，可以利用消息系统或其它方式清楚掉缓存中的空对象。   布隆过滤器拦截  雪崩优化 大量 Key 同时过期 我们可以避免给大量的数据设置相同的过期时间。如果业务层的确要求有些数据同时失效，你可以在用EXPIRE命令给每个数据设置过期时间时，给这些数据的过期时间增加一个较小的随机数（例如，随机增加1~3分钟），这样一来，不同数据的过期时间有所差别，但差别又不会太大，既避免了大量数据同时过期，同时也保证了这些数据基本在相近的时间失效，仍然能满足业务需求。
+除了微调过期时间，我们还可以通过服务降级，来应对缓存雪崩。
+所谓的服务降级，是指发生缓存雪崩时，针对不同的数据采取不同的处理方式。
+ 当业务应用访问的是非核心数据（例如电商商品属性）时，暂时停止从缓存中查询这些数据，而是直接返回预定义信息、空值或是错误信息。 当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。  Redis 缓存实例故障宕机  保证缓存层服务高可用性。和飞机都有多个引擎一样。可以采用限流或降级方案。   依赖隔离组件为后端限流并降级  热点 Key 重建优化 在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。
+ 互斥锁  MySQL 同步到 Redis 数据更新服务只负责处理业务逻辑，更新 MySQL，完全不用管如何去更新缓存。负责更新缓存的服务，把自己伪装成一个 MySQL 的从节点，从 MySQL 接收 Binlog，解析 Binlog之后，可以得到实时的数据变更信息，然后根据这个变更信息去更新 Redis 缓存。
+这种收 Binlog 更新缓存的方案，和收 MQ 消息更新缓存的方案，其实它们的实现思路是一样的，都是异步订阅实时数据变更信息，去更新 Redis。只不过，直接读取 Binlog 这种方式，它的通用性更强。不要求订单服务再发订单消息了，订单更新服务也不用费劲去解决“发消息失败怎么办？”这种数据一致性问题了。
+这个方案唯一的缺点是，实现订单缓存更新服务有点儿复杂，毕竟不像收消息，拿到的直接就是订单数据，解析 Binlog 还是挺麻烦的。
+有很多开源的项目就提供了订阅和解析 MySQL Binlog 的功能，常用的开源项目有 Canal。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/cache/" />
 
@@ -19,7 +26,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -674,6 +681,36 @@ var _hmt = _hmt || [];
 </li>
       
     
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis_ops/" >
+      Redis 运维与优化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-scenario/" >
+      Redis 使用场景
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis6/" >
+      Redis 6
+  </a>
+
+</li>
+      
+    
   </ul>
   
 
@@ -966,9 +1003,16 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#缓存更新策略">缓存更新策略</a></li>
+    <li><a href="#缓存击穿">缓存击穿</a></li>
     <li><a href="#穿透优化">穿透优化</a></li>
-    <li><a href="#雪崩优化">雪崩优化</a></li>
+    <li><a href="#雪崩优化">雪崩优化</a>
+      <ul>
+        <li><a href="#大量-key-同时过期">大量 Key 同时过期</a></li>
+        <li><a href="#redis-缓存实例故障宕机">Redis 缓存实例故障宕机</a></li>
+      </ul>
+    </li>
     <li><a href="#热点-key-重建优化">热点 Key 重建优化</a></li>
+    <li><a href="#mysql-同步到-redis">MySQL 同步到 Redis</a></li>
   </ul>
 </nav>
 
@@ -995,9 +1039,12 @@ data-full-width-responsive="true"></ins>
 <li>低一致性业务建议配置<strong>最大内存</strong>和<strong>淘汰策略</strong>的方式使用。</li>
 <li>高一致性业务可以结合使用<strong>超时剔除和主动更新</strong>，这样即使主动更新出了问题，也能保证数据过期时间后删除脏数据。</li>
 </ul>
+<h2 id="缓存击穿">缓存击穿</h2>
+<p><img src="/images/docs/tutorial/redis/cache/hot-key-expire.png" alt=""></p>
+<p>为了避免缓存击穿给数据库带来的激增压力，我们的解决方法也比较直接，对于<strong>访问特别频繁的热点数据，我们就不设置过期时间</strong>了。这样一来，对热点数据的访问请求，都可以在缓存中进行处理，而Redis数万级别的高吞吐量可以很好地应对大量的并发请求访问。</p>
 <h2 id="穿透优化">穿透优化</h2>
 <p>缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常出于容错的考虑，如果从存储层查不到数据则不写入缓存层。缓存穿透将导致不存在的数据每次请求都要到存储层去查询，失去了缓存保护后端存储的意义。</p>
-<p><img src="/images/docs/tutorial/redis/cache/Snipaste_2021-01-06_21-38-01.png" alt=""></p>
+<p><img src="/images/docs/tutorial/redis/cache/get-return-null.png" alt=""></p>
 <p>通常可以在程序中分别统计总调用数、缓存层命中数、存储层命中数，如果发现大量存储层空命中，可能就是出现了缓存穿透问题。造成缓存穿透的基本原因有两个。第一，自身业务代码或者数据出现问题，第二，一些恶意攻击、爬虫等造成大量空命中。下面我们来看一下如何解决缓存穿透问题。</p>
 <ul>
 <li><strong>缓存空对象</strong>。设置较短过期时间，自动剔除，可以减少内存占用；存储层有了数据，可以利用消息系统或其它方式清楚掉缓存中的空对象。</li>
@@ -1008,9 +1055,23 @@ data-full-width-responsive="true"></ins>
 </ul>
 <p><img src="/images/docs/tutorial/redis/cache/Snipaste_2021-01-06_21-41-41.png" alt=""></p>
 <h2 id="雪崩优化">雪崩优化</h2>
+<h3 id="大量-key-同时过期">大量 Key 同时过期</h3>
+<p><img src="/images/docs/tutorial/redis/cache/many-key-expire.png" alt=""></p>
+<p>我们可以<strong>避免给大量的数据设置相同的过期时间</strong>。如果业务层的确要求有些数据同时失效，你可以在用EXPIRE命令给每个数据设置过期时间时，给这些数据的过期时间增加一个较小的随机数（例如，随机增加1~3分钟），这样一来，不同数据的过期时间有所差别，但差别又不会太大，既避免了大量数据同时过期，同时也保证了这些数据基本在相近的时间失效，仍然能满足业务需求。</p>
+<p>除了微调过期时间，我们还可以通过<strong>服务降级</strong>，来应对缓存雪崩。</p>
+<p>所谓的服务降级，是指发生缓存雪崩时，针对不同的数据采取不同的处理方式。</p>
+<ul>
+<li>当业务应用访问的是非核心数据（例如电商商品属性）时，暂时停止从缓存中查询这些数据，而是<strong>直接返回预定义信息、空值或是错误信息</strong>。</li>
+<li>当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。</li>
+</ul>
+<p><img src="/images/docs/tutorial/redis/cache/service-downgrade.png" alt=""></p>
+<h3 id="redis-缓存实例故障宕机">Redis 缓存实例故障宕机</h3>
 <p><img src="/images/docs/tutorial/redis/cache/Snipaste_2021-01-06_21-27-16.png" alt=""></p>
 <ul>
-<li>保证缓存层服务<strong>高可用</strong>性。和飞机都有多个引擎一样。</li>
+<li>保证缓存层服务<strong>高可用</strong>性。和飞机都有多个引擎一样。可以采用<strong>限流或降级</strong>方案。</li>
+</ul>
+<p><img src="/images/docs/tutorial/redis/cache/limit-queue.png" alt=""></p>
+<ul>
 <li>依赖隔离组件为后端限流并降级</li>
 </ul>
 <h2 id="热点-key-重建优化">热点 Key 重建优化</h2>
@@ -1020,6 +1081,12 @@ data-full-width-responsive="true"></ins>
 <li>互斥锁</li>
 </ul>
 <p><img src="/images/docs/tutorial/redis/cache/Snipaste_2021-01-06_21-35-20.png" alt=""></p>
+<h2 id="mysql-同步到-redis">MySQL 同步到 Redis</h2>
+<p>数据更新服务只负责处理业务逻辑，更新 MySQL，完全不用管如何去更新缓存。负责更新缓存的服务，把自己伪装成一个 MySQL 的从节点，从 MySQL 接收 Binlog，解析 Binlog之后，可以得到实时的数据变更信息，然后根据这个变更信息去更新 Redis 缓存。</p>
+<p><img src="/images/docs/tutorial/redis/cache/Screenshot-from-2021-02-24-23-23-48.png" alt=""></p>
+<p>这种<strong>收 Binlog 更新缓存</strong>的方案，和<strong>收 MQ 消息更新缓存</strong>的方案，其实它们的实现思路是一样的，都是<strong>异步订阅实时数据变更信息</strong>，去更新 Redis。只不过，直接读取 Binlog 这种方式，它的通用性更强。不要求订单服务再发订单消息了，订单更新服务也不用费劲去解决“发消息失败怎么办？”这种数据一致性问题了。</p>
+<p>这个方案唯一的缺点是，实现订单缓存更新服务有点儿复杂，毕竟不像收消息，拿到的直接就是订单数据，解析 Binlog 还是挺麻烦的。</p>
+<p>有很多开源的项目就提供了订阅和解析 MySQL Binlog 的功能，常用的开源项目有 <strong>Canal</strong>。</p>
 
 <ins class="adsbygoogle"
 style="display:block"
@@ -1056,9 +1123,16 @@ data-full-width-responsive="true"></ins>
   <nav id="TableOfContents">
   <ul>
     <li><a href="#缓存更新策略">缓存更新策略</a></li>
+    <li><a href="#缓存击穿">缓存击穿</a></li>
     <li><a href="#穿透优化">穿透优化</a></li>
-    <li><a href="#雪崩优化">雪崩优化</a></li>
+    <li><a href="#雪崩优化">雪崩优化</a>
+      <ul>
+        <li><a href="#大量-key-同时过期">大量 Key 同时过期</a></li>
+        <li><a href="#redis-缓存实例故障宕机">Redis 缓存实例故障宕机</a></li>
+      </ul>
+    </li>
     <li><a href="#热点-key-重建优化">热点 Key 重建优化</a></li>
+    <li><a href="#mysql-同步到-redis">MySQL 同步到 Redis</a></li>
   </ul>
 </nav>
 

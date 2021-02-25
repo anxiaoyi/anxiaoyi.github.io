@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Redis 线程 I/O 模型"><meta property="og:title" content="Redis 线程 I/O 模型" />
 <meta property="og:description" content="Redis 线程 I/O 模型  Redis 是个单线程程序！ 这点必须铭记。
- Redis 单线程为什么这么快? 因为它所有的数据都在内存中，所有的运算都是内存级别的运算。正因为 Redis 是单线程，所以要小心使用 Redis 指令，对于那些时间复杂度为 O(n) 级别的指令，一定要谨慎使用，一不小心就可能会导致 Redis 卡顿。
+ Redis 单线程为什么这么快? 因为它所有的数据都在内存中，再加上它采用了高效的数据结构，例如哈希表和跳表，这是它实现高性能的一个重要原因。另一方面，就是Redis采用了多路复用机制，使其在网络IO操作中能并发处理大量的客戶端请求，实现高吞吐率。接下来，我们就重点学习下多路复用机制。
 单线程如何处理并发客户端? 多路复用
 非阻塞 IO 当我们调用套接字的读写方法，默认它们是阻塞的，比如read方法要传递进去一个参数n，表示最多读取这么多字节后再返回，如果一个字节都没有，那么线程就会卡在那里，直到新的数据到来或者连接关闭了，read方法才可以返回，线程才能继续处理。而write方法一般来说不会阻塞，除非内核为套接字分配的写缓冲区已经满了，write方法就会阻塞，直到缓存区中有空闲空间挪出来了。
 非阻塞 IO 在套接字对象上提供了一个选项Non_Blocking，当这个选项打开时，读写方法不会阻塞，而是能读多少读多少，能写多少写多少。能读多少取决于内核为套接字分配的读缓冲区内部的数据字节数，能写多少取决于内核为套接字分配的写缓冲区的空闲空间字节数。读方法和写方法都会通过返回值来告知程序实际读写了多少字节。
@@ -14,7 +14,9 @@
 事件轮询 (多路复用) 非阻塞 IO 有个问题，那就是线程要读数据，结果读了一部分就返回了，线程如何知道何时才应该继续读。也就是当数据到来时，线程如何得到通知。写也是一样，如果缓冲区满了，写不完，剩下的数据何时才应该继续写，线程也应该得到通知。
 事件轮询 API 就是用来解决这个问题的，最简单的事件轮询 API 是select函数，它是操作系统提供给用户程序的 API。输入是读写描述符列表read_fds &amp; write_fds，输出是与之对应的可读可写事件。同时还提供了一个timeout参数，如果没有任何事件到来，那么就最多等待timeout时间，线程处于阻塞状态。一旦期间有任何事件到来，就可以立即返回。时间过了之后还是没有任何事件到来，也会立即返回。拿到事件后，线程就可以继续挨个处理相应的事件。处理完了继续过来轮询。于是线程就进入了一个死循环，我们把这个死循环称为事件循环，一个循环为一个周期。
 每个客户端套接字socket都有对应的读写文件描述符。
-read_events, write_events = select(read_fds, write_fds, timeout) for event in read_events: handle_read(event.fd) for event in write_events: handle_write(event.fd) handle_others() # 处理其它事情，如定时任务等 因为我们通过select系统调用同时处理多个通道描述符的读写事件，因此我们将这类系统调用称为多路复用 API。现代操作系统的多路复用 API 已经不再使用select系统调用，而改用epoll(linux)和kqueue(freebsd &amp; macosx)，因为 select 系统调用的性能在描述符特别多时性能会非常差。它们使用起来可能在形式上略有差异，但是本质上都是差不多的，都可以使用上面的伪代码逻辑进行理解。" />
+read_events, write_events = select(read_fds, write_fds, timeout) for event in read_events: handle_read(event.fd) for event in write_events: handle_write(event.fd) handle_others() # 处理其它事情，如定时任务等 因为我们通过select系统调用同时处理多个通道描述符的读写事件，因此我们将这类系统调用称为多路复用 API。现代操作系统的多路复用 API 已经不再使用select系统调用，而改用epoll(linux)和kqueue(freebsd &amp; macosx)，因为 select 系统调用的性能在描述符特别多时性能会非常差。它们使用起来可能在形式上略有差异，但是本质上都是差不多的，都可以使用上面的伪代码逻辑进行理解。
+服务器套接字serversocket对象的读操作是指调用accept接受客户端新连接。何时有新连接到来，也是通过select系统调用的读事件来得到通知的。
+ 事件轮询 API 就是 Java 语言里面的 NIO 技术" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/io-pattern/" />
 
@@ -25,7 +27,7 @@ read_events, write_events = select(read_fds, write_fds, timeout) for event in re
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -680,6 +682,36 @@ var _hmt = _hmt || [];
 </li>
       
     
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis_ops/" >
+      Redis 运维与优化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-scenario/" >
+      Redis 使用场景
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis6/" >
+      Redis 6
+  </a>
+
+</li>
+      
+    
   </ul>
   
 
@@ -975,11 +1007,21 @@ var _hmt = _hmt || [];
     <li><a href="#单线程如何处理并发客户端">单线程如何处理并发客户端?</a>
       <ul>
         <li><a href="#非阻塞-io">非阻塞 IO</a></li>
+        <li><a href="#事件轮询-多路复用">事件轮询 (多路复用)</a></li>
+        <li><a href="#基于多路复用的高性能-io-模型">基于多路复用的高性能 I/O 模型</a></li>
       </ul>
     </li>
-    <li><a href="#事件轮询-多路复用">事件轮询 (多路复用)</a></li>
     <li><a href="#指令队列">指令队列</a></li>
     <li><a href="#响应队列">响应队列</a></li>
+    <li><a href="#缓冲区">缓冲区</a>
+      <ul>
+        <li><a href="#客戶端输入和输出缓冲区">客戶端输入和输出缓冲区</a></li>
+        <li><a href="#缓冲区内存使用情况">缓冲区内存使用情况</a></li>
+        <li><a href="#应对缓冲区溢出">应对缓冲区溢出</a></li>
+        <li><a href="#复制缓冲区的溢出问题">复制缓冲区的溢出问题</a></li>
+        <li><a href="#增量复制积压缓冲区的溢出问题">增量复制积压缓冲区的溢出问题</a></li>
+      </ul>
+    </li>
     <li><a href="#定时任务">定时任务</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
@@ -1007,7 +1049,7 @@ data-full-width-responsive="true"></ins>
 <p><strong>Redis 是个单线程程序！</strong> 这点必须铭记。</p>
 </blockquote>
 <h2 id="redis-单线程为什么这么快">Redis 单线程为什么这么快?</h2>
-<p>因为它所有的数据都在<strong>内存</strong>中，所有的运算都是内存级别的运算。正因为 Redis 是单线程，所以要小心使用 Redis 指令，对于那些<strong>时间复杂度</strong>为 O(n) 级别的指令，一定要谨慎使用，一不小心就可能会导致 Redis 卡顿。</p>
+<p>因为它所有的数据都在<strong>内存</strong>中，再加上它采用了<strong>高效的数据结构</strong>，例如哈希表和跳表，这是它实现高性能的一个重要原因。另一方面，就是Redis采用了<strong>多路复用机制</strong>，使其在网络IO操作中能并发处理大量的客戶端请求，实现高吞吐率。接下来，我们就重点学习下多路复用机制。</p>
 <h2 id="单线程如何处理并发客户端">单线程如何处理并发客户端?</h2>
 <p>多路复用</p>
 <h3 id="非阻塞-io">非阻塞 IO</h3>
@@ -1015,26 +1057,61 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/redis/io-pattern/Snipaste_2021-01-03_13-44-34.png" alt=""></p>
 <p>非阻塞 IO 在套接字对象上提供了一个选项<code>Non_Blocking</code>，当这个选项打开时，读写方法不会阻塞，而是能读多少读多少，能写多少写多少。能读多少取决于内核为套接字分配的读缓冲区内部的数据字节数，能写多少取决于内核为套接字分配的写缓冲区的空闲空间字节数。读方法和写方法都会通过返回值来告知程序实际读写了多少字节。</p>
 <p>有了非阻塞 IO 意味着线程在读写 IO 时可以不必再阻塞了，读写可以瞬间完成然后线程可以继续干别的事了。</p>
-<h2 id="事件轮询-多路复用">事件轮询 (多路复用)</h2>
+<h3 id="事件轮询-多路复用">事件轮询 (多路复用)</h3>
 <p>非阻塞 IO 有个问题，那就是线程要读数据，结果读了一部分就返回了，线程如何知道何时才应该继续读。也就是当数据到来时，线程如何得到通知。写也是一样，如果缓冲区满了，写不完，剩下的数据何时才应该继续写，线程也应该得到通知。</p>
 <p><img src="/images/docs/tutorial/redis/io-pattern/Snipaste_2021-01-03_13-47-52.png" alt=""></p>
 <p>事件轮询 API 就是用来解决这个问题的，最简单的事件轮询 API 是<code>select</code>函数，它是操作系统提供给用户程序的 API。输入是读写描述符列表<code>read_fds</code> &amp; <code>write_fds</code>，输出是与之对应的可读可写事件。同时还提供了一个<code>timeout</code>参数，如果没有任何事件到来，那么就最多等待<code>timeout</code>时间，线程处于阻塞状态。一旦期间有任何事件到来，就可以立即返回。时间过了之后还是没有任何事件到来，也会立即返回。拿到事件后，线程就可以继续挨个处理相应的事件。处理完了继续过来轮询。于是线程就进入了一个死循环，我们把这个死循环称为事件循环，一个循环为一个周期。</p>
 <p>每个客户端套接字<code>socket</code>都有对应的读写文件描述符。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C">read_events, write_events <span style="color:#f92672">=</span> select(read_fds, write_fds, timeout)
-<span style="color:#66d9ef">for</span> event in read_events:
-    handle_read(event.fd)
-<span style="color:#66d9ef">for</span> event in write_events:
-    handle_write(event.fd)
-handle_others()  <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#960050;background-color:#1e0010">处理其它事情，如定时任务等</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">read_events, write_events <span style="color:#f92672">=</span> select(read_fds, write_fds, timeout)
+<span style="color:#66d9ef">for</span> event <span style="color:#f92672">in</span> read_events:
+    handle_read(event<span style="color:#f92672">.</span>fd)
+<span style="color:#66d9ef">for</span> event <span style="color:#f92672">in</span> write_events:
+    handle_write(event<span style="color:#f92672">.</span>fd)
+handle_others()  <span style="color:#75715e"># 处理其它事情，如定时任务等</span>
 </code></pre></div><p>因为我们通过<code>select</code>系统调用同时处理多个通道描述符的读写事件，因此我们将这类系统调用称为多路复用 API。现代操作系统的多路复用 API 已经不再使用<code>select</code>系统调用，而改用<code>epoll(linux)</code>和<code>kqueue(freebsd &amp; macosx)</code>，因为 <code>select</code> 系统调用的性能在描述符特别多时性能会非常差。它们使用起来可能在形式上略有差异，但是本质上都是差不多的，都可以使用上面的伪代码逻辑进行理解。</p>
 <p>服务器套接字<code>serversocket</code>对象的读操作是指调用<code>accept</code>接受客户端新连接。何时有新连接到来，也是通过<code>select</code>系统调用的读事件来得到通知的。</p>
 <blockquote>
 <p>事件轮询 API 就是 Java 语言里面的 NIO 技术</p>
 </blockquote>
+<h3 id="基于多路复用的高性能-io-模型">基于多路复用的高性能 I/O 模型</h3>
+<p>Linux中的IO多路复用机制是指<strong>一个线程处理多个IO流</strong>，就是我们经常听到的<code>select</code>/<code>epoll</code>机制。简单来说，在Redis只运行单线程的情况下，该机制允许内核中，同时存在多个监听套接字和已连接套接字。内核会一直监听这些套接字上的连接请求或数据请求。一旦有请求到达，就会交给Redis线程处理，这就实现了一个Redis线程处理多个IO流的效果。</p>
+<p>下图就是基于多路复用的Redis IO模型。图中的多个FD就是刚才所说的多个套接字。Redis网络框架调用<code>epoll</code>机制，让内核监听这些套接字。此时，Redis线程不会阻塞在某一个特定的监听或已连接套接字上，也就是说，不会阻塞在某一个特定的客戶端请求处理上。正因为此，Redis可以同时和多个客戶端连接并处理请求，从而提升并发性。</p>
+<p><img src="/images/docs/tutorial/redis/io-pattern/select-epoll-multiplex.png" alt=""></p>
+<p>那么，回调机制是怎么工作的呢？其实，<code>select</code>/<code>epoll</code> 一旦监测到 FD 上有请求到达时，就会触发相应的事件。</p>
+<p>这些事件会被放进一个事件队列，Redis单线程对该事件队列不断进行处理。这样一来，Redis无需一直轮询是否有请求实际发生，这就可以避免造成CPU资源浪费。同时，Redis在对事件队列中的事件进行处理时，会调用相应的处理函数，这就实现了基于事件的回调。因为Redis一直在对事件队列进行处理，所以能及时响应客戶端请求，提升Redis的响应性能。</p>
 <h2 id="指令队列">指令队列</h2>
 <p>Redis 会将每个客户端套接字都关联一个<strong>指令队列</strong>。客户端的指令通过队列来排队进行顺序处理，先到先服务。</p>
 <h2 id="响应队列">响应队列</h2>
 <p>Redis 同样也会为每个客户端套接字关联一个响应队列。Redis 服务器通过响应队列来将指令的返回结果回复给客户端。 如果队列为空，那么意味着连接暂时处于空闲状态，不需要去获取写事件，也就是可以将当前的客户端描述符从 <code>write_fds</code> 里面移出来。等到队列有数据了，再将描述符放进去。避免<code>select</code>系统调用立即返回写事件，结果发现没什么数据可以写。出这种情况的线程会<strong>飙高 CPU</strong>。</p>
+<h2 id="缓冲区">缓冲区</h2>
+<h3 id="客戶端输入和输出缓冲区">客戶端输入和输出缓冲区</h3>
+<p>为了避免客戶端和服务器端的请求发送和处理速度不匹配，服务器端给每个连接的客戶端都设置了一个输入缓冲区和输出缓冲区，我们称之为客戶端输入缓冲区和输出缓冲区。</p>
+<p><img src="/images/docs/tutorial/redis/io-pattern/Snipaste_2021-02-24_11-52-49.png" alt=""></p>
+<h3 id="缓冲区内存使用情况">缓冲区内存使用情况</h3>
+<pre><code>CLIENT LIST
+id=5 addr=127.0.0.1:50487 fd=9 name= age=4 idle=0 flags=N db=0 sub=0 psub=0 multi=-1 qbuf=26 qbuf-free=32742 obl=0 oll=0 omem=0 events=r cmd=client
+</code></pre><ul>
+<li><code>qbuf</code>，表示输入缓冲区已经使用的大小。这个例子中的CLIENT命令已使用了26字节大小的缓冲区。</li>
+<li><code>qbuf-free</code>，表示输入缓冲区尚未使用的大小。这个例子中的CLIENT命令还可以使用32742字节的缓冲区。<code>qbuf</code>和<code>qbuf-free</code>的总和就是，Redis服务器端当前为已连接的这个客戶端分配的缓冲区总大小。这个例子中总共分配了 26 + 32742 = 32768字节，也就是32KB的缓冲区。</li>
+</ul>
+<p>客戶端输入缓冲区溢出，Redis的处理办法就是把<strong>客戶端连接关闭</strong>，结果就是业务程序无法进行数据存取了。</p>
+<h3 id="应对缓冲区溢出">应对缓冲区溢出</h3>
+<ul>
+<li>避免<code>bigkey</code>操作返回大量数据结果；</li>
+<li>避免在线上环境中持续使用MONITOR命令。</li>
+<li>使用<code>client-output-buffer-limit</code>设置合理的缓冲区大小上限，或是缓冲区连续写入时间和写入量上限。</li>
+</ul>
+<h3 id="复制缓冲区的溢出问题">复制缓冲区的溢出问题</h3>
+<p>在全量复制过程中，主节点在向从节点传输RDB文件的同时，会继续接收客戶端发送的写命令请求。这些写命令就会先保存在复制缓冲区中，等RDB文件传输完成后，再发送给从节点去执行。主节点上会为每个从节点都维护一个复制缓冲区，来保证主从节点间的数据同步。</p>
+<p><img src="/images/docs/tutorial/redis/io-pattern/Snipaste_2021-02-24_11-58-55.png" alt=""></p>
+<p>所以，如果在全量复制时，从节点接收和加载RDB较慢，同时主节点接收到了大量的写命令，写命令在复制缓冲区中就会越积越多，最终导致溢出。</p>
+<p>其实，主节点上的复制缓冲区，本质上也是一个用于和从节点连接的客戶端（我们称之为从节点客戶端），使用的输出缓冲区。复制缓冲区一旦发生溢出，主节点也会直接关闭和从节点进行复制操作的连接，导致全量复制失败。那如何避免复制缓冲区发生溢出呢？</p>
+<p>为了避免复制缓冲区累积过多命令造成溢出，引发全量复制失败，我们可以<strong>控制主节点保存的数据量大小</strong>，并<strong>设置合理的复制缓冲区大小</strong>。同时，我们需要<strong>控制从节点的数量</strong>，来避免主节点中复制缓冲区占用过多内存的问题。</p>
+<h3 id="增量复制积压缓冲区的溢出问题">增量复制积压缓冲区的溢出问题</h3>
+<p>主节点在把接收到的写命令同步给从节点时，同时会把这些写命令写入复制积压缓冲区。一旦从节点发生网络闪断，再次和主节点恢复连接后，从节点就会从复制积压缓冲区中，读取断连期间主节点接收到的写命令，进而进行增量同步，如下图所示：</p>
+<p><img src="/images/docs/tutorial/redis/io-pattern/Snipaste_2021-02-24_12-01-31.png" alt=""></p>
+<p>首先，复制积压缓冲区是一个大小有限的环形缓冲区。当主节点把复制积压缓冲区写满后，会覆盖缓冲区中的旧命令数据。如果从节点还没有同步这些旧命令数据，就会<strong>造成主从节点间重新开始执行全量复制</strong>。</p>
+<p>其次，为了应对复制积压缓冲区的溢出问题，我们可以调整复制积压缓冲区的大小，也就是设置 <code>repl_backlog_size</code> 这个参数的值。</p>
 <h2 id="定时任务">定时任务</h2>
 <p>服务器处理要响应 IO 事件外，还要处理其它事情。比如定时任务就是非常重要的一件事。如果线程阻塞在 <code>select</code> 系统调用上，定时任务将无法得到准时调度。那 Redis 是如何解决这个问题的呢？</p>
 <p>Redis 的定时任务会记录在一个称为<strong>最小堆</strong>的数据结构中。这个堆中，最快要执行的任务排在堆的最上方。在每个循环周期，Redis 都会将最小堆里面已经到点的任务立即进行处理。处理完毕后，将最快要执行的任务还需要的时间记录下来，这个<strong>时间就是 <code>select</code> 系统调用的<code>timeout</code> 参数</strong>。因为 Redis 知道未来<code>timeout</code>时间内，没有其它定时任务需要处理，所以可以安心睡眠<code>timeout</code>的时间。</p>
@@ -1081,11 +1158,21 @@ data-full-width-responsive="true"></ins>
     <li><a href="#单线程如何处理并发客户端">单线程如何处理并发客户端?</a>
       <ul>
         <li><a href="#非阻塞-io">非阻塞 IO</a></li>
+        <li><a href="#事件轮询-多路复用">事件轮询 (多路复用)</a></li>
+        <li><a href="#基于多路复用的高性能-io-模型">基于多路复用的高性能 I/O 模型</a></li>
       </ul>
     </li>
-    <li><a href="#事件轮询-多路复用">事件轮询 (多路复用)</a></li>
     <li><a href="#指令队列">指令队列</a></li>
     <li><a href="#响应队列">响应队列</a></li>
+    <li><a href="#缓冲区">缓冲区</a>
+      <ul>
+        <li><a href="#客戶端输入和输出缓冲区">客戶端输入和输出缓冲区</a></li>
+        <li><a href="#缓冲区内存使用情况">缓冲区内存使用情况</a></li>
+        <li><a href="#应对缓冲区溢出">应对缓冲区溢出</a></li>
+        <li><a href="#复制缓冲区的溢出问题">复制缓冲区的溢出问题</a></li>
+        <li><a href="#增量复制积压缓冲区的溢出问题">增量复制积压缓冲区的溢出问题</a></li>
+      </ul>
+    </li>
     <li><a href="#定时任务">定时任务</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>

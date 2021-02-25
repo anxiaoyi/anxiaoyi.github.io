@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="排查问题"><meta property="og:title" content="排查问题" />
+<meta property="og:description" content="排查问题 一个根本原因，经过一条或几条传播路径，最后表现出某些现象。
+监控  服务表现：问题的具体表现（出错、超时），应用日志、依赖服务的状态等 系统状态：操作系统指标（各种资源状态、系统日志等）、VM 指标（主要是 GC） 硬件指标：CPU、内存、网络、硬盘是否达到瓶颈  业务指标可以通过框架输出日志 &#43; ELK/graphite 之类生成图形，系统监控可以用 Cacti/Zabbix 进行监控。
+3 分钟  30 秒获取整体服务情况：请求量、响应时间分布、错误码分布，主要利用的就是业务的监控系统 3 分钟了解某台机器的负载情况：最耗 CPU 的线程和函数（CPU）、TCP 连接状态统计和 buffer 堆积状态 （网络）、程序的内存分布、最耗内存的对象（内存）、当前是哪个程序在占用磁盘 I/O、GC 情况。主要用的就是 Linux 和 Java 的一些工具：top、perf、netstat、iftop、jmap、jstat 等 3 分钟了解请求的链路情况：网络传输、系统调用、库函数调用、应用层函数调用的调用链、输入、输出、时长。TCPdump/strace/ltrace/btrace/housemd 等 3 分钟检索当前系统的快照情况：线程栈情况、某个变量的值、存储或缓存里的某个值是什么。jmap/jstack/gdb/pmap 等  保留现场 系统出错，首先要解决问题，通过运维的介入把服务恢复，同时尽量保留现场 （比如保留一台出问题的机器，只摘除不重启）。其次是通过监控、日志初步定为问题原因后，在线下使用测试环境压测、TCPcopy 等复现问题，这时再排除就没什么心理负担了。
+请求 block 或者变慢的时候，用 jstack/jmap/jstat 之类的都来一遍，其他类型的 Linux 程序主要会留 gcore 和各种指标类的数据，top/perf/strace。
+jdump 命令需要很长时间，线上无法服务，应该先摘掉机器，再进行 dump，如果无法摘，则考虑 btrace/housemd 挂到进程上分析，不过 btrace 可能会导致应用假死，几率是几十分之一，慎用。
+ 参考  《高可用系统 - 第一卷》  " />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/troubleshoot/" />
+
+<title>排查问题 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/it-govern/" >
+      服务治理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-measurement/" >
+      服务度量
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-control/" >
+      服务管控
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/apm/" >
+      APM 及调用链跟踪
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/deep-govern/" >
+      体系的深度治理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/transaction/" >
+      分布式事务解决方案汇总
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/multi-replica-consistency/" >
+      副本一致性算法
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/storage-high-availablity/" >
+      存储高可用方案
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/business-high-availablity/" >
+      业务高可用方案
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/high-concurrency/" >
+      高并发设计方案
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/distributed-lock/" >
+      分布式锁 🔒
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/distributed-id/" >
+      分布式 ID 设计
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/design-weibo/" >
+      设计微博系统
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/troubleshoot/"  class="active">
+      排查问题
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>排查问题</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#监控">监控</a></li>
+    <li><a href="#3-分钟">3 分钟</a></li>
+    <li><a href="#保留现场">保留现场</a></li>
+    <li><a href="#heading"></a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="排查问题">排查问题</h1>
+<p>一个根本原因，经过一条或几条传播路径，最后表现出某些现象。</p>
+<h2 id="监控">监控</h2>
+<ul>
+<li>服务表现：问题的具体表现（出错、超时），应用日志、依赖服务的状态等</li>
+<li>系统状态：操作系统指标（各种资源状态、系统日志等）、VM 指标（主要是 GC）</li>
+<li>硬件指标：CPU、内存、网络、硬盘是否达到瓶颈</li>
+</ul>
+<p><strong>业务指标</strong>可以通过框架输出日志 + ELK/graphite 之类生成图形，<strong>系统</strong>监控可以用 Cacti/Zabbix 进行监控。</p>
+<h2 id="3-分钟">3 分钟</h2>
+<ul>
+<li>30 秒获取整体服务情况：请求量、响应时间分布、错误码分布，主要利用的就是业务的监控系统</li>
+<li>3 分钟了解某台机器的负载情况：最耗 CPU 的线程和函数（CPU）、TCP 连接状态统计和 buffer 堆积状态 （网络）、程序的内存分布、最耗内存的对象（内存）、当前是哪个程序在占用磁盘 I/O、GC 情况。主要用的就是 Linux 和 Java 的一些工具：<code>top</code>、<code>perf</code>、<code>netstat</code>、<code>iftop</code>、<code>jmap</code>、<code>jstat</code> 等</li>
+<li>3 分钟了解请求的链路情况：网络传输、系统调用、库函数调用、应用层函数调用的调用链、输入、输出、时长。<code>TCPdump</code>/<code>strace</code>/<code>ltrace</code>/<code>btrace</code>/<code>housemd</code> 等</li>
+<li>3 分钟检索当前系统的快照情况：线程栈情况、某个变量的值、存储或缓存里的某个值是什么。<code>jmap</code>/<code>jstack</code>/<code>gdb</code>/<code>pmap</code> 等</li>
+</ul>
+<h2 id="保留现场">保留现场</h2>
+<p>系统出错，首先要解决问题，通过运维的介入把服务恢复，同时尽量保留现场 （比如保留一台出问题的机器，只摘除不重启）。其次是通过监控、日志初步定为问题原因后，在线下使用测试环境压测、TCPcopy 等复现问题，这时再排除就没什么心理负担了。</p>
+<p>请求 block 或者变慢的时候，用 <code>jstack</code>/<code>jmap</code>/<code>jstat</code> 之类的都来一遍，其他类型的 Linux 程序主要会留 gcore 和各种指标类的数据，<code>top</code>/<code>perf</code>/<code>strace</code>。</p>
+<p><code>jdump</code> 命令需要很长时间，线上无法服务，应该先摘掉机器，再进行 <code>dump</code>，如果无法摘，则考虑 <code>btrace</code>/<code>housemd</code> 挂到进程上分析，不过 <code>btrace</code> 可能会导致应用假死，几率是几十分之一，慎用。</p>
+<h2 id="heading"></h2>
+<h2 id="参考">参考</h2>
+<ul>
+<li>《高可用系统 - 第一卷》</li>
+</ul>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#监控">监控</a></li>
+    <li><a href="#3-分钟">3 分钟</a></li>
+    <li><a href="#保留现场">保留现场</a></li>
+    <li><a href="#heading"></a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

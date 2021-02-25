@@ -5,7 +5,8 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Redis 数据结构"><meta property="og:title" content="Redis 数据结构" />
-<meta property="og:description" content="Redis 数据结构 字符串 struct SDS&lt;T&gt; { T capacity; // 数组容量  T len; // 数组长度  byte flags; // 特殊标识位，不理睬它  byte[] content; // 数组内容 } 当字符串比较短时，len 和 capacity 可以使用 byte 和 short 来表示，Redis 为了对内存做极致的优化，不同长度的字符串使用不同的结构体来表示。当字符串长度小于 1M 时，扩容都是加倍现有的空间，如果超过 1M，扩容时一次只会多扩 1M 的空间。需要注意的是字符串最大长度为 512M。
+<meta property="og:description" content="Redis 数据结构 概览 数据类型和数据结构 键和值用什么组织 哈希桶中的元素保存的并不是值本身，而是指向具体值的指针。
+字符串 struct SDS&lt;T&gt; { T capacity; // 数组容量  T len; // 数组长度  byte flags; // 特殊标识位，不理睬它  byte[] content; // 数组内容 } 当字符串比较短时，len 和 capacity 可以使用 byte 和 short 来表示，Redis 为了对内存做极致的优化，不同长度的字符串使用不同的结构体来表示。当字符串长度小于 1M 时，扩容都是加倍现有的空间，如果超过 1M，扩容时一次只会多扩 1M 的空间。需要注意的是字符串最大长度为 512M。
 哈希 存储形式：压缩列表 ziplist 和哈希表 hash
 struct RedisDb { dict* dict; // all keys key=&gt;value  dict* expires; // all expired keys key=&gt;long(timestamp)  ... } struct zset { dict *dict; // all values value=&gt;score  zskiplist *zsl; } dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后进行渐进式搬迁，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新的 hashtable 取而代之。" />
 <meta property="og:type" content="article" />
@@ -18,7 +19,7 @@ struct RedisDb { dict* dict; // all keys key=&gt;value  dict* expires; // all ex
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -673,6 +674,36 @@ var _hmt = _hmt || [];
 </li>
       
     
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis_ops/" >
+      Redis 运维与优化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-scenario/" >
+      Redis 使用场景
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis6/" >
+      Redis 6
+  </a>
+
+</li>
+      
+    
   </ul>
   
 
@@ -964,6 +995,12 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#概览">概览</a>
+      <ul>
+        <li><a href="#数据类型和数据结构">数据类型和数据结构</a></li>
+        <li><a href="#键和值用什么组织">键和值用什么组织</a></li>
+      </ul>
+    </li>
     <li><a href="#字符串">字符串</a></li>
     <li><a href="#哈希">哈希</a>
       <ul>
@@ -971,9 +1008,13 @@ var _hmt = _hmt || [];
         <li><a href="#扩容缩容">扩容/缩容</a></li>
       </ul>
     </li>
-    <li><a href="#list">list</a></li>
+    <li><a href="#有序集合">有序集合</a></li>
     <li><a href="#压缩列表">压缩列表</a></li>
-    <li><a href="#跳跃列表">跳跃列表</a></li>
+    <li><a href="#跳跃列表">跳跃列表</a>
+      <ul>
+        <li><a href="#延时队列">延时队列</a></li>
+      </ul>
+    </li>
     <li><a href="#位图">位图</a></li>
     <li><a href="#hyperloglog">HyperLogLog</a></li>
     <li><a href="#redis-40-布隆过滤器">Redis 4.0 布隆过滤器</a></li>
@@ -1007,6 +1048,12 @@ data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="redis-数据结构">Redis 数据结构</h1>
+<h2 id="概览">概览</h2>
+<h3 id="数据类型和数据结构">数据类型和数据结构</h3>
+<p><img src="/images/docs/tutorial/redis/datastructure/Snipaste_2021-02-22_13-17-03.png" alt=""></p>
+<h3 id="键和值用什么组织">键和值用什么组织</h3>
+<p><strong>哈希桶中的元素保存的并不是值本身，而是指向具体值的指针</strong>。</p>
+<p><img src="/images/docs/tutorial/redis/datastructure/global-hashtable.png" alt=""></p>
 <h2 id="字符串">字符串</h2>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">struct</span> SDS<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> {
   T capacity; <span style="color:#75715e">// 数组容量
@@ -1036,15 +1083,15 @@ data-full-width-responsive="true"></ins>
 <p>什么是渐进哈希？字典有一个字段 <code>rehashidx</code>，设置为 0 表示正式开始，每当添加/删除/查找/更新时，都会把在 <code>rehashidx</code> 索引上的所有键值对迁移到 <code>ht[1]</code>，当完成之后，<code>rehashidx</code> 加 1。添加的时候，只会添加到 <code>ht[1]</code>，查找则会 <code>ht[0]</code> 和 <code>ht[1]</code> 都找。</p>
 <p>大字典的扩容是比较耗时间的，需要重新申请新的数组，然后将旧字典所有链表中的元素重新挂接到新的数组下面，这是一个<code>O(n)</code>级别的操作，作为单线程的Redis表示很难承受这样耗时的过程。步子迈大了会扯着蛋，所以 Redis 使用渐进式 rehash 小步搬迁。虽然慢一点，但是肯定可以搬完。</p>
 <p>搬迁操作埋伏在当前字典的后续指令中(来自客户端的<code>hset</code>/<code>hdel</code>指令等)，但是有可能客户端闲下来了，没有了后续指令来触发这个搬迁，那么Redis就置之不理了么？当然不会，优雅的Redis怎么可能设计的这样潦草。Redis 还会在<strong>定时任务</strong>中对字典进行主动搬迁。</p>
+<p><img src="/images/docs/tutorial/redis/datastructure/redis-rehash.png" alt=""></p>
 <h3 id="扩容缩容">扩容/缩容</h3>
 <p>正常情况下，当 hash 表中元素的个数等于第一维数组的长度时，就会开始扩容，扩容的新数组是原数组大小的 2 倍。不过如果 Redis 正在做 bgsave，为了减少内存页的过多分离 (Copy On Write)，Redis 尽量不去扩容 (<code>dict_can_resize</code>)，但是如果 hash 表已经非常满了，元素的个数已经达到了第一维数组长度的 5 倍 (<code>dict_force_resize_ratio</code>)，说明 hash 表已经过于拥挤了，这个时候就会强制扩容。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C">load_factor <span style="color:#f92672">=</span> ht[<span style="color:#ae81ff">0</span>].used <span style="color:#f92672">/</span> ht[<span style="color:#ae81ff">1</span>].size;
 </code></pre></div><p>什么时候<strong>缩容</strong>，负载因子小于 <code>0.1</code>。</p>
-<h2 id="list">list</h2>
+<h2 id="有序集合">有序集合</h2>
 <h2 id="压缩列表">压缩列表</h2>
 <p>Redis 为了节约内存空间使用，<code>zset</code> 和 <code>hash</code> 容器对象在<strong>元素个数较少</strong>的时候，采用压缩列表 (<code>ziplist</code>) 进行存储。压缩列表是一块连续的内存空间，元素之间紧挨着存储，没有任何冗余空隙。</p>
-<p>Redis 的 <code>zset</code> 是一个复合结构，一方面它需要一个 hash 结构来存储 value 和 score 的对应关系，另一方面需要提供按照 score 来排序的功能，还需要能够指定 score 的范围来获取 value 列表的功能，这就需要另外一个结构「跳跃列表」。</p>
-<p><code>zset</code> 的内部实现是一个 <code>hash</code> 字典加一个跳跃列表 (skiplist)。</p>
+<p><img src="/images/docs/tutorial/redis/datastructure/query-in-ziplist.png" alt=""></p>
 <h2 id="跳跃列表">跳跃列表</h2>
 <p>如果数据存储在链表中，就真的没法用<strong>二分查找</strong>算法了吗？只需要对链表稍加改造，就可以支持类似“二分”的查找算法。这种<strong>链表加多级索引</strong>的结构，就是跳表。</p>
 <p>Redis 中的<strong>有序集合</strong>支持的核心操作主要有下面这几个：</p>
@@ -1069,29 +1116,101 @@ data-full-width-responsive="true"></ins>
         level <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>;
     <span style="color:#66d9ef">return</span> (level<span style="color:#f92672">&lt;</span>ZSKIPLIST_MAXLEVEL) <span style="color:#f92672">?</span> level : ZSKIPLIST_MAXLEVEL;
 }
-</code></pre></div><p>复杂度：</p>
-<table>
-<thead>
-<tr>
-<th>命令</th>
-<th>复杂度</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>ZADD</td>
-<td>O(log(N))</td>
-</tr>
-<tr>
-<td>ZCARD</td>
-<td>O(1)</td>
-</tr>
-<tr>
-<td>ZCOUNT key min max</td>
-<td>O(log(N))</td>
-</tr>
-</tbody>
-</table>
+</code></pre></div><h3 id="延时队列">延时队列</h3>
+<p>延时队列可以通过 Redis 的 zset(有序列表) 来实现。我们将消息序列化成一个字符串作为 zset 的value，这个消息的到期处理时间作为score，然后用多个线程轮询 zset 获取到期的任务进行处理，多个线程是为了保障可用性，万一挂了一个线程还有其它线程可以继续处理。因为有多个线程，所以需要考虑并发争抢任务，确保任务不能被多次执行。</p>
+<p>Redis 的 <code>zrem</code> 方法是多线程多进程争抢任务的关键，它的返回值决定了当前实例有没有抢到任务，因为 loop 方法可能会被多个线程、多个进程调用，同一个任务可能会被多个进程线程抢到，通过 <code>zrem</code> 来决定唯一的属主。</p>
+<p>同时，我们要注意一定要对 <code>handle_msg</code> 进行异常捕获，避免因为个别任务处理问题导致循环异常退出。以下是 Java 版本的延时队列实现，因为要使用到 Json 序列化，所以还需要 fastjson 库的支持。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#f92672">import</span> java.lang.reflect.Type<span style="color:#f92672">;</span>
+<span style="color:#f92672">import</span> java.util.Set<span style="color:#f92672">;</span>
+<span style="color:#f92672">import</span> java.util.UUID<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">import</span> com.alibaba.fastjson.JSON<span style="color:#f92672">;</span>
+<span style="color:#f92672">import</span> com.alibaba.fastjson.TypeReference<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">import</span> redis.clients.jedis.Jedis<span style="color:#f92672">;</span>
+
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RedisDelayingQueue</span><span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+
+  <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TaskItem</span><span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">public</span> String id<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">public</span> T msg<span style="color:#f92672">;</span>
+  <span style="color:#f92672">}</span>
+
+  <span style="color:#75715e">// fastjson 序列化对象中存在 generic 类型时，需要使用 TypeReference
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">private</span> Type TaskType <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> TypeReference<span style="color:#f92672">&lt;</span>TaskItem<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;&gt;()</span> <span style="color:#f92672">{</span>
+  <span style="color:#f92672">}.</span><span style="color:#a6e22e">getType</span><span style="color:#f92672">();</span>
+
+  <span style="color:#66d9ef">private</span> Jedis jedis<span style="color:#f92672">;</span>
+  <span style="color:#66d9ef">private</span> String queueKey<span style="color:#f92672">;</span>
+
+  <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">RedisDelayingQueue</span><span style="color:#f92672">(</span>Jedis jedis<span style="color:#f92672">,</span> String queueKey<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">jedis</span> <span style="color:#f92672">=</span> jedis<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">queueKey</span> <span style="color:#f92672">=</span> queueKey<span style="color:#f92672">;</span>
+  <span style="color:#f92672">}</span>
+
+  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">delay</span><span style="color:#f92672">(</span>T msg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    TaskItem<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> task <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> TaskItem<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;();</span>
+    task<span style="color:#f92672">.</span><span style="color:#a6e22e">id</span> <span style="color:#f92672">=</span> UUID<span style="color:#f92672">.</span><span style="color:#a6e22e">randomUUID</span><span style="color:#f92672">().</span><span style="color:#a6e22e">toString</span><span style="color:#f92672">();</span> <span style="color:#75715e">// 分配唯一的 uuid
+</span><span style="color:#75715e"></span>    task<span style="color:#f92672">.</span><span style="color:#a6e22e">msg</span> <span style="color:#f92672">=</span> msg<span style="color:#f92672">;</span>
+    String s <span style="color:#f92672">=</span> JSON<span style="color:#f92672">.</span><span style="color:#a6e22e">toJSONString</span><span style="color:#f92672">(</span>task<span style="color:#f92672">);</span> <span style="color:#75715e">// fastjson 序列化
+</span><span style="color:#75715e"></span>    jedis<span style="color:#f92672">.</span><span style="color:#a6e22e">zadd</span><span style="color:#f92672">(</span>queueKey<span style="color:#f92672">,</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">()</span> <span style="color:#f92672">+</span> 5000<span style="color:#f92672">,</span> s<span style="color:#f92672">);</span> <span style="color:#75715e">// 塞入延时队列 ,5s 后再试
+</span><span style="color:#75715e"></span>  <span style="color:#f92672">}</span>
+
+  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">loop</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span>Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">interrupted</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+      <span style="color:#75715e">// 只取一条
+</span><span style="color:#75715e"></span>      Set<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;</span> values <span style="color:#f92672">=</span> jedis<span style="color:#f92672">.</span><span style="color:#a6e22e">zrangeByScore</span><span style="color:#f92672">(</span>queueKey<span style="color:#f92672">,</span> 0<span style="color:#f92672">,</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">(),</span> 0<span style="color:#f92672">,</span> 1<span style="color:#f92672">);</span>
+      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>values<span style="color:#f92672">.</span><span style="color:#a6e22e">isEmpty</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+          Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">sleep</span><span style="color:#f92672">(</span>500<span style="color:#f92672">);</span> <span style="color:#75715e">// 歇会继续
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>InterruptedException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+          <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+        <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+      <span style="color:#f92672">}</span>
+      String s <span style="color:#f92672">=</span> values<span style="color:#f92672">.</span><span style="color:#a6e22e">iterator</span><span style="color:#f92672">().</span><span style="color:#a6e22e">next</span><span style="color:#f92672">();</span>
+      <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>jedis<span style="color:#f92672">.</span><span style="color:#a6e22e">zrem</span><span style="color:#f92672">(</span>queueKey<span style="color:#f92672">,</span> s<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span> <span style="color:#75715e">// 抢到了
+</span><span style="color:#75715e"></span>        TaskItem<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> task <span style="color:#f92672">=</span> JSON<span style="color:#f92672">.</span><span style="color:#a6e22e">parseObject</span><span style="color:#f92672">(</span>s<span style="color:#f92672">,</span> TaskType<span style="color:#f92672">);</span> <span style="color:#75715e">// fastjson 反序列化
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">handleMsg</span><span style="color:#f92672">(</span>task<span style="color:#f92672">.</span><span style="color:#a6e22e">msg</span><span style="color:#f92672">);</span>
+      <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+  <span style="color:#f92672">}</span>
+
+  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">handleMsg</span><span style="color:#f92672">(</span>T msg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span>msg<span style="color:#f92672">);</span>
+  <span style="color:#f92672">}</span>
+
+  <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    Jedis jedis <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Jedis<span style="color:#f92672">();</span>
+    RedisDelayingQueue<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;</span> queue <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> RedisDelayingQueue<span style="color:#f92672">&lt;&gt;(</span>jedis<span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;q-demo&#34;</span><span style="color:#f92672">);</span>
+    Thread producer <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread<span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+
+      <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> 10<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+          queue<span style="color:#f92672">.</span><span style="color:#a6e22e">delay</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;codehole&#34;</span> <span style="color:#f92672">+</span> i<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+      <span style="color:#f92672">}</span>
+
+    <span style="color:#f92672">};</span>
+    Thread consumer <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread<span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+
+      <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        queue<span style="color:#f92672">.</span><span style="color:#a6e22e">loop</span><span style="color:#f92672">();</span>
+      <span style="color:#f92672">}</span>
+
+    <span style="color:#f92672">};</span>
+    producer<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+    consumer<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+      producer<span style="color:#f92672">.</span><span style="color:#a6e22e">join</span><span style="color:#f92672">();</span>
+      Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">sleep</span><span style="color:#f92672">(</span>6000<span style="color:#f92672">);</span>
+      consumer<span style="color:#f92672">.</span><span style="color:#a6e22e">interrupt</span><span style="color:#f92672">();</span>
+      consumer<span style="color:#f92672">.</span><span style="color:#a6e22e">join</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>InterruptedException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#f92672">}</span>
+  <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>上面的算法中同一个任务可能会被多个进程取到之后再使用 <code>zrem</code> 进行争抢，那些没抢到的进程都是白取了一次任务，这是浪费。可以考虑使用 lua scripting 来优化一下这个逻辑，将 <code>zrangebyscore</code> 和 <code>zrem</code> 一同挪到服务器端进行<strong>原子化</strong>操作，这样多个进程之间争抢任务时就不会出现这种浪费了。</p>
 <h2 id="位图">位图</h2>
 <p>在我们平时开发过程中，会有一些 <strong>bool 型数据</strong>需要存取，比如用户一年的签到记录，签了是 1，没签是 0，要记录 365 天。如果使用普通的 key/value，每个用户要记录 365 个，当用户上亿的时候，需要的存储空间是惊人的。</p>
 <p>为了解决这个问题，Redis 提供了位图数据结构，这样每天的签到记录只占据一个位，365 天就是 365 个位，46 个字节 (一个稍长一点的字符串) 就可以完全容纳下，这就大大节约了存储空间。</p>
@@ -1170,6 +1289,12 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#概览">概览</a>
+      <ul>
+        <li><a href="#数据类型和数据结构">数据类型和数据结构</a></li>
+        <li><a href="#键和值用什么组织">键和值用什么组织</a></li>
+      </ul>
+    </li>
     <li><a href="#字符串">字符串</a></li>
     <li><a href="#哈希">哈希</a>
       <ul>
@@ -1177,9 +1302,13 @@ data-full-width-responsive="true"></ins>
         <li><a href="#扩容缩容">扩容/缩容</a></li>
       </ul>
     </li>
-    <li><a href="#list">list</a></li>
+    <li><a href="#有序集合">有序集合</a></li>
     <li><a href="#压缩列表">压缩列表</a></li>
-    <li><a href="#跳跃列表">跳跃列表</a></li>
+    <li><a href="#跳跃列表">跳跃列表</a>
+      <ul>
+        <li><a href="#延时队列">延时队列</a></li>
+      </ul>
+    </li>
     <li><a href="#位图">位图</a></li>
     <li><a href="#hyperloglog">HyperLogLog</a></li>
     <li><a href="#redis-40-布隆过滤器">Redis 4.0 布隆过滤器</a></li>

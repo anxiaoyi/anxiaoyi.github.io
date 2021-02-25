@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Redis 运维与优化"><meta property="og:title" content="Redis 运维与优化" />
+<meta property="og:description" content="Redis 运维与优化 Redis 实例的阻塞点 5 个阻塞点：
+ 集合全量查询和聚合操作； bigkey 删除； 清空数据库； AOF ⽇志同步写； 从库加载 RDB ⽂件。  客户端交互阻塞 Redis中涉及集合的操作复杂度通常为O(N)，我们要在使⽤时重视起来。例如集合元素全量查询操作 HGETALL、SMEMBERS，以及集合的聚合统计操作，例如求交、并和差集。这些操作可以作为Redis的第⼀个个阻塞点：集合全量查询和聚合操作。
+除此之外，集合⾃⾝的删除操作同样也有潜在的阻塞⻛险。删除操作的本质是要释放键值对占⽤的内存空间。你可不要⼩瞧内存的释放过程。释放内存只是第⼀步，为了更加⾼效地管理内存空间，在应⽤程序释放内存时，操作系统需要把释放掉的内存块插⼊⼀个空闲内存块的链表，以便后续进⾏管理和再分配。这个过程本⾝需要⼀定时间，⽽且会阻塞当前释放内存的应⽤程序，所以，如果⼀下⼦释放了⼤量内存，空闲内存块链表操作时间就会增加，相应地就会造成Redis主线程的阻塞。
+那么，什么时候会释放⼤量内存呢？其实就是在删除⼤量键值对数据的时候，最典型的就是删除包含了⼤量元素的集合，也称为 bigkey 删除。
+既然频繁删除键值对都是潜在的阻塞点了，那么，在 Redis 的数据库级别操作中，清空数据库（例如 FLUSHDB 和 FLUSHALL 操作）必然也是⼀个潜在的阻塞⻛险，因为它涉及到删除和释放所有的键值对。所以，这就是 Redis 的第三个阻塞点：清空数据库。
+磁盘交互阻塞 Redis 直接记录 AOF ⽇志时，会根据不同的写回策略对数据做落盘保存。⼀个同步写磁盘的操作的耗时⼤约是1~2ms，如果有⼤量的写操作需要记录在AOF⽇志中，并同步写回的话，就会阻塞主线程了。这就得到了Redis的第四个阻塞点：AOF 日志同步写。
+主从节点交互阻塞 在主从集群中，主库需要⽣成RDB⽂件，并传输给从库。主库在复制的过程中，创建和传输RDB⽂件都是由⼦进程来完成的，不会阻塞主线程。但是，对于从库来说，它在接收了RDB⽂件后，需要使⽤ FLUSHDB 命令清空当前数据库，这就正好撞上了刚才我们分析的第三个阻塞点。
+此外，从库在清空当前数据库后，还需要把RDB⽂件加载到内存，这个过程的快慢和RDB⽂件的⼤⼩密切相关，RDB⽂件越⼤，加载过程越慢，所以，加载 RDB 文件成为了 Redis 的第五个阻塞点。
+切片集群实例交互阻塞 如果你使⽤了Redis Cluster⽅案，⽽且同时正好迁移的是bigkey的话，就会造成主线程的阻塞，因为 Redis Cluster 使⽤了同步迁移。
+哪些阻塞点可以异步执行 对于Redis的五⼤阻塞点来说，除了“集合全量查询和聚合操作”和“从库加载RDB⽂件”，其他三个阻塞点涉及的操作都不在关键路径上，所以，我们可以使⽤Redis的异步⼦线程机制来实现bigkey删除，清空数据库，以及AOF⽇志同步写。
+异步子线程机制 # 异步删除 UNLINK key # 异步清空 FLUSHDB ASYNC FLUSHALL ASYNC  集合全量查询和聚合操作：可以使⽤ SCAN 命令，分批读取数据，再在客⼾端进⾏聚合计算 从库加载 RDB ⽂件：把主库的数据量⼤⼩控制在 2~4GB 左右，以保证 RDB ⽂件能以较快的速度加载  CPU 结构影响性能 CPU 多核 - 上下文切换 context switch是指线程的上下⽂切换，这⾥的上下⽂就是线程的运⾏时信息。在CPU多核的环境中，⼀个线程先在⼀个CPU核上运⾏，之后⼜切换到另⼀个CPU核上运⾏，这时就会发⽣context switch。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/redis_ops/" />
+
+<title>Redis 运维与优化 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/datastructure/" >
+      Redis 数据结构
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/io-pattern/" >
+      Redis 线程 I/O 模型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/resp/" >
+      Redis RESP 通信协议
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/persistence/" >
+      Redis 持久化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-copy/" >
+      Redis 复制
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/sentinel/" >
+      Redis 哨兵
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/cluster/" >
+      Redis 集群
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/cache/" >
+      Redis 缓存
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/distributed-lock/" >
+      Redis 分布式锁 🔒
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/evict-maxmemory/" >
+      Redis 过期和淘汰策略
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-transaction/" >
+      Redis 事务
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis_ops/"  class="active">
+      Redis 运维与优化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-scenario/" >
+      Redis 使用场景
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis6/" >
+      Redis 6
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Redis 运维与优化</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#redis-实例的阻塞点">Redis 实例的阻塞点</a>
+      <ul>
+        <li><a href="#客户端交互阻塞">客户端交互阻塞</a></li>
+        <li><a href="#磁盘交互阻塞">磁盘交互阻塞</a></li>
+        <li><a href="#主从节点交互阻塞">主从节点交互阻塞</a></li>
+        <li><a href="#切片集群实例交互阻塞">切片集群实例交互阻塞</a></li>
+        <li><a href="#哪些阻塞点可以异步执行">哪些阻塞点可以异步执行</a></li>
+        <li><a href="#异步子线程机制">异步子线程机制</a></li>
+      </ul>
+    </li>
+    <li><a href="#cpu-结构影响性能">CPU 结构影响性能</a>
+      <ul>
+        <li><a href="#cpu-多核---上下文切换">CPU 多核 - 上下文切换</a></li>
+        <li><a href="#cpu---numa-架构">CPU - NUMA 架构</a></li>
+      </ul>
+    </li>
+    <li><a href="#redis-变慢">Redis 变慢</a>
+      <ul>
+        <li><a href="#是否变慢">是否变慢</a></li>
+        <li><a href="#慢查询命令">慢查询命令</a></li>
+        <li><a href="#过期-key-操作">过期 Key 操作</a></li>
+        <li><a href="#操作系统-swap">操作系统 swap</a></li>
+        <li><a href="#操作系统内存大">操作系统：内存大⻚</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="redis-运维与优化">Redis 运维与优化</h1>
+<h2 id="redis-实例的阻塞点">Redis 实例的阻塞点</h2>
+<p>5 个阻塞点：</p>
+<ul>
+<li>集合全量查询和聚合操作；</li>
+<li>bigkey 删除；</li>
+<li>清空数据库；</li>
+<li>AOF ⽇志同步写；</li>
+<li>从库加载 RDB ⽂件。</li>
+</ul>
+<h3 id="客户端交互阻塞">客户端交互阻塞</h3>
+<p>Redis中涉及集合的操作复杂度通常为<code>O(N)</code>，我们要在使⽤时重视起来。例如集合元素全量查询操作 <code>HGETALL</code>、<code>SMEMBERS</code>，以及集合的聚合统计操作，例如<strong>求交、并和差集</strong>。这些操作可以作为Redis的第⼀个个阻塞点：<strong>集合全量查询和聚合操作</strong>。</p>
+<p>除此之外，集合⾃⾝的删除操作同样也有潜在的阻塞⻛险。删除操作的本质是要释放键值对占⽤的内存空间。你可不要⼩瞧内存的释放过程。释放内存只是第⼀步，为了更加⾼效地管理内存空间，在应⽤程序释放内存时，操作系统需要把释放掉的内存块插⼊⼀个空闲内存块的链表，以便后续进⾏管理和再分配。这个过程本⾝需要⼀定时间，⽽且会阻塞当前释放内存的应⽤程序，所以，如果⼀下⼦释放了⼤量内存，空闲内存块链表操作时间就会增加，相应地就会造成Redis主线程的阻塞。</p>
+<p>那么，什么时候会释放⼤量内存呢？其实就是在删除⼤量键值对数据的时候，最典型的就是删除包含了⼤量元素的集合，也称为 <strong><code>bigkey</code> 删除</strong>。</p>
+<p>既然频繁删除键值对都是潜在的阻塞点了，那么，在 Redis 的数据库级别操作中，清空数据库（例如 <code>FLUSHDB</code> 和 <code>FLUSHALL</code> 操作）必然也是⼀个潜在的阻塞⻛险，因为它涉及到删除和释放所有的键值对。所以，这就是 Redis 的第三个阻塞点：<strong>清空数据库</strong>。</p>
+<h3 id="磁盘交互阻塞">磁盘交互阻塞</h3>
+<p>Redis 直接记录 <code>AOF</code> ⽇志时，会根据不同的写回策略对数据做落盘保存。⼀个同步写磁盘的操作的耗时⼤约是<code>1~2ms</code>，如果有⼤量的写操作需要记录在AOF⽇志中，并同步写回的话，就会阻塞主线程了。这就得到了Redis的第四个阻塞点：<strong>AOF 日志同步写</strong>。</p>
+<h3 id="主从节点交互阻塞">主从节点交互阻塞</h3>
+<p>在主从集群中，主库需要⽣成RDB⽂件，并传输给从库。主库在复制的过程中，创建和传输RDB⽂件都是由⼦进程来完成的，不会阻塞主线程。但是，对于从库来说，它在接收了RDB⽂件后，需要使⽤ <code>FLUSHDB</code> 命令清空当前数据库，这就正好撞上了刚才我们分析的<strong>第三个阻塞点</strong>。</p>
+<p>此外，从库在清空当前数据库后，还需要把RDB⽂件加载到内存，这个过程的快慢和RDB⽂件的⼤⼩密切相关，RDB⽂件越⼤，加载过程越慢，所以，<strong>加载 RDB 文件成为了 Redis 的第五个阻塞点</strong>。</p>
+<h3 id="切片集群实例交互阻塞">切片集群实例交互阻塞</h3>
+<p>如果你使⽤了Redis Cluster⽅案，⽽且同时正好迁移的是bigkey的话，就会造成主线程的阻塞，因为 Redis Cluster 使⽤了同步迁移。</p>
+<h3 id="哪些阻塞点可以异步执行">哪些阻塞点可以异步执行</h3>
+<p>对于Redis的五⼤阻塞点来说，除了“集合全量查询和聚合操作”和“从库加载RDB⽂件”，其他三个阻塞点涉及的操作都不在关键路径上，所以，我们可以使⽤Redis的异步⼦线程机制来实现bigkey删除，清空数据库，以及AOF⽇志同步写。</p>
+<h3 id="异步子线程机制">异步子线程机制</h3>
+<p><img src="/images/docs/tutorial/redis/redis-ops/Snipaste_2021-02-22_14-31-23.png" alt=""></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash"><span style="color:#75715e"># 异步删除</span>
+UNLINK key
+
+<span style="color:#75715e"># 异步清空</span>
+FLUSHDB ASYNC
+FLUSHALL ASYNC
+</code></pre></div><ul>
+<li>集合全量查询和聚合操作：可以使⽤ <code>SCAN</code> 命令，分批读取数据，再在客⼾端进⾏聚合计算</li>
+<li>从库加载 <code>RDB</code> ⽂件：把主库的数据量⼤⼩控制在 <code>2~4GB</code> 左右，以保证 <code>RDB</code> ⽂件能以较快的速度加载</li>
+</ul>
+<h2 id="cpu-结构影响性能">CPU 结构影响性能</h2>
+<h3 id="cpu-多核---上下文切换">CPU 多核 - 上下文切换</h3>
+<p>context switch是指线程的上下⽂切换，这⾥的上下⽂就是线程的运⾏时信息。在CPU多核的环境中，<strong>⼀个线程先在⼀个CPU核上运⾏，之后⼜切换到另⼀个CPU核上运⾏</strong>，这时就会发⽣context switch。</p>
+<p>当context switch发⽣后，Redis主线程的运⾏时信息需要被重新加载到另⼀个CPU核上，⽽且，此时，另⼀个CPU核上的L1、L2缓存中，并没有Redis实例之前运⾏时频繁访问的指令和数据，所以，这些指令和数据都需要重新从L3缓存，甚⾄是内存中加载。这个重新加载的过程是需要花费⼀定时间的。⽽且，Redis实例需要等待这个重新加载的过程完成后，才能开始处理请求，所以，这也会导致⼀些请求的处理时间增加。</p>
+<p>如果在CPU多核场景下，Redis实例被频繁调度到不同CPU核上运⾏的话，那么，对Redis实例的请求处理时间影响就更⼤了。每调度一次，一些请求就会受到运行时信息、指令和数据重新加载过程的影响，这就会导致某些请求的延迟明显高于其他请求。</p>
+<p>在CPU多核的环境下，通过绑定Redis实例和CPU核，可以有效降低Redis的尾延迟。当然，绑核不仅对降低尾延迟有好处，同样也能降低平均延迟、提升吞吐率，进⽽提升Redis性能。</p>
+<p>所以，我们要避免Redis总是在不同CPU核上来回调度执⾏。于是，我们尝试着把Redis实例和CPU核绑定了，让⼀个Redis实例固定运⾏在⼀个CPU核上。我们可以使⽤taskset命令把一个程序绑定在一个核上运行。</p>
+<p>执行下面命令，将 Redis 实例绑定在 0 号 CPU 核上，<code>-c</code> 设置要绑定的核编号：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">taskset -c <span style="color:#ae81ff">0</span> ./redis-server
+</code></pre></div><p><strong>缺点</strong>：当我们把Redis实例绑到一个CPU逻辑核上时，就会导致子进程、后台线程和Redis主线程竞争CPU资源，一旦子进程或后台线程占用CPU时，主线程就会被阻塞，导致Redis请求延迟增加。</p>
+<p>在给Redis实例绑核时，我们<strong>不要把一个实例和一个逻辑核绑定，而要和一个物理核绑定</strong>，也就是说，把一个物理核的2个逻辑核都用上。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">taskset -c 0,12 ./redis-server
+</code></pre></div><p>和只绑一个逻辑核相比，把Redis实例和物理核绑定，可以让主线程、子进程、后台线程共享使用2个逻辑核，可以在一定程度上缓解CPU资源竞争。但是，因为只用了2个逻辑核，它们相互之间的CPU竞争仍然还会存在。如果你还想进一步减少CPU竞争，我再给你介绍一种方案。</p>
+<h3 id="cpu---numa-架构">CPU - NUMA 架构</h3>
+<p>在实际应用Redis时，我经常看到一种做法，为了提升Redis的网络性能，把操作系统的网络中断处理程序和CPU核绑定。这个做法可以避免网络中断处理程序在不同核上来回调度执行，的确能有效提升Redis的网络处理性能。</p>
+<p>但是，网络中断程序是要和Redis实例进行网络数据交互的，一旦把网络中断程序绑核后，我们就需要注意Redis实例是绑在哪个核上了，这会关系到Redis访问网络数据的效率高低。</p>
+<p>那么，在CPU的NUMA架构下，当网络中断处理程序、Redis实例分别和CPU核绑定后，就会有一个潜在的风险：<strong>如果网络中断处理程序和Redis实例各自所绑的CPU核不在同一个CPUSocket上，那么，Redis实例读取网络数据时，就需要跨CPU Socket访问内存，这个过程会花费较多时间</strong>。</p>
+<p><img src="/images/docs/tutorial/redis/redis-ops/Snipaste_2021-02-24_08-54-32.png" alt=""></p>
+<p>所以，为了避免Redis跨CPU Socket访问网络数据，我们最好把网络中断程序和Redis实例绑在同一个CPU Socket上，这样一来，Redis实例就可以直接从本地内存读取网络数据了，如下图所示：</p>
+<p><img src="/images/docs/tutorial/redis/redis-ops/Snipaste_2021-02-24_08-56-36.png" alt=""></p>
+<p>查看 CPU 核的编号：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">lscpu
+</code></pre></div><h2 id="redis-变慢">Redis 变慢</h2>
+<h3 id="是否变慢">是否变慢</h3>
+<p>从2.8.7版本开始，redis-cli命令提供了<code>‒intrinsic-latency</code>选项，可以用来监测和统计测试期间内的最大延迟，这个延迟可以作为Redis的基线性能。其中，测试时⻓可以用<code>‒intrinsic-latency</code>选项的参数来指定。</p>
+<p>举个例子，比如说，我们运行下面的命令，该命令会打印120秒内监测到的最大延迟。可以看到，这里的最大延迟是119微秒，也就是基线性能为119微秒。一般情况下，运行120秒就足够监测到最大延迟了，所以，我们可以把参数设置为120。</p>
+<pre><code>./redis-cli --intrinsic-latency 120
+Max latency so far: 17 microseconds.
+Max latency so far: 44 microseconds.
+Max latency so far: 94 microseconds.
+Max latency so far: 110 microseconds.
+Max latency so far: 119 microseconds.
+
+36481658 total runs (avg latency: 3.2893 microseconds / 3289.32 nanoseconds per run).
+Worst run took 36x longer than the average latency.
+</code></pre><p>一般来说，你要把运行时延迟和基线性能进行对比，如果你观察到的Redis运行时延迟是其基线性能的2倍及以上，就可以认定Redis变慢了。</p>
+<h3 id="慢查询命令">慢查询命令</h3>
+<p>慢查询命令，就是指在Redis中执行速度慢的命令，这会导致Redis延迟增加。Redis提供的命令操作很多，并不是所有命令都慢，这和命令操作的复杂度有关。比如说，Value类型为<code>String</code>时，GET/SET操作主要就是操作Redis的哈希表索引。这个操作复杂度基本是固定的，即O(1)。但是，当Value类型为Set时，<code>SORT</code>、<code>SUNION</code>/<code>SMEMBERS</code>操作复杂度分别为<code>O(N+M*log(M))</code>和<code>O(N)</code></p>
+<p>当你发现Redis性能变慢时，可以通过Redis日志，或者是latencymonitor工具，查询变慢的请求，根据请求对应的具体命令以及官方文档，确认下是否采用了复杂度高的慢查询命令。</p>
+<p>如果的确有大量的慢查询命令，有两种处理方式：</p>
+<ul>
+<li><strong>用其他高效命令代替</strong>。比如说，如果你需要返回一个<code>SET</code>中的所有成员时，不要使用<code>SMEMBERS</code>命令，而是要使用<code>SSCAN</code>多次迭代返回，避免一次返回大量数据，造成线程阻塞。</li>
+<li>当你需要执行排序、交集、并集操作时，可以在客戶端完成，而不要用<code>SORT</code>、<code>SUNION</code>、<code>SINTER</code>这些命令，以免拖慢Redis实例命令，以免拖慢Redis实例。</li>
+</ul>
+<p>当然，如果业务逻辑就是要求使用慢查询命令，那你得<strong>考虑采用性能更好的CPU</strong>，更快地完成查询命令，避免慢查询的影响。</p>
+<p>还有一个比较容易忽略的慢查询命令，就是<code>KEYS</code>。</p>
+<p>因为<code>KEYS</code>命令需要遍历存储的键值对，所以操作延时高。如果你不了解它的实现而使用了它，就会导致Redis性能变慢。所以，<code>KEYS</code>命令一般不被建议用于生产环境中KEYS命令一般不被建议用于生产环境中。</p>
+<h3 id="过期-key-操作">过期 Key 操作</h3>
+<p>默认情况下，Redis每100毫秒会删除一些过期key，具体的算法如下：</p>
+<ul>
+<li>
+<ol>
+<li>采样<code>ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP</code>个数的key，并将其中过期的key全部删除；</li>
+</ol>
+</li>
+<li>2.如果超过25%的key过期了，则重复删除的过程，直到过期key的比例降至25%以下。</li>
+</ul>
+<p><code>ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP</code>是Redis的一个参数，默认是20，那么，一秒内基本有200个过期key会被删除。这一策略对清除过期key、释放内存空间很有帮助。如果每秒钟删除200个过期key，并不会对Redis造成太大影响。</p>
+<p>但是，如果触发了上面这个算法的第二条，Redis就会一直删除以释放内存空间。注意，<strong>删除操作是阻塞的</strong>（Redis 4.0后可以用异步线程机制来减少阻塞影响）。所以，一旦该条件触发，Redis的线程就会一直执行删除，这样一来，就没办法正常服务其他的键值操作了，就会进一步引起其他键值操作的延迟增加，Redis就会变慢。</p>
+<p>那么，算法的第二条是怎么被触发的呢？其中一个重要来源，就是<strong>频繁使用带有相同时间参数的<code>EXPIREAT</code>命令设置过期key</strong>，这就会导致，在同一秒内有大量的key同时过期。</p>
+<p>你要检查业务代码在使用EXPIREAT命令设置key过期时间时，是否使用了相同的UNIX时间戳，有没有使用<code>EXPIRE</code>命令给批量的key设置相同的过期秒数。因为，这都会造成大量key在同一时间过期，导致性能变慢。</p>
+<p>遇到这种情况时，千万不要嫌麻烦，你首先要根据实际业务的使用需求，决定<code>EXPIREAT</code>和<code>EXPIRE</code>的过期时间参数。其次，如果一批key的确是同时过期，你还可以在<code>EXPIREAT</code>和<code>EXPIRE</code>的过期时间参数上，<strong>加上一个一定大小范围内的随机数</strong>，这样，既保证了key在一个邻近时间范围内被删除，又避免了同时过期造成的压力。</p>
+<h3 id="操作系统-swap">操作系统 swap</h3>
+<p>内存swap是操作系统里将内存数据在内存和磁盘间来回换入和换出的机制，涉及到磁盘的读写，所以，一旦触发swap，无论是被换入数据的进程，还是被换出数据的进程，其性能都会受到慢速磁盘读写的影响。</p>
+<p>Redis是内存数据库，内存使用量大，如果没有控制好内存的使用量，或者和其他内存需求大的应用一起运行了，就可能受到swap的影响，而导致性能变慢。</p>
+<p>这一点对于Redis内存数据库而言，显得更为重要：正常情况下，Redis的操作是直接通过访问内存就能完成，一旦swap被触发了，Redis的请求操作需要等到磁盘数据读写完成才行。而且，和我刚才说的AOF日志文件读写使用fsync线程不同，<strong>swap触发后影响的是Redis主IO线程</strong>，这会极大地增加Redis的响应时间。</p>
+<p>通常，触发swap的原因主要是物理机器内存不足：</p>
+<ul>
+<li>Redis实例自身使用了大量的内存，导致物理机器的可用内存不足；</li>
+<li>和Redis实例在同一台机器上运行的其他进程，在进行<strong>大量的文件读写</strong>操作。文件读写本身会占用系统内存，这会导致分配给Redis实例的内存量变少，进而触发Redis发生swap。</li>
+</ul>
+<p>解决思路：<strong>增加机器的内存或者使用Redis集群</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash"><span style="color:#75715e"># process_id: 5332</span>
+$ redis-cli info | grep process_id
+$ cd /proc/5332
+$ cat smaps | egrep <span style="color:#e6db74">&#39;^(Swap|Size)&#39;</span>
+
+Size: <span style="color:#ae81ff">584</span> kB
+Swap: <span style="color:#ae81ff">0</span> kB
+Size: <span style="color:#ae81ff">4</span> kB
+Swap: <span style="color:#ae81ff">4</span> kB
+Size: <span style="color:#ae81ff">4</span> kB
+Swap: <span style="color:#ae81ff">0</span> kB
+Size: <span style="color:#ae81ff">462044</span> kB
+Swap: <span style="color:#ae81ff">462008</span> kB
+Size: <span style="color:#ae81ff">21392</span> kB
+Swap: <span style="color:#ae81ff">0</span> 
+</code></pre></div><p>每一行Size表示的是Redis实例所用的一块内存大小，而Size下方的Swap和它相对应，表示这块Size大小的内存区域有多少已经被换出到磁盘上了。如果这两个值相等，就表示这块内存区域已经完全被换出到磁盘了。</p>
+<p>当出现百MB，甚至GB级别的swap大小时，就表明，此时，Redis实例的内存压力很大，很有可能会变慢。所以，swap的大小是排查Redis性能变慢是否由swap引起的重要指标。</p>
+<p>一旦发生内存swap，最直接的解决方法就是<strong>增加机器内存</strong>。如果该实例在一个Redis切片集群中，可以增加Redis集群的实例个数，来分摊每个实例服务的数据量，进而减少每个实例所需的内存量。</p>
+<h3 id="操作系统内存大">操作系统：内存大⻚</h3>
+<p>除了内存swap，还有一个和内存相关的因素，即<strong>内存大⻚机制</strong>（Transparent Huge Page, THP），也会影响 Redis 性能。</p>
+<p>Linux内核从2.6.38开始支持内存大⻚机制，<strong>该机制支持2MB大小的内存⻚分配</strong>，而常规的内存⻚分配是按4KB的粒度来执行的。</p>
+<p>虽然内存大⻚可以给Redis带来内存分配方面的收益，但是，不要忘了，Redis为了提供数据可靠性保证，需要将数据做持久化保存。这个写入过程由额外的线程执行，所以，此时，Redis主线程仍然可以接收客戶端写请求。客戶端的写请求可能会修改正在进行持久化的数据。在这一过程中，Redis就会采用<strong>写时复制机制</strong>，也就是说，一旦有数据要被修改，Redis并不会直接修改内存中的数据，而是将这些数据拷⻉一份，然后再进行修改。</p>
+<p>如果采用了内存大⻚，那么，即使客戶端请求只修改100B的数据，<strong>Redis也需要拷⻉2MB的大⻚</strong>。相反，如果是常规内存⻚机制，只用拷⻉4KB。两者相比，你可以看到，当客戶端请求修改或新写入数据较多时，内存大⻚机制将导致大量的拷⻉，这就会影响Redis正常的访存操作，最终导致性能变慢。</p>
+<p>那该怎么办呢？很简单，<strong>关闭内存大⻚</strong>，就行了。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">cat /sys/kernel/mm/transparent_hugepag
+</code></pre></div><p>如果执行结果是<code>always</code>，就表明内存大⻚机制被启动了；如果是<code>never</code>，就表示，内存大⻚机制被禁止。在实际生产环境中部署时，我建议你不要使用内存大⻚机制，操作也很简单，只需要执行下面的命令就可以了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">echo never /sys/kernel/mm/transparent_hugepage/enabled
+</code></pre></div>
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#redis-实例的阻塞点">Redis 实例的阻塞点</a>
+      <ul>
+        <li><a href="#客户端交互阻塞">客户端交互阻塞</a></li>
+        <li><a href="#磁盘交互阻塞">磁盘交互阻塞</a></li>
+        <li><a href="#主从节点交互阻塞">主从节点交互阻塞</a></li>
+        <li><a href="#切片集群实例交互阻塞">切片集群实例交互阻塞</a></li>
+        <li><a href="#哪些阻塞点可以异步执行">哪些阻塞点可以异步执行</a></li>
+        <li><a href="#异步子线程机制">异步子线程机制</a></li>
+      </ul>
+    </li>
+    <li><a href="#cpu-结构影响性能">CPU 结构影响性能</a>
+      <ul>
+        <li><a href="#cpu-多核---上下文切换">CPU 多核 - 上下文切换</a></li>
+        <li><a href="#cpu---numa-架构">CPU - NUMA 架构</a></li>
+      </ul>
+    </li>
+    <li><a href="#redis-变慢">Redis 变慢</a>
+      <ul>
+        <li><a href="#是否变慢">是否变慢</a></li>
+        <li><a href="#慢查询命令">慢查询命令</a></li>
+        <li><a href="#过期-key-操作">过期 Key 操作</a></li>
+        <li><a href="#操作系统-swap">操作系统 swap</a></li>
+        <li><a href="#操作系统内存大">操作系统：内存大⻚</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

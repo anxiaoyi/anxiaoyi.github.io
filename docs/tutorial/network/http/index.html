@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -334,6 +334,36 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/network/udp/" >
       UDP
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/arp/" >
+      ARP
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/icmp/" >
+      ICMP
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/network/ip/" >
+      IP
   </a>
 
 </li>
@@ -965,7 +995,8 @@ var _hmt = _hmt || [];
         <li><a href="#http-11">HTTP 1.1</a></li>
       </ul>
     </li>
-    <li><a href="#设计-http-长连接">设计 HTTP 长连接</a></li>
+    <li><a href="#http-轮询">HTTP 轮询</a></li>
+    <li><a href="#http-长轮询">HTTP 长轮询</a></li>
     <li><a href="#设计-http-幂等接口">设计 HTTP 幂等接口</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
@@ -1420,7 +1451,20 @@ Upgrade: h2c
 </code></pre><h3 id="http-11">HTTP 1.1</h3>
 <p>所有连接<strong>默认</strong>都是持久连接。除非在请求头部显式加上 <code>Connection:Close</code> 属性，服务器才会处理完请求主动关闭连接。<code>Content-Length</code> 对于服务器计算比较困难、耗时，因此引入 <code>Transfer-Encoding: chunked</code> 属性，告诉客户端，响应的 Body 分成了一块块的，块与块之间有间隔符，所有块结尾有特殊标记，<strong>方便客户端判断出响应的末尾</strong>。</p>
 <p><img src="/images/docs/tutorial/network/http/Snipaste_2020-12-27_21-56-07.png" alt=""></p>
-<h2 id="设计-http-长连接">设计 HTTP 长连接</h2>
+<h2 id="http-轮询">HTTP 轮询</h2>
+<p>“轮询”是指不管服务端数据有无更新，客户端每隔定长时间请求拉取一次数据，可能有更新数据返回，也可能什么都没有。配置中心如果使用「轮询」实现动态推送，会有以下问题：</p>
+<ul>
+<li>
+<p><strong>推送延迟</strong>。客户端每隔 5s 拉取一次配置，若配置变更发生在第 6s，则配置推送的延迟会达到 4s。</p>
+</li>
+<li>
+<p><strong>服务端压力</strong>。配置一般不会发生变化，频繁的轮询会给服务端造成很大的压力。</p>
+</li>
+<li>
+<p><strong>推送延迟和服务端压力无法中和</strong>。降低轮询的间隔，延迟降低，压力增加；增加轮询的间隔，压力降低，延迟增高。</p>
+</li>
+</ul>
+<h2 id="http-长轮询">HTTP 长轮询</h2>
 <p>携程的 DCC 客户端设计了一个 <a href="https://github.com/ctripcorp/apollo/blob/849ad711058b0a553e6192bae31e3fb0fb8daec8/apollo-client/src/main/java/com/ctrip/framework/apollo/internals/RemoteConfigLongPollService.java"><code>LongPollService</code></a>。</p>
 <p>看源码其实就是有一个<strong>线程池</strong>，<strong>定时</strong>去请求远程的服务：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">//90 seconds, should be longer than server side&#39;s long polling timeout, which is now 60 seconds
@@ -1428,7 +1472,10 @@ Upgrade: h2c
 
 HttpRequest request <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HttpRequest<span style="color:#f92672">(</span>url<span style="color:#f92672">);</span>
 request<span style="color:#f92672">.</span><span style="color:#a6e22e">setReadTimeout</span><span style="color:#f92672">(</span>LONG_POLLING_READ_TIMEOUT<span style="color:#f92672">);</span>
-</code></pre></div><h2 id="设计-http-幂等接口">设计 HTTP 幂等接口</h2>
+</code></pre></div><p>客户端发起长轮询，如果服务端的数据没有发生变更，会 hold 住请求，直到服务端的数据发生变化，或者等待一定时间超时才会返回。返回后，客户端又会立即再次发起下一次长轮询。</p>
+<p>可能有人会有疑问，为什么一次长轮询需要等待一定时间超时，超时后又发起长轮询，为什么不让服务端一直 hold 住？主要有两个层面的考虑，一是连接稳定性的考虑，长轮询在传输层本质上还是走的 TCP 协议，如果服务端假死、fullgc 等异常问题，或者是重启等常规操作，长轮询没有应用层的心跳机制，仅仅依靠 TCP 层的心跳保活很难确保可用性，所以<strong>一次长轮询设置一定的超时时间也是在确保可用性</strong>。除此之外，在配置中心场景，还有一定的业务需求需要这么设计。在配置中心的使用过程中，<strong>用户可能随时新增配置监听，而在此之前，长轮询可能已经发出，新增的配置监听无法包含在旧的长轮询中，所以在配置中心的设计中，一般会在一次长轮询结束后，将新增的配置监听给捎带上</strong>，而如果长轮询没有超时时间，只要配置一直不发生变化，响应就无法返回，新增的配置也就没法设置监听了。</p>
+<p>配置中心在实现长轮询时，往往采用<strong>异步响应</strong>的方式来实现。而比较方便实现异步 HTTP 的常见手段便是 Servlet3.0 提供的 <code>AsyncContext</code> 机制。</p>
+<h2 id="设计-http-幂等接口">设计 HTTP 幂等接口</h2>
 <p>生成唯一的处理号，用于标识后续操作。</p>
 <p>取钱的 API 设计：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">bool</span> withdraw(account_id, amount)
@@ -1440,6 +1487,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">setReadTi
 <li><a href="https://en.wikipedia.org/wiki/List_of_HTTP_status_codes">List of HTTP status codes</a></li>
 <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers">Headers</a></li>
 <li><a href="https://stackoverflow.com/questions/3477333/what-is-the-difference-between-post-and-get">What is the difference between POST and GET?</a></li>
+<li><a href="https://mp.weixin.qq.com/s/YjvL0sUTGHxR3GJFqrP8qg">认识长轮询：配置中心是如何实现推送的？</a></li>
 </ul>
 
 <ins class="adsbygoogle"
@@ -1499,7 +1547,8 @@ data-full-width-responsive="true"></ins>
         <li><a href="#http-11">HTTP 1.1</a></li>
       </ul>
     </li>
-    <li><a href="#设计-http-长连接">设计 HTTP 长连接</a></li>
+    <li><a href="#http-轮询">HTTP 轮询</a></li>
+    <li><a href="#http-长轮询">HTTP 长轮询</a></li>
     <li><a href="#设计-http-幂等接口">设计 HTTP 幂等接口</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>

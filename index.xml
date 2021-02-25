@@ -349,7 +349,8 @@ ResultSet 的数据存放在哪里 实际上，服务端并不需要保存一个
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/redis/datastructure/</guid>
-      <description>Redis 数据结构 字符串 struct SDS&amp;lt;T&amp;gt; { T capacity; // 数组容量  T len; // 数组长度  byte flags; // 特殊标识位，不理睬它  byte[] content; // 数组内容 } 当字符串比较短时，len 和 capacity 可以使用 byte 和 short 来表示，Redis 为了对内存做极致的优化，不同长度的字符串使用不同的结构体来表示。当字符串长度小于 1M 时，扩容都是加倍现有的空间，如果超过 1M，扩容时一次只会多扩 1M 的空间。需要注意的是字符串最大长度为 512M。
+      <description>Redis 数据结构 概览 数据类型和数据结构 键和值用什么组织 哈希桶中的元素保存的并不是值本身，而是指向具体值的指针。
+字符串 struct SDS&amp;lt;T&amp;gt; { T capacity; // 数组容量  T len; // 数组长度  byte flags; // 特殊标识位，不理睬它  byte[] content; // 数组内容 } 当字符串比较短时，len 和 capacity 可以使用 byte 和 short 来表示，Redis 为了对内存做极致的优化，不同长度的字符串使用不同的结构体来表示。当字符串长度小于 1M 时，扩容都是加倍现有的空间，如果超过 1M，扩容时一次只会多扩 1M 的空间。需要注意的是字符串最大长度为 512M。
 哈希 存储形式：压缩列表 ziplist 和哈希表 hash
 struct RedisDb { dict* dict; // all keys key=&amp;gt;value  dict* expires; // all expired keys key=&amp;gt;long(timestamp)  ... } struct zset { dict *dict; // all values value=&amp;gt;score  zskiplist *zsl; } dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后进行渐进式搬迁，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新的 hashtable 取而代之。</description>
     </item>
@@ -642,7 +643,7 @@ BEGIN { FS = &amp;#34;\t&amp;#34; printf(&amp;#34;%10s %6s %5s %s\n\n&amp;#34;, 
       
       <guid>https://kunzhao.org/docs/tutorial/redis/io-pattern/</guid>
       <description>Redis 线程 I/O 模型  Redis 是个单线程程序！ 这点必须铭记。
- Redis 单线程为什么这么快? 因为它所有的数据都在内存中，所有的运算都是内存级别的运算。正因为 Redis 是单线程，所以要小心使用 Redis 指令，对于那些时间复杂度为 O(n) 级别的指令，一定要谨慎使用，一不小心就可能会导致 Redis 卡顿。
+ Redis 单线程为什么这么快? 因为它所有的数据都在内存中，再加上它采用了高效的数据结构，例如哈希表和跳表，这是它实现高性能的一个重要原因。另一方面，就是Redis采用了多路复用机制，使其在网络IO操作中能并发处理大量的客戶端请求，实现高吞吐率。接下来，我们就重点学习下多路复用机制。
 单线程如何处理并发客户端? 多路复用
 非阻塞 IO 当我们调用套接字的读写方法，默认它们是阻塞的，比如read方法要传递进去一个参数n，表示最多读取这么多字节后再返回，如果一个字节都没有，那么线程就会卡在那里，直到新的数据到来或者连接关闭了，read方法才可以返回，线程才能继续处理。而write方法一般来说不会阻塞，除非内核为套接字分配的写缓冲区已经满了，write方法就会阻塞，直到缓存区中有空闲空间挪出来了。
 非阻塞 IO 在套接字对象上提供了一个选项Non_Blocking，当这个选项打开时，读写方法不会阻塞，而是能读多少读多少，能写多少写多少。能读多少取决于内核为套接字分配的读缓冲区内部的数据字节数，能写多少取决于内核为套接字分配的写缓冲区的空闲空间字节数。读方法和写方法都会通过返回值来告知程序实际读写了多少字节。
@@ -650,7 +651,9 @@ BEGIN { FS = &amp;#34;\t&amp;#34; printf(&amp;#34;%10s %6s %5s %s\n\n&amp;#34;, 
 事件轮询 (多路复用) 非阻塞 IO 有个问题，那就是线程要读数据，结果读了一部分就返回了，线程如何知道何时才应该继续读。也就是当数据到来时，线程如何得到通知。写也是一样，如果缓冲区满了，写不完，剩下的数据何时才应该继续写，线程也应该得到通知。
 事件轮询 API 就是用来解决这个问题的，最简单的事件轮询 API 是select函数，它是操作系统提供给用户程序的 API。输入是读写描述符列表read_fds &amp;amp; write_fds，输出是与之对应的可读可写事件。同时还提供了一个timeout参数，如果没有任何事件到来，那么就最多等待timeout时间，线程处于阻塞状态。一旦期间有任何事件到来，就可以立即返回。时间过了之后还是没有任何事件到来，也会立即返回。拿到事件后，线程就可以继续挨个处理相应的事件。处理完了继续过来轮询。于是线程就进入了一个死循环，我们把这个死循环称为事件循环，一个循环为一个周期。
 每个客户端套接字socket都有对应的读写文件描述符。
-read_events, write_events = select(read_fds, write_fds, timeout) for event in read_events: handle_read(event.fd) for event in write_events: handle_write(event.fd) handle_others() # 处理其它事情，如定时任务等 因为我们通过select系统调用同时处理多个通道描述符的读写事件，因此我们将这类系统调用称为多路复用 API。现代操作系统的多路复用 API 已经不再使用select系统调用，而改用epoll(linux)和kqueue(freebsd &amp;amp; macosx)，因为 select 系统调用的性能在描述符特别多时性能会非常差。它们使用起来可能在形式上略有差异，但是本质上都是差不多的，都可以使用上面的伪代码逻辑进行理解。</description>
+read_events, write_events = select(read_fds, write_fds, timeout) for event in read_events: handle_read(event.fd) for event in write_events: handle_write(event.fd) handle_others() # 处理其它事情，如定时任务等 因为我们通过select系统调用同时处理多个通道描述符的读写事件，因此我们将这类系统调用称为多路复用 API。现代操作系统的多路复用 API 已经不再使用select系统调用，而改用epoll(linux)和kqueue(freebsd &amp;amp; macosx)，因为 select 系统调用的性能在描述符特别多时性能会非常差。它们使用起来可能在形式上略有差异，但是本质上都是差不多的，都可以使用上面的伪代码逻辑进行理解。
+服务器套接字serversocket对象的读操作是指调用accept接受客户端新连接。何时有新连接到来，也是通过select系统调用的读事件来得到通知的。
+ 事件轮询 API 就是 Java 语言里面的 NIO 技术</description>
     </item>
     
     <item>
@@ -1309,8 +1312,8 @@ Bob 想要给 Alice 发送 &amp;ldquo;Hello Alice!&amp;rdquo; 这个信息：
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/java/java-io/</guid>
-      <description>Java IO BIO { ExecutorService executor = Excutors.newFixedThreadPollExecutor(100);//线程池  ServerSocket serverSocket = new ServerSocket(); serverSocket.bind(8088); while(!Thread.currentThread.isInturrupted()){//主线程死循环等待新连接到来  Socket socket = serverSocket.accept(); executor.submit(new ConnectIOnHandler(socket));//为新的连接创建新的线程 } class ConnectIOnHandler extends Thread{ private Socket socket; public ConnectIOnHandler(Socket socket){ this.socket = socket; } public void run(){ while(!Thread.currentThread.isInturrupted()&amp;amp;&amp;amp;!socket.isClosed()){死循环处理读写事件 String someThing = socket.read()....//读取数据  if(someThing!=null){ ......//处理数据  socket.write()....//写数据  } } } } 这个模型最本质的问题在于，严重依赖于线程。但线程是很”贵”的资源，主要表现在：
-   线程的创建和销毁成本很高，在Linux这样的操作系统中，线程本质上就是一个进程。创建和销毁都是重量级的系统函数。    线程本身占用较大内存，像Java的线程栈，一般至少分配512K～1M的空间，如果系统中的线程数过千，恐怕整个JVM的内存都会被吃掉一半。    线程的切换成本是很高的。操作系统发生线程切换的时候，需要保留线程的上下文，然后执行系统调用。如果线程数过高，可能执行线程切换的时间甚至会大于线程执行的时间，这时候带来的表现往往是系统load偏高、CPU sy使用率特别高（超过20%以上)，导致系统几乎陷入不可用的状态。    容易造成锯齿状的系统负载。因为系统负载是用活动线程数或CPU核心数，一旦线程数量高但外部网络环境不是很稳定，就很容易造成大量请求的结果同时返回，激活大量阻塞线程从而使系统负载压力过大。    NIO Channels 打开 SocketChannel：</description>
+      <description>Java IO BIO ServerSocket 示例 { ExecutorService executor = Excutors.newFixedThreadPollExecutor(100);//线程池  ServerSocket serverSocket = new ServerSocket(); serverSocket.bind(8088); while(!Thread.currentThread.isInturrupted()){//主线程死循环等待新连接到来  Socket socket = serverSocket.accept(); executor.submit(new ConnectIOnHandler(socket));//为新的连接创建新的线程 } class ConnectIOnHandler extends Thread{ private Socket socket; public ConnectIOnHandler(Socket socket){ this.socket = socket; } public void run(){ while(!Thread.currentThread.isInturrupted()&amp;amp;&amp;amp;!socket.isClosed()){死循环处理读写事件 String someThing = socket.read()....//读取数据  if(someThing!=null){ ......//处理数据  socket.write()....//写数据  } } } } 这个模型最本质的问题在于，严重依赖于线程。但线程是很”贵”的资源，主要表现在：
+   线程的创建和销毁成本很高，在Linux这样的操作系统中，线程本质上就是一个进程。创建和销毁都是重量级的系统函数。    线程本身占用较大内存，像Java的线程栈，一般至少分配512K～1M的空间，如果系统中的线程数过千，恐怕整个JVM的内存都会被吃掉一半。    线程的切换成本是很高的。操作系统发生线程切换的时候，需要保留线程的上下文，然后执行系统调用。如果线程数过高，可能执行线程切换的时间甚至会大于线程执行的时间，这时候带来的表现往往是系统load偏高、CPU sy使用率特别高（超过20%以上)，导致系统几乎陷入不可用的状态。    容易造成锯齿状的系统负载。因为系统负载是用活动线程数或CPU核心数，一旦线程数量高但外部网络环境不是很稳定，就很容易造成大量请求的结果同时返回，激活大量阻塞线程从而使系统负载压力过大。    同步调用示例 服务端响应之前，IO 会阻塞在：java.</description>
     </item>
     
     <item>
@@ -1321,13 +1324,8 @@ Bob 想要给 Alice 发送 &amp;ldquo;Hello Alice!&amp;rdquo; 这个信息：
       <guid>https://kunzhao.org/docs/tutorial/java/jvm/</guid>
       <description>JVM 虚拟机内存模型 程序寄存器 pc register (program counter)： 一个包含当前时刻指令的地址的寄存器，程序寄存器区域是唯一一个在 Java 虚拟机规范中没有规定任何 OutOfMemoryError 情况的区域
 虚拟机栈 栈会抛出两种异常：StackOverflowError 和 OutOfMemoryError，在 HotSpot 虚拟机栈中，可以使用参数 -Xss1M 来设置栈的大小为 1MB。随着调用函数参数的增加和局部变量的增加，单次函数调用对栈空间的需求也会增加，因此栈的最大递归次数不是一成不变的。函数嵌套调用的次数由栈的大小决定：栈越大，函数嵌套调用次数越多；对一个函数而言，它的参数越多，内部局部变量越多，它的栈帧就越大，其嵌套调用次数就会越少。
-本地方法栈 与 stack 一样，同样抛出两种异常：StackOverflowError 和 OutOfMemoryError。在 sun 的 HOT SPOT 虚拟机中，不区分本地方法栈和虚拟机栈。
-元数据区 在 Java 8 中，永久代已经被移除，被一个称为“元数据区”（元空间）的区域所取代。元空间的本质和永久代类似，元空间与永久代之间最大的区别在于：元空间并不在虚拟机中，而是使用本地内存。因此，默认情况下，元空间的大小仅受本地内存限制。类的元数据放入 native memory, 字符串池和类的静态变量放入 java 堆中，这样可以加载多少类的元数据就不再由 MaxPermSize 控制, 而由系统的实际可用空间来控制。
-如果不指定元数据区大小的话，默认情况下，虚拟机会耗尽所有的可用系统内存。-XX:MaxMetaspaceSize 可以指定元数据区大小。
- String 字符串哪个区
- Metaspace 元数据区中的常量池里面。
- Perm 为啥被淘汰
-  移除永久代是为了融合 HotSpot JVM 与 JRockit VM 而做出的努力，因为 JRockit 没有永久代，所以不需要配置永久代。 永久代内存经常不够用或发生内存溢出，爆出异常 java.lang.OutOfMemoryError: PermGen。这是因为在 JDK1.</description>
+ 局部变量表是存放方法参数和局部变量的区域。相对于类属性变量的准备阶段和初始化阶段来说，局部变量没有准备阶段，必须显式初始化。如果是非静态方法，则在 index [O] 位置上存储的是方法所属对象的实例引用，随后存储的是参数和局部变量。字节码指令中的 STORE 指令就是将操作栈申计算完成的局部变量写回局部变量表的存储空间内。 操作栈是一个初始状态为空的桶式结构栈。在方法执行过程中，会有各种指令往栈中写人和提取信息。 JVM 的执行引擎是基于栈的执行引擎，其中的栈指的就是操作栈。 每个栈中包含一个在常量池中对当前方法的引用 ， 目的是支持方法调用过程的动态连接。 方法执行时有两种退出情况。第一， 正常退出，即正常执行到任何方法的返回字节码指令 ， 如 RETURN 、 IRETURN 、 ARETURN 等，第二 ， 异常退出。无论何种退出情况，都将返回至方法当前被调用的位置。  本地方法栈 与 stack 一样，同样抛出两种异常：StackOverflowError 和 OutOfMemoryError。在 sun 的 HOT SPOT 虚拟机中，不区分本地方法栈和虚拟机栈。
+元数据区 在 JDK7 及之前的版本中，只有 Hotspot 才有 Perm 区，译为永久代 ， 它在启动时固定大小，很难进行调优，并且 FGC 时会移动类元信息。在某些场景下，如果动态加载类过多，容易产生 Perm 区的 OOM 。为了解决该问题 ， 需要设定运行参数 -XX: MaxPermSize= 1280m ，如果部署到新机器上，往往会因为 NM 参数没有修改导致故障再现。</description>
     </item>
     
     <item>
@@ -1516,7 +1514,11 @@ CDN 可缓存的内容  静态资源：图片、CSS、JS、HTML 文件、流媒�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/java/basic/</guid>
-      <description>Java 基础 8 种基础数据类型    类型 字节数 范围     byte 1个字节 -2^7 ~ 2^7-1   char 2个字节 0～65535   short 2个字节 -2^15 ~ 2^15-1   int 4个字节 -2^31 ~ 2^31-1   float 4个字节 3.402823e+38 ~ 1.401298e-45   long 8个字节 -2^63 ～ 2^63-1   double 8个字节 1.797693e+308 ~ 4.9000000e-324   boolean       char 能存储中文字符吗</description>
+      <description>Java 基础 8 种基础数据类型 缓存范围的包装类,在 VM options 加入参数-XX:AutoBoxCacheMax=7777,即可设置最大缓存值为 7777。
+char 能存储中文字符吗 在 Java 中，char 类型占 2 个字节，而且 Java 默认采用 Unicode 编码，一个 Unicode 码是 16 位，所以一个 Unicode 码占两个字节，Java 中无论汉字还是英文字母都是用 Unicode 编码来表示的。所以，在Java中，char 类型变量可以存储一个中文汉字。
+浮点数 单精度浮点数格式：
+字符集 GB2312 收录 6763 个常用汉字；GBK 的 K 是扩展的意思，支持繁体，兼容 GB2312；GB18030 是国家标准，是 GBK 的超集并与之兼容；1994 年公布的 Unicode，编码格式有：UTF-8、UTF-16、UTF-32，UTF 可以理解为对 Unicode 的压缩方式。
+访问权限 </description>
     </item>
     
     <item>
@@ -1659,14 +1661,12 @@ DNS 层次结构  根 DNS 服务器 ：返回顶级域 DNS 服务器的 IP 地�
     </item>
     
     <item>
-      <title>MyBatis</title>
-      <link>https://kunzhao.org/docs/tutorial/database/mybatis/</link>
+      <title>MySQL 优化与运维</title>
+      <link>https://kunzhao.org/docs/tutorial/database/mysql-ops/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://kunzhao.org/docs/tutorial/database/mybatis/</guid>
-      <description>MyBatis 防止 SQL 注入 $ vs # # 将传入的数据都当成一个字符串，会对自动传入的数据加一个双引号 (底层基于 PreparedStatement)。如：where username=#{username}，如果传入的值是 111,那么解析成 sql 时的值为 where username=&amp;quot;111&amp;quot;, 如果传入的值是id，则解析成的 sql 为 where username=&amp;quot;id&amp;quot;：
-&amp;lt;select id=&amp;#34;selectByNameAndPassword&amp;#34; parameterType=&amp;#34;java.util.Map&amp;#34; resultMap=&amp;#34;BaseResultMap&amp;#34;&amp;gt; select id, username, password, role from user where username = #{username,jdbcType=VARCHAR} and password = #{password,jdbcType=VARCHAR} &amp;lt;/select&amp;gt; $ 将传入的数据直接显示生成在 sql 中：
-&amp;lt;select id=&amp;#34;selectByNameAndPassword&amp;#34; parameterType=&amp;#34;java.util.Map&amp;#34; resultMap=&amp;#34;BaseResultMap&amp;#34;&amp;gt; select id, username, password, role from user where username = ${username,jdbcType=VARCHAR} and password = ${password,jdbcType=VARCHAR} &amp;lt;/select&amp;gt; # 方式能够很大程度防止sql注入，$ 方式无法防止Sql注入。$ 方式一般用于传入数据库对象，例如传入表名。</description>
+      <guid>https://kunzhao.org/docs/tutorial/database/mysql-ops/</guid>
+      <description>MySQL 优化与运维 基本命名和约束规范  表字符集选则 UTF-8，如果需要 Emoji 表情，需要使用 UTF8mb4 (MySQL 5.5.3 以后支持) 存储引擎尽量使用 InnoDB 变长字符串尽量使用 varchar 单标数据量控制在 1 亿以下 库名、表名、字段名不使用保留字 库名、表名、字段名、索引名使用小写字母，使用划线分割，见名知意 表名不要设计的过长，尽可能用最少的字符表达表的用途  字段规范  所有字段均为 NOT NULL，除非真的想要存储 NULL (解释：NULL 的存储浪费表存储空间，InnoDB 需要额外一个字节存储，NULL 过多会影响优化器选择执行计划) 字段类型满足要求条件下越小越好，使用 UNSIGNED 存储非负整数，实际需要存储负数的场景不多 使用 TIMESTAMP 存储时间 (只能存储到 2038 年) 使用 varchar 存储变长字符串，varchar(M) 的 M 指的是字符数，不是字节数，使用 UNSIGNED INT 存储 IPV4 地址，不过这种方式存储不了 IPV6 使用 DECIMAL 存储精确浮点数，用 float 类型存储可能会存在数据误差 少用 blob text  索引范围  单个索引字段数不超过 5，单表索引数量不超过 5，索引设计遵循 B+Tree 索引最左前缀匹配原则 选则区分度高的列作为索引 建立的索引能覆盖 80% 主要的查询，不求全，解决问题的主要矛盾就好 DML 要和 order by、group by 字段建立合适的索引 避免索引的隐式转换 避免冗余索引  Online DDL 原生 MySQL 执行 DDL 需要锁表，在锁表期间无法写入数据，这对服务影响很大，下面给出 Facebook OSC 和 5.</description>
     </item>
     
     <item>
@@ -1685,7 +1685,9 @@ DNS 层次结构  根 DNS 服务器 ：返回顶级域 DNS 服务器的 IP 地�
       
       <guid>https://kunzhao.org/docs/tutorial/redis/cluster/</guid>
       <description>Redis 集群 RedisCluster 是 Redis 的分布式解决方案，在 3.0 版本正式推出，有效地解决了Redis分布式方面的需求。当遇到单机内存、并发、流量等瓶颈时，可以采用 Cluster 架构方案达到负载均衡的目的。
-数据分区 RedisCluster 采用哈希分区规则
+集群如何高可用 增加从节点，做主从复制。Redis Cluster 支持给每个分片增加一个或多个从节点，每个从节点在连接到主节点上之后，会先给主节点发送一个 SYNC 命令，请求一次全量复制，也就是把主节点上全部的数据都复制到从节点上。全量复制完成之后，进入同步阶段，主节点会把刚刚全量复制期间收到的命令，以及后续收到的命令持续地转发给从节点。
+因为 Redis 不支持事务，所以它的复制相比 MySQL 更简单，连 Binlog 都省了，直接就是转发客户端发来的更新数据命令来实现主从同步。如果某个分片的主节点宕机了，集群中的其他节点会在这个分片的从节点中选出一个新的节点作为主节点继续提供服务。新的主节点选举出来后，集群中的所有节点都会感知到，这样，如果客户端的请求 Key 落在故障分片上，就会被重定向到新的主节点上。
+数据分区 RedisCluster 采用哈希分区规则。
 虚拟槽分区巧妙地使用了哈希空间，使用分散度良好的哈希函数把所有数据映射到一个固定范围的整数集合中，整数定义为槽（slot）。这个范围一般远远大于节点数，比如RedisCluster槽范围是0~16383。槽是集群内数据管理和迁移的基本单位。采用大范围槽的主要目的是为了方便数据拆分和集群扩展。每个节点会负责一定数量的槽。
 RedisCluser 采用虚拟槽分区，所有的键根据哈希函数映射到 0 ~ 16383 整数槽内，计算公式：slot = CRC16（key）&amp;amp; 16383。每一个节点负责维护一部分槽以及槽所映射的键值数据。
 槽集合和节点的关系：
@@ -1779,15 +1781,33 @@ plugins: [ // plugins 的配置  // html-webpack-plugin  // 功能：默认会�
     </item>
     
     <item>
+      <title>MyBatis</title>
+      <link>https://kunzhao.org/docs/tutorial/database/mybatis/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/mybatis/</guid>
+      <description>MyBatis 防止 SQL 注入 $ vs # # 将传入的数据都当成一个字符串，会对自动传入的数据加一个双引号 (底层基于 PreparedStatement)。如：where username=#{username}，如果传入的值是 111,那么解析成 sql 时的值为 where username=&amp;quot;111&amp;quot;, 如果传入的值是id，则解析成的 sql 为 where username=&amp;quot;id&amp;quot;：
+&amp;lt;select id=&amp;#34;selectByNameAndPassword&amp;#34; parameterType=&amp;#34;java.util.Map&amp;#34; resultMap=&amp;#34;BaseResultMap&amp;#34;&amp;gt; select id, username, password, role from user where username = #{username,jdbcType=VARCHAR} and password = #{password,jdbcType=VARCHAR} &amp;lt;/select&amp;gt; $ 将传入的数据直接显示生成在 sql 中：
+&amp;lt;select id=&amp;#34;selectByNameAndPassword&amp;#34; parameterType=&amp;#34;java.util.Map&amp;#34; resultMap=&amp;#34;BaseResultMap&amp;#34;&amp;gt; select id, username, password, role from user where username = ${username,jdbcType=VARCHAR} and password = ${password,jdbcType=VARCHAR} &amp;lt;/select&amp;gt; # 方式能够很大程度防止sql注入，$ 方式无法防止Sql注入。$ 方式一般用于传入数据库对象，例如传入表名。</description>
+    </item>
+    
+    <item>
       <title>Redis 缓存</title>
       <link>https://kunzhao.org/docs/tutorial/redis/cache/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/redis/cache/</guid>
-      <description>Redis 缓存 缓存更新策略  低一致性业务建议配置最大内存和淘汰策略的方式使用。 高一致性业务可以结合使用超时剔除和主动更新，这样即使主动更新出了问题，也能保证数据过期时间后删除脏数据。  穿透优化 缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常出于容错的考虑，如果从存储层查不到数据则不写入缓存层。缓存穿透将导致不存在的数据每次请求都要到存储层去查询，失去了缓存保护后端存储的意义。
+      <description>Redis 缓存 缓存更新策略  低一致性业务建议配置最大内存和淘汰策略的方式使用。 高一致性业务可以结合使用超时剔除和主动更新，这样即使主动更新出了问题，也能保证数据过期时间后删除脏数据。  缓存击穿 为了避免缓存击穿给数据库带来的激增压力，我们的解决方法也比较直接，对于访问特别频繁的热点数据，我们就不设置过期时间了。这样一来，对热点数据的访问请求，都可以在缓存中进行处理，而Redis数万级别的高吞吐量可以很好地应对大量的并发请求访问。
+穿透优化 缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常出于容错的考虑，如果从存储层查不到数据则不写入缓存层。缓存穿透将导致不存在的数据每次请求都要到存储层去查询，失去了缓存保护后端存储的意义。
 通常可以在程序中分别统计总调用数、缓存层命中数、存储层命中数，如果发现大量存储层空命中，可能就是出现了缓存穿透问题。造成缓存穿透的基本原因有两个。第一，自身业务代码或者数据出现问题，第二，一些恶意攻击、爬虫等造成大量空命中。下面我们来看一下如何解决缓存穿透问题。
- 缓存空对象。设置较短过期时间，自动剔除，可以减少内存占用；存储层有了数据，可以利用消息系统或其它方式清楚掉缓存中的空对象。   布隆过滤器拦截  雪崩优化  保证缓存层服务高可用性。和飞机都有多个引擎一样。 依赖隔离组件为后端限流并降级  热点 Key 重建优化 在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。
- 互斥锁  </description>
+ 缓存空对象。设置较短过期时间，自动剔除，可以减少内存占用；存储层有了数据，可以利用消息系统或其它方式清楚掉缓存中的空对象。   布隆过滤器拦截  雪崩优化 大量 Key 同时过期 我们可以避免给大量的数据设置相同的过期时间。如果业务层的确要求有些数据同时失效，你可以在用EXPIRE命令给每个数据设置过期时间时，给这些数据的过期时间增加一个较小的随机数（例如，随机增加1~3分钟），这样一来，不同数据的过期时间有所差别，但差别又不会太大，既避免了大量数据同时过期，同时也保证了这些数据基本在相近的时间失效，仍然能满足业务需求。
+除了微调过期时间，我们还可以通过服务降级，来应对缓存雪崩。
+所谓的服务降级，是指发生缓存雪崩时，针对不同的数据采取不同的处理方式。
+ 当业务应用访问的是非核心数据（例如电商商品属性）时，暂时停止从缓存中查询这些数据，而是直接返回预定义信息、空值或是错误信息。 当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。  Redis 缓存实例故障宕机  保证缓存层服务高可用性。和飞机都有多个引擎一样。可以采用限流或降级方案。   依赖隔离组件为后端限流并降级  热点 Key 重建优化 在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。
+ 互斥锁  MySQL 同步到 Redis 数据更新服务只负责处理业务逻辑，更新 MySQL，完全不用管如何去更新缓存。负责更新缓存的服务，把自己伪装成一个 MySQL 的从节点，从 MySQL 接收 Binlog，解析 Binlog之后，可以得到实时的数据变更信息，然后根据这个变更信息去更新 Redis 缓存。
+这种收 Binlog 更新缓存的方案，和收 MQ 消息更新缓存的方案，其实它们的实现思路是一样的，都是异步订阅实时数据变更信息，去更新 Redis。只不过，直接读取 Binlog 这种方式，它的通用性更强。不要求订单服务再发订单消息了，订单更新服务也不用费劲去解决“发消息失败怎么办？”这种数据一致性问题了。
+这个方案唯一的缺点是，实现订单缓存更新服务有点儿复杂，毕竟不像收消息，拿到的直接就是订单数据，解析 Binlog 还是挺麻烦的。
+有很多开源的项目就提供了订阅和解析 MySQL Binlog 的功能，常用的开源项目有 Canal。</description>
     </item>
     
     <item>
@@ -1890,6 +1910,22 @@ git checkout user2/i18n git rebase master # 如果有冲突，则需要解决冲
     </item>
     
     <item>
+      <title>perf</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-command/perf/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-command/perf/</guid>
+      <description>perf 内核版本需要 2.6.31 以上。
+常用命令
+ perf list perf stat perf top perf record perf report perf annotate  perf list 列出所有能够触发 perf 采样点的事件。perf 基本原理是对被检测对象进行采样，采样的方式很多，最简单的方式就是根据 tick 中断进行，还可以用 cache miss 事件触发进行采样。
+perf stat 通过概况的方式提供被调试程序运行的整体情况、汇总数据。通过 perf stat 可以很快分析出这个程序是 CPU 密集型还是 IO 密集型，从而可以进行下一步优化。
+perf top 实时显示当前系统的性能统计信息，找出当前系统最耗时的某个进程
+perf record &amp;amp; perf report perf record 获取某个进程的采样信息，存到 perf.data 文件中，使用 perf report 来显示统计结果。perf record 记录单个函数级别的统计信息，可以定位到某个进程最耗时的函数。
+perf record 最常用的选项是 -p 和 -g，-p 指定采样某个进程的信息，-g 生成函数的调用关系表。
+perf annotate 读取 perf.data 显示注释的代码，查看程序中哪些代码的耗时比较长。</description>
+    </item>
+    
+    <item>
       <title>Redis 分布式锁 🔒</title>
       <link>https://kunzhao.org/docs/tutorial/redis/distributed-lock/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1978,6 +2014,20 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
     </item>
     
     <item>
+      <title>ARP</title>
+      <link>https://kunzhao.org/docs/tutorial/network/arp/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/network/arp/</guid>
+      <description>ARP ARP 可以将 IP 解析为 MAC 地址。ARP 只适用于 IPv4，不能用于 IPv6，在 IPv6 可以用 ICMPv6 替代 ARP 发送邻居探索消息。
+ARP 工作机制 简而言之，ARP 借助 ARP 请求和 ARP 响应两种类型的包确定 MAC 地址：
+IP 地址和 MAC 地址缺一不可 知道 IP 地址还需要知道 MAC 地址吗？
+如下图所示，主机 A 想要发送 IP 数据包给主机 B，但是必须经过路由器 C。路由器会隔断两个网络，因此无法直接发送到 B。
+以太网发送 IP 包，下次要经过哪个路由器发送数据报，这个“下一个路由器”就是相应的 MAC 地址。
+RARP MAC 地址解析为 IP 地址的一种协议。</description>
+    </item>
+    
+    <item>
       <title>Count Of Smaller After Self</title>
       <link>https://kunzhao.org/docs/programmer-interview/algorithm/countofsmallerafterself/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -2043,7 +2093,8 @@ git reset 参考  How to resolve merge conflicts in Git  扫描下面二维码�
       <guid>https://kunzhao.org/docs/tutorial/spring/spring-aop/</guid>
       <description>Spring AOP EnableAspectJAutoProxy 使用 @EnableAspectJAutoProxy 来开启 AOP。
 收集切面 首先需要 Spring 能先从所有 Bean 中识别出我们的切面类，AnnotationAwareAspectJAutoProxyCreator 类重写的postProcessBeforeInstantiation 方法就是专门处理这个问题的，此操作的要求是必须在其它普通 Bean 对象创建完放入容器前解析。
-参考  源码分析-Spring AOP是如何实现的？（二）  </description>
+它的父类 AbstractAutoProxyCreator 实现了 BeanPostProcessor：
+// AbstractAutoProxyCreator.java Override public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) { if (bean != null) { Object cacheKey = getCacheKey(bean.getClass(), beanName); if (this.earlyProxyReferences.remove(cacheKey) != bean) { return wrapIfNecessary(bean, beanName, cacheKey); } } return bean; } protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) { // 如果已经处理过  if (StringUtils.hasLength(beanName) &amp;amp;&amp;amp; this.</description>
     </item>
     
     <item>
@@ -2107,6 +2158,20 @@ DNS 返回多个 A 记录，客户端随机选择。有两个问题：
     </item>
     
     <item>
+      <title>ICMP</title>
+      <link>https://kunzhao.org/docs/tutorial/network/icmp/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/network/icmp/</guid>
+      <description>ICMP ICMP：确认 IP 包是否成功送达目标地址，通知在发送过程中 IP 包被废弃的原因，改善网络配置等。
+ICMP 消息类型 无法到达 超时 IP 包有一个字段叫做 TTL，值随着每次经过一次路由器就会减少 1，减到 0 就会被丢弃，此时 IP 路由器将会发送一个 ICMP 超时的消息。
+之所以设置 TTL，视为了避免遇到循环路由，无休止转发的问题。
+traceroute 可以显示主机到达特定主机前经历了多少路由器，原理就是从 TTL = 1 开始递增发送 UDP 包，强制接受 ICMP 超时消息的一种方法。
+ICMP 回送消息 判断数据包是否已经成功到达
+ping 命令就是利用这个消息实现的。</description>
+    </item>
+    
+    <item>
       <title>Redis 事务</title>
       <link>https://kunzhao.org/docs/tutorial/redis/redis-transaction/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -2164,6 +2229,16 @@ DELETE FROM database_lock WHERE resource = 1; 缺点：
     </item>
     
     <item>
+      <title>IP</title>
+      <link>https://kunzhao.org/docs/tutorial/network/ip/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/network/ip/</guid>
+      <description>IP IP 地址属于网络层,主要功能在 WLAN 内进行路由寻址,选择最佳路由。
+IP 报文在互联网上传输时,可能要经历多个物理网络,才能从源主机到达目标主机。比如在手机上给某个 PC 端的朋友发送一个信息,经过无线网的 IEEE 802.1x 认证,转到光纤通信上,然后进入内部企业网 802.3 ,并最终到达目标 PC 。由于不同硬件的物理特性不同,对数据帧的最大长度都有不同的限制,这个最大长度被称为最大传输单元,即 MTU ( Maximum Transmission Unit )。那么在不同的物理网之间就可能需要对 IP 报文进行分片,这个工作通常由路由器负责完成。</description>
+    </item>
+    
+    <item>
       <title>SpringBoot 自动配置原理</title>
       <link>https://kunzhao.org/docs/tutorial/spring/springboot-autoconfig/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -2208,6 +2283,25 @@ vi .git/config 直接修改这个地址保存后，当前版本库的远程版�
 # 添加远程版本库地址 git remote add origin git@github.com:facebook/react.git # 更新远程版本库地址 git remote set-url origin git@github.com:facebook/react.git push 和 pull push 命令和 pull 命令的语法相似：
 git push &amp;lt;remote_name&amp;gt; &amp;lt;branch_name&amp;gt; git pull &amp;lt;remote_name&amp;gt; &amp;lt;branch_name&amp;gt; 不带参数，执行命令 git push 的过程（git pull 同理）：
  如果当前分支有 remote（如何知道是否有 remote？还是看 .git/config 文件，如下图所示，每个 branch 的 remote 都不是空的），那么 git push 相当于执行了 git push &amp;lt;remote&amp;gt; 如果没有设置，则相当于执行 git push origin  一般而言，你这个项目本身应该只有一个版本库地址，如下图所示，版本库的名称就叫做 origin，它的地址就是 url 后面的那一部分：</description>
+    </item>
+    
+    <item>
+      <title>Redis 运维与优化</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/redis_ops/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/redis_ops/</guid>
+      <description>Redis 运维与优化 Redis 实例的阻塞点 5 个阻塞点：
+ 集合全量查询和聚合操作； bigkey 删除； 清空数据库； AOF ⽇志同步写； 从库加载 RDB ⽂件。  客户端交互阻塞 Redis中涉及集合的操作复杂度通常为O(N)，我们要在使⽤时重视起来。例如集合元素全量查询操作 HGETALL、SMEMBERS，以及集合的聚合统计操作，例如求交、并和差集。这些操作可以作为Redis的第⼀个个阻塞点：集合全量查询和聚合操作。
+除此之外，集合⾃⾝的删除操作同样也有潜在的阻塞⻛险。删除操作的本质是要释放键值对占⽤的内存空间。你可不要⼩瞧内存的释放过程。释放内存只是第⼀步，为了更加⾼效地管理内存空间，在应⽤程序释放内存时，操作系统需要把释放掉的内存块插⼊⼀个空闲内存块的链表，以便后续进⾏管理和再分配。这个过程本⾝需要⼀定时间，⽽且会阻塞当前释放内存的应⽤程序，所以，如果⼀下⼦释放了⼤量内存，空闲内存块链表操作时间就会增加，相应地就会造成Redis主线程的阻塞。
+那么，什么时候会释放⼤量内存呢？其实就是在删除⼤量键值对数据的时候，最典型的就是删除包含了⼤量元素的集合，也称为 bigkey 删除。
+既然频繁删除键值对都是潜在的阻塞点了，那么，在 Redis 的数据库级别操作中，清空数据库（例如 FLUSHDB 和 FLUSHALL 操作）必然也是⼀个潜在的阻塞⻛险，因为它涉及到删除和释放所有的键值对。所以，这就是 Redis 的第三个阻塞点：清空数据库。
+磁盘交互阻塞 Redis 直接记录 AOF ⽇志时，会根据不同的写回策略对数据做落盘保存。⼀个同步写磁盘的操作的耗时⼤约是1~2ms，如果有⼤量的写操作需要记录在AOF⽇志中，并同步写回的话，就会阻塞主线程了。这就得到了Redis的第四个阻塞点：AOF 日志同步写。
+主从节点交互阻塞 在主从集群中，主库需要⽣成RDB⽂件，并传输给从库。主库在复制的过程中，创建和传输RDB⽂件都是由⼦进程来完成的，不会阻塞主线程。但是，对于从库来说，它在接收了RDB⽂件后，需要使⽤ FLUSHDB 命令清空当前数据库，这就正好撞上了刚才我们分析的第三个阻塞点。
+此外，从库在清空当前数据库后，还需要把RDB⽂件加载到内存，这个过程的快慢和RDB⽂件的⼤⼩密切相关，RDB⽂件越⼤，加载过程越慢，所以，加载 RDB 文件成为了 Redis 的第五个阻塞点。
+切片集群实例交互阻塞 如果你使⽤了Redis Cluster⽅案，⽽且同时正好迁移的是bigkey的话，就会造成主线程的阻塞，因为 Redis Cluster 使⽤了同步迁移。
+哪些阻塞点可以异步执行 对于Redis的五⼤阻塞点来说，除了“集合全量查询和聚合操作”和“从库加载RDB⽂件”，其他三个阻塞点涉及的操作都不在关键路径上，所以，我们可以使⽤Redis的异步⼦线程机制来实现bigkey删除，清空数据库，以及AOF⽇志同步写。
+异步子线程机制 # 异步删除 UNLINK key # 异步清空 FLUSHDB ASYNC FLUSHALL ASYNC  集合全量查询和聚合操作：可以使⽤ SCAN 命令，分批读取数据，再在客⼾端进⾏聚合计算 从库加载 RDB ⽂件：把主库的数据量⼤⼩控制在 2~4GB 左右，以保证 RDB ⽂件能以较快的速度加载  CPU 结构影响性能 CPU 多核 - 上下文切换 context switch是指线程的上下⽂切换，这⾥的上下⽂就是线程的运⾏时信息。在CPU多核的环境中，⼀个线程先在⼀个CPU核上运⾏，之后⼜切换到另⼀个CPU核上运⾏，这时就会发⽣context switch。</description>
     </item>
     
     <item>
@@ -2259,12 +2353,106 @@ git commit -am &amp;#34;My message&amp;#34;  -a 并不会将新添加的文件 c
     </item>
     
     <item>
+      <title>Redis 使用场景</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/redis-scenario/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/redis-scenario/</guid>
+      <description>Redis 使用场景 聚合统计  统计手机 App 每天的新增用戶数和第二天的留存用戶数，正好对应了聚合统计。
+ 要完成这个统计任务，我们可以用一个集合记录所有登录过App的用戶ID，同时，用另一个集合记录每一天登录过App的用戶ID。然后，再对这两个集合做聚合统计。我们来看下具体的操作。
+记录所有登录过App的用戶ID还是比较简单的，我们可以直接使用Set类型，把key设置为user280680，表示记录的是用戶ID，value就是一个Set集合，里面是所有登录过App的用戶ID，我们可以把这个Set叫作累计用戶Set，如下图所示：
+需要注意的是，累计用戶Set中没有日期信息，我们是不能直接统计每天的新增用戶的。所以，我们还需要把每一天登录的用戶ID，记录到一个新集合中，我们把这个集合叫作每日用戶Set，它有两个特点：
+   key是user280680以及当天日期，例如user280680:20200803；    value是Set集合，记录当天登录的用戶ID。    在统计每天的新增用戶时，我们只用计算每日用戶Set和累计用戶Set的差集就行。
+Set的差集、并集和交集的计算复杂度较高，在数据量较大的情况下，如果直接执行这些计算，会导致Redis实例阻塞。所以，我给你分享一个小建议：你可以从主从集群中选择一个从库，让它专⻔负责聚合计算，或者是把数据读取到客戶端，在客戶端来完成聚合统计者是把数据读取到客戶端，在客戶端来完成聚合统计，这样就可以规避阻塞主库实例和其他从库实例的⻛险了。
+排序统计  最新评论列表
+ 最新评论列表包含了所有评论中的最新留言，这就要求集合类型能对元素保序，也就是说，集合中的元素可以按序排列，这种对元素保序的集合类型叫作有序集合。
+在Redis常用的4个集合类型中（List、Hash、Set、Sorted Set），List和Sorted Set就属于有序集合。
+List是按照元素进入List的顺序进行排序的，而Sorted Set可以根据元素的权重来排序，我们可以自己来决定每个元素的权重值。比如说，我们可以根据元素插入Sorted Set的时间确定权重值，先插入的元素权重小，后插入的元素权重大。
+我先说说用List的情况。每个商品对应一个List，这个List包含了对这个商品的所有评论，而且会按照评论时间保存这些评论，每来一个新评论，就用LPUSH命令把它插入List的队头。
+在只有一⻚评论的时候，我们可以很清晰地看到最新的评论，但是，在实际应用中，网站一般会分⻚显示最新的评论列表，一旦涉及到分⻚操作，List就可能会出现问题了。
+二值状态统计 所以，如果只需要统计数据的二值状态，例如商品有没有、用戶在不在等，就可以使用Bitmap，因为它只用一个bit位就能表示0或1。在记录海量数据时，Bitmap能够有效地节省内存空间。
+String 不适合存储大量键值对 当时，我们要开发一个图片存储系统，要求这个系统能快速地记录图片ID和图片在存储系统中保存时的ID（可以直接叫作图片存储对象ID）。同时，还要能够根据图片ID快速查找到图片存储对象ID。
+图片ID和图片存储对象ID正好一一对应，是典型的“键-单值”模式。所谓的“单值”，就是指键值对中的值就是一个值，而不是一个集合，这和String类型提供的“一个键对应一个值的数据”的保存形式刚好契合。
+而且，String类型可以保存二进制字节流，就像“万金油”一样，只要把数据转成二进制字节数组，就可以保存了。
+刚开始，我们保存了1亿张图片，大约用了6.4GB的内存。但是，随着图片数据量的不断增加，我们的Redis内存使用量也在增加，结果就遇到了大内存Redis实例因为生成RDB而响应变慢的问题。很显然，String类型并不是一种好的选择，我们还需要进一步寻找能节省内存开销的数据类型方案。
+String类型并不是适用于所有场合的，它有一个明显的短板，就是它保存数据时所消耗的内存空间较多。
+同时，我还仔细研究了集合类型的数据结构。我发现，集合类型有非常节省内存空间的底层实现结构，但是，集合类型保存的数据模式，是一个键对应一系列值，并不适合直接保存单值的键值对。所以，我们就使用二级编码的方法，实现了用集合类型保存单值键值对，Redis实例的内存空间消耗明显下降了。
+String 内存开销大 在刚才的案例中，我们保存了1亿张图片的信息，用了约6.4GB的内存，一个图片ID和图片存储对象ID的记录平均用了64字节。
+但问题是，一组图片ID及其存储对象ID的记录，实际只需要16字节就可以了。
+其实，除了记录实际数据，String类型还需要额外的内存空间记录数据⻓度、空间使用等信息，这些信息也叫作元数据。当实际保存的数据较小时，元数据的空间开销就显得比较大了，有点“喧宾夺主”的意思。
+当你保存64位有符号整数时，String类型会把它保存为一个8字节的Long类型整数，这种保存方式通常也叫作int编码方式。
+但是，当你保存的数据中包含字符时，String类型就会用简单动态字符串（Simple Dynamic String，SDS）结构体来保存，如下图所示：
+可以看到，在SDS中，buf保存实际数据，而len和alloc本身其实是SDS结构体的额外开销。另外，对于String类型来说，除了SDS的额外开销，还有一个来自于RedisObject结构体的开销。
+因为Redis的数据类型有很多，而且，不同数据类型都有些相同的元数据要记录（比如最后一次访问的时间、被引用的次数等），所以，Redis会用一个RedisObject结构体来统一记录这些元数据，同时指向实际数据。
+一个RedisObject包含了8字节的元数据和一个8字节指针，这个指针再进一步指向具体数据类型的实际数据所在，例如指向String类型的SDS结构所在的内存地址，可以看一下下面的示意图。
+为了节省内存空间，Redis还对Long类型整数和SDS的内存布局做了专⻔的设计。
+一方面，当保存的是Long类型整数时，RedisObject中的指针就直接赋值为整数数据了，这样就不用额外的指针再指向整数了，节省了指针的空间开销。
+另一方面，当保存的是字符串数据，并且字符串小于等于44字节时，RedisObject中的元数据、指针和SDS是一块连续的内存区域，这样就可以避免内存碎片。这种布局方式也被称为embstr编码方式。
+当然，当字符串大于44字节时，SDS的数据量就开始变多了，Redis就不再把SDS和RedisObject布局在一起了，而是会给SDS分配独立的空间，并用指针指向SDS结构。这种布局方式被称为raw编码模式。
+因为10位数的图片ID和图片存储对象ID是Long类型整数，所以可以直接用int编码的RedisObject保存。每个int编码的RedisObject元数据部分占8字节，指针部分被直接赋值为8字节的整数了。此时，每个ID会使用16字节，加起来一共是32字节。但是，另外的32字节去哪儿了呢？
+Redis会使用一个全局哈希表保存所有键值对，哈希表的每一项是一个dictEntry的结构体，用来指向一个键值对。dictEntry结构中有三个8字节的指针，分别指向key、value以及下一个dictEntry，三个指针共24字节，如下图所示：
+但是，这三个指针只有24字节，为什么会占用了32字节呢？这就要提到Redis使用的内存分配库jemalloc了。
+jemalloc在分配内存时，会根据我们申请的字节数N，找一个比N大，但是最接近N的2的幂次数作为分配的空间，这样可以减少频繁分配的次数。
+如果你申请6字节空间，jemalloc实际会分配8字节空间；如果你申请24字节空间，jemalloc则会分配32字节。所以，在我们刚刚说的场景里，dictEntry结构就占用了32字节。
+如果要保存的图片有1亿张，那么1亿条的图片ID记录就需要6.4GB内存空间，其中有4.8GB的内存空间都用来保存元数据了，额外的内存空间开销很大。
+Hash 类型二级编码保存 在保存单值的键值对时，可以采用基于Hash类型的二级编码方法。这里说的二级编码，就是把一个单值的数据拆分成两部分，前一部分作为Hash集合的key，后一部分作为Hash集合的value，这样一来，我们就可以把单值数据保存到Hash集合中了。</description>
+    </item>
+    
+    <item>
+      <title>排查问题</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/troubleshoot/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/troubleshoot/</guid>
+      <description>排查问题 一个根本原因，经过一条或几条传播路径，最后表现出某些现象。
+监控  服务表现：问题的具体表现（出错、超时），应用日志、依赖服务的状态等 系统状态：操作系统指标（各种资源状态、系统日志等）、VM 指标（主要是 GC） 硬件指标：CPU、内存、网络、硬盘是否达到瓶颈  业务指标可以通过框架输出日志 + ELK/graphite 之类生成图形，系统监控可以用 Cacti/Zabbix 进行监控。
+3 分钟  30 秒获取整体服务情况：请求量、响应时间分布、错误码分布，主要利用的就是业务的监控系统 3 分钟了解某台机器的负载情况：最耗 CPU 的线程和函数（CPU）、TCP 连接状态统计和 buffer 堆积状态 （网络）、程序的内存分布、最耗内存的对象（内存）、当前是哪个程序在占用磁盘 I/O、GC 情况。主要用的就是 Linux 和 Java 的一些工具：top、perf、netstat、iftop、jmap、jstat 等 3 分钟了解请求的链路情况：网络传输、系统调用、库函数调用、应用层函数调用的调用链、输入、输出、时长。TCPdump/strace/ltrace/btrace/housemd 等 3 分钟检索当前系统的快照情况：线程栈情况、某个变量的值、存储或缓存里的某个值是什么。jmap/jstack/gdb/pmap 等  保留现场 系统出错，首先要解决问题，通过运维的介入把服务恢复，同时尽量保留现场 （比如保留一台出问题的机器，只摘除不重启）。其次是通过监控、日志初步定为问题原因后，在线下使用测试环境压测、TCPcopy 等复现问题，这时再排除就没什么心理负担了。
+请求 block 或者变慢的时候，用 jstack/jmap/jstat 之类的都来一遍，其他类型的 Linux 程序主要会留 gcore 和各种指标类的数据，top/perf/strace。
+jdump 命令需要很长时间，线上无法服务，应该先摘掉机器，再进行 dump，如果无法摘，则考虑 btrace/housemd 挂到进程上分析，不过 btrace 可能会导致应用假死，几率是几十分之一，慎用。
+ 参考  《高可用系统 - 第一卷》  </description>
+    </item>
+    
+    <item>
       <title>旋转有序数组中寻找最小数字</title>
       <link>https://kunzhao.org/docs/programmer-interview/algorithm/findminimuminrotatedsortedarray/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/programmer-interview/algorithm/findminimuminrotatedsortedarray/</guid>
       <description>旋转有序数组中寻找最小数字 // 没有重复元素 // 1 2 3 4 5 6 7 // // 5 6 7 1 2 3 4 // lo hi // public class FindMinimuminRotatedSortedArray { public int findMin(int[] nums) { int lo = 0; // always point to 前半部分  int hi = nums.length - 1; // always point to 后半部分  if (nums[lo] &amp;gt; nums[hi]) { while (lo &amp;lt; hi) { if (hi - lo == 1) { return nums[hi]; } int m = lo + ((hi - lo) &amp;gt;&amp;gt; 1); if (nums[m] &amp;lt; nums[0]) { // middle 位于后半部分  hi = m; } else if (nums[m] &amp;gt; nums[nums.</description>
+    </item>
+    
+    <item>
+      <title>Redis 6</title>
+      <link>https://kunzhao.org/docs/tutorial/redis/redis6/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/redis/redis6/</guid>
+      <description>Redis 6 介绍 Redis 6 的几个关键新特性。
+多线程处理 在 Redis 6.0 中，非常受关注的第一个新特性就是多线程。这是因为，Redis一直被大家熟知的就是它的单线程架构，虽然有些命令操作可以用后台线程或子进程执行（比如数据删除、快照生成、AOF重写），但是，从网络IO处理到实际的读写命令处理，都是由单个线程完成的。
+随着网络硬件的性能提升，Redis的性能瓶颈有时会出现在网络IO的处理上，也就是说，单个主线程处理网单个主线程处理网络请求的速度跟不上底层网络硬件的速度络请求的速度跟不上底层网络硬件的速度。
+为了应对这个问题，一般有两种方法。
+第一种方法是，用用戶态网络协议栈（例如DPDK）取代内核网络协议栈，让网络请求的处理不用在内核里执行，直接在用戶态完成处理就行。
+对于高性能的Redis来说，避免频繁让内核进行网络请求处理，可以很好地提升请求处理效率。但是，这个方法要求在Redis的整体架构中，添加对用戶态网络协议栈的支持，需要修改Redis源码中和网络相关的部分（例如修改所有的网络收发请求函数），这会带来很多开发工作量。而且新增代码还可能引入新Bug，导致系统不稳定。所以，Redis 6.0中并没有采用这个方法。
+第二种方法就是采用多个IO线程来处理网络请求，提高网络请求处理的并行度。Redis6.0就是采用的这种方法。
+但是，Redis的多IO线程只是用来处理网络请求的，对于读写命令，Redis仍然使用单线程来处理。这是因为，Redis处理请求时，网络处理经常是瓶颈，通过多个IO线程并行处理网络操作，可以提升实例的整体处理性能。而继续使用单线程执行命令操作，就不用为了保证Lua脚本、事务的原子性，额外开发多线程互斥机制了。这样一来，Redis线程模型实现就简单了。
+Redis 6.0中，多线程机制默认是关闭的，如果需要使用多线程功能，需要在 redis.conf 中完成两个设置。
+ 1.设置io-thread-do-reads配置项为yes，表示启用多线程。  io-threads-do-reads yes  2.设置线程个数。一般来说，线程个数要小于Redis实例所在机器的CPU核个数，例如，对于一个8核的机器来说，Redis官方建议配置6个IO线程。  io-threads 6 如果你在实际应用中，发现Redis实例的CPU开销不大，吞吐量却没有提升，可以考虑使用Redis 6.0的多线程机制，加速网络处理，进而提升实例的吞吐量。
+客户端缓存 和之前的版本相比，Redis 6.0新增了一个重要的特性，就是实现了服务端协助的客戶端缓存功能，也称为跟踪（Tracking）功能。有了这个功能，业务应用中的Redis客戶端就可以把读取的数据缓存在业务应用本地了，应用就可以直接在本地快速读取数据了。
+如果数据被修改了或是失效了，如何通知客戶端对缓存的数据做失效处理？
+6.0实现的Tracking功能实现了两种模式，来解决这个问题。
+第一种模式是普通模式。
+在这个模式下，实例会在服务端记录客戶端读取过的key，并监测key是否有修改。一旦key的值发生变化，服务端会给客戶端发送invalidate消息，通知客戶端缓存失效了。
+在使用普通模式时，有一点你需要注意一下，服务端对于记录的key只会报告一次invalidate消息，也就是说，服务端在给客戶端发送过一次invalidate消息后，如果key再被修改，此时，服务端就不会再次给客戶端发送invalidate消息。
+只有当客戶端再次执行读命令时，服务端才会再次监测被读取的key，并在key修改时发送invalidate消息。这样设计的考虑是节省有限的内存空间。毕竟，如果客戶端不再访问这个key了，而服务端仍然记录key的修改情况，就会浪费内存资源
+我们可以通过执行下面的命令，打开或关闭普通模式下的Tracking功能。
+CLIENT TRACKING ON|OFF 第二种模式是广播模式。
+在这个模式下，服务端会给客戶端广播所有key的失效情况，不过，这样做了之后，如果 key 被频繁修改，服务端会发送大量的失效广播消息，这就会消耗大量的网络带宽资源。
+所以，在实际应用时，我们会让客戶端注册希望跟踪的key的前缀，当带有注册前缀的key被修改时，服务端会把失效消息广播给所有注册的客戶端。和普通模式不同，在广播模式下，即使客戶端还没有读取过和普通模式不同，在广播模式下，即使客戶端还没有读取过key，但只要它注册了要跟踪的key，服务端都会把key失效消息通知给这个客戶端key，但只要它注册了要跟踪的key，服务端都会把key失效消息通知给这个客戶端。
+我给你举个例子，带你看一下客戶端如何使用广播模式接收key失效消息。当我们在客戶端执行下面的命令后，如果服务端更新了user:id:1003这个key，那么，客戶端就会收到invalidate消息。
+CLIENT TRACKING ON BCAST PREFIX user 这种监测带有前缀的key的广播模式，和我们对key的命名规范非常匹配。我们在实际应用时，会给同一业务下的key设置相同的业务名前缀，所以，我们就可以非常方便地使用广播模式。
+不过，刚才介绍的普通模式和广播模式，需要客戶端使用RESP 3协议，RESP 3协议是6.0新启用的通信协议。
+权限控制 在Redis 6.0 版本之前，要想实现实例的安全访问，只能通过设置密码来控制，例如，客戶端连接实例前需要输入密码。
+此外，对于一些高⻛险的命令（例如KEYS、FLUSHDB、FLUSHALL等），在Redis 6.0 之前，我们也只能通过rename-command来重新命名这些命令，避免客戶端直接调用。</description>
     </item>
     
     <item>

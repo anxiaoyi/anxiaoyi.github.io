@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -375,14 +375,23 @@ var _hmt = _hmt || [];
   <ul>
     <li><a href="#缓存--缓存一致性">缓存 &amp; 缓存一致性</a></li>
     <li><a href="#为什么使用缓存">为什么使用缓存</a></li>
+    <li><a href="#数据不一致">数据不一致</a>
+      <ul>
+        <li><a href="#示例">示例</a></li>
+        <li><a href="#原因">原因</a></li>
+        <li><a href="#解决">解决</a></li>
+        <li><a href="#特殊情况">特殊情况</a></li>
+        <li><a href="#缺点">缺点</a></li>
+      </ul>
+    </li>
     <li><a href="#不同类型的缓存">不同类型的缓存</a>
       <ul>
         <li><a href="#look-aside--demand-fill-缓存">Look-aside / demand-fill 缓存</a></li>
-        <li><a href="#write-through--read-through-缓存">Write-through / read-through 缓存</a></li>
+        <li><a href="#readwrite-through-读穿写穿">Read/Write Through 读穿/写穿</a></li>
+        <li><a href="#write-back--memory-only-缓存">Write-back / memory-only 缓存</a></li>
       </ul>
     </li>
-    <li><a href="#write-back--memory-only-缓存">Write-back / memory-only 缓存</a></li>
-    <li><a href="#译文来源">译文来源</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -436,10 +445,49 @@ var _hmt = _hmt || [];
 <p>有了这个定义，如果缓存不存储任何内容，它总是一致的。但那根本没什么意思，因为它完全没用。</p>
 <h2 id="为什么使用缓存">为什么使用缓存</h2>
 <p>通常部署缓存是为了<strong>提高读写性能</strong>。这里的性能可以是延迟、吞吐量、资源利用率等，并且通常是相关的。保护数据库通常也是构建缓存的一个非常重要的动机。但你可以说这也是它正在解决的一个性能问题。</p>
+<h2 id="数据不一致">数据不一致</h2>
+<h3 id="示例">示例</h3>
+<p>ID = 1 的用户的年龄从 19 更新为 20：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+updateCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+</code></pre></div><p>上面代码会造成<strong>数据不一致</strong>。</p>
+<h3 id="原因">原因</h3>
+<p>两个请求同时过来，数据库变成了 21，缓存依然是 20：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">requestA<span style="color:#f92672">.</span><span style="color:#a6e22e">updateDB</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+requestB<span style="color:#f92672">.</span><span style="color:#a6e22e">updateDB</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 21<span style="color:#f92672">)</span>
+requestB<span style="color:#f92672">.</span><span style="color:#a6e22e">updateCache</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 21<span style="color:#f92672">)</span>
+requestA<span style="color:#f92672">.</span><span style="color:#a6e22e">updateCache</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+</code></pre></div><p>原因就在于 <code>updateDB</code> 和 <code>updateCache</code> 是两个独立的操作。</p>
+<h3 id="解决">解决</h3>
+<p>不更新缓存，<strong>删除缓存</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+deleteCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+</code></pre></div><p>读取的时候，发现缓存没有了数据，再从数据库读取数据，更新到缓存。这个策略就是 <strong><code>Cache-Aside</code> (旁路缓存)</strong> 策略。</p>
+<h3 id="特殊情况">特殊情况</h3>
+<p>新注册一个用户，写入数据库，清理缓存（么有数据可以清理）。注册完用户后，需要立马读出来，而数据库主从分离，<strong>主从延迟导致读取不到用户信息</strong>。</p>
+<p>此时，反而需要插入数据库后，插入缓存才可以：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">insertDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> <span style="color:#960050;background-color:#1e0010">&#39;</span>张三<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">)</span>
+insertCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> <span style="color:#960050;background-color:#1e0010">&#39;</span>张三<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">)</span>
+</code></pre></div><p>而且新注册用户，也不存在并发更新用户信息的情况。</p>
+<h3 id="缺点">缺点</h3>
+<p>写入比较频繁，缓存频繁被清理，对命中率造成影响。</p>
+<ul>
+<li>(1) <strong>引入分布式锁</strong></li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+redis<span style="color:#f92672">.</span><span style="color:#a6e22e">lock</span><span style="color:#f92672">()</span>
+updateCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+redis<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">()</span>
+</code></pre></div><ul>
+<li>(2) <strong>引入 TTL 过期时间</strong></li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+updateCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">,</span> 5<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">SECONDS</span><span style="color:#f92672">)</span> <span style="color:#75715e">// 5 秒后过期
+</span></code></pre></div><p>即使出现不一致，也会很快过期，对业务影响有限。</p>
 <h2 id="不同类型的缓存">不同类型的缓存</h2>
 <h3 id="look-aside--demand-fill-缓存">Look-aside / demand-fill 缓存</h3>
-<p><img src="/images/posts/maintaining-cache-consistency/Screen-Shot-2018-08-10-at-2.52.18-PM.png" alt=""></p>
-<p>对于 look aside 缓存，客户端将在查询数据存储之前首先查询缓存。如果命中，它将返回缓存中的值。如果是未命中，它将从数据存储返回值。它没有说明缓存应该如何填充。它只是指定如何查询它。但通常情况下，是 demand-fill (按需填充)。Demand-fill 意味着在未命中的情况下，客户端不仅使用数据存储中的值，而且还将该值放入缓存中。通常，如果您看到一个look-aside 缓存，它也是一个 demand-fill 缓存。但这不一定。例如，你可以让缓存和数据存储订阅同一个日志（如Kafka）并独立实现。这是一个非常合理的设置。在本例中，缓存是一个 look-aside 缓存，而不是 demand-fill。而且缓存甚至可以拥有比持久数据存储更新鲜的数据。</p>
+<p><img src="/images/posts/maintaining-cache-consistency/cache-aside.png" alt=""></p>
+<p>对于 look aside 缓存，客户端将在<strong>查询数据存储之前首先查询缓存</strong>。如果命中，它将返回缓存中的值。如果是未命中，它将从数据存储返回值。它没有说明缓存应该如何填充。它只是指定如何查询它。但通常情况下，是 demand-fill (按需填充)。Demand-fill 意味着在未命中的情况下，客户端不仅使用数据存储中的值，而且还将该值放入缓存中。通常，如果您看到一个look-aside 缓存，它也是一个 demand-fill 缓存。但这不一定。例如，你可以让缓存和数据存储订阅同一个日志（如Kafka）并独立实现。这是一个非常合理的设置。在本例中，缓存是一个 look-aside 缓存，而不是 demand-fill。而且缓存甚至可以拥有比持久数据存储更新鲜的数据。</p>
 <p>很简单，对吧？不过，简单的 Look aside/demand fill 缓存可能会有永久的不一致性！由于 look aside 缓存的简单性，这常常被人们忽略。根本上是因为当客户端将一些值放入缓存时，该值可能已经过时。具体来说</p>
 <pre><code>- client gets a MISS (客户端未命中)
 - client reads DB get value `A` (客户端从数据库读取值：A)
@@ -460,8 +508,11 @@ var _hmt = _hmt || [];
 - someone updates the DB to value `B` and invalidates the cache entry, which sets lease to `L1` (某人更新了数据库，最新值：B，租约：L1)
 - client puts value `A` into cache and fails due to lease mismatch (客户端放入 A 值到缓存失败，因为租约不匹配)
 </code></pre><p>事情维持了一致：）</p>
-<h3 id="write-through--read-through-缓存">Write-through / read-through 缓存</h3>
-<p><img src="/images/posts/maintaining-cache-consistency/WechatIMG2.jpeg" alt=""></p>
+<h3 id="readwrite-through-读穿写穿">Read/Write Through 读穿/写穿</h3>
+<blockquote>
+<p>需要<strong>缓存中间件</strong>的支持。它的核心原则是<strong>只与缓存打交道</strong>。</p>
+</blockquote>
+<p><img src="/images/posts/maintaining-cache-consistency/write-read-through.png" alt=""></p>
 <p>Write-through 缓存方式意味着变异，客户端直接写入缓存。<strong>缓存负责同步写入到数据库中 (而不是客户端负责)</strong>。它没有提到如何读取值的问题。客户端可以执行 look-aside 读或 read-through。</p>
 <p>Read-through 缓存意味着读取，客户端直接从缓存中读取。如果是未命中，cache 负责填充数据存储中的数据并回复客户端的查询。它没有提到写作。客户端可以 demand-fill 写入缓存或 write-through。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// Read-through 模式
@@ -480,9 +531,9 @@ var _hmt = _hmt || [];
 <p><img src="/images/posts/maintaining-cache-consistency/Screen-Shot-2018-08-10-at-3.21.50-PM.png" alt=""></p>
 <p>同时有 write-through 和 look-aside 缓存并不常见。既然您已经构建了一个位于客户端和数据存储中间的服务，知道如何与数据存储对话，那么为什么不同时为读写操作这样做呢。也就是说，在有限的缓存大小下，根据查询模式的不同，write-through 和 look-aside 缓存可能是命中率的最佳选择。例如，如果大多数读操作在写操作之后立即执行，那么 write-through 和 look-aside 缓存可能提供最佳命中率。Read-through 和 demand-fill 的结合没有意义。</p>
 <p>现在让我们来看看 write-through 和 read-through 缓存的一致性。对于单个问题，只要正确获取 <code>write</code> 的 <code>update lock</code> 和 <code>read</code> 的 <code>fill-lock</code>，就可以序列化对同一个 <code>key</code> 的读写操作，并且不难看出缓存的一致性将得到维护。如果存在多个缓存副本，这将成为一个分布式系统问题，可能存在一些潜在的解决方案。保持缓存的多个副本一致的最直接的解决方案是拥有一个突变/事件日志，并基于该日志更新缓存。此日志用于单点序列化。它可以是 Kafka 甚至 MySQL binlog。只要突变是以易于重放这些事件的方式进行了全局的排序，就可以保持最终的缓存一致性。注意，这背后的推理与分布式系统中的同步相同。</p>
-<h2 id="write-back--memory-only-缓存">Write-back / memory-only 缓存</h2>
+<h3 id="write-back--memory-only-缓存">Write-back / memory-only 缓存</h3>
 <p>还有一类缓存会遭受数据丢失的影响。例如，Write-back 缓存会在写入持久数据存储之前确认写入，如果在两者之间崩溃，则很明显会遭受数据丢失。这种类型的缓存有自己的使用场景，通常用于非常高的吞吐量和qps。但不一定太在意持久性和一致性。关闭持久性的 Redis 就属于这一类。</p>
-<h2 id="译文来源">译文来源</h2>
+<h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://blog.the-pans.com/different-ways-of-caching-in-distributed-system/">Different ways of caching and maintaining cache consistency</a></li>
 </ul>
@@ -518,14 +569,23 @@ var _hmt = _hmt || [];
   <ul>
     <li><a href="#缓存--缓存一致性">缓存 &amp; 缓存一致性</a></li>
     <li><a href="#为什么使用缓存">为什么使用缓存</a></li>
+    <li><a href="#数据不一致">数据不一致</a>
+      <ul>
+        <li><a href="#示例">示例</a></li>
+        <li><a href="#原因">原因</a></li>
+        <li><a href="#解决">解决</a></li>
+        <li><a href="#特殊情况">特殊情况</a></li>
+        <li><a href="#缺点">缺点</a></li>
+      </ul>
+    </li>
     <li><a href="#不同类型的缓存">不同类型的缓存</a>
       <ul>
         <li><a href="#look-aside--demand-fill-缓存">Look-aside / demand-fill 缓存</a></li>
-        <li><a href="#write-through--read-through-缓存">Write-through / read-through 缓存</a></li>
+        <li><a href="#readwrite-through-读穿写穿">Read/Write Through 读穿/写穿</a></li>
+        <li><a href="#write-back--memory-only-缓存">Write-back / memory-only 缓存</a></li>
       </ul>
     </li>
-    <li><a href="#write-back--memory-only-缓存">Write-back / memory-only 缓存</a></li>
-    <li><a href="#译文来源">译文来源</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 

@@ -22,7 +22,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -951,6 +951,8 @@ var _hmt = _hmt || [];
         <li><a href="#头插法设计思路">头插法设计思路</a></li>
         <li><a href="#get-方法如何实现的">get 方法如何实现的</a></li>
         <li><a href="#红黑树">红黑树</a></li>
+        <li><a href="#keyvalue-可否为-null">key、Value 可否为 null</a></li>
+        <li><a href="#并发问题">并发问题</a></li>
       </ul>
     </li>
     <li><a href="#treemap">TreeMap</a>
@@ -965,7 +967,14 @@ var _hmt = _hmt || [];
         <li><a href="#get">get</a></li>
       </ul>
     </li>
-    <li><a href="#concurrenthashmap">ConcurrentHashMap</a></li>
+    <li><a href="#concurrenthashmap">ConcurrentHashMap</a>
+      <ul>
+        <li><a href="#插入流程">插入流程</a></li>
+        <li><a href="#扩容流程">扩容流程</a></li>
+        <li><a href="#jdk7-获取集合大小流程">JDK7 获取集合大小流程</a></li>
+        <li><a href="#jdk8-获取集合大小流程">JDK8 获取集合大小流程</a></li>
+      </ul>
+    </li>
     <li><a href="#arraylist">ArrayList</a>
       <ul>
         <li><a href="#初始容量">初始容量</a></li>
@@ -975,6 +984,7 @@ var _hmt = _hmt || [];
         <li><a href="#transient">transient</a></li>
       </ul>
     </li>
+    <li><a href="#fail-fast-机制">fail-fast 机制</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -998,7 +1008,7 @@ data-full-width-responsive="true"></ins>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="java-集合类">Java 集合类</h1>
 <h2 id="collections-框架图">Collections 框架图</h2>
-<p><img src="/images/docs/programmer-interview/java/collections/collections-framework-overview.png" alt=""></p>
+<p><img src="/images/docs/tutorial/java/java-collection/collections-framework-overview.png" alt=""></p>
 <h2 id="list-框架图">List 框架图</h2>
 <p><img src="/images/docs/tutorial/java/java-collection/List-API-class-diagram.png" alt=""></p>
 <h2 id="set-框架图">Set 框架图</h2>
@@ -1119,9 +1129,23 @@ newThr <span style="color:#f92672">=</span> oldThr <span style="color:#f92672">&
 6:    0.00001316
 7:    0.00000094
 8:    0.00000006
-</code></pre><h2 id="treemap">TreeMap</h2>
+</code></pre><h3 id="keyvalue-可否为-null">key、Value 可否为 null</h3>
+<p><img src="/images/docs/tutorial/java/java-collection/kv-can-be-null.png" alt=""></p>
+<h3 id="并发问题">并发问题</h3>
+<p>(1) 数据丢失</p>
+<p>新添加的元素直接放在 <code>slot</code> 槽上，如果两个线程同时执行到这里，那么一个线程的赋值就会被另一个覆盖掉：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Entry<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span> V<span style="color:#f92672">&gt;</span> e <span style="color:#f92672">=</span> table<span style="color:#f92672">[</span>bucketIndex<span style="color:#f92672">];</span>
+table<span style="color:#f92672">[</span>bucketIndex<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Entry<span style="color:#f92672">&lt;&gt;(</span>hash<span style="color:#f92672">,</span> key<span style="color:#f92672">,</span> value<span style="color:#f92672">,</span> e<span style="color:#f92672">);</span>
+</code></pre></div><p>(2) 循环死链</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">whilte <span style="color:#f92672">(</span><span style="color:#66d9ef">null</span> <span style="color:#f92672">!=</span> e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    Entry<span style="color:#f92672">&lt;</span>K<span style="color:#f92672">,</span> V<span style="color:#f92672">&gt;</span> next <span style="color:#f92672">=</span> e<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">;</span>
+    e<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span> <span style="color:#f92672">=</span> newTable<span style="color:#f92672">[</span>5883<span style="color:#f92672">];</span>
+    newTable<span style="color:#f92672">[</span>5883<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> e<span style="color:#f92672">;</span>
+    e <span style="color:#f92672">=</span> next<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="treemap">TreeMap</h2>
 <h3 id="如何保证有序">如何保证有序</h3>
-<p>只需要看 <code>put</code> 方法的部分细节即可：</p>
+<p>TreeMap 底层是<strong>红黑树</strong>结构，而红黑树本质是一颗二叉查找树。如下是 <code>put</code> 方法的部分细节即可：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Comparator<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">super</span> K<span style="color:#f92672">&gt;</span> cpr <span style="color:#f92672">=</span> comparator<span style="color:#f92672">;</span>
 <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>cpr <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">do</span> <span style="color:#f92672">{</span>
@@ -1163,10 +1187,32 @@ newThr <span style="color:#f92672">=</span> oldThr <span style="color:#f92672">&
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="concurrenthashmap">ConcurrentHashMap</h2>
 <ul>
-<li>jdk1.8之前，ConcurrentHashMap采用分段锁（Segment），对不同段的Entry进行操作互不影响；</li>
-<li>jdk1.8之后，ConcurrentHashMap直接使用Node数组+链表+红黑树，通过synchronized和CAS来保证并发的可靠性。</li>
+<li>jdk1.8之前，<code>ConcurrentHashMap</code> 采用分段锁（Segment），对不同段的Entry进行操作互不影响；</li>
+<li>jdk1.8之后，<code>ConcurrentHashMap</code> 直接使用Node数组+链表+红黑树，通过synchronized和CAS来保证并发的可靠性。</li>
 </ul>
-<h2 id="arraylist">ArrayList</h2>
+<p><img src="/images/docs/tutorial/java/java-collection/concurrenthashmap-store-structure.png" alt=""></p>
+<h3 id="插入流程">插入流程</h3>
+<p><img src="/images/docs/tutorial/java/java-collection/concurrenthashmap-insert-flow.png" alt=""></p>
+<h3 id="扩容流程">扩容流程</h3>
+<p><img src="/images/docs/tutorial/java/java-collection/concurrenthashmap-resize.png" alt=""></p>
+<h3 id="jdk7-获取集合大小流程">JDK7 获取集合大小流程</h3>
+<p><img src="/images/docs/tutorial/java/java-collection/concurrenthashmap_1_7_size.png" alt=""></p>
+<h3 id="jdk8-获取集合大小流程">JDK8 获取集合大小流程</h3>
+<ul>
+<li>并发量较小，优先使用 CAS 直接更新 baseCount</li>
+<li>更新 baseCount 冲突，则会认为进入到比较激烈的竞争状态，通过启用 counterCells 减少竞争，通过 CAS 的方式把总数更新情况记录在 counterCells 对应的位置上</li>
+<li>如果更新 counterCells 上的某个位置出现了多次失败，则会通过扩容 counterCells 的方式减少冲突</li>
+<li>当 counterCells 处在扩容期间时，会尝试更新 baseCount 值</li>
+</ul>
+<p>对于元素总数的统计，逻辑就非常简单了，只需要让 baseCount 加上各 counterCells 内的数据，就可以得出哈希内的元素总数，整个过程不需要借助锁。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 记录了元素总数值，CAS 更新这个值
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> baseCount<span style="color:#f92672">;</span>
+<span style="color:#75715e">// 计数器
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CounterCell</span> <span style="color:#f92672">{}</span>
+<span style="color:#75715e">// 竞争激烈，线程会把总数更新情况存放到这个数组中
+</span><span style="color:#75715e">// 竞争进一步加剧，会通过扩容减少竞争
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> <span style="color:#66d9ef">volatile</span> CounterCell<span style="color:#f92672">[]</span> counterCells<span style="color:#f92672">;</span>
+</code></pre></div><h2 id="arraylist">ArrayList</h2>
 <h3 id="初始容量">初始容量</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">/**
 </span><span style="color:#75715e"> * Default initial capacity.
@@ -1222,7 +1268,34 @@ newThr <span style="color:#f92672">=</span> oldThr <span style="color:#f92672">&
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">transient</span> Object<span style="color:#f92672">[]</span> elementData<span style="color:#f92672">;</span>
 </code></pre></div><p><code>ArrayList</code>在序列化的时候会调用<code>writeObject</code>，直接将<code>size</code>和<code>element</code>写入<code>ObjectOutputStream</code>；反序列化时调用<code>readObject</code>，从<code>ObjectInputStream</code>获取<code>size</code>和<code>element</code>，再恢复到<code>elementData</code>。</p>
 <p>为什么不直接用<code>elementData</code>来序列化，而采用上诉的方式来实现序列化呢？原因在于<code>elementData</code>是一个缓存数组，它通常会预留一些容量，等容量不足时再扩充容量，那么有些空间可能就没有实际存储元素，采用上诉的方式来实现序列化时，就可以保证<strong>只序列化实际存储的那些元素</strong>，而不是整个数组，从而节省空间和时间。</p>
-<h2 id="参考">参考</h2>
+<h2 id="fail-fast-机制">fail-fast 机制</h2>
+<p>fail-fast 机制是一种对集合遍历操作时的错误检测机制，在遍历中途出现意料之外的修改时，通过 unchecked 异常暴力地反馈出来。这种机制经常出现在多线程环境下，当前线程会维护一个计数比较器，即 <code>expectedModCount</code>，记录已经修改的次数。在进入遍历前, 会把实时修改次数 <code>modCount</code> 赋值给 <code>expectedModCount</code> ,如果这两个数据不相等，则抛出异常。<code>java.util</code> 下的所有集合类都是 fail-fast，而 concurrent 包中的集合类都是 fail-safe 。</p>
+<p>(1) <code>masterList</code> 集合元素个数的增加、删除，均会导致子列表的遍历、增加、删除，进而产生 fail-fast 机制。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">List masterList <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ArrayList<span style="color:#f92672">();</span>
+masterList<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;one&#34;</span><span style="color:#f92672">);</span>
+masterList<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;two&#34;</span><span style="color:#f92672">);</span>
+masterList<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;three&#34;</span><span style="color:#f92672">);</span>
+masterList<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;cour&#34;</span><span style="color:#f92672">);</span>
+masterList<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;five&#34;</span><span style="color:#f92672">);</span>
+
+List branchList <span style="color:#f92672">=</span> masterList<span style="color:#f92672">.</span><span style="color:#a6e22e">subList</span><span style="color:#f92672">(</span>0<span style="color:#f92672">,</span> 3<span style="color:#f92672">);</span>
+
+<span style="color:#75715e">// 下面三行代码，会导致 branchList 操作会出现 ConcurrentModificationException 异常
+</span><span style="color:#75715e"></span>masterList<span style="color:#f92672">.</span><span style="color:#a6e22e">remove</span><span style="color:#f92672">(</span>O<span style="color:#f92672">);</span>
+masterList<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;ten&#34;</span><span style="color:#f92672">);</span>
+masterList<span style="color:#f92672">.</span><span style="color:#a6e22e">clear</span><span style="color:#f92672">();</span>
+</code></pre></div><p>(2) foreach 遍历，产生 fail-fast 异常</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">List<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;</span> list <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ArrayList<span style="color:#f92672">&lt;&gt;();</span>
+list<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;one&#34;</span><span style="color:#f92672">);</span>
+list<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;two&#34;</span><span style="color:#f92672">);</span>
+list<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;three&#34;</span><span style="color:#f92672">);</span>
+
+<span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>String s <span style="color:#f92672">:</span> list<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#e6db74">&#34;one&#34;</span><span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>s<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        list<span style="color:#f92672">.</span><span style="color:#a6e22e">remove</span><span style="color:#f92672">(</span>s<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://zhuanlan.zhihu.com/p/106638832">Java集合之LinkedHashMap实现与原理</a></li>
 </ul>
@@ -1274,6 +1347,8 @@ data-full-width-responsive="true"></ins>
         <li><a href="#头插法设计思路">头插法设计思路</a></li>
         <li><a href="#get-方法如何实现的">get 方法如何实现的</a></li>
         <li><a href="#红黑树">红黑树</a></li>
+        <li><a href="#keyvalue-可否为-null">key、Value 可否为 null</a></li>
+        <li><a href="#并发问题">并发问题</a></li>
       </ul>
     </li>
     <li><a href="#treemap">TreeMap</a>
@@ -1288,7 +1363,14 @@ data-full-width-responsive="true"></ins>
         <li><a href="#get">get</a></li>
       </ul>
     </li>
-    <li><a href="#concurrenthashmap">ConcurrentHashMap</a></li>
+    <li><a href="#concurrenthashmap">ConcurrentHashMap</a>
+      <ul>
+        <li><a href="#插入流程">插入流程</a></li>
+        <li><a href="#扩容流程">扩容流程</a></li>
+        <li><a href="#jdk7-获取集合大小流程">JDK7 获取集合大小流程</a></li>
+        <li><a href="#jdk8-获取集合大小流程">JDK8 获取集合大小流程</a></li>
+      </ul>
+    </li>
     <li><a href="#arraylist">ArrayList</a>
       <ul>
         <li><a href="#初始容量">初始容量</a></li>
@@ -1298,6 +1380,7 @@ data-full-width-responsive="true"></ins>
         <li><a href="#transient">transient</a></li>
       </ul>
     </li>
+    <li><a href="#fail-fast-机制">fail-fast 机制</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>

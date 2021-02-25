@@ -5,8 +5,8 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Java IO"><meta property="og:title" content="Java IO" />
-<meta property="og:description" content="Java IO BIO { ExecutorService executor = Excutors.newFixedThreadPollExecutor(100);//线程池  ServerSocket serverSocket = new ServerSocket(); serverSocket.bind(8088); while(!Thread.currentThread.isInturrupted()){//主线程死循环等待新连接到来  Socket socket = serverSocket.accept(); executor.submit(new ConnectIOnHandler(socket));//为新的连接创建新的线程 } class ConnectIOnHandler extends Thread{ private Socket socket; public ConnectIOnHandler(Socket socket){ this.socket = socket; } public void run(){ while(!Thread.currentThread.isInturrupted()&amp;&amp;!socket.isClosed()){死循环处理读写事件 String someThing = socket.read()....//读取数据  if(someThing!=null){ ......//处理数据  socket.write()....//写数据  } } } } 这个模型最本质的问题在于，严重依赖于线程。但线程是很”贵”的资源，主要表现在：
-   线程的创建和销毁成本很高，在Linux这样的操作系统中，线程本质上就是一个进程。创建和销毁都是重量级的系统函数。    线程本身占用较大内存，像Java的线程栈，一般至少分配512K～1M的空间，如果系统中的线程数过千，恐怕整个JVM的内存都会被吃掉一半。    线程的切换成本是很高的。操作系统发生线程切换的时候，需要保留线程的上下文，然后执行系统调用。如果线程数过高，可能执行线程切换的时间甚至会大于线程执行的时间，这时候带来的表现往往是系统load偏高、CPU sy使用率特别高（超过20%以上)，导致系统几乎陷入不可用的状态。    容易造成锯齿状的系统负载。因为系统负载是用活动线程数或CPU核心数，一旦线程数量高但外部网络环境不是很稳定，就很容易造成大量请求的结果同时返回，激活大量阻塞线程从而使系统负载压力过大。    NIO Channels 打开 SocketChannel：" />
+<meta property="og:description" content="Java IO BIO ServerSocket 示例 { ExecutorService executor = Excutors.newFixedThreadPollExecutor(100);//线程池  ServerSocket serverSocket = new ServerSocket(); serverSocket.bind(8088); while(!Thread.currentThread.isInturrupted()){//主线程死循环等待新连接到来  Socket socket = serverSocket.accept(); executor.submit(new ConnectIOnHandler(socket));//为新的连接创建新的线程 } class ConnectIOnHandler extends Thread{ private Socket socket; public ConnectIOnHandler(Socket socket){ this.socket = socket; } public void run(){ while(!Thread.currentThread.isInturrupted()&amp;&amp;!socket.isClosed()){死循环处理读写事件 String someThing = socket.read()....//读取数据  if(someThing!=null){ ......//处理数据  socket.write()....//写数据  } } } } 这个模型最本质的问题在于，严重依赖于线程。但线程是很”贵”的资源，主要表现在：
+   线程的创建和销毁成本很高，在Linux这样的操作系统中，线程本质上就是一个进程。创建和销毁都是重量级的系统函数。    线程本身占用较大内存，像Java的线程栈，一般至少分配512K～1M的空间，如果系统中的线程数过千，恐怕整个JVM的内存都会被吃掉一半。    线程的切换成本是很高的。操作系统发生线程切换的时候，需要保留线程的上下文，然后执行系统调用。如果线程数过高，可能执行线程切换的时间甚至会大于线程执行的时间，这时候带来的表现往往是系统load偏高、CPU sy使用率特别高（超过20%以上)，导致系统几乎陷入不可用的状态。    容易造成锯齿状的系统负载。因为系统负载是用活动线程数或CPU核心数，一旦线程数量高但外部网络环境不是很稳定，就很容易造成大量请求的结果同时返回，激活大量阻塞线程从而使系统负载压力过大。    同步调用示例 服务端响应之前，IO 会阻塞在：java." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/java-io/" />
 
@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -933,19 +933,28 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#bio">BIO</a></li>
+    <li><a href="#bio">BIO</a>
+      <ul>
+        <li><a href="#serversocket-示例">ServerSocket 示例</a></li>
+        <li><a href="#同步调用示例">同步调用示例</a></li>
+        <li><a href="#性能问题">性能问题</a></li>
+      </ul>
+    </li>
     <li><a href="#nio">NIO</a>
       <ul>
+        <li><a href="#对-io-进行优化">对 IO 进行优化</a></li>
+        <li><a href="#零拷贝">零拷贝</a></li>
         <li><a href="#channels">Channels</a></li>
         <li><a href="#buffers">Buffers</a></li>
         <li><a href="#selectors">Selectors</a></li>
         <li><a href="#nio-编程示例">NIO 编程示例</a></li>
+        <li><a href="#future-调用">Future 调用</a></li>
         <li><a href="#select">select</a></li>
         <li><a href="#poll">poll</a></li>
         <li><a href="#epoll">epoll</a></li>
       </ul>
     </li>
-    <li><a href="#aio">AIO</a></li>
+    <li><a href="#nio2aio">NIO2(AIO)</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -970,6 +979,7 @@ data-full-width-responsive="true"></ins>
 </script><h1 id="java-io">Java IO</h1>
 <p><img src="/images/docs/tutorial/java/java-io/Snipaste_2021-02-06_22-11-17.png" alt=""></p>
 <h2 id="bio">BIO</h2>
+<h3 id="serversocket-示例">ServerSocket 示例</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#f92672">{</span>
  ExecutorService executor <span style="color:#f92672">=</span> Excutors<span style="color:#f92672">.</span><span style="color:#a6e22e">newFixedThreadPollExecutor</span><span style="color:#f92672">(</span>100<span style="color:#f92672">);</span><span style="color:#75715e">//线程池
 </span><span style="color:#75715e"></span>
@@ -1019,8 +1029,87 @@ data-full-width-responsive="true"></ins>
 </ol>
 </li>
 </ul>
+<h3 id="同步调用示例">同步调用示例</h3>
+<p><img src="/images/docs/tutorial/java/java-io/bio_20210224152929.png" alt=""></p>
+<p>服务端响应之前，IO 会阻塞在：<code>java.net.SocketInputStream#socketRead0</code> 的 <code>native</code> 方法上：</p>
+<p><img src="/images/docs/tutorial/java/java-io/socket-read_20210224153037.png" alt=""></p>
+<p>通过 <code>jstack</code> 日志，可以发现，此时这个 Thread 会一直在 runable 的状态：</p>
+<pre><code>&quot;main&quot;#1 prio=5 os_prio=31 tid=0x00007fed0c810000 nid=0x1003 runnable [0x000070000ce14000]   java.lang.Thread.State: RUNNABLE
+        at java.net.SocketInputStream.socketRead0(Native Method)
+        at java.net.SocketInputStream.socketRead(SocketInputStream.java:116)
+        at java.net.SocketInputStream.read(SocketInputStream.java:171)
+        at java.net.SocketInputStream.read(SocketInputStream.java:141)
+        at org.apache.http.impl.conn.LoggingInputStream.read(LoggingInputStream.java:84)
+</code></pre><p>线程模型示例：</p>
+<p><img src="/images/docs/tutorial/java/java-io/bio_thread_model_20210224153134.png" alt=""></p>
+<p>同步最大的问题是在IO等待的过程中，<strong>线程资源没有得到充分的利用，对于大量IO场景的业务吞吐量会有一定限制</strong>。</p>
+<h3 id="性能问题">性能问题</h3>
+<p>I/O 操作分为磁盘 I/O 操作和网络 I/O 操作。前者是从磁盘中读取数据源输入到内存中，之后将读取的信息持久化输出在物理磁盘上；后者是从网络中读取信息输入到内存，最终将信息输出到网络中。但不管是磁盘 I/O 还是网络 I/O，在传统 I/O 中都存在严重的性能问题。</p>
+<p>(1) <strong>多次内存复制</strong></p>
+<p>在传统 I/O 中，我们可以通过 <code>InputStream</code> 从源数据中读取数据流输入到缓冲区里，通过 <code>OutputStream</code> 将数据输出到外部设备（包括磁盘、网络）。你可以先看下输入操作在操作系统中的具体流程，如下图所示：</p>
+<p><img src="/images/docs/tutorial/java/java-io/4c4af15b08d3b11de3fe603a70dc6ac2.jpg" alt=""></p>
+<ul>
+<li>JVM 会发出 read() 系统调用，并通过 read 系统调用向内核发起读请求；</li>
+<li>内核向硬件发送读指令，并等待读就绪；</li>
+<li>内核把将要读取的数据复制到指向的内核缓存中；</li>
+<li>操作系统内核将数据复制到用户空间缓冲区，然后 read 系统调用返回。</li>
+</ul>
+<p>在这个过程中，数据先从外部设备复制到内核空间，再从内核空间复制到用户空间，这就发生了<strong>两次内存复制</strong>操作。这种操作会导致不必要的数据拷贝和上下文切换，从而降低 I/O 的性能。</p>
+<p>(2) <strong>阻塞</strong></p>
+<p>在传统 I/O 中，<code>InputStream</code> 的 <code>read()</code> 是一个 while 循环操作，它会一直等待数据读取，直到数据就绪才会返回。这就意味着如果没有数据就绪，这个读取操作将会一直被挂起，用户线程将会处于阻塞状态。</p>
+<p>在少量连接请求的情况下，使用这种方式没有问题，响应速度也很高。但在发生大量连接请求时，就需要创建大量监听线程，这时如果线程没有数据就绪就会被挂起，然后进入阻塞状态。<strong>一旦发生线程阻塞，这些线程将会不断地抢夺 CPU 资源，从而导致大量的 CPU 上下文切换，增加系统的性能开销</strong>。</p>
 <h2 id="nio">NIO</h2>
 <p><img src="/images/docs/tutorial/java/java-io/Snipaste_2021-02-06_11-02-06.png" alt=""></p>
+<h3 id="对-io-进行优化">对 IO 进行优化</h3>
+<p>(1) <strong>使用缓冲区优化读写流操作</strong></p>
+<p>NIO 与传统 I/O 不同，它是基于块（Block）的，它以块为基本单位处理数据。在 NIO 中，最为重要的两个组件是缓冲区（Buffer）和通道（Channel）。<strong>Buffer 是一块连续的内存块</strong>，是 NIO 读写数据的中转地。Channel 表示缓冲数据的源头或者目的地，它用于读取缓冲或者写入数据，是访问缓冲的接口。</p>
+<p>传统 I/O 和 NIO 的最大区别就是传统 I/O 是面向流，NIO 是面向 Buffer。<strong>Buffer 可以将文件一次性读入内存再做后续处理，而传统的方式是边读文件边处理数据</strong>。虽然传统 I/O 后面也使用了缓冲块，例如 BufferedInputStream，但仍然不能和 NIO 相媲美。使用 NIO 替代传统 I/O 操作，可以提升系统的整体性能，效果立竿见影。</p>
+<p>(2) <strong>使用 <code>DirectBuffer</code> 减少内存复制</strong></p>
+<p>NIO 的 Buffer 除了做了缓冲块优化之外，还提供了一个可以直接访问物理内存的类 DirectBuffer。普通的 Buffer 分配的是 JVM 堆内存，而 DirectBuffer 是直接分配物理内存 (非堆内存)。</p>
+<p>我们知道数据要输出到外部设备，必须先从用户空间复制到内核空间，再复制到输出设备，而在 Java 中，在用户空间中又存在一个拷贝，那就是从 Java 堆内存中拷贝到临时的直接内存中，通过临时的直接内存拷贝到内存空间中去。此时的直接内存和堆内存都是属于用户空间。</p>
+<p><img src="/images/docs/tutorial/java/java-io/399d715ed2f687e22ec9ca2a65bd88c2.jpg" alt=""></p>
+<p>你肯定会在想，为什么 Java 需要通过一个临时的非堆内存来复制数据呢？如果单纯使用 Java 堆内存进行数据拷贝，当拷贝的数据量比较大的情况下，Java 堆的 GC 压力会比较大，而使用非堆内存可以减低 GC 的压力。</p>
+<p>DirectBuffer 则是直接将步骤简化为数据直接保存到非堆内存，从而减少了一次数据拷贝。以下是 JDK 源码中 IOUtil.java 类中的 write 方法：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>src <span style="color:#66d9ef">instanceof</span> DirectBuffer<span style="color:#f92672">)</span>
+    <span style="color:#66d9ef">return</span> writeFromNativeBuffer<span style="color:#f92672">(</span>fd<span style="color:#f92672">,</span> src<span style="color:#f92672">,</span> position<span style="color:#f92672">,</span> nd<span style="color:#f92672">);</span>
+
+<span style="color:#75715e">// Substitute a native buffer
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> pos <span style="color:#f92672">=</span> src<span style="color:#f92672">.</span><span style="color:#a6e22e">position</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">int</span> lim <span style="color:#f92672">=</span> src<span style="color:#f92672">.</span><span style="color:#a6e22e">limit</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">assert</span> <span style="color:#f92672">(</span>pos <span style="color:#f92672">&lt;=</span> lim<span style="color:#f92672">);</span>
+<span style="color:#66d9ef">int</span> rem <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>pos <span style="color:#f92672">&lt;=</span> lim <span style="color:#f92672">?</span> lim <span style="color:#f92672">-</span> pos <span style="color:#f92672">:</span> 0<span style="color:#f92672">);</span> 
+ByteBuffer bb <span style="color:#f92672">=</span> Util<span style="color:#f92672">.</span><span style="color:#a6e22e">getTemporaryDirectBuffer</span><span style="color:#f92672">(</span>rem<span style="color:#f92672">);</span>
+<span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+    bb<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>src<span style="color:#f92672">);</span>
+    bb<span style="color:#f92672">.</span><span style="color:#a6e22e">flip</span><span style="color:#f92672">();</span>
+<span style="color:#75715e">// ...............
+</span></code></pre></div><p>这里拓展一点，由于 DirectBuffer 申请的是非 JVM 的物理内存，所以创建和销毁的代价很高。DirectBuffer 申请的内存并不是直接由 JVM 负责垃圾回收，但在 DirectBuffer 包装类被回收时，会通过 Java Reference 机制来释放该内存块。</p>
+<p>DirectBuffer 只优化了用户空间内部的拷贝，而之前我们是说优化用户空间和内核空间的拷贝，那 Java 的 NIO 中是否能做到减少用户空间和内核空间的拷贝优化呢？</p>
+<p>答案是可以的，DirectBuffer 是通过 unsafe.allocateMemory(size) 方法分配内存，也就是基于本地类 Unsafe 类调用 native 方法进行内存分配的。而在 NIO 中，还存在另外一个 Buffer 类：MappedByteBuffer，跟 DirectBuffer 不同的是，MappedByteBuffer 是通过本地类调用 mmap 进行文件内存映射的，map() 系统调用方法会直接将文件从硬盘拷贝到用户空间，只进行一次数据拷贝，从而减少了传统的 read() 方法从硬盘拷贝到内核空间这一步。</p>
+<p>(3) <strong>避免阻塞，优化 I/O 操作</strong></p>
+<p>NIO 很多人也称之为 Non-block I/O，即非阻塞 I/O，因为这样叫，更能体现它的特点。为什么这么说呢？</p>
+<p>传统的 I/O 即使使用了缓冲块，依然存在阻塞问题。由于线程池线程数量有限，一旦发生大量并发请求，超过最大数量的线程就只能等待，直到线程池中有空闲的线程可以被复用。而对 Socket 的输入流进行读取时，读取流会一直阻塞，直到发生以下三种情况的任意一种才会解除阻塞：</p>
+<ul>
+<li>有数据可读；</li>
+<li>连接释放；</li>
+<li>空指针或 I/O 异常。</li>
+</ul>
+<p>阻塞问题，就是传统 I/O 最大的弊端。NIO 发布后，通道和多路复用器这两个基本组件实现了 NIO 的非阻塞，下面我们就一起来了解下这两个组件的优化原理。</p>
+<h3 id="零拷贝">零拷贝</h3>
+<p>在 I/O 复用模型中，执行读写 I/O 操作依然是阻塞的，在执行读写 I/O 操作时，存在着多次内存拷贝和上下文切换，给系统增加了性能开销。</p>
+<p>零拷贝是一种避免多次内存复制的技术，用来优化读写 I/O 操作。</p>
+<p>在网络编程中，通常由 read、write 来完成一次 I/O 读写操作。每一次 I/O 读写操作都需要完成四次内存拷贝，路径是 I/O 设备 -&gt; 内核空间 -&gt; 用户空间 -&gt; 内核空间 -&gt; 其它 I/O 设备。</p>
+<p>Linux 内核中的 <code>mmap</code> 函数可以代替 read、write 的 I/O 读写操作，实现用户空间和内核空间共享一个缓存数据。<code>mmap</code> 将用户空间的一块地址和内核空间的一块地址同时映射到相同的一块物理内存地址，不管是用户空间还是内核空间都是虚拟地址，最终要通过地址映射映射到物理内存地址。这种方式避免了内核空间与用户空间的数据交换。I/O 复用中的 <code>epoll</code> 函数中就是使用了 <code>mmap</code> 减少了内存拷贝。</p>
+<p>在 Java 的 NIO 编程中，则是使用到了 Direct Buffer 来实现内存的零拷贝。Java 直接在 JVM 内存空间之外开辟了一个物理内存空间，这样内核和用户进程都能共享一份缓存数据。</p>
+<p>服务器提供文件传输功能，需要将磁盘上的文件读取出来，通过网络协议发送到客户端。</p>
+<p>通常，你会选择最直接的方法：从网络请求中找出文件在磁盘中的路径后，如果这个文件比较大，假设有 320MB，可以在内存中分配 32KB 的缓冲区，再把文件分成一万份，每份只有 32KB，这样，从文件的起始位置读入 32KB 到缓冲区，再通过网络 API 把这 32KB 发送到客户端。接着重复一万次，直到把完整的文件都发送完毕。</p>
+<p><img src="/images/docs/tutorial/java/java-io/zero-copy-before.png" alt=""></p>
+<ul>
+<li>它至少经历了 <strong>4 万次用户态与内核态的上下文切换</strong>，因为每处理 32KB 的消息，就需要一次 read 调用和一次 write 调用，每次系统调用都得先从用户态切换到内核态，等内核完成任务后，再从内核态切换回用户态。可见，每处理 32KB，就有 4 次上下文切换，重复 1 万次后就有 4 万次切换。</li>
+<li>这个方案做了 4 万次内存拷贝，对 320MB 文件拷贝的字节数也翻了 4 倍，到了1280MB。很显然，过多的内存拷贝无谓地消耗了 CPU 资源，降低了系统的并发处理能力。</li>
+</ul>
+<p>零拷贝是操作系统提供的新函数。同时接收文件描述符和 TCP socket 作为输入参数，这样执行时就可以完全在内核态完成内存拷贝，既减少了内存拷贝次数，也降低了上下文切换次数。</p>
+<p><img src="/images/docs/tutorial/java/java-io/zero-copy-after.png" alt=""></p>
 <h3 id="channels">Channels</h3>
 <p><img src="/images/docs/tutorial/java/java-io/Snipaste_2021-02-06_10-51-14.png" alt=""></p>
 <p>打开 <code>SocketChannel</code>：</p>
@@ -1029,10 +1118,16 @@ ch<span style="color:#f92672">.</span><span style="color:#a6e22e">connect</span>
 </code></pre></div><p>Server 监听在某个端口上：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">ServerSocketChannel ch <span style="color:#f92672">=</span> ServerSocketChannel<span style="color:#f92672">.</span><span style="color:#a6e22e">open</span><span style="color:#f92672">();</span>  
 ch<span style="color:#f92672">.</span><span style="color:#a6e22e">socket</span><span style="color:#f92672">().</span><span style="color:#a6e22e">bind</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> InetSocketAddress <span style="color:#f92672">(</span>somelocalport<span style="color:#f92672">));</span>  
-</code></pre></div><h3 id="buffers">Buffers</h3>
+</code></pre></div><p>最开始，在应用程序调用操作系统 I/O 接口时，是由 CPU 完成分配，这种方式最大的问题是“发生大量 I/O 请求时，非常消耗 CPU“；之后，操作系统引入了 DMA（直接存储器存储），内核空间与磁盘之间的存取完全由 DMA 负责，但这种方式依然需要向 CPU 申请权限，且需要借助 DMA 总线来完成数据的复制操作，如果 DMA 总线过多，就会造成总线冲突。</p>
+<p>通道的出现解决了以上问题，<code>Channel</code> 有自己的处理器，<strong>可以完成内核空间和磁盘之间的 I/O 操作</strong>。在 NIO 中，我们读取和写入数据都要通过 <code>Channel</code>，由于 <code>Channel</code> 是双向的，所以读、写可以同时进行。</p>
+<h3 id="buffers">Buffers</h3>
 <p><img src="/images/docs/tutorial/java/java-io/Snipaste_2021-02-06_10-56-25.png" alt=""></p>
 <h3 id="selectors">Selectors</h3>
 <p><img src="/images/docs/tutorial/java/java-io/Snipaste_2021-02-06_10-58-05.png" alt=""></p>
+<p>Selector 是 Java NIO 编程的基础。用于检查一个或多个 NIO Channel 的状态是否处于可读、可写。</p>
+<p>Selector 是基于事件驱动实现的，我们可以在 Selector 中注册 accpet、read 监听事件，Selector 会不断轮询注册在其上的 Channel，如果某个 Channel 上面发生监听事件，这个 Channel 就处于就绪状态，然后进行 I/O 操作。</p>
+<p>一个线程使用一个 Selector，通过轮询的方式，可以监听多个 Channel 上的事件。我们可以在注册 Channel 时设置该通道为非阻塞，当 Channel 上没有 I/O 操作时，该线程就不会一直等待了，而是会不断轮询所有 Channel，从而避免发生阻塞。</p>
+<p>目前操作系统的 I/O 多路复用机制都使用了 <code>epoll</code>，相比传统的 select 机制，epoll 没有最大连接句柄 1024 的限制。所以 Selector 在理论上可以轮询成千上万的客户端。</p>
 <h3 id="nio-编程示例">NIO 编程示例</h3>
 <p>下面具体看下如何利用事件模型单线程处理所有I/O请求：</p>
 <p>NIO 的主要事件有几个：<strong>读就绪、写就绪、有新连接到来</strong>。</p>
@@ -1068,10 +1163,52 @@ ch<span style="color:#f92672">.</span><span style="color:#a6e22e">socket</span><
     <span style="color:#f92672">}</span>
     Map<span style="color:#f92672">&lt;</span>Channel<span style="color:#960050;background-color:#1e0010">，</span>ChannelHandler<span style="color:#f92672">&gt;</span> handlerMap<span style="color:#f92672">;</span><span style="color:#75715e">//所有channel的对应事件处理器
 </span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
-</code></pre></div><h3 id="select">select</h3>
+</code></pre></div><h3 id="future-调用">Future 调用</h3>
+<p><strong>(1)  JDK NIO &amp; Future</strong></p>
+<p><img src="/images/docs/tutorial/java/java-io/future_20210224153313.png" alt=""></p>
+<p>这样做的好处是，<strong>主线程</strong>可以不用等待IO响应，可以去做点其他的，比如说再发送一个IO请求，可以等到一起返回：</p>
+<pre><code>&quot;main&quot;#1 prio=5 os_prio=31 tid=0x00007fd7a500b000 nid=0xe03 waiting on condition [0x000070000a95d000]   java.lang.Thread.State: WAITING (parking)
+        at sun.misc.Unsafe.park(Native Method)
+- parking to wait for  &lt;0x000000076ee2d768&gt; (a java.util.concurrent.CountDownLatch$Sync)
+        at java.util.concurrent.locks.LockSupport.park(LockSupport.java:175)
+        at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:836)
+</code></pre><p><img src="/images/docs/tutorial/java/java-io/future_call_20210224153538.png" alt=""></p>
+<p>主线程在等待结果返回过程中依然需要等待，没有根本解决此问题。</p>
+<p><strong>(2) 使用 Callback 回调方式</strong></p>
+<p>可不可以在主线程完成发送请求后，再也不用关心这个逻辑，去执行其他的逻辑？那就可以使用 <code>Callback</code> 机制。</p>
+<p><img src="/images/docs/tutorial/java/java-io/callback_20210224154407.png" alt=""></p>
+<p>如此一来，主线程再也不需要关心发起IO后的业务逻辑，发送完请求后，就可以彻底去干其他事情，或者回到线程池中再供调度。如果是HttpServer，那么需要结合Servlet 3.1的异步<code>Servlet</code>。</p>
+<p><img src="/images/docs/tutorial/java/java-io/httpserver_async_20210224154500.jpg" alt=""></p>
+<p><img src="/images/docs/tutorial/java/java-io/http_asyncserver_thread_20210224154521.png" alt=""></p>
+<p>使用Callback方式，从线程模型中看，发现线程资源已经得到了比较充分的利用，整个过程中已经没有线程阻塞。</p>
+<p><strong>(3) JDK 1.8 CompletableFuture</strong></p>
+<p>回调地狱，当Callback的线程还需要执行下一个IO调用的时候，这个时候进入<strong>回调地狱</strong>模式。</p>
+<p>典型的应用场景如，通过经纬度获取行政区域adcode（逆地理接口），然后再根据获得的adcode，获取当地的天气信息（天气接口）。</p>
+<p>那么有没有办法解决Callback Hell的问题？当然有，JDK 1.8中提供了<code>CompletableFuture</code>，先看看它是怎么解决这个问题的。</p>
+<p>将逆地理的Callback逻辑，封装成一个独立的<code>CompletableFuture</code>，当异步线程回调时，调用 <code>future.complete(T)</code> ，将结果封装。</p>
+<p><img src="/images/docs/tutorial/java/java-io/complete_1_20210224154935.png" alt=""></p>
+<p>将天气执行的Call逻辑，也封装成为一个独立的<code>CompletableFuture</code> ，完成之后，逻辑同上。</p>
+<p><img src="/images/docs/tutorial/java/java-io/weather_20210224155009.png" alt=""></p>
+<p><code>compose</code>衔接，<code>whenComplete</code>输出：</p>
+<p><img src="/images/docs/tutorial/java/java-io/whencomplete_20210224155051.png" alt=""></p>
+<p>每一个IO操作，均可以封装为独立的<code>CompletableFuture</code>，从而避免回调地狱。</p>
+<h3 id="select">select</h3>
+<p>select() 函数：它的用途是，在超时时间内，监听用户感兴趣的文件描述符上的可读可写和异常事件的发生。Linux 操作系统的内核将所有外部设备都看做一个文件来操作，对一个文件的读写操作会调用内核提供的系统命令，返回一个文件描述符（fd）。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">int</span> select(<span style="color:#66d9ef">int</span> maxfdp1,fd_set <span style="color:#f92672">*</span>readset,fd_set <span style="color:#f92672">*</span>writeset,fd_set <span style="color:#f92672">*</span>exceptset,<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">struct</span> timeval <span style="color:#f92672">*</span>timeout)
+</code></pre></div><p>select() 函数监视的文件描述符分 3 类，分别是 writefds（写文件描述符）、readfds（读文件描述符）以及 exceptfds（异常事件文件描述符）。</p>
+<p>调用后 <code>select()</code> 函数会阻塞，直到有描述符就绪或者超时，函数返回。当 select 函数返回后，可以通过函数 <code>FD_ISSET</code> 遍历 fdset，来找到就绪的描述符。<code>fd_set</code> 可以理解为一个集合，这个集合中存放的是文件描述符，可通过以下四个宏进行设置：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">FD_ZERO</span>(fd_set <span style="color:#f92672">*</span>fdset);           <span style="color:#75715e">//清空集合
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">FD_SET</span>(<span style="color:#66d9ef">int</span> fd, fd_set <span style="color:#f92672">*</span>fdset);   <span style="color:#75715e">//将一个给定的文件描述符加入集合之中
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">FD_CLR</span>(<span style="color:#66d9ef">int</span> fd, fd_set <span style="color:#f92672">*</span>fdset);   <span style="color:#75715e">//将一个给定的文件描述符从集合中删除
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">FD_ISSET</span>(<span style="color:#66d9ef">int</span> fd, fd_set <span style="color:#f92672">*</span>fdset);   <span style="color:#75715e">// 检查集合中指定的文件描述符是否可以读写 
+</span></code></pre></div><p><img src="/images/docs/tutorial/java/java-io/d8f4a9cfb8d37d08487a68fc10e31fdd.png" alt=""></p>
 <p><code>select</code> 不断轮循去监听 socket，socket 个数有限制，一般是 <code>1024/2048</code>，<code>FD_SETSIZE</code> 控制，需要重新编译内核才可以修改宏。<strong>线性扫描</strong>全部 socket 集合。</p>
 <p><code>select</code> 缺点：每次调用 <code>select</code> 都需要把 fd 集合从<strong>用户态拷贝到内核态</strong>。<code>epoll</code> 对于每个文件描述符只会拷贝一次到内核，不用重复拷贝。</p>
 <h3 id="poll">poll</h3>
+<p>poll() 函数：在每次调用 select() 函数之前，系统需要把一个 fd 从用户态拷贝到内核态，这样就给系统带来了一定的性能开销。再有单个进程监视的 fd 数量默认是 1024，我们可以通过修改宏定义甚至重新编译内核的方式打破这一限制。但由于 fd_set 是基于数组实现的，在新增和删除 fd 时，数量过大会导致效率降低。</p>
+<p>poll() 的机制与 select() 类似，二者在本质上差别不大。poll() 管理多个描述符也是通过轮询，根据描述符的状态进行处理，但 poll() 没有最大文件描述符数量的限制。</p>
+<p>poll() 和 select() 存在一个相同的缺点，那就是包含大量文件描述符的数组被整体复制到用户态和内核的地址空间之间，而无论这些文件描述符是否就绪，他们的开销都会随着文件描述符数量的增加而线性增大。</p>
+<p><img src="/images/docs/tutorial/java/java-io/54d775cf7df756672b23a1853441d3db.png" alt=""></p>
 <p><code>poll</code> 轮循方式监听，只不过<strong>没有最大连接数</strong>的限制。<strong>线性扫描</strong>。</p>
 <h3 id="epoll">epoll</h3>
 <p><code>epoll</code> 不是轮循监听，而是 socket 有变化时通过<strong>回调</strong>的方式主动告知用户进程。</p>
@@ -1086,8 +1223,15 @@ ch<span style="color:#f92672">.</span><span style="color:#a6e22e">socket</span><
 <p><code>epoll</code> 原理：</p>
 </blockquote>
 <p>epoll 由 <code>epoll_create</code> 、<code>epoll_ctl</code> 和 <code>epoll_wait</code> 这三个底层函数支持，使用的时候用 <code>epoll_create</code> 创建对象，参数 site 是保证内核保证能正确处理的最大句柄数。<code>epoll_ctl</code> 可以添加/移除 socket。<code>epoll_wait</code> 在给定的 timeout 时间内，如果有事件发生，那么就返回变化的文件句柄。</p>
-<p>socket 在 epoll 内部以红黑树形式存储，支持快速查找、删除和插入。除了这个红黑树，还会建立一个链表，用来存储准备就绪的事件，当 <code>epoll_wait</code> 调用时，就查看这个链表里是不是为空就可以。所以 <code>epoll_wait</code> 仅仅<strong>拷贝少量的句柄</strong>返回给内核态，所以比较高效。</p>
-<p>当调用 <code>epoll_ctl</code> 时候，除了把 socket 放入红黑树，还会向内核注册一个回调函数，中断到了，那么就将它放到这个就绪链表里面。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">// 参数size是内核保证能够正确处理的最大句柄数，多于这个最大数时内核可不保证效果。
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">epoll_create</span>(<span style="color:#66d9ef">int</span> size);  
+<span style="color:#75715e">// 将刚建立的socket加入到epoll中让其监控，或者把 epoll正在监控的某个socket句柄移出epoll，不再监控它等等(也就是将I/O流放到内核)。
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">epoll_ctl</span>(<span style="color:#66d9ef">int</span> epfd, <span style="color:#66d9ef">int</span> op, <span style="color:#66d9ef">int</span> fd, <span style="color:#66d9ef">struct</span> epoll_event <span style="color:#f92672">*</span>event);  
+<span style="color:#75715e">// 在给定的timeout时间内，当在监控的所有句柄中有事件发生时，就返回用户态的进程（也就是在内核层面捕获可读写的I/O事件）。
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">epoll_wait</span>(<span style="color:#66d9ef">int</span> epfd, <span style="color:#66d9ef">struct</span> epoll_event <span style="color:#f92672">*</span>events,<span style="color:#66d9ef">int</span> maxevents, <span style="color:#66d9ef">int</span> timeout);
+</code></pre></div><p>epoll 维护了一棵<strong>红黑树</strong>来跟踪所有待检测的文件描述字，黑红树的使用<strong>减少了内核和用户空间大量的数据拷贝和内存分配</strong>，大大提高了性能。</p>
+<p>同时，epoll 维护了一个<strong>链表</strong>来记录就绪事件，内核在每个文件有事件发生时将自己登记到这个就绪事件列表中，通过内核自身的文件 file-eventpoll 之间的回调和唤醒机制，减少了对内核描述字的遍历，大大加速了事件通知和检测的效率，这也为 level-triggered 和 edge-triggered 的实现带来了便利。</p>
+<p><img src="/images/docs/tutorial/java/java-io/d6efc5c5ee8e48dae0323de380dcf6b1.jpg" alt=""></p>
 <p>另外 epoll 有 ET 和 LT 两种触发模式，LT 的话，只要一个句柄上的事件没有处理完，以后调用 <code>epoll_wait</code> 还会返回这个句柄，而 ET 仅仅在第一次返回。</p>
 <blockquote>
 <p><code>epoll</code> 使用流程：</p>
@@ -1096,11 +1240,21 @@ ch<span style="color:#f92672">.</span><span style="color:#a6e22e">socket</span><
 epoll_ctl(epoll_fd, EPOLL_CTL_ADD, <span style="color:#ae81ff">0</span>, <span style="color:#f92672">&amp;</span>event);
 <span style="color:#66d9ef">while</span>(running) 
     event_count <span style="color:#f92672">=</span> epoll_wait(epoll_fd, events, MAX_EVENTS, <span style="color:#ae81ff">30000</span>);
-</code></pre></div><h2 id="aio">AIO</h2>
+</code></pre></div><blockquote>
+<p>epoll vs poll/select</p>
+</blockquote>
+<p>首先，<code>poll/select</code> 先将要监听的 fd 从用户空间拷贝到内核空间, 然后在内核空间里面进行处理之后，再拷贝给用户空间。这里就涉及到内核空间申请内存 (<code>select</code> 是先尝试申请栈上资源, 如果需要监听的 fd 比较多, 就会去申请堆空间的资源)，释放内存等等过程，这在大量 fd 情况下，是非常耗时的。而 epoll 维护了一个红黑树，通过对这棵黑红树进行操作，可以避免大量的内存申请和释放的操作，而且查找速度非常快。</p>
+<p>第二，<code>select/poll</code> 从休眠中被唤醒时，如果监听多个 fd，只要其中有一个 fd 有事件发生，内核就会遍历内部的 list 去检查到底是哪一个事件到达，并没有像 <code>epoll</code> 一样, 通过 fd 直接关联 <code>eventpoll</code> 对象，快速地把 fd 直接加入到 eventpoll 的就绪列表中。</p>
+<h2 id="nio2aio">NIO2(AIO)</h2>
+<p>在Linux中，AIO并未真正使用操作系统所提供的异步I/O，它仍然使用poll或epoll，并将API封装为异步I/O的样子，但是其本质仍然是同步非阻塞I/O，加上第三方产品的出现，Java网络编程明显落后，所以没有成为主流。</p>
 <h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://www.javatpoint.com/java-nio">Java NIO Tutorial</a></li>
 <li><a href="https://tech.meituan.com/2016/11/04/nio.html">Java NIO浅析</a></li>
+<li><a href="https://time.geekbang.org/column/article/152137">31丨性能篇答疑：epoll源码深度剖析</a></li>
+<li><a href="https://time.geekbang.org/column/article/99478">08 | 网络通信优化之I/O模型：如何解决高并发下I/O瓶颈？</a></li>
+<li><a href="https://time.geekbang.org/column/article/100861">11 | 答疑课堂：深入了解NIO的优化实现原理</a></li>
+<li><a href="https://mp.weixin.qq.com/s/AVMN8jyqMXWhE9bRs_e0aQ">Java异步非阻塞编程的几种方式</a></li>
 </ul>
 
 <ins class="adsbygoogle"
@@ -1137,19 +1291,28 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#bio">BIO</a></li>
+    <li><a href="#bio">BIO</a>
+      <ul>
+        <li><a href="#serversocket-示例">ServerSocket 示例</a></li>
+        <li><a href="#同步调用示例">同步调用示例</a></li>
+        <li><a href="#性能问题">性能问题</a></li>
+      </ul>
+    </li>
     <li><a href="#nio">NIO</a>
       <ul>
+        <li><a href="#对-io-进行优化">对 IO 进行优化</a></li>
+        <li><a href="#零拷贝">零拷贝</a></li>
         <li><a href="#channels">Channels</a></li>
         <li><a href="#buffers">Buffers</a></li>
         <li><a href="#selectors">Selectors</a></li>
         <li><a href="#nio-编程示例">NIO 编程示例</a></li>
+        <li><a href="#future-调用">Future 调用</a></li>
         <li><a href="#select">select</a></li>
         <li><a href="#poll">poll</a></li>
         <li><a href="#epoll">epoll</a></li>
       </ul>
     </li>
-    <li><a href="#aio">AIO</a></li>
+    <li><a href="#nio2aio">NIO2(AIO)</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>

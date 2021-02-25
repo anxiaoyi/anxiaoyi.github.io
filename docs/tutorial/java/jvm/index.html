@@ -7,13 +7,8 @@
 <meta name="description" content="JVM"><meta property="og:title" content="JVM" />
 <meta property="og:description" content="JVM 虚拟机内存模型 程序寄存器 pc register (program counter)： 一个包含当前时刻指令的地址的寄存器，程序寄存器区域是唯一一个在 Java 虚拟机规范中没有规定任何 OutOfMemoryError 情况的区域
 虚拟机栈 栈会抛出两种异常：StackOverflowError 和 OutOfMemoryError，在 HotSpot 虚拟机栈中，可以使用参数 -Xss1M 来设置栈的大小为 1MB。随着调用函数参数的增加和局部变量的增加，单次函数调用对栈空间的需求也会增加，因此栈的最大递归次数不是一成不变的。函数嵌套调用的次数由栈的大小决定：栈越大，函数嵌套调用次数越多；对一个函数而言，它的参数越多，内部局部变量越多，它的栈帧就越大，其嵌套调用次数就会越少。
-本地方法栈 与 stack 一样，同样抛出两种异常：StackOverflowError 和 OutOfMemoryError。在 sun 的 HOT SPOT 虚拟机中，不区分本地方法栈和虚拟机栈。
-元数据区 在 Java 8 中，永久代已经被移除，被一个称为“元数据区”（元空间）的区域所取代。元空间的本质和永久代类似，元空间与永久代之间最大的区别在于：元空间并不在虚拟机中，而是使用本地内存。因此，默认情况下，元空间的大小仅受本地内存限制。类的元数据放入 native memory, 字符串池和类的静态变量放入 java 堆中，这样可以加载多少类的元数据就不再由 MaxPermSize 控制, 而由系统的实际可用空间来控制。
-如果不指定元数据区大小的话，默认情况下，虚拟机会耗尽所有的可用系统内存。-XX:MaxMetaspaceSize 可以指定元数据区大小。
- String 字符串哪个区
- Metaspace 元数据区中的常量池里面。
- Perm 为啥被淘汰
-  移除永久代是为了融合 HotSpot JVM 与 JRockit VM 而做出的努力，因为 JRockit 没有永久代，所以不需要配置永久代。 永久代内存经常不够用或发生内存溢出，爆出异常 java.lang.OutOfMemoryError: PermGen。这是因为在 JDK1." />
+ 局部变量表是存放方法参数和局部变量的区域。相对于类属性变量的准备阶段和初始化阶段来说，局部变量没有准备阶段，必须显式初始化。如果是非静态方法，则在 index [O] 位置上存储的是方法所属对象的实例引用，随后存储的是参数和局部变量。字节码指令中的 STORE 指令就是将操作栈申计算完成的局部变量写回局部变量表的存储空间内。 操作栈是一个初始状态为空的桶式结构栈。在方法执行过程中，会有各种指令往栈中写人和提取信息。 JVM 的执行引擎是基于栈的执行引擎，其中的栈指的就是操作栈。 每个栈中包含一个在常量池中对当前方法的引用 ， 目的是支持方法调用过程的动态连接。 方法执行时有两种退出情况。第一， 正常退出，即正常执行到任何方法的返回字节码指令 ， 如 RETURN 、 IRETURN 、 ARETURN 等，第二 ， 异常退出。无论何种退出情况，都将返回至方法当前被调用的位置。  本地方法栈 与 stack 一样，同样抛出两种异常：StackOverflowError 和 OutOfMemoryError。在 sun 的 HOT SPOT 虚拟机中，不区分本地方法栈和虚拟机栈。
+元数据区 在 JDK7 及之前的版本中，只有 Hotspot 才有 Perm 区，译为永久代 ， 它在启动时固定大小，很难进行调优，并且 FGC 时会移动类元信息。在某些场景下，如果动态加载类过多，容易产生 Perm 区的 OOM 。为了解决该问题 ， 需要设定运行参数 -XX: MaxPermSize= 1280m ，如果部署到新机器上，往往会因为 NM 参数没有修改导致故障再现。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/jvm/" />
 
@@ -24,7 +19,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -983,10 +978,19 @@ data-full-width-responsive="true"></ins>
 <p><strong>pc register (program counter)</strong>： 一个包含当前时刻指令的地址的<strong>寄存器</strong>，程序寄存器区域是<strong>唯一一个</strong>在 Java 虚拟机规范中没有规定任何 <code>OutOfMemoryError</code> 情况的区域</p>
 <h3 id="虚拟机栈">虚拟机栈</h3>
 <p>栈会抛出两种异常：<code>StackOverflowError</code> 和 <code>OutOfMemoryError</code>，在 HotSpot 虚拟机栈中，可以使用参数 <code>-Xss1M</code> 来设置栈的大小为 <strong>1MB</strong>。随着<strong>调用函数参数的增加和局部变量的增加</strong>，单次函数调用对栈空间的需求也会增加，因此栈的最大递归次数不是一成不变的。函数嵌套调用的次数由栈的大小决定：栈越大，函数嵌套调用次数越多；对一个函数而言，它的参数越多，内部局部变量越多，它的栈帧就越大，其嵌套调用次数就会越少。</p>
+<p><img src="/images/docs/tutorial/java/jvm/virtual-stack-push-pop.png" alt=""></p>
+<ul>
+<li><strong>局部变量表</strong>是存放方法参数和局部变量的区域。相对于类属性变量的准备阶段和初始化阶段来说，局部变量没有准备阶段，必须显式初始化。如果是非静态方法，则在 index [O] 位置上存储的是方法所属对象的实例引用，随后存储的是参数和局部变量。字节码指令中的 <code>STORE</code> 指令就是将操作栈申计算完成的局部变量写回局部变量表的存储空间内。</li>
+<li><strong>操作栈是一个初始状态为空的桶式结构栈</strong>。在方法执行过程中，会有各种指令往栈中写人和提取信息。 JVM 的执行引擎是基于栈的执行引擎，其中的栈指的就是操作栈。</li>
+<li>每个栈中包含一个在常量池中对当前方法的引用 ， 目的是支持方法调用过程的动态连接。</li>
+<li>方法执行时有两种退出情况。第一， 正常退出，即正常执行到任何方法的返回字节码指令 ， 如 RETURN 、 IRETURN 、 ARETURN 等，第二 ， 异常退出。无论何种退出情况，都将返回至方法当前被调用的位置。</li>
+</ul>
 <h3 id="本地方法栈">本地方法栈</h3>
 <p>与 <strong>stack</strong> 一样，同样抛出两种异常：<code>StackOverflowError</code> 和 <code>OutOfMemoryError</code>。在 sun 的 HOT SPOT 虚拟机中，不区分本地方法栈和虚拟机栈。</p>
 <h3 id="元数据区">元数据区</h3>
-<p>在 Java 8 中，永久代已经被移除，被一个称为“元数据区”（元空间）的区域所取代。元空间的本质和永久代类似，元空间与永久代之间最大的区别在于：<strong>元空间并不在虚拟机中，而是使用本地内存</strong>。因此，默认情况下，元空间的大小仅受本地内存限制。<strong>类的元数据放入 native memory, 字符串池和类的静态变量放入 java 堆</strong>中，这样可以加载多少类的元数据就不再由 MaxPermSize 控制, 而由系统的实际可用空间来控制。</p>
+<p>在 JDK7 及之前的版本中，只有 Hotspot 才有 Perm 区，译为永久代 ， 它在<strong>启动时固定大小，很难进行调优</strong>，并且 FGC 时会移动类元信息。在某些场景下，如果动态加载类过多，容易产生 Perm 区的 OOM 。为了解决该问题 ， 需要设定运行参数 <code>-XX: MaxPermSize= 1280m</code> ，如果部署到新机器上，往往会因为 NM 参数没有修改导致故障再现。</p>
+<p>区别于永久代 ， <strong>元空间在本地内存中分配</strong>。在 JDK8 里， Perm 区 中的所有内容中<strong>字符串常量移至堆内存</strong>，其他内容包括<strong>类元信息、字段、静态属性、方法、常量等都移动至元空间内</strong>。</p>
+<p>在 Java 8 中，永久代已经被移除，被一个称为“元数据区”（元空间）的区域所取代。元空间的本质和永久代类似，元空间与永久代之间最大的区别在于：<strong>元空间并不在虚拟机中，而是使用本地内存</strong>。因此，默认情况下，元空间的大小仅受本地内存限制。<strong>类的元数据放入 native memory， 字符串池和类的静态变量放入 java 堆</strong>中，这样可以加载多少类的元数据就不再由 MaxPermSize 控制， 而由系统的实际可用空间来控制。</p>
 <p>如果不指定元数据区大小的话，默认情况下，虚拟机会耗尽所有的可用系统内存。<code>-XX:MaxMetaspaceSize</code> 可以指定元数据区大小。</p>
 <blockquote>
 <p>String 字符串哪个区</p>
@@ -1000,6 +1004,9 @@ data-full-width-responsive="true"></ins>
 <li>永久代内存经常不够用或发生内存溢出，爆出异常 <code>java.lang.OutOfMemoryError: PermGen</code>。这是因为在 JDK1.7 版本中，指定的 <code>PermGen</code> 区大小为 8M，由于 <code>PermGen</code> 中类的元数据信息在每次 <code>FullGC</code> 的时候都可能被收集，回收率都偏低，成绩很难令人满意；还有，为 <code>PermGen</code> 分配多大的空间很难确定，它的大小依赖于很多因素，比如，JVM 加载的 class 总数、常量池的大小和方法的大小等。</li>
 </ul>
 <h3 id="堆">堆</h3>
+<p>堆分成两大块 新生代和老年代。对象产生之初在新生代 ， 步入暮年时进入老年代 ， 但是老年代也接纳在新生代无法容纳的超大对象。新生代 = 1 个 Eden 区 + 2 个Survivor 区。绝大部分对象在 Eden 区生成 ， 当 Eden 区装填满的时候 ， 会触发 Young Garbage Collection ， 即 YGC 。垃圾回收的时候 ， 在 Eden 区实现清除策略 ， 没有被引用的对象则直接回收。依然存活的对象会被移送到 Survivor 区 ， 这个区真是名副其实的存在。 Survivor 区分为 S0 和 S1 两块内存空间 ， 送到哪块空间呢?每次 YGC 的时候， 它 们 将存活的对象复制到未使用的那块空间，然后将当前正在使用的空间完全清除 ， 交换两块空间的使用状态。如果 YGC 要移送的对象大于 Survivor 区容量的上限 ，则直接移交给老年代。假如一些没有进取心的对象以为可以一直在新生代的 Survivor 区交换来交换去，那就错了。每个对象都有一个计数器，每次 YGC 都会加 1 。<code>-XX:MaxTenuringThreshold</code> 参数能配置计数器的值到达某个阐值的时候 ， 对象从新生代晋升至老年代。如果该参数配置为 I ，那么从新生代的 Eden 区直接移至老年代。默认值是 <code>15</code> ， 可以在 Survivor 区交换 14 次之后 ， 晋升至老年代。</p>
+<p><strong>对象与简要分配流程图</strong>：</p>
+<p><img src="/images/docs/tutorial/java/jvm/allocate-object-and-gc-flow.png" alt=""></p>
 <blockquote>
 <p>所有对象都是分配在堆上吗？</p>
 </blockquote>

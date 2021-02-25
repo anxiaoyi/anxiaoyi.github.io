@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Redis 6"><meta property="og:title" content="Redis 6" />
+<meta property="og:description" content="Redis 6 介绍 Redis 6 的几个关键新特性。
+多线程处理 在 Redis 6.0 中，非常受关注的第一个新特性就是多线程。这是因为，Redis一直被大家熟知的就是它的单线程架构，虽然有些命令操作可以用后台线程或子进程执行（比如数据删除、快照生成、AOF重写），但是，从网络IO处理到实际的读写命令处理，都是由单个线程完成的。
+随着网络硬件的性能提升，Redis的性能瓶颈有时会出现在网络IO的处理上，也就是说，单个主线程处理网单个主线程处理网络请求的速度跟不上底层网络硬件的速度络请求的速度跟不上底层网络硬件的速度。
+为了应对这个问题，一般有两种方法。
+第一种方法是，用用戶态网络协议栈（例如DPDK）取代内核网络协议栈，让网络请求的处理不用在内核里执行，直接在用戶态完成处理就行。
+对于高性能的Redis来说，避免频繁让内核进行网络请求处理，可以很好地提升请求处理效率。但是，这个方法要求在Redis的整体架构中，添加对用戶态网络协议栈的支持，需要修改Redis源码中和网络相关的部分（例如修改所有的网络收发请求函数），这会带来很多开发工作量。而且新增代码还可能引入新Bug，导致系统不稳定。所以，Redis 6.0中并没有采用这个方法。
+第二种方法就是采用多个IO线程来处理网络请求，提高网络请求处理的并行度。Redis6.0就是采用的这种方法。
+但是，Redis的多IO线程只是用来处理网络请求的，对于读写命令，Redis仍然使用单线程来处理。这是因为，Redis处理请求时，网络处理经常是瓶颈，通过多个IO线程并行处理网络操作，可以提升实例的整体处理性能。而继续使用单线程执行命令操作，就不用为了保证Lua脚本、事务的原子性，额外开发多线程互斥机制了。这样一来，Redis线程模型实现就简单了。
+Redis 6.0中，多线程机制默认是关闭的，如果需要使用多线程功能，需要在 redis.conf 中完成两个设置。
+ 1.设置io-thread-do-reads配置项为yes，表示启用多线程。  io-threads-do-reads yes  2.设置线程个数。一般来说，线程个数要小于Redis实例所在机器的CPU核个数，例如，对于一个8核的机器来说，Redis官方建议配置6个IO线程。  io-threads 6 如果你在实际应用中，发现Redis实例的CPU开销不大，吞吐量却没有提升，可以考虑使用Redis 6.0的多线程机制，加速网络处理，进而提升实例的吞吐量。
+客户端缓存 和之前的版本相比，Redis 6.0新增了一个重要的特性，就是实现了服务端协助的客戶端缓存功能，也称为跟踪（Tracking）功能。有了这个功能，业务应用中的Redis客戶端就可以把读取的数据缓存在业务应用本地了，应用就可以直接在本地快速读取数据了。
+如果数据被修改了或是失效了，如何通知客戶端对缓存的数据做失效处理？
+6.0实现的Tracking功能实现了两种模式，来解决这个问题。
+第一种模式是普通模式。
+在这个模式下，实例会在服务端记录客戶端读取过的key，并监测key是否有修改。一旦key的值发生变化，服务端会给客戶端发送invalidate消息，通知客戶端缓存失效了。
+在使用普通模式时，有一点你需要注意一下，服务端对于记录的key只会报告一次invalidate消息，也就是说，服务端在给客戶端发送过一次invalidate消息后，如果key再被修改，此时，服务端就不会再次给客戶端发送invalidate消息。
+只有当客戶端再次执行读命令时，服务端才会再次监测被读取的key，并在key修改时发送invalidate消息。这样设计的考虑是节省有限的内存空间。毕竟，如果客戶端不再访问这个key了，而服务端仍然记录key的修改情况，就会浪费内存资源
+我们可以通过执行下面的命令，打开或关闭普通模式下的Tracking功能。
+CLIENT TRACKING ON|OFF 第二种模式是广播模式。
+在这个模式下，服务端会给客戶端广播所有key的失效情况，不过，这样做了之后，如果 key 被频繁修改，服务端会发送大量的失效广播消息，这就会消耗大量的网络带宽资源。
+所以，在实际应用时，我们会让客戶端注册希望跟踪的key的前缀，当带有注册前缀的key被修改时，服务端会把失效消息广播给所有注册的客戶端。和普通模式不同，在广播模式下，即使客戶端还没有读取过和普通模式不同，在广播模式下，即使客戶端还没有读取过key，但只要它注册了要跟踪的key，服务端都会把key失效消息通知给这个客戶端key，但只要它注册了要跟踪的key，服务端都会把key失效消息通知给这个客戶端。
+我给你举个例子，带你看一下客戶端如何使用广播模式接收key失效消息。当我们在客戶端执行下面的命令后，如果服务端更新了user:id:1003这个key，那么，客戶端就会收到invalidate消息。
+CLIENT TRACKING ON BCAST PREFIX user 这种监测带有前缀的key的广播模式，和我们对key的命名规范非常匹配。我们在实际应用时，会给同一业务下的key设置相同的业务名前缀，所以，我们就可以非常方便地使用广播模式。
+不过，刚才介绍的普通模式和广播模式，需要客戶端使用RESP 3协议，RESP 3协议是6.0新启用的通信协议。
+权限控制 在Redis 6.0 版本之前，要想实现实例的安全访问，只能通过设置密码来控制，例如，客戶端连接实例前需要输入密码。
+此外，对于一些高⻛险的命令（例如KEYS、FLUSHDB、FLUSHALL等），在Redis 6.0 之前，我们也只能通过rename-command来重新命名这些命令，避免客戶端直接调用。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/redis6/" />
+
+<title>Redis 6 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+
+
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/datastructure/" >
+      Redis 数据结构
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/io-pattern/" >
+      Redis 线程 I/O 模型
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/resp/" >
+      Redis RESP 通信协议
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/persistence/" >
+      Redis 持久化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-copy/" >
+      Redis 复制
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/sentinel/" >
+      Redis 哨兵
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/cluster/" >
+      Redis 集群
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/cache/" >
+      Redis 缓存
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/distributed-lock/" >
+      Redis 分布式锁 🔒
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/evict-maxmemory/" >
+      Redis 过期和淘汰策略
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-transaction/" >
+      Redis 事务
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis_ops/" >
+      Redis 运维与优化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis-scenario/" >
+      Redis 使用场景
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/redis/redis6/"  class="active">
+      Redis 6
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Redis 6</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#多线程处理">多线程处理</a></li>
+    <li><a href="#客户端缓存">客户端缓存</a></li>
+    <li><a href="#权限控制">权限控制</a></li>
+    <li><a href="#resp-3-协议">RESP 3 协议</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="redis-6">Redis 6</h1>
+<p>介绍 Redis 6 的几个关键新特性。</p>
+<h2 id="多线程处理">多线程处理</h2>
+<p>在 Redis 6.0 中，非常受关注的第一个新特性就是多线程。这是因为，Redis一直被大家熟知的就是它的单线程架构，虽然有些命令操作可以用后台线程或子进程执行（比如数据删除、快照生成、AOF重写），但是，<strong>从网络IO处理到实际的读写命令处理，都是由单个线程完成的</strong>。</p>
+<p>随着网络硬件的性能提升，Redis的性能瓶颈有时会出现在网络IO的处理上，也就是说，单个主线程处理网单个主线程处理网络请求的速度跟不上底层网络硬件的速度络请求的速度跟不上底层网络硬件的速度。</p>
+<p>为了应对这个问题，一般有两种方法。</p>
+<p>第一种方法是，用用戶态网络协议栈（例如DPDK）取代内核网络协议栈，让网络请求的处理不用在内核里执行，直接在用戶态完成处理就行。</p>
+<p>对于高性能的Redis来说，避免频繁让内核进行网络请求处理，可以很好地提升请求处理效率。但是，这个方法要求在Redis的整体架构中，添加对用戶态网络协议栈的支持，需要修改Redis源码中和网络相关的部分（例如修改所有的网络收发请求函数），这会带来很多开发工作量。而且新增代码还可能引入新Bug，导致系统不稳定。所以，Redis 6.0中并没有采用这个方法。</p>
+<p>第二种方法就是采用<strong>多个IO线程来处理网络请求</strong>，提高网络请求处理的并行度。Redis6.0就是采用的这种方法。</p>
+<p>但是，Redis的<strong>多IO线程只是用来处理网络请求</strong>的，对于<strong>读写命令，Redis仍然使用单线程来处理</strong>。这是因为，Redis处理请求时，网络处理经常是瓶颈，通过多个IO线程并行处理网络操作，可以提升实例的整体处理性能。而继续使用单线程执行命令操作，就不用为了保证Lua脚本、事务的原子性，额外开发多线程互斥机制了。这样一来，Redis线程模型实现就简单了。</p>
+<p>Redis 6.0中，多线程机制默认是关闭的，如果需要使用多线程功能，需要在 <code>redis.conf</code> 中完成两个设置。</p>
+<ul>
+<li>1.设置<code>io-thread-do-reads</code>配置项为<code>yes</code>，表示启用多线程。</li>
+</ul>
+<pre><code>io-threads-do-reads yes
+</code></pre><ul>
+<li>2.设置线程个数。一般来说，<strong>线程个数要小于Redis实例所在机器的CPU核个数</strong>，例如，对于一个8核的机器来说，Redis官方建议配置6个IO线程。</li>
+</ul>
+<pre><code>io-threads  6
+</code></pre><p>如果你在实际应用中，发现Redis实例的CPU开销不大，吞吐量却没有提升，可以考虑使用Redis 6.0的多线程机制，加速网络处理，进而<strong>提升实例的吞吐量</strong>。</p>
+<h2 id="客户端缓存">客户端缓存</h2>
+<p>和之前的版本相比，Redis 6.0新增了一个重要的特性，就是实现了<strong>服务端协助的客戶端缓存功能</strong>，也称为跟踪（Tracking）功能。有了这个功能，业务应用中的Redis客戶端就可以把读取的数据缓存在业务应用本地了，应用就可以直接在本地快速读取数据了。</p>
+<p>如果数据被修改了或是失效了，如何通知客戶端对缓存的数据做失效处理？</p>
+<p>6.0实现的<strong>Tracking</strong>功能实现了两种模式，来解决这个问题。</p>
+<p>第一种模式是<strong>普通模式</strong>。</p>
+<p>在这个模式下，实例会在服务端记录客戶端读取过的key，并监测key是否有修改。一旦key的值发生变化，服务端会给客戶端发送invalidate消息，通知客戶端缓存失效了。</p>
+<p>在使用普通模式时，有一点你需要注意一下，服务端对于记录的key只会报告一次invalidate消息，也就是说，服务端在给客戶端发送过一次invalidate消息后，如果key再被修改，此时，服务端就不会再次给客戶端发送invalidate消息。</p>
+<p>只有当客戶端再次执行读命令时，服务端才会再次监测被读取的key，并在key修改时发送invalidate消息。这样设计的考虑是节省有限的内存空间。毕竟，如果客戶端不再访问这个key了，而服务端仍然记录key的修改情况，就会浪费内存资源</p>
+<p>我们可以通过执行下面的命令，打开或关闭普通模式下的Tracking功能。</p>
+<pre><code>CLIENT TRACKING ON|OFF
+</code></pre><p>第二种模式是<strong>广播模式</strong>。</p>
+<p>在这个模式下，服务端会给客戶端广播所有key的失效情况，不过，这样做了之后，如果 key 被频繁修改，服务端会发送大量的失效广播消息，这就会消耗大量的网络带宽资源。</p>
+<p>所以，在实际应用时，我们会让客戶端注册希望跟踪的key的前缀，当带有注册前缀的key被修改时，服务端会把失效消息广播给所有注册的客戶端。和普通模式不同，在广播模式下，即使客戶端还没有读取过和普通模式不同，在广播模式下，即使客戶端还没有读取过key，但只要它注册了要跟踪的key，服务端都会把key失效消息通知给这个客戶端key，但只要它注册了要跟踪的key，服务端都会把key失效消息通知给这个客戶端。</p>
+<p>我给你举个例子，带你看一下客戶端如何使用广播模式接收key失效消息。当我们在客戶端执行下面的命令后，如果服务端更新了user:id:1003这个key，那么，客戶端就会收到invalidate消息。</p>
+<pre><code>CLIENT TRACKING ON BCAST PREFIX user
+</code></pre><p>这种监测带有前缀的key的广播模式，和我们对key的命名规范非常匹配。我们在实际应用时，会给同一业务下的key设置相同的业务名前缀，所以，我们就可以非常方便地使用广播模式。</p>
+<p>不过，刚才介绍的普通模式和广播模式，需要客戶端使用RESP 3协议，RESP 3协议是6.0新启用的通信协议。</p>
+<h2 id="权限控制">权限控制</h2>
+<p>在Redis 6.0 版本之前，要想实现实例的安全访问，只能通过设置密码来控制，例如，客戶端连接实例前需要输入密码。</p>
+<p>此外，对于一些高⻛险的命令（例如<code>KEYS</code>、<code>FLUSHDB</code>、<code>FLUSHALL</code>等），在Redis 6.0 之前，我们也只能通过<code>rename-command</code>来重新命名这些命令，避免客戶端直接调用。</p>
+<p>Redis 6.0 提供了更加细粒度的访问权限控制，这主要有两方面的体现。</p>
+<p>首先，6.0版本<strong>支持创建不同用戶来使用Redis</strong>。在6.0版本前，所有客戶端可以使用同一个密码进行登录使用，但是没有用戶的概念，而在6.0中，我们可以使用<code>ACL SETUSER</code>命令创建用戶。例如，我们可以执行下面的命令，创建并启用一个用戶<code>normaluser</code>，把它的密码设置为 &ldquo;abc&rdquo;：</p>
+<pre><code>ACL SETUSER normaluser on &gt; abc
+</code></pre><p>另外，6.0版本还<strong>支持以用戶为粒度设置命令操作的访问权限</strong>。我把具体操作列在了下表中，你可以看下，其中，加号（+）和减号（-）就分别表示给用戶赋予或撤销命令的调用权限。</p>
+<p><img src="/images/docs/tutorial/redis/redis6/redis-permission.png" alt=""></p>
+<p>设置用戶normaluser只能调用Hash类型的命令操作，而不能调用String类型的命令操作，我们可以执行如下命令：</p>
+<pre><code>ACL SETUSER normaluser +@hash -@string
+</code></pre><p>除了设置某个命令或某类命令的访问控制权限，6.0版本还支持以key为粒度设置访问权限。</p>
+<p>具体的做法是使用波浪号“~”和key的前缀来表示控制访问的key。例如，我们执行下面命令，就可以设置用戶normaluser只能对以“user:”为前缀的key进行命令操作：</p>
+<pre><code>ACL SETUSER normaluser ~user:* +@all
+</code></pre><h2 id="resp-3-协议">RESP 3 协议</h2>
+<p>在RESP 2中，客戶端和服务器端的通信内容都是以字节数组形式进行编码的，客戶端需要根据操作的命令或是数据类型自行对传输的数据进行解码，增加了客戶端开发复杂度。</p>
+<p>而RESP 3直接支持多种数据类型的区分编码，包括空值、浮点数、布尔值、有序的字典集合、无序的集合等。</p>
+<p>所谓区分编码，就是指直接通过不同的开头字符，区分不同的数据类型，这样一来，客戶端就可以直接通过判断传递消息的开头字符，来实现数据转换操作了，提升了客戶端的效率。除此之外，RESP 3协议还可以支持客戶端以<strong>普通模式</strong>和<strong>广播模式实</strong>现客戶端缓存。</p>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#多线程处理">多线程处理</a></li>
+    <li><a href="#客户端缓存">客户端缓存</a></li>
+    <li><a href="#权限控制">权限控制</a></li>
+    <li><a href="#resp-3-协议">RESP 3 协议</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

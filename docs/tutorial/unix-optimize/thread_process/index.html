@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
 
 
-<script defer src="/en.search.min.e56a22106407ec6c87df25d090d2dc52360b8215e13f3ea78cddf1c1ff247046.js" integrity="sha256-5WoiEGQH7GyH3yXQkNLcUjYLghXhPz6njN3xwf8kcEY="></script>
+<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -958,6 +958,7 @@ var _hmt = _hmt || [];
         <li><a href="#进程调度算法">进程调度算法</a></li>
       </ul>
     </li>
+    <li><a href="#协程">协程</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -1167,6 +1168,12 @@ enqueue_task_fair(); <span style="color:#75715e">// 放入到 CFS 调度队列
 <p>CFS 会为每一个进程安排一个虚拟运行时间 <code>vruntime</code>，用红黑树进行排序。所有可运行的进程通过不断地插入操作最终都存储在以时间为顺序的红黑树中，vruntime 最小的在树的左侧，vruntime 最大的在树的右侧。</p>
 <p><img src="/images/docs/tutorial/unix-optimize/thread/c2b86e79f19d811ce10774688fc0c093.jpeg" alt=""></p>
 <p>每个 CPU 都有自己的 <code>struct rq</code> 结构，其用于描述在此 CPU 上所运行的所有进程，其包括一个实时进程队列 <code>rt_rq</code> 和一个 CFS 运行队列 <code>cfs_rq</code>，在调度时，调度器首先会先去实时进程队列找是否有实时进程需要运行，如果没有才会去 CFS 运行队列找是否有进程需要运行。</p>
+<h2 id="协程">协程</h2>
+<p>如果想兼顾开发效率，又能保证高并发，协程就是最好的选择。<strong>它可以在保持异步化运行机制的同时，用同步方式写代码</strong>，这在实现高并发的同时，缩短了开发周期，是高性能服务未来的发展方向。</p>
+<p>协程与异步编程相似的地方在于，它们<strong>必须使用非阻塞的系统调用与内核交互</strong>，把切换请求的权力牢牢掌握在用户态的代码中。但不同的地方在于，协程把异步化中的两段函数，封装为一个阻塞的协程函数。这个函数执行时，会使调用它的协程无感知地放弃执行权，由协程框架切换到其他就绪的协程继续执行。当这个函数的结果满足后，协程框架再选择合适的时机，切换回它所在的协程继续执行。</p>
+<p>用户态的代码切换协程，与内核切换线程的原理是一样的。线程的栈有 8 MB，而协程栈的大小通常只有几十 KB。更低的内存占用空间为高并发提供了保证，毕竟十万并发请求，就意味着 10 万个协程。当然，栈缩小后，就<strong>尽量不要使用递归函数</strong>，也不能在栈中申请过多的内存，这是实现高并发必须付出的代价。</p>
+<p>协程就是用户态的线程。然而，为了保证所有切换都在用户态进行，<strong>协程必须重新封装所有的阻塞系统调用</strong>，否则，一旦协程触发了线程切换，会导致这个线程进入休眠状态，<strong>进而其上的所有协程都得不到执行</strong>。比如，普通的 <code>sleep</code> 函数会让当前线程休眠，由内核来唤醒线程，而协程化改造后，<code>sleep</code> 只会让当前协程休眠，由协程框架在指定时间后唤醒协程。再比如，线程间的互斥锁是使用信号量实现的，而信号量也会导致线程休眠，协程化改造互斥锁后，同样由框架来协调、同步各协程的执行。</p>
+<p>所以，协程的高性能，建立在切换必须由用户态代码完成之上，这要求协程生态是完整的，要尽量覆盖常见的组件。比如 MySQL 官方提供的客户端 SDK，它使用了阻塞 socket 做网络访问，会导致线程休眠，<strong>必须用非阻塞 <code>socket</code> 把 SDK 改造为协程函数后</strong>，才能在协程中使用。</p>
 <h2 id="参考">参考</h2>
 <ul>
 <li>《趣谈 Linux 操作系统》</li>
@@ -1227,6 +1234,7 @@ data-full-width-responsive="true"></ins>
         <li><a href="#进程调度算法">进程调度算法</a></li>
       </ul>
     </li>
+    <li><a href="#协程">协程</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>

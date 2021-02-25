@@ -199,5 +199,19 @@ MongoDB 的 ObjectId 提供了一个 12 byte（96 位）的 ID 定义，其中 3
 存储 UID range 作为分片 UID hash 作为分片 </description>
     </item>
     
+    <item>
+      <title>排查问题</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/troubleshoot/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/troubleshoot/</guid>
+      <description>排查问题 一个根本原因，经过一条或几条传播路径，最后表现出某些现象。
+监控  服务表现：问题的具体表现（出错、超时），应用日志、依赖服务的状态等 系统状态：操作系统指标（各种资源状态、系统日志等）、VM 指标（主要是 GC） 硬件指标：CPU、内存、网络、硬盘是否达到瓶颈  业务指标可以通过框架输出日志 + ELK/graphite 之类生成图形，系统监控可以用 Cacti/Zabbix 进行监控。
+3 分钟  30 秒获取整体服务情况：请求量、响应时间分布、错误码分布，主要利用的就是业务的监控系统 3 分钟了解某台机器的负载情况：最耗 CPU 的线程和函数（CPU）、TCP 连接状态统计和 buffer 堆积状态 （网络）、程序的内存分布、最耗内存的对象（内存）、当前是哪个程序在占用磁盘 I/O、GC 情况。主要用的就是 Linux 和 Java 的一些工具：top、perf、netstat、iftop、jmap、jstat 等 3 分钟了解请求的链路情况：网络传输、系统调用、库函数调用、应用层函数调用的调用链、输入、输出、时长。TCPdump/strace/ltrace/btrace/housemd 等 3 分钟检索当前系统的快照情况：线程栈情况、某个变量的值、存储或缓存里的某个值是什么。jmap/jstack/gdb/pmap 等  保留现场 系统出错，首先要解决问题，通过运维的介入把服务恢复，同时尽量保留现场 （比如保留一台出问题的机器，只摘除不重启）。其次是通过监控、日志初步定为问题原因后，在线下使用测试环境压测、TCPcopy 等复现问题，这时再排除就没什么心理负担了。
+请求 block 或者变慢的时候，用 jstack/jmap/jstat 之类的都来一遍，其他类型的 Linux 程序主要会留 gcore 和各种指标类的数据，top/perf/strace。
+jdump 命令需要很长时间，线上无法服务，应该先摘掉机器，再进行 dump，如果无法摘，则考虑 btrace/housemd 挂到进程上分析，不过 btrace 可能会导致应用假死，几率是几十分之一，慎用。
+ 参考  《高可用系统 - 第一卷》  </description>
+    </item>
+    
   </channel>
 </rss>
