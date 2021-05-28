@@ -8,7 +8,13 @@
 <meta property="og:description" content="设计微博系统 架构 信息流聚合一般有三种架构：推模式、拉模式以及推拉结合。
 针对关注的粉丝量大的用户采用拉模式，而对于一般用户来说，他们的粉丝量有限，采用推模式问题不大，这样的话一个用户要获取所有关注人的微博，一方面要请求粉丝量大的关注人的发件箱列表，另一方面要请求自己的收件箱列表，再把两者聚合在一起就可以得到完整的 Feed 了。虽然推拉结合的方式看似更加合理，但是由此带来的业务复杂度就比较高了，因为用户的粉丝数是不断变化的，所以对于哪些用户使用推模式，哪些用户使用拉模式，维护起来成本就很高了。所以综合考量下来，微博 Feed 采用了拉模式。
 前面提到采用拉模式的话，需要拉取所有关注人的发件箱，在关注人只有几十几百个的时候，获取效率还是非常高的。但是当关注人上千以后，耗时就会增加很多，实际验证获取超过 4000 个用户的发件箱，耗时要几百 ms，并且长尾请求（也就是单次请求耗时超过 1s）的概率也会大大增加。为了解决关注人数上千的用户拉取 Feed 效率低的问题，我们采用了分而治之的思想，在拉取之前把用户的关注人分为几组，并行拉取，这样的话就把一次性的聚合计算操作给分解成多次聚合计算操作，最后再把多次聚合计算操作的结果汇总在一起，类似于 MapReduce 的思路。经过我们的实际验证，通过这种方法可以有效地降级关注人数上千用户拉取 Feed 的耗时，长尾请求的数量也大大减少了。
-存储 UID range 作为分片 UID hash 作为分片 " />
+存储 UID range 作为分片 UID hash 作为分片 关系的存储 (1) 最简单的只需要两张表就够了：
+用户信息表：
+| user_id | user_info | ...用户关系表，表示，follower_user 关注了 followee_user：
+| id | follower_user_id | followee_user_id |
+查看 user_a 粉丝多少人：
+SELECT COUNT(*) FROM table_relation WHERE followee_user = `user_a`; 查看 user_a 关注了多少人：
+SELECT COUNT(*) FROM table_relation WHERE follower_user = `user_a`;  (2) 不过随着用户增长，比如达到1亿，那么平均一对用户关系可能就会有100条关系，那么将会扩展到百亿级别。所以必须水平拆分。用户表好选取拆分的键，就是 user_id。不过关系表，根据 follower_user_id 拆分，那么查询这个人关注了多少人好查询，但是查询某个人有多少粉丝，就需要去所有分片上查询汇总了，相反按照 followee_user_id 拆分，那么这个人查询关注了多少人，就不好查询了。也就是总有一半的场景查询效率低下。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/design-weibo/" />
 
@@ -16,10 +22,10 @@
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+<link rel="stylesheet" href="/book.min.2c8703ef3571e9e1469d79306fda1ed51333153e6ba74aff763a8bc7a9fdaea2.css" integrity="sha256-LIcD7zVx6eFGnXkwb9oe1RMzFT5rp0r/djqLx6n9rqI=">
 
 
-<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
+<script defer src="/en.search.min.1e7619796b61414a9016ae3ce0c51191e796bfabae1a014100792c00d2d6c838.js" integrity="sha256-HnYZeWthQUqQFq484MURkeeWv6uuGgFBAHksANLWyDg="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -109,6 +115,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/front-end-optimization-guide/" >
       前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
   </a>
 
 
@@ -652,6 +684,36 @@ var _hmt = _hmt || [];
 </li>
       
     
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/hystrix/" >
+      Hystrix
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/architecture-cases/" >
+      架构案例参考
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/design-youtube/" >
+      设计 Youtube
+  </a>
+
+</li>
+      
+    
   </ul>
   
 
@@ -1000,8 +1062,12 @@ var _hmt = _hmt || [];
       <ul>
         <li><a href="#uid-range-作为分片">UID range 作为分片</a></li>
         <li><a href="#uid-hash-作为分片">UID hash 作为分片</a></li>
+        <li><a href="#关系的存储">关系的存储</a></li>
+        <li><a href="#帖子的存储">帖子的存储</a></li>
+        <li><a href="#时间线的存储">时间线的存储</a></li>
       </ul>
     </li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -1032,6 +1098,70 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/distributed/design-weibo/Snipaste_2021-02-18_22-22-33.png" alt=""></p>
 <h3 id="uid-hash-作为分片">UID hash 作为分片</h3>
 <p><img src="/images/docs/tutorial/distributed/design-weibo/Snipaste_2021-02-18_22-24-59.png" alt=""></p>
+<h3 id="关系的存储">关系的存储</h3>
+<p><strong>(1)</strong> 最简单的只需要<strong>两张表</strong>就够了：</p>
+<p><strong>用户信息表</strong>：</p>
+<pre><code>| user_id | user_info | ...
+</code></pre><p><strong>用户关系表</strong>，表示，<code>follower_user</code> 关注了 <code>followee_user</code>：</p>
+<p>| id | follower_user_id | followee_user_id |</p>
+<p>查看 <code>user_a</code> 粉丝多少人：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">FROM</span> table_relation <span style="color:#66d9ef">WHERE</span> followee_user <span style="color:#f92672">=</span> <span style="color:#f92672">`</span>user_a<span style="color:#f92672">`</span>;
+</code></pre></div><p>查看 <code>user_a</code> 关注了多少人：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">FROM</span> table_relation <span style="color:#66d9ef">WHERE</span> follower_user <span style="color:#f92672">=</span> <span style="color:#f92672">`</span>user_a<span style="color:#f92672">`</span>;
+</code></pre></div><hr>
+<p><strong>(2)</strong> 不过随着用户增长，比如达到1亿，那么平均一对用户关系可能就会有100条关系，那么将会扩展到百亿级别。所以必须水平拆分。用户表好选取拆分的键，就是 <code>user_id</code>。不过关系表，根据 <code>follower_user_id</code> 拆分，那么查询这个人关注了多少人好查询，但是查询某个人有多少粉丝，就需要去所有分片上查询汇总了，相反按照 <code>followee_user_id</code> 拆分，那么这个人查询关注了多少人，就不好查询了。也就是<strong>总有一半的场景查询效率低下</strong>。</p>
+<p>为了应对上面困难，我们可以垂直拆分，<strong>一个关系表拆分为 <code>follower</code> 和 <code>followee</code> 两张表</strong>，然后再对这两张表进行水平拆分，问题就迎刃而解了。</p>
+<p>不过这样带来的问题是，如果新增了<strong>关注关系</strong>，需要使用事务来保证两张表都插入成功，比如 B 关注了 C：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 计算 B, C 的分片索引
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">START</span> <span style="color:#66d9ef">TRANSACTION</span>;
+<span style="color:#75715e">-- table_follower 按照 followerId 拆分即可
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> table_follower(userId, followerId) <span style="color:#66d9ef">VALUES</span> (<span style="color:#e6db74">&#39;B&#39;</span>, <span style="color:#e6db74">&#39;C&#39;</span>);
+<span style="color:#75715e">-- table_followeeId 按照 followeeId 拆分即可
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> table_followee(userId, followeeId) <span style="color:#66d9ef">VALUES</span> (<span style="color:#e6db74">&#39;B&#39;</span>, <span style="color:#e6db74">&#39;C&#39;</span>);
+<span style="color:#66d9ef">COMMIT</span>;
+</code></pre></div><hr>
+<p>(3) 问题引入。</p>
+<ul>
+<li><strong>热点用户</strong>查询多少人关注了自己，需要扫描很多行。</li>
+<li>热点用户关注自己的人很多，那么需要<strong>分页</strong>展示，<code>offset</code> 越大，那么就越来越低效。</li>
+</ul>
+<p>首先 DB 层的每个用户，增加 <code>userInfo</code> 表，存储这个用户关注了多少人，被多少人关注，这两个信息。然后在 DB 之上引入<strong>缓存</strong>，这个用户关注了谁，被谁关注了，这些用户 ID 列表可以放入缓存中。</p>
+<h3 id="帖子的存储">帖子的存储</h3>
+<p><img src="/images/docs/tutorial/distributed/design-weibo/2021-04-11_14-12.png" alt=""></p>
+<p>一级索引 <code>postId</code>，二级索引：<code>userId + posttime</code>，那么按照时间查询帖子列表，将会存在<strong>严重回表</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> POST <span style="color:#66d9ef">WHERE</span> userId <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> posttime <span style="color:#66d9ef">BETWEEN</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> <span style="color:#f92672">?</span>
+</code></pre></div><p>那么可以将 <code>userId</code> 和 <code>posttime</code> 冗余进 <code>postId</code> 中，去掉二级索引，减少回表：</p>
+<p><img src="/images/docs/tutorial/distributed/design-weibo/2021-04-11_14-17.png" alt=""></p>
+<p><code>postId</code> 首 6 位为 <code>userId</code>，每一位是 <code>0~9/A~Z</code> 这 36 个字符中的某一个，6 位可以表示 21 亿不同的用户。后续时间戳可以精确到秒。单个用户每秒发的帖子不超过 <code>seq</code> 表达的最大值。其中 <code>timeCompress</code> 可以设计为：帖子发布的时间 - SNS 系统首次发布的时间的中间间隔，进行 36 进制编码。那么查询的 SQL 变成了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> post <span style="color:#66d9ef">WHERE</span> postId <span style="color:#66d9ef">BETWEEN</span> postId1 <span style="color:#66d9ef">AND</span> postId2;
+<span style="color:#75715e">-- 或者
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> post <span style="color:#66d9ef">WHERE</span> postId <span style="color:#66d9ef">like</span> <span style="color:#e6db74">&#39;13A68%&#39;</span>;
+</code></pre></div><p><strong>DB 中相同前缀的数据相邻存放</strong>，因此就可以用上 DB 的 range scan。</p>
+<p>数据量大了一行，根据 <code>postId</code> 就可以水平切分。不过热点用户会路由到同一个分片上，传统做法是 <strong>1 写 N 读</strong>，读写分离存在数据延迟问题，98% 的数据一星期之后都不再访问。所以也可以使用<strong>缓存存储热点用户</strong>。</p>
+<p>缓存以什么为 <code>key</code> ，什么为 <code>value</code>，最自然的是以 <code>postId</code> 为 <code>key</code>，帖子内容作为 <code>value</code>。但是，查询某个用户一段时间的帖子是一个常见操作，如果 <code>&lt;postId, content&gt;</code> 设计的话，那么需要 <code>multiple-key</code> 的查询，所以应该如何优化？</p>
+<p>一个用户一天发帖通常不超过 10 条，平均 3 条，访问最频繁 1 周以内的帖子数很少超过 100 条，单条帖子长度有限，假设为 1KB，单个用户一周法的帖子很难超过 100KB，极端情况 1MB，远低于 Redis 单 value 的大小上限。因此设计如下：</p>
+<p>用 <code>userId + 时间戳(精确到星期)</code> 作为 <code>key</code>，用 <code>hash&lt;postId, postContent&gt;</code> hash 类型作为 <code>value</code>，<code>expire</code> 设置为 1 星期。</p>
+<p>这样对某个用户一段时间范围的查找变为针对该用户本周时间戳的 <code>hscan</code> 命令。用户发帖操作同时同步更新 DB 和缓存，DB 变更操作保证一致性。</p>
+<hr>
+<p>对于热点用户存在的单点问题，可以用<strong>本地缓存</strong>解决。</p>
+<p>其中 <code>key</code> 为 <code>userId</code>，<code>value</code> 是该用户近期发布的帖子。</p>
+<h3 id="时间线的存储">时间线的存储</h3>
+<p>(1) <code>push</code> 模式</p>
+<p><img src="/images/docs/tutorial/distributed/design-weibo/2021-04-11_23-38.png" alt=""></p>
+<p>其中 <code>postId</code> 的格式由原来的 <code>posterId + time + seq</code> 改为 <strong><code>postId' = time + posterId + seq</code></strong>，我们更加<strong>侧重于查询</strong>。主键：<code>userId + postId'</code>。</p>
+<p>查询 <code>timeline</code> 的 SQL：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> postId <span style="color:#66d9ef">FROM</span> timeline <span style="color:#66d9ef">WHERE</span> userId <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> postId <span style="color:#66d9ef">BETWEEN</span> <span style="color:#e6db74">&#39;time1%&#39;</span> <span style="color:#66d9ef">AND</span> <span style="color:#e6db74">&#39;time2%&#39;</span>;
+</code></pre></div><p>利用<strong>前缀进行范围查找</strong>。</p>
+<p>(2) <code>pull</code> 模式</p>
+<p>传统的 <code>pull</code> 模式，每次刷新查询所有分片的做法效率比较低，每个用户的平均 500 个关注用户，分布在全部的 100 个(假设) DB 分片上，那么每次需要 100 次 DB 查询。而 <code>push</code> 模式，如果热点用户德华，那么帖子复制到所有的关注者的 <code>timeline</code> 中也未免太多。此处给出一种 <code>pull/push</code> 结合的方案：</p>
+<p><img src="/images/docs/tutorial/distributed/design-weibo/2021-04-11_23-48.png" alt=""></p>
+<p>某个用户发布了一个帖子，只同步到 100 个分片的某个表上，假设这张表叫做 <code>post_rep</code>，那么至少要包含三个字段，<code>posterId</code>、<code>postId</code>、<code>postTime</code>。如果数据库按照 <code>timeline</code> 所属用户进行分片，那么这个用户关注的所有用户的帖子全部落在同一个 DB 分片上，那么每次刷新 <code>timeline</code> 的时候，只需要一次 DB 查询。</p>
+<p>不过这条 SQL 变得复杂了：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> post_rep <span style="color:#66d9ef">WHERE</span> posterId <span style="color:#66d9ef">IN</span> (...<span style="color:#960050;background-color:#1e0010">平均</span> <span style="color:#ae81ff">500</span> <span style="color:#960050;background-color:#1e0010">个</span> ID) <span style="color:#66d9ef">and</span> postTime <span style="color:#66d9ef">BETWEEN</span> ... <span style="color:#66d9ef">AND</span> ...;
+</code></pre></div><h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://book.douban.com/subject/27602483/">《深入分布式缓存》</a></li>
+</ul>
 
 <ins class="adsbygoogle"
 style="display:block"
@@ -1072,8 +1202,12 @@ data-full-width-responsive="true"></ins>
       <ul>
         <li><a href="#uid-range-作为分片">UID range 作为分片</a></li>
         <li><a href="#uid-hash-作为分片">UID hash 作为分片</a></li>
+        <li><a href="#关系的存储">关系的存储</a></li>
+        <li><a href="#帖子的存储">帖子的存储</a></li>
+        <li><a href="#时间线的存储">时间线的存储</a></li>
       </ul>
     </li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 

@@ -8,14 +8,14 @@
 <meta property="og:description" content="MySQL 索引 索引存储结构 InnoDB 的 B&#43; 树 每一个索引在 InnoDB 里面对应一棵 B&#43; 树。B&#43; 树能够很好地配合磁盘的读写特性，减少单次查询的磁盘访问次数。
 根据叶子节点的内容，索引类型分为主键索引和非主键索引。
  主键索引的叶子节点存的是整行数据。在 InnoDB 里，主键索引也被称为聚簇索引（clustered index）。 非主键索引的叶子节点内容是主键的值。在 InnoDB 里，非主键索引也被称为二级索引（secondary index）。  主键长度越小，普通索引的叶子节点就越小，普通索引占用的空间也就越小。
-MyISAM 的 B&#43; 树 MyISAM 索引文件和数据文件是分离的，索引文件仅保存数据记录的地址。
-B 树和 B&#43; 树 B 树示例：
-B&#43; 树示例：
-B 和 B&#43; 树的区别在于，B&#43; 树的非叶子结点只包含导航信息，不包含实际的值，所有的叶子结点和相连的节点使用链表相连，便于区间查找和遍历。
-B&#43; 树的优点在于：
- 由于 B&#43; 树在内部节点上不好含数据信息，因此在内存页中能够存放更多的 key。 数据存放的更加紧密，具有更好的空间局部性。因此访问叶子几点上关联的数据也具有更好的缓存命中率。 B&#43; 树的叶子结点都是相链的，因此对整棵树的便利只需要一次线性遍历叶子结点即可。而且由于数据顺序排列并且相连，所以便于区间查找和搜索。而 B 树则需要进行每一层的递归遍历。相邻的元素可能在内存中不相邻，所以缓存命中性没有 B&#43; 树好。  但是 B 树也有优点，其优点在于，由于 B 树的每一个节点都包含 key 和 value，因此经常访问的元素可能离根节点更近，因此访问也更迅速。
-回表 回到主键索引树搜索的过程，我们称为回表。
-select * from T where k between 3 and 5 覆盖索引 ID 的值已经在 k 索引树上了，因此可以直接提供查询结果，不需要回表。也就是说，在这个查询里面，索引 k 已经“覆盖了”我们的查询需求，我们称为覆盖索引。" />
+ 为何可以降低 IO ?
+  InnoDB 叶子节点，数据页是双向，单条数据之间单向。
+  InnoDB 索引一次读多少？
+ 这个 16kb 是 innodb 默认的页大小，为什么会有这个概念呢，因为当涉及到数据库读写的时候，规定数据库每次读写都是以 16k 为单位的，一次最少从磁盘中读取 16KB 的内容到内存中，一次最少把内存中的 16KB 内容刷新到磁盘中。
+ 计算 IO 次数
+ 我们每次 IO 都是读取数据到内存中进行一些计算。当我们遍历 主键索引的B&#43;树 查找数据的时候， IO 次数是近似于 B&#43; 树的层数 -1，因为根节点是一直在内存中的。
+基本上可以理解为，每次 io 都是在树的一层查找符合的 id 范围的页数据，通过对比页里面的最大最小主键来确定下层的查找范围。
+MyISAM 的 B&#43; 树 MyISAM 索引文件和数据文件是分离的，索引文件仅保存数据记录的地址。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-index/" />
 
@@ -23,10 +23,10 @@ select * from T where k between 3 and 5 覆盖索引 ID 的值已经在 k 索引
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+<link rel="stylesheet" href="/book.min.2c8703ef3571e9e1469d79306fda1ed51333153e6ba74aff763a8bc7a9fdaea2.css" integrity="sha256-LIcD7zVx6eFGnXkwb9oe1RMzFT5rp0r/djqLx6n9rqI=">
 
 
-<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
+<script defer src="/en.search.min.1e7619796b61414a9016ae3ce0c51191e796bfabae1a014100792c00d2d6c838.js" integrity="sha256-HnYZeWthQUqQFq484MURkeeWv6uuGgFBAHksANLWyDg="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -116,6 +116,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/front-end-optimization-guide/" >
       前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
   </a>
 
 
@@ -628,8 +654,8 @@ var _hmt = _hmt || [];
       
         <li>
 
-  <a href="/docs/tutorial/database/oracls-vs-mysql/" >
-      Oracle VS MySQL
+  <a href="/docs/tutorial/database/oracle/" >
+      Oracle
   </a>
 
 </li>
@@ -1006,6 +1032,12 @@ var _hmt = _hmt || [];
       </ul>
     </li>
     <li><a href="#反范式设计">反范式设计</a></li>
+    <li><a href="#索引选择">索引选择</a>
+      <ul>
+        <li><a href="#a-b-和-b-a">(a, b) 和 (b, a)</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -1038,9 +1070,31 @@ data-full-width-responsive="true"></ins>
 <li>非主键索引的叶子节点内容是<strong>主键的值</strong>。在 InnoDB 里，非主键索引也被称为<strong>二级索引</strong>（secondary index）。</li>
 </ul>
 <p>主键长度越小，普通索引的叶子节点就越小，普通索引占用的空间也就越小。</p>
+<blockquote>
+<p>为何可以降低 IO ?</p>
+</blockquote>
+<blockquote>
+<p>InnoDB 叶子节点，<strong>数据页是双向，单条数据之间单向</strong>。</p>
+</blockquote>
+<p><img src="/images/docs/tutorial/database/mysql-index/14c780ea4658f80c9ee8980dcf2fd36d-2.png" alt=""></p>
+<blockquote>
+<p>InnoDB 索引一次读多少？</p>
+</blockquote>
+<p>这个 <strong><code>16kb</code></strong> 是 innodb 默认的页大小，为什么会有这个概念呢，因为当涉及到数据库读写的时候，规定数据库每次读写都是以 16k 为单位的，一次最少从磁盘中读取 16KB 的内容到内存中，一次最少把内存中的 16KB 内容刷新到磁盘中。</p>
+<blockquote>
+<p>计算 IO 次数</p>
+</blockquote>
+<p>我们每次 IO 都是读取数据到内存中进行一些计算。当我们遍历 <strong>主键索引的B+树</strong> 查找数据的时候， IO 次数是近似于 <strong><code>B+ 树的层数 -1</code></strong>，因为根节点是一直在内存中的。</p>
+<p>基本上可以理解为，每次 io 都是在树的一层查找符合的 id 范围的页数据，通过对比页里面的最大最小主键来确定下层的查找范围。</p>
 <h3 id="myisam-的-b-树">MyISAM 的 B+ 树</h3>
 <p>MyISAM 索引文件和数据文件是分离的，索引文件仅保存数据记录的地址。</p>
 <p><img src="/images/docs/tutorial/database/mysql-index/myisam-btree.png" alt=""></p>
+<p>使用这个存储引擎，每个 MyISAM 在磁盘上存储成三个文件。</p>
+<ul>
+<li><strong>frm 文件</strong>：存储表的定义数据</li>
+<li><strong>MYD 文件</strong>：存放表具体记录的数据</li>
+<li><strong>MYI 文件</strong>：存储索引</li>
+</ul>
 <h2 id="b-树和-b-树">B 树和 B+ 树</h2>
 <p>B 树示例：</p>
 <p><img src="/images/docs/tutorial/database/mysql-index/Snipaste_2021-02-08_20-44-06.png" alt=""></p>
@@ -1050,7 +1104,8 @@ data-full-width-responsive="true"></ins>
 <p>B+ 树的优点在于：</p>
 <ul>
 <li>由于 B+ 树在内部节点上不好含数据信息，因此在<strong>内存页中能够存放更多的 key</strong>。 数据存放的更加紧密，具有更好的空间局部性。因此访问叶子几点上关联的数据也具有更好的缓存命中率。</li>
-<li>B+ 树的叶子结点都是相链的，因此对整棵树的便利<strong>只需要一次线性遍历叶子结点</strong>即可。而且由于数据顺序排列并且相连，所以便于区间查找和搜索。而 B 树则需要进行每一层的递归遍历。相邻的元素可能在内存中不相邻，所以缓存命中性没有 B+ 树好。</li>
+<li>每次都需要查询到叶子节点，查询<strong>性能稳定</strong></li>
+<li>B+ 树的叶子结点都是相链的，因此对整棵树的便利<strong>只需要一次线性遍历叶子结点</strong>即可。而且由于数据顺序排列并且相连，所以便于<strong>区间查找和搜索</strong>。而 B 树则需要进行每一层的递归遍历。相邻的元素可能在内存中不相邻，所以缓存命中性没有 B+ 树好。</li>
 </ul>
 <p>但是 B 树也有优点，其优点在于，由于 B 树的每一个节点都包含 key 和 value，因此<strong>经常访问的元素可能离根节点更近，因此访问也更迅速</strong>。</p>
 <h2 id="回表">回表</h2>
@@ -1060,6 +1115,10 @@ data-full-width-responsive="true"></ins>
 <p>ID 的值已经在 k 索引树上了，因此可以直接提供查询结果，不需要回表。也就是说，在这个查询里面，索引 k 已经“覆盖了”我们的查询需求，我们称为覆盖索引。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> ID <span style="color:#66d9ef">from</span> T <span style="color:#66d9ef">where</span> k <span style="color:#66d9ef">between</span> <span style="color:#ae81ff">3</span> <span style="color:#66d9ef">and</span> <span style="color:#ae81ff">5</span>
 </code></pre></div><p>由于覆盖索引可以减少树的搜索次数，显著提升查询性能，所以使用<strong>覆盖索引</strong>是一个<strong>常用的性能优化</strong>手段。</p>
+<p>假设某个表有如下主键和索引：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span> (<span style="color:#f92672">`</span>emp_no<span style="color:#f92672">`</span>),
+<span style="color:#66d9ef">KEY</span> <span style="color:#f92672">`</span>i_hire_date<span style="color:#f92672">`</span> (<span style="color:#f92672">`</span>hire_date<span style="color:#f92672">`</span>)
+</code></pre></div><p>那么语句 <code>explain select * from employees where hire_date &gt; '1990-01-14';</code> 的 <code>Extra</code> 是 <code>Using where</code>，表示没有用上索引；而语句 <code>explain select emp_no from employees where hire_date &gt; '1990-01-14';</code> 的 <code>Extra</code> 是 <code>Using where; Using index</code>，用上了索引，可见 <strong><code>SELECT</code> 的字段位于索引字段中对于性能是多么的重要</strong>。</p>
 <h2 id="最左前缀原则">最左前缀原则</h2>
 <p>B+ 树这种索引结构，可以利用索引的“最左前缀”，来定位记录。</p>
 <p><img src="/images/docs/tutorial/database/mysql-index/Snipaste_2021-01-09_18-23-32.png" alt=""></p>
@@ -1074,6 +1133,7 @@ data-full-width-responsive="true"></ins>
 <li>如果通过调整顺序，可以<strong>少维护一个索引</strong>，那么这个顺序往往就是需要优先考虑采用的。</li>
 <li>考虑空间占用问题</li>
 </ul>
+<p><img src="/images/docs/tutorial/database/mysql-index/mysql-create-index.png" alt=""></p>
 <h2 id="索引下推">索引下推</h2>
 <p>索引：<strong>联合索引（name, age）</strong>。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> tuser <span style="color:#66d9ef">where</span> name <span style="color:#66d9ef">like</span> <span style="color:#e6db74">&#39;张%&#39;</span> <span style="color:#66d9ef">and</span> age<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span> <span style="color:#66d9ef">and</span> ismale<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>;
@@ -1145,6 +1205,14 @@ data-full-width-responsive="true"></ins>
 <li><code>ALL</code>：表示全表扫描，需要遍历全表来找到对应的行。</li>
 </ul>
 <p><img src="/images/docs/tutorial/database/mysql-index/d3d7221fec38845145ac0f365196427b.jpg" alt=""></p>
+<blockquote>
+<p>Extra 解释</p>
+</blockquote>
+<ul>
+<li><code>Using where</code>：表示并<strong>没有用上</strong>索引</li>
+<li><code>Using where; Using index</code>：表示<strong>用上了</strong>索引</li>
+<li><code>Using index condition</code>：表示用上了<strong>索引下推</strong></li>
+</ul>
 <h3 id="通过-show-profile-分析-sql-执行性能">通过 Show Profile 分析 SQL 执行性能</h3>
 <p>上述通过 EXPLAIN 分析执行计划，仅仅是停留在分析 SQL 的外部的执行情况，如果我们想要深入到 MySQL 内核中，从执行线程的状态和时间来分析的话，这个时候我们就可以选择 Profile。</p>
 <p>Profile 除了可以分析执行线程的状态和时间，还支持进一步选择 ALL、CPU、MEMORY、BLOCK IO、CONTEXT SWITCHES 等类型来查询 SQL 语句在不同系统资源上所消耗的时间。以下是相关命令的注释：</p>
@@ -1180,7 +1248,9 @@ type参数：
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">IN</span> (...) <span style="color:#75715e">-- IN 不属于范围查找的范畴
 </span></code></pre></div><h3 id="joinonusing-列">JOIN/ON/USING 列</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- ON、USING 确保存在索引
-</span></code></pre></div><h3 id="where">WHERE</h3>
+</span></code></pre></div><p>对于 JOIN 的优化，用<strong>数据量小的表去驱动数据量大的表</strong>，这样可以减少内循环个数，也就是被驱动表的扫描次数。用来进行 <strong>join 的字段要加索引</strong>，会触发 <code>INLJ</code> 算法，如果是主键的聚簇索引，性能最优。如果无法使用索引，那么注意调整 <strong>join buffer</strong> 大小，适当调大些；
+减少不必要的字段查询（<strong>字段越少，join buffer 所缓存的数据就越多</strong>）</p>
+<h3 id="where">WHERE</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">INDEX</span> idx_a_b_c <span style="color:#66d9ef">ON</span> t1(a, b, <span style="color:#66d9ef">c</span>);
 
 <span style="color:#75715e">--              ↓ (索引只会用上 a, b 索引)
@@ -1226,6 +1296,13 @@ type参数：
 <span style="color:#66d9ef">UNION</span> <span style="color:#66d9ef">ALL</span>
 <span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> <span style="color:#66d9ef">USER</span> <span style="color:#66d9ef">WHERE</span> age <span style="color:#f92672">=</span> <span style="color:#ae81ff">41</span>;
 </code></pre></div><h3 id="索引失效">索引失效</h3>
+<ul>
+<li>字段使用函数</li>
+<li>类型转换</li>
+<li>模糊查询</li>
+<li>不使用组合索引的首个字段当条件</li>
+<li>范围查询量比较大的时候，超过 20%</li>
+</ul>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- （1）字段使用函数，索引失效
 </span><span style="color:#75715e">--                                      ↓ (采用了函数)
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> create_time <span style="color:#66d9ef">FROM</span> t1 <span style="color:#66d9ef">WHERE</span> DATE(create_time) <span style="color:#f92672">=</span> curdate();
@@ -1241,7 +1318,8 @@ type参数：
 
 <span style="color:#75715e">-- （3）取出的数据量超过表中的数据 20% 的时候，索引失效
 </span><span style="color:#75715e">-- MYSQL 认为全表扫描更快
-</span></code></pre></div><h3 id="in-和-exists-效率">In 和 Exists 效率</h3>
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> employees <span style="color:#66d9ef">WHERE</span> hire_date <span style="color:#f92672">&gt;</span> <span style="color:#e6db74">&#39;1989-06-02&#39;</span>;
+</code></pre></div><h3 id="in-和-exists-效率">In 和 Exists 效率</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">--                        ↓ (查出 B 表所有 ID 并放到内存)
 </span><span style="color:#75715e">--             B 表数据量大，不适合用 in 语句
 </span><span style="color:#75715e">--             in 语句适合，B 表数据量比 A 表数据量小的情况
@@ -1305,6 +1383,19 @@ cp <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span><s
 <span style="color:#75715e">-- (5) 如果有主从同步，那么 slave 也需要执行，否则会报错
 </span></code></pre></div><h2 id="反范式设计">反范式设计</h2>
 <p>反范式化是针对范式化而言的，在前面介绍了数据库设计的范式，所谓的反范式化就是为了性能和读取效率的考虑而适当的对数据库设计范式的要求进行违反，而允许存在少量的数据冗余，换句话来说反范式化就是<strong>使用空间来换取时间</strong>。</p>
+<h2 id="索引选择">索引选择</h2>
+<h3 id="a-b-和-b-a">(a, b) 和 (b, a)</h3>
+<p>table 建立了两个联合索引 (a, b) 和 (b, a)，下面语句走哪一个索引？</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> a, b <span style="color:#66d9ef">FROM</span> <span style="color:#66d9ef">table</span> <span style="color:#66d9ef">WHERE</span> a <span style="color:#f92672">=</span> x <span style="color:#66d9ef">AND</span> b <span style="color:#f92672">=</span> x;
+</code></pre></div><blockquote>
+<p>都有可能。以成本分析器统计结果为准，哪个<strong>区分度高</strong>就走哪一个。如果区分度差不多，那就走建表语句中靠前的索引。可以通过 <code>explain format = json</code> 查看详细的查询成本统计结果。</p>
+</blockquote>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://www.freeaihub.com/post/80781.html">荐 mysql的B+树如何存储主键和数据，磁盘io和innodb页大小的一些问题</a></li>
+<li><a href="https://cloud.tencent.com/developer/inventory/12684/article/1761267">MySQL 索引知识点总结</a></li>
+<li><a href="https://cloud.tencent.com/developer/inventory/12684/article/1806210">MySQL 深入学习总结</a></li>
+</ul>
 
 <ins class="adsbygoogle"
 style="display:block"
@@ -1384,6 +1475,12 @@ data-full-width-responsive="true"></ins>
       </ul>
     </li>
     <li><a href="#反范式设计">反范式设计</a></li>
+    <li><a href="#索引选择">索引选择</a>
+      <ul>
+        <li><a href="#a-b-和-b-a">(a, b) 和 (b, a)</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 

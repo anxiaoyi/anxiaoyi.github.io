@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Linux 性能分析"><meta property="og:title" content="Linux 性能分析" />
+<meta property="og:description" content="Linux 性能分析 CPU 性能 内存性能分析 磁盘和文件 I/O 问题 工具 strace strace 可以分析系统调用情况：
+$ strace -p 12280 strace: Process 12280 attached select(0, NULL, NULL, NULL, {tv_sec=0, tv_usec=567708}) = 0 (Timeout) stat(&#34;/usr/local/lib/python3.7/importlib/_bootstrap.py&#34;, {st_mode=S_IFREG|0644, st_size=39278, ...}) = 0 stat(&#34;/usr/local/lib/python3.7/importlib/_bootstrap.py&#34;, {st_mode=S_IFREG|0644, st_size=39278, ...}) = 0 filetop filetop 它是 bcc 软件包的一部分，基于 Linux 内核的 eBPF（extended Berkeley Packet Filters）机制，主要跟踪内核中文件的读写情况，并输出线程 ID（TID）、读写大小、读写类型以及文件名称。
+# -C 选项表示输出新内容时不清空屏幕  $ ./filetop -C filetop 只给出了文件名称，却没有文件路径，还得继续找啊。我再介绍一个好用的工具，opensnoop 。它同属于 bcc 软件包，可以动态跟踪内核中的 open 系统调用。这样，我们就可以找出这些 txt 文件的路径。
+$ opensnoop 12280 python 6 0 /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/650." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/analyze/" />
+
+<title>Linux 性能分析 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.2c8703ef3571e9e1469d79306fda1ed51333153e6ba74aff763a8bc7a9fdaea2.css" integrity="sha256-LIcD7zVx6eFGnXkwb9oe1RMzFT5rp0r/djqLx6n9rqI=">
+
+
+<script defer src="/en.search.min.1e7619796b61414a9016ae3ce0c51191e796bfabae1a014100792c00d2d6c838.js" integrity="sha256-HnYZeWthQUqQFq484MURkeeWv6uuGgFBAHksANLWyDg="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/avg-load/" >
+      平均负载
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/context-switch/" >
+      CPU 上下文切换
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/high-cpu-and-load/" >
+      CPU 飙升或 load 飙升
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/memory/" >
+      内存
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/io/" >
+      磁盘 I/O
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/zero-copy/" >
+      Linux 零拷贝
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/async_block/" >
+      同步/异步与阻塞/非阻塞
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/thread_process/" >
+      线程和进程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/analyze/"  class="active">
+      Linux 性能分析
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Linux 性能分析</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#cpu-性能">CPU 性能</a></li>
+    <li><a href="#内存性能分析">内存性能分析</a></li>
+    <li><a href="#磁盘和文件-io-问题">磁盘和文件 I/O 问题</a></li>
+    <li><a href="#工具">工具</a>
+      <ul>
+        <li><a href="#strace">strace</a></li>
+        <li><a href="#filetop">filetop</a></li>
+        <li><a href="#lsof">lsof</a></li>
+        <li><a href="#perf">perf</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="linux-性能分析">Linux 性能分析</h1>
+<h2 id="cpu-性能">CPU 性能</h2>
+<p><img src="/images/docs/tutorial/unix-optimize/analyze/238ee65ac4c8e32ef4f96fb0ba8cb0cd.png" alt=""></p>
+<h2 id="内存性能分析">内存性能分析</h2>
+<p><img src="/images/docs/tutorial/unix-optimize/analyze/292d64ac6bce0fe6a7a6b4250f34e998.png" alt=""></p>
+<h2 id="磁盘和文件-io-问题">磁盘和文件 I/O 问题</h2>
+<p><img src="/images/docs/tutorial/unix-optimize/analyze/e075287cff9b32ba3964746fdaf2960b.png" alt=""></p>
+<h2 id="工具">工具</h2>
+<h3 id="strace">strace</h3>
+<p><code>strace</code> 可以分析<strong>系统调用</strong>情况：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ strace -p <span style="color:#ae81ff">12280</span> 
+strace: Process <span style="color:#ae81ff">12280</span> attached 
+<span style="color:#66d9ef">select</span><span style="color:#f92672">(</span>0, NULL, NULL, NULL, <span style="color:#f92672">{</span>tv_sec<span style="color:#f92672">=</span>0, tv_usec<span style="color:#f92672">=</span>567708<span style="color:#f92672">})</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">(</span>Timeout<span style="color:#f92672">)</span> 
+stat<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;/usr/local/lib/python3.7/importlib/_bootstrap.py&#34;</span>, <span style="color:#f92672">{</span>st_mode<span style="color:#f92672">=</span>S_IFREG|0644, st_size<span style="color:#f92672">=</span>39278, ...<span style="color:#f92672">})</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> 
+stat<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;/usr/local/lib/python3.7/importlib/_bootstrap.py&#34;</span>, <span style="color:#f92672">{</span>st_mode<span style="color:#f92672">=</span>S_IFREG|0644, st_size<span style="color:#f92672">=</span>39278, ...<span style="color:#f92672">})</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> 
+</code></pre></div><h3 id="filetop">filetop</h3>
+<p><code>filetop</code> 它是 bcc 软件包的一部分，基于 Linux 内核的 eBPF（extended Berkeley Packet Filters）机制，主要<strong>跟踪内核中文件的读写情况</strong>，并输出线程 ID（TID）、读写大小、读写类型以及文件名称。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash"><span style="color:#75715e"># -C 选项表示输出新内容时不清空屏幕 </span>
+$ ./filetop -C
+</code></pre></div><p><code>filetop</code> 只给出了文件名称，却没有文件路径，还得继续找啊。我再介绍一个好用的工具，<code>opensnoop</code> 。它同属于 bcc 软件包，可以<strong>动态跟踪内核中的 <code>open</code> 系统调用</strong>。这样，我们就可以找出这些 txt 文件的路径。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ opensnoop 
+<span style="color:#ae81ff">12280</span>  python              <span style="color:#ae81ff">6</span>   <span style="color:#ae81ff">0</span> /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/650.txt 
+<span style="color:#ae81ff">12280</span>  python              <span style="color:#ae81ff">6</span>   <span style="color:#ae81ff">0</span> /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/651.txt 
+<span style="color:#ae81ff">12280</span>  python              <span style="color:#ae81ff">6</span>   <span style="color:#ae81ff">0</span> /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/652.txt 
+</code></pre></div><h3 id="lsof">lsof</h3>
+<p><code>lsof</code> 专门用来<strong>查看进程打开文件列表</strong>，不过，这里的“文件”不只有普通文件，还包括了目录、块设备、动态库、网络套接字等。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ lsof -p <span style="color:#ae81ff">18940</span> 
+COMMAND   PID USER   FD   TYPE DEVICE  SIZE/OFF    NODE NAME 
+python  <span style="color:#ae81ff">18940</span> root  cwd    DIR   0,50      <span style="color:#ae81ff">4096</span> <span style="color:#ae81ff">1549389</span> / 
+python  <span style="color:#ae81ff">18940</span> root  rtd    DIR   0,50      <span style="color:#ae81ff">4096</span> <span style="color:#ae81ff">1549389</span> / 
+… 
+python  <span style="color:#ae81ff">18940</span> root    2u   CHR  136,0       0t0       <span style="color:#ae81ff">3</span> /dev/pts/0 
+python  <span style="color:#ae81ff">18940</span> root    3w   REG    8,1 <span style="color:#ae81ff">117944320</span>     <span style="color:#ae81ff">303</span> /tmp/logtest.txt 
+</code></pre></div><h3 id="perf">perf</h3>
+<p><code>perf</code> 可以<strong>对指定的进程或者事件进行采样</strong>，并且还可以用调用栈的形式，输出整个调用链上的汇总信息。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash"><span style="color:#75715e"># 采样30s后退出</span>
+$ perf record -a -g -p <span style="color:#ae81ff">18490</span> -- sleep <span style="color:#ae81ff">30</span>
+</code></pre></div><p>在上述命令结束后，继续执行 <code>perf report</code> 命令，你就可以得到 <code>perf</code> 的<strong>汇总报告</strong>。</p>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#cpu-性能">CPU 性能</a></li>
+    <li><a href="#内存性能分析">内存性能分析</a></li>
+    <li><a href="#磁盘和文件-io-问题">磁盘和文件 I/O 问题</a></li>
+    <li><a href="#工具">工具</a>
+      <ul>
+        <li><a href="#strace">strace</a></li>
+        <li><a href="#filetop">filetop</a></li>
+        <li><a href="#lsof">lsof</a></li>
+        <li><a href="#perf">perf</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

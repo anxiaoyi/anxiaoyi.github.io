@@ -11,26 +11,14 @@
 为了应对这个问题，一般有两种方法。
 第一种方法是，用用戶态网络协议栈（例如DPDK）取代内核网络协议栈，让网络请求的处理不用在内核里执行，直接在用戶态完成处理就行。
 对于高性能的Redis来说，避免频繁让内核进行网络请求处理，可以很好地提升请求处理效率。但是，这个方法要求在Redis的整体架构中，添加对用戶态网络协议栈的支持，需要修改Redis源码中和网络相关的部分（例如修改所有的网络收发请求函数），这会带来很多开发工作量。而且新增代码还可能引入新Bug，导致系统不稳定。所以，Redis 6.0中并没有采用这个方法。
-第二种方法就是采用多个IO线程来处理网络请求，提高网络请求处理的并行度。Redis6.0就是采用的这种方法。
+第二种方法就是采用多个IO线程来处理网络请求，提高网络请求处理的并行度。Redis 6.0就是采用的这种方法。
 但是，Redis的多IO线程只是用来处理网络请求的，对于读写命令，Redis仍然使用单线程来处理。这是因为，Redis处理请求时，网络处理经常是瓶颈，通过多个IO线程并行处理网络操作，可以提升实例的整体处理性能。而继续使用单线程执行命令操作，就不用为了保证Lua脚本、事务的原子性，额外开发多线程互斥机制了。这样一来，Redis线程模型实现就简单了。
-Redis 6.0中，多线程机制默认是关闭的，如果需要使用多线程功能，需要在 redis.conf 中完成两个设置。
- 1.设置io-thread-do-reads配置项为yes，表示启用多线程。  io-threads-do-reads yes  2.设置线程个数。一般来说，线程个数要小于Redis实例所在机器的CPU核个数，例如，对于一个8核的机器来说，Redis官方建议配置6个IO线程。  io-threads 6 如果你在实际应用中，发现Redis实例的CPU开销不大，吞吐量却没有提升，可以考虑使用Redis 6.0的多线程机制，加速网络处理，进而提升实例的吞吐量。
-客户端缓存 和之前的版本相比，Redis 6.0新增了一个重要的特性，就是实现了服务端协助的客戶端缓存功能，也称为跟踪（Tracking）功能。有了这个功能，业务应用中的Redis客戶端就可以把读取的数据缓存在业务应用本地了，应用就可以直接在本地快速读取数据了。
-如果数据被修改了或是失效了，如何通知客戶端对缓存的数据做失效处理？
-6.0实现的Tracking功能实现了两种模式，来解决这个问题。
-第一种模式是普通模式。
-在这个模式下，实例会在服务端记录客戶端读取过的key，并监测key是否有修改。一旦key的值发生变化，服务端会给客戶端发送invalidate消息，通知客戶端缓存失效了。
-在使用普通模式时，有一点你需要注意一下，服务端对于记录的key只会报告一次invalidate消息，也就是说，服务端在给客戶端发送过一次invalidate消息后，如果key再被修改，此时，服务端就不会再次给客戶端发送invalidate消息。
-只有当客戶端再次执行读命令时，服务端才会再次监测被读取的key，并在key修改时发送invalidate消息。这样设计的考虑是节省有限的内存空间。毕竟，如果客戶端不再访问这个key了，而服务端仍然记录key的修改情况，就会浪费内存资源
-我们可以通过执行下面的命令，打开或关闭普通模式下的Tracking功能。
-CLIENT TRACKING ON|OFF 第二种模式是广播模式。
-在这个模式下，服务端会给客戶端广播所有key的失效情况，不过，这样做了之后，如果 key 被频繁修改，服务端会发送大量的失效广播消息，这就会消耗大量的网络带宽资源。
-所以，在实际应用时，我们会让客戶端注册希望跟踪的key的前缀，当带有注册前缀的key被修改时，服务端会把失效消息广播给所有注册的客戶端。和普通模式不同，在广播模式下，即使客戶端还没有读取过和普通模式不同，在广播模式下，即使客戶端还没有读取过key，但只要它注册了要跟踪的key，服务端都会把key失效消息通知给这个客戶端key，但只要它注册了要跟踪的key，服务端都会把key失效消息通知给这个客戶端。
-我给你举个例子，带你看一下客戶端如何使用广播模式接收key失效消息。当我们在客戶端执行下面的命令后，如果服务端更新了user:id:1003这个key，那么，客戶端就会收到invalidate消息。
-CLIENT TRACKING ON BCAST PREFIX user 这种监测带有前缀的key的广播模式，和我们对key的命名规范非常匹配。我们在实际应用时，会给同一业务下的key设置相同的业务名前缀，所以，我们就可以非常方便地使用广播模式。
-不过，刚才介绍的普通模式和广播模式，需要客戶端使用RESP 3协议，RESP 3协议是6.0新启用的通信协议。
-权限控制 在Redis 6.0 版本之前，要想实现实例的安全访问，只能通过设置密码来控制，例如，客戶端连接实例前需要输入密码。
-此外，对于一些高⻛险的命令（例如KEYS、FLUSHDB、FLUSHALL等），在Redis 6.0 之前，我们也只能通过rename-command来重新命名这些命令，避免客戶端直接调用。" />
+Multiple Reactors 目前 Linux 平台上主流的高性能网络库/框架中，大都采用 Reactor 模式，比如 netty、libevent、libuv、POE(Perl)、Twisted(Python)等。
+Reactor 模式本质上指的是使用 I/O 多路复用(I/O multiplexing) &#43; 非阻塞 I/O(non-blocking I/O) 的模式。
+单 Reactor 模式，引入多线程之后会进化为 Multi-Reactors 模式，基本工作模式如下：
+区别于单 Reactor 模式，这种模式不再是单线程的事件循环，而是有多个线程（Sub Reactors）各自维护一个独立的事件循环，由 Main Reactor 负责接收新连接并分发给 Sub Reactors 去独立处理，最后 Sub Reactors 回写响应给客户端。
+Multiple Reactors 模式通常也可以等同于 Master-Workers 模式，比如 Nginx 和 Memcached 等就是采用这种多线程模型，虽然不同的项目实现细节略有区别，但总体来说模式是一致的。
+Redis 网络多线程设计思路 Redis 虽然也实现了多线程，但是却不是标准的 Multi-Reactors/Master-Workers 模式：" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/redis6/" />
 
@@ -38,10 +26,10 @@ CLIENT TRACKING ON BCAST PREFIX user 这种监测带有前缀的key的广播模�
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+<link rel="stylesheet" href="/book.min.2c8703ef3571e9e1469d79306fda1ed51333153e6ba74aff763a8bc7a9fdaea2.css" integrity="sha256-LIcD7zVx6eFGnXkwb9oe1RMzFT5rp0r/djqLx6n9rqI=">
 
 
-<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
+<script defer src="/en.search.min.1e7619796b61414a9016ae3ce0c51191e796bfabae1a014100792c00d2d6c838.js" integrity="sha256-HnYZeWthQUqQFq484MURkeeWv6uuGgFBAHksANLWyDg="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -131,6 +119,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/front-end-optimization-guide/" >
       前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
   </a>
 
 
@@ -1017,10 +1031,19 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#多线程处理">多线程处理</a></li>
+    <li><a href="#多线程处理">多线程处理</a>
+      <ul>
+        <li><a href="#multiple-reactors">Multiple Reactors</a></li>
+        <li><a href="#redis-网络多线程设计思路">Redis 网络多线程设计思路</a></li>
+        <li><a href="#redis-多线程加锁">Redis 多线程加锁</a></li>
+        <li><a href="#redis-开启网络多线程">Redis 开启网络多线程</a></li>
+        <li><a href="#redis-网络多线程模型缺陷">Redis 网络多线程模型缺陷</a></li>
+      </ul>
+    </li>
     <li><a href="#客户端缓存">客户端缓存</a></li>
     <li><a href="#权限控制">权限控制</a></li>
     <li><a href="#resp-3-协议">RESP 3 协议</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -1049,8 +1072,25 @@ data-full-width-responsive="true"></ins>
 <p>为了应对这个问题，一般有两种方法。</p>
 <p>第一种方法是，用用戶态网络协议栈（例如DPDK）取代内核网络协议栈，让网络请求的处理不用在内核里执行，直接在用戶态完成处理就行。</p>
 <p>对于高性能的Redis来说，避免频繁让内核进行网络请求处理，可以很好地提升请求处理效率。但是，这个方法要求在Redis的整体架构中，添加对用戶态网络协议栈的支持，需要修改Redis源码中和网络相关的部分（例如修改所有的网络收发请求函数），这会带来很多开发工作量。而且新增代码还可能引入新Bug，导致系统不稳定。所以，Redis 6.0中并没有采用这个方法。</p>
-<p>第二种方法就是采用<strong>多个IO线程来处理网络请求</strong>，提高网络请求处理的并行度。Redis6.0就是采用的这种方法。</p>
+<p>第二种方法就是采用<strong>多个IO线程来处理网络请求</strong>，提高网络请求处理的并行度。Redis 6.0就是采用的这种方法。</p>
 <p>但是，Redis的<strong>多IO线程只是用来处理网络请求</strong>的，对于<strong>读写命令，Redis仍然使用单线程来处理</strong>。这是因为，Redis处理请求时，网络处理经常是瓶颈，通过多个IO线程并行处理网络操作，可以提升实例的整体处理性能。而继续使用单线程执行命令操作，就不用为了保证Lua脚本、事务的原子性，额外开发多线程互斥机制了。这样一来，Redis线程模型实现就简单了。</p>
+<h3 id="multiple-reactors">Multiple Reactors</h3>
+<p>目前 Linux 平台上主流的高性能网络库/框架中，大都采用 Reactor 模式，比如 netty、libevent、libuv、POE(Perl)、Twisted(Python)等。</p>
+<p>Reactor 模式本质上指的是使用 I/O 多路复用(I/O multiplexing) + 非阻塞 I/O(non-blocking I/O) 的模式。</p>
+<p><img src="/images/docs/tutorial/redis/redis6/single-reactor.png" alt=""></p>
+<p>单 Reactor 模式，引入多线程之后会进化为 Multi-Reactors 模式，基本工作模式如下：</p>
+<p><img src="/images/docs/tutorial/redis/redis6/multiple-reactors.png" alt=""></p>
+<p>区别于单 Reactor 模式，这种模式不再是单线程的事件循环，而是有多个线程（Sub Reactors）各自维护一个独立的事件循环，由 Main Reactor 负责接收新连接并分发给 Sub Reactors 去独立处理，最后 Sub Reactors 回写响应给客户端。</p>
+<p>Multiple Reactors 模式通常也可以等同于 Master-Workers 模式，比如 Nginx 和 Memcached 等就是采用这种多线程模型，虽然不同的项目实现细节略有区别，但总体来说模式是一致的。</p>
+<h3 id="redis-网络多线程设计思路">Redis 网络多线程设计思路</h3>
+<p>Redis 虽然也实现了多线程，但是却不是标准的 Multi-Reactors/Master-Workers 模式：</p>
+<p><img src="/images/docs/tutorial/redis/redis6/redis-thread-model.png" alt=""></p>
+<p>其 <strong>I/O 线程仅仅是读取和解析客户端命令而不会真正去执行命令，客户端命令的执行最终还是要在主线程上完成</strong>。</p>
+<p><img src="/images/docs/tutorial/redis/redis6/commands_execute_in_multiple_thread.png" alt=""></p>
+<h3 id="redis-多线程加锁">Redis 多线程加锁</h3>
+<p>Redis 的多线程模式下，似乎并没有对数据进行锁保护，事实上 Redis 的多线程模型是全程无锁（Lock-free）的，这是通过<strong>原子操作+交错访问</strong>来实现的，主线程和 I/O 线程之间<strong>共享的变量</strong>有三个：<code>io_threads_pending</code> 计数器、<code>io_threads_op</code> I/O 标识符和 <code>io_threads_list</code> 线程本地任务队列。</p>
+<p><code>io_threads_pending</code> 是原子变量，不需要加锁保护，<code>io_threads_op</code> 和 <code>io_threads_list</code> 这两个变量则是通过<strong>控制主线程</strong>和 <strong>I/O 线程交错访问</strong>来规避共享数据竞争问题：I/O 线程启动之后会通过忙轮询和<strong>锁休眠</strong>等待主线程的信号，在这之前它不会去访问自己的本地任务队列 <code>io_threads_list[id]</code>，而主线程会在分配完所有任务到各个 I/O 线程的本地队列之后才去唤醒 I/O 线程开始工作，并且主线程之后在 I/O 线程运行期间只会访问自己的本地任务队列 <code>io_threads_list[0]</code> 而不会再去访问 I/O 线程的本地队列，这也就保证了主线程永远会在 I/O 线程之前访问 <code>io_threads_list</code> 并且之后不再访问，保证了交错访问。<code>io_threads_op</code> 同理，主线程会在唤醒 I/O 线程之前先设置好 <code>io_threads_op</code> 的值，并且在 I/O 线程运行期间不会再去访问这个变量。</p>
+<h3 id="redis-开启网络多线程">Redis 开启网络多线程</h3>
 <p>Redis 6.0中，多线程机制默认是关闭的，如果需要使用多线程功能，需要在 <code>redis.conf</code> 中完成两个设置。</p>
 <ul>
 <li>1.设置<code>io-thread-do-reads</code>配置项为<code>yes</code>，表示启用多线程。</li>
@@ -1061,6 +1101,11 @@ data-full-width-responsive="true"></ins>
 </ul>
 <pre><code>io-threads  6
 </code></pre><p>如果你在实际应用中，发现Redis实例的CPU开销不大，吞吐量却没有提升，可以考虑使用Redis 6.0的多线程机制，加速网络处理，进而<strong>提升实例的吞吐量</strong>。</p>
+<h3 id="redis-网络多线程模型缺陷">Redis 网络多线程模型缺陷</h3>
+<p>标准的 Multi-Reactors/Master-Workers 模式下，Sub Reactors/Workers 会完成 网络读 -&gt; 数据解析 -&gt; 命令执行 -&gt; 网络写 整套流程，Main Reactor/Master 只负责分派任务，而在 Redis 的多线程方案中，I/O 线程任务仅仅是通过 socket 读取客户端请求命令并解析，却没有真正去执行命令，所有客户端命令最后还需要回到主线程去执行，因此<strong>对多核的利用率并不算高</strong>，而且每次主线程都必须在分配完任务之后忙轮询等待所有 I/O 线程完成任务之后才能继续执行其他逻辑。</p>
+<p>Redis 之所以如此设计它的多线程网络模型，我认为主要的原因是为了<strong>保持兼容性</strong>，因为以前 Redis 是单线程的，所有的客户端命令都是在单线程的事件循环里执行的，也因此 Redis 里所有的数据结构都是非线程安全的，现在引入多线程，如果按照标准的 Multi-Reactors/Master-Workers 模式来实现，则所有内置的数据结构都必须重构成线程安全的，这个工作量无疑是巨大且麻烦的。</p>
+<p>所以，在我看来，Redis 目前的多线程方案更像是一个折中的选择：既保持了原系统的兼容性，又能利用多核提升 I/O 性能。</p>
+<p>其次，目前 Redis 的多线程模型中，主线程和 I/O 线程的通信过于简单粗暴：忙轮询和锁，因为通过自旋忙轮询进行等待，导致 Redis 在<strong>启动的时候以及运行期间偶尔会有短暂的 CPU 空转引起的高占用率</strong>，而且这个通信机制的最终实现看起来非常不直观和不简洁，希望后面 Redis 能对目前的方案加以改进。</p>
 <h2 id="客户端缓存">客户端缓存</h2>
 <p>和之前的版本相比，Redis 6.0新增了一个重要的特性，就是实现了<strong>服务端协助的客戶端缓存功能</strong>，也称为跟踪（Tracking）功能。有了这个功能，业务应用中的Redis客戶端就可以把读取的数据缓存在业务应用本地了，应用就可以直接在本地快速读取数据了。</p>
 <p>如果数据被修改了或是失效了，如何通知客戶端对缓存的数据做失效处理？</p>
@@ -1095,6 +1140,10 @@ data-full-width-responsive="true"></ins>
 <p>在RESP 2中，客戶端和服务器端的通信内容都是以字节数组形式进行编码的，客戶端需要根据操作的命令或是数据类型自行对传输的数据进行解码，增加了客戶端开发复杂度。</p>
 <p>而RESP 3直接支持多种数据类型的区分编码，包括空值、浮点数、布尔值、有序的字典集合、无序的集合等。</p>
 <p>所谓区分编码，就是指直接通过不同的开头字符，区分不同的数据类型，这样一来，客戶端就可以直接通过判断传递消息的开头字符，来实现数据转换操作了，提升了客戶端的效率。除此之外，RESP 3协议还可以支持客戶端以<strong>普通模式</strong>和<strong>广播模式实</strong>现客戶端缓存。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://cloud.tencent.com/developer/article/1790992">Redis 多线程网络模型全面揭秘</a></li>
+</ul>
 
 <ins class="adsbygoogle"
 style="display:block"
@@ -1130,10 +1179,19 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#多线程处理">多线程处理</a></li>
+    <li><a href="#多线程处理">多线程处理</a>
+      <ul>
+        <li><a href="#multiple-reactors">Multiple Reactors</a></li>
+        <li><a href="#redis-网络多线程设计思路">Redis 网络多线程设计思路</a></li>
+        <li><a href="#redis-多线程加锁">Redis 多线程加锁</a></li>
+        <li><a href="#redis-开启网络多线程">Redis 开启网络多线程</a></li>
+        <li><a href="#redis-网络多线程模型缺陷">Redis 网络多线程模型缺陷</a></li>
+      </ul>
+    </li>
     <li><a href="#客户端缓存">客户端缓存</a></li>
     <li><a href="#权限控制">权限控制</a></li>
     <li><a href="#resp-3-协议">RESP 3 协议</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 

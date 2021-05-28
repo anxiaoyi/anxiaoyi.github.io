@@ -7,8 +7,8 @@
 <meta name="description" content="CPU 飙升或 load 飙升"><meta property="og:title" content="CPU 飙升或 load 飙升" />
 <meta property="og:description" content="CPU 飙升或 load 飙升 CPU 使用率飙升怎么办 ? 通过 top、ps、pidstat 等工具，你能够轻松找到 CPU 使用率较高（比如 100% ）的进程。接下来，你可能又想知道，占用 CPU 的到底是代码里的哪个函数呢？找到它，你才能更高效、更针对性地进行优化。
 哪种工具适合在第一时间分析进程的 CPU 问题呢？我的推荐是 perf。perf 是 Linux 2.6.31 以后内置的性能分析工具。它以性能事件采样为基础，不仅可以分析系统的各种事件和内核性能，还可以用来分析指定应用程序的性能问题。
-# -g开启调用关系分析，-p指定php-fpm的进程号21515 $ perf top -g -p 21515  用户 CPU 和 Nice CPU 高，说明用户态进程占用了较多的 CPU，所以应该着重排查进程的性能问题。 系统 CPU 高，说明内核态占用了较多的 CPU，所以应该着重排查内核线程或者系统调用的性能问题。  load 飙升怎么办 ? 用 iostat、mpstat、pidstat 等工具，找出平均负载升高的根源。
- 平均负载高有可能是 CPU 密集型进程导致的； 平均负载高并不一定代表 CPU 使用率高，还有可能是 I/O 更繁忙了； 当发现负载高的时候，你可以使用 mpstat、pidstat 等工具，辅助分析负载的来源。  " />
+# -g开启调用关系分析，-p指定php-fpm的进程号21515 $ perf top -g -p 21515  用户 CPU 和 Nice CPU 高，说明用户态进程占用了较多的 CPU，所以应该着重排查进程的性能问题。 系统 CPU 高，说明内核态占用了较多的 CPU，所以应该着重排查内核线程或者系统调用的性能问题。  Java 高 CPU 传统的方案：
+ top oder by with P：1040 // 首先按进程负载排序找到 axLoad(pid) top -Hp 进程PID：1073 // 找到相关负载 线程PID printf “0x%x\n” 线程PID： 0x431 // 将线程PID转换为 16进制，为后面查找 jstack 日志做准备 jstack 进程PID | vim &#43;/十六进制线程PID - // 例如：jstack 1040|vim &#43;/0x431 -  load 飙升怎么办 ?" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/high-cpu-and-load/" />
 
@@ -16,10 +16,10 @@
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+<link rel="stylesheet" href="/book.min.2c8703ef3571e9e1469d79306fda1ed51333153e6ba74aff763a8bc7a9fdaea2.css" integrity="sha256-LIcD7zVx6eFGnXkwb9oe1RMzFT5rp0r/djqLx6n9rqI=">
 
 
-<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
+<script defer src="/en.search.min.1e7619796b61414a9016ae3ce0c51191e796bfabae1a014100792c00d2d6c838.js" integrity="sha256-HnYZeWthQUqQFq484MURkeeWv6uuGgFBAHksANLWyDg="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -109,6 +109,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/front-end-optimization-guide/" >
       前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
   </a>
 
 
@@ -249,6 +275,16 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/unix-optimize/thread_process/" >
       线程和进程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/analyze/" >
+      Linux 性能分析
   </a>
 
 </li>
@@ -936,7 +972,9 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#cpu-使用率飙升怎么办-">CPU 使用率飙升怎么办 ?</a></li>
+    <li><a href="#java-高-cpu">Java 高 CPU</a></li>
     <li><a href="#load-飙升怎么办-">load 飙升怎么办 ?</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -967,12 +1005,25 @@ $ perf top -g -p <span style="color:#ae81ff">21515</span>
 <li>用户 CPU 和 Nice CPU 高，说明<strong>用户态进程</strong>占用了较多的 CPU，所以应该着重排查<strong>进程</strong>的性能问题。</li>
 <li>系统 CPU 高，说明<strong>内核态</strong>占用了较多的 CPU，所以应该着重排查<strong>内核线程或者系统调用</strong>的性能问题。</li>
 </ul>
+<h2 id="java-高-cpu">Java 高 CPU</h2>
+<p>传统的方案：</p>
+<ul>
+<li>top oder by with P：1040 // 首先按进程负载排序找到  axLoad(pid)</li>
+<li><code>top -Hp 进程PID</code>：1073    // 找到相关负载 线程PID</li>
+<li><code>printf “0x%x\n”</code> 线程PID： 0x431  // 将线程PID转换为 16进制，为后面查找 jstack 日志做准备</li>
+<li><code>jstack  进程PID | vim +/十六进制线程PID -</code>        // 例如：jstack 1040|vim +/0x431 -</li>
+</ul>
 <h2 id="load-飙升怎么办-">load 飙升怎么办 ?</h2>
 <p>用 <code>iostat</code>、<code>mpstat</code>、<code>pidstat</code> 等工具，找出平均负载升高的根源。</p>
 <ul>
 <li>平均负载高有可能是 CPU 密集型进程导致的；</li>
 <li>平均负载高并不一定代表 CPU 使用率高，还有可能是 I/O 更繁忙了；</li>
 <li>当发现负载高的时候，你可以使用 <code>mpstat</code>、<code>pidstat</code> 等工具，辅助分析负载的来源。</li>
+</ul>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://mp.weixin.qq.com/s?__biz=MjM5NzMyMjAwMA==&amp;mid=2651494268&amp;idx=1&amp;sn=aafa5f474da308ecd88a78721042cac6&amp;chksm=bd25fb038a527215650d1a9a236f15857f88f0467cae7c799e2783c2466201b64d49a0b684d2&amp;mpshare=1&amp;scene=1&amp;srcid=0405HxhTyE6Ke0dQfBhDqid6&amp;sharer_sharetime=1617629472647&amp;sharer_shareid=658dd90a8f6c659831039438f17d5ac5&amp;exportkey=AWStS2u5UIPhvl2tJGnyGyw%3D&amp;pass_ticket=FgOe0eImMCePwZ%2B6Z%2FwC57%2BIb9ZzIZamfIic2QgMql%2BzwzOQaxsqTNUWOq3Aj4HJ&amp;wx_header=0#rd">线上服务 CPU 100%？一键定位 so easy！</a></li>
+<li><a href="https://github.com/oldratlee/useful-scripts">show-busy-java-threads.sh</a></li>
 </ul>
 
 <ins class="adsbygoogle"
@@ -1010,7 +1061,9 @@ data-full-width-responsive="true"></ins>
   <nav id="TableOfContents">
   <ul>
     <li><a href="#cpu-使用率飙升怎么办-">CPU 使用率飙升怎么办 ?</a></li>
+    <li><a href="#java-高-cpu">Java 高 CPU</a></li>
     <li><a href="#load-飙升怎么办-">load 飙升怎么办 ?</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 

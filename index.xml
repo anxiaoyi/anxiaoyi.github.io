@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>☁️ 网络协议、🛠️ 系统设计与架构、🚀 RocketMQ 源码分析、☕ Java、💽 数据库、💾 Redis、💻 Unix 知识、📚 阅读 面试题分享 on 赵坤的个人网站</title>
+    <title>☁️ 网络协议、🛠️ 系统设计与架构、🚀 RocketMQ 源码分析、☕ Java、💽 数据库、💾 Redis、💻 Unix 知识、📚 阅读 基础知识点分享 on 赵坤的个人网站</title>
     <link>https://kunzhao.org/</link>
-    <description>Recent content in ☁️ 网络协议、🛠️ 系统设计与架构、🚀 RocketMQ 源码分析、☕ Java、💽 数据库、💾 Redis、💻 Unix 知识、📚 阅读 面试题分享 on 赵坤的个人网站</description>
+    <description>Recent content in ☁️ 网络协议、🛠️ 系统设计与架构、🚀 RocketMQ 源码分析、☕ Java、💽 数据库、💾 Redis、💻 Unix 知识、📚 阅读 基础知识点分享 on 赵坤的个人网站</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Wed, 09 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://kunzhao.org/index.xml" rel="self" type="application/rss+xml" />
@@ -392,6 +392,19 @@ Stream&amp;lt;Integer&amp;gt; stream = Stream.of(1, 2, 3, 4, 5); int[] result = 
     </item>
     
     <item>
+      <title>回溯法</title>
+      <link>https://kunzhao.org/docs/tutorial/algorithm/backtracking/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/algorithm/backtracking/</guid>
+      <description>回溯法 回溯法的套路解法在这篇文章中给了详细的说明。
+Subsets 返回一个数组的所有 subsets:
+Input: nums = [1,2,3] Output: [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]] 解法：
+public List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; subsets(int[] nums) { List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; list = new ArrayList&amp;lt;&amp;gt;(); Arrays.sort(nums); backtrack(list, new ArrayList&amp;lt;&amp;gt;(), nums, 0); return list; } private void backtrack(List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; list , List&amp;lt;Integer&amp;gt; tempList, int [] nums, int start){ list.add(new ArrayList&amp;lt;&amp;gt;(tempList)); for(int i = start; i &amp;lt; nums.length; i++){ tempList.add(nums[i]); backtrack(list, tempList, nums, i + 1); tempList.remove(tempList.size() - 1); } } 如果这个数组中有重复的数字，那么下面算法展示的是去掉重复数字的写法：
+public List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; subsetsWithDup(int[] nums) { List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; list = new ArrayList&amp;lt;&amp;gt;(); Arrays.</description>
+    </item>
+    
+    <item>
       <title>图片优化</title>
       <link>https://kunzhao.org/docs/tutorial/front-end-optimization-guide/image-optimization/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -645,15 +658,7 @@ BEGIN { FS = &amp;#34;\t&amp;#34; printf(&amp;#34;%10s %6s %5s %s\n\n&amp;#34;, 
       <description>Redis 线程 I/O 模型  Redis 是个单线程程序！ 这点必须铭记。
  Redis 单线程为什么这么快? 因为它所有的数据都在内存中，再加上它采用了高效的数据结构，例如哈希表和跳表，这是它实现高性能的一个重要原因。另一方面，就是Redis采用了多路复用机制，使其在网络IO操作中能并发处理大量的客戶端请求，实现高吞吐率。接下来，我们就重点学习下多路复用机制。
 单线程如何处理并发客户端? 多路复用
-非阻塞 IO 当我们调用套接字的读写方法，默认它们是阻塞的，比如read方法要传递进去一个参数n，表示最多读取这么多字节后再返回，如果一个字节都没有，那么线程就会卡在那里，直到新的数据到来或者连接关闭了，read方法才可以返回，线程才能继续处理。而write方法一般来说不会阻塞，除非内核为套接字分配的写缓冲区已经满了，write方法就会阻塞，直到缓存区中有空闲空间挪出来了。
-非阻塞 IO 在套接字对象上提供了一个选项Non_Blocking，当这个选项打开时，读写方法不会阻塞，而是能读多少读多少，能写多少写多少。能读多少取决于内核为套接字分配的读缓冲区内部的数据字节数，能写多少取决于内核为套接字分配的写缓冲区的空闲空间字节数。读方法和写方法都会通过返回值来告知程序实际读写了多少字节。
-有了非阻塞 IO 意味着线程在读写 IO 时可以不必再阻塞了，读写可以瞬间完成然后线程可以继续干别的事了。
-事件轮询 (多路复用) 非阻塞 IO 有个问题，那就是线程要读数据，结果读了一部分就返回了，线程如何知道何时才应该继续读。也就是当数据到来时，线程如何得到通知。写也是一样，如果缓冲区满了，写不完，剩下的数据何时才应该继续写，线程也应该得到通知。
-事件轮询 API 就是用来解决这个问题的，最简单的事件轮询 API 是select函数，它是操作系统提供给用户程序的 API。输入是读写描述符列表read_fds &amp;amp; write_fds，输出是与之对应的可读可写事件。同时还提供了一个timeout参数，如果没有任何事件到来，那么就最多等待timeout时间，线程处于阻塞状态。一旦期间有任何事件到来，就可以立即返回。时间过了之后还是没有任何事件到来，也会立即返回。拿到事件后，线程就可以继续挨个处理相应的事件。处理完了继续过来轮询。于是线程就进入了一个死循环，我们把这个死循环称为事件循环，一个循环为一个周期。
-每个客户端套接字socket都有对应的读写文件描述符。
-read_events, write_events = select(read_fds, write_fds, timeout) for event in read_events: handle_read(event.fd) for event in write_events: handle_write(event.fd) handle_others() # 处理其它事情，如定时任务等 因为我们通过select系统调用同时处理多个通道描述符的读写事件，因此我们将这类系统调用称为多路复用 API。现代操作系统的多路复用 API 已经不再使用select系统调用，而改用epoll(linux)和kqueue(freebsd &amp;amp; macosx)，因为 select 系统调用的性能在描述符特别多时性能会非常差。它们使用起来可能在形式上略有差异，但是本质上都是差不多的，都可以使用上面的伪代码逻辑进行理解。
-服务器套接字serversocket对象的读操作是指调用accept接受客户端新连接。何时有新连接到来，也是通过select系统调用的读事件来得到通知的。
- 事件轮询 API 就是 Java 语言里面的 NIO 技术</description>
+为什么选择单线程?  It’s not very frequent that CPU becomes your bottleneck with Redis, as usually Redis is either memory or network bound. For instance, using pipelining Redis running on an average Linux system can deliver even 1 million requests per second, so if your application mainly uses O(N) or O(log(N)) commands, it is hardly going to use too much CPU.</description>
     </item>
     
     <item>
@@ -749,6 +754,15 @@ public interface Metric extends DebugSupport { // 添加 n 个异常  void addEx
       
       <guid>https://kunzhao.org/docs/tutorial/maven/copy-resource/</guid>
       <description>拷贝资源 &amp;lt;project&amp;gt; ... &amp;lt;build&amp;gt; &amp;lt;plugins&amp;gt; &amp;lt;plugin&amp;gt; &amp;lt;artifactId&amp;gt;maven-resources-plugin&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;3.2.0&amp;lt;/version&amp;gt; &amp;lt;executions&amp;gt; &amp;lt;execution&amp;gt; &amp;lt;id&amp;gt;copy-resources&amp;lt;/id&amp;gt; &amp;lt;!-- here the phase you need --&amp;gt; &amp;lt;phase&amp;gt;package&amp;lt;/phase&amp;gt; &amp;lt;goals&amp;gt; &amp;lt;goal&amp;gt;copy-resources&amp;lt;/goal&amp;gt; &amp;lt;/goals&amp;gt; &amp;lt;configuration&amp;gt; &amp;lt;outputDirectory&amp;gt;${basedir}/target/extra-resources&amp;lt;/outputDirectory&amp;gt; &amp;lt;resources&amp;gt; &amp;lt;resource&amp;gt; &amp;lt;directory&amp;gt;src/non-packaged-resources&amp;lt;/directory&amp;gt; &amp;lt;filtering&amp;gt;true&amp;lt;/filtering&amp;gt; &amp;lt;/resource&amp;gt; &amp;lt;/resources&amp;gt; &amp;lt;/configuration&amp;gt; &amp;lt;/execution&amp;gt; &amp;lt;/executions&amp;gt; &amp;lt;/plugin&amp;gt; &amp;lt;/plugins&amp;gt; ... &amp;lt;/build&amp;gt; ... &amp;lt;/project&amp;gt; </description>
+    </item>
+    
+    <item>
+      <title>数组</title>
+      <link>https://kunzhao.org/docs/tutorial/algorithm/array/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/algorithm/array/</guid>
+      <description>数组 无序数组第 K 大的数字 public int findKthLargest(int[] nums, int k) { k = nums.length - k; // 1 2 3 4 5 6  // ↑(第 2 大)  // ↑(partition = 2 的时候，实际上指向的是这里)  int lo = 0; int hi = nums.length - 1; // ==========================  // while (lo &amp;lt; hi)  // nums = [1]，这种情况进入不了循环  //  // ==========================  while (lo &amp;lt;= hi) { int index = partition(nums, lo, hi); if (index == k) { return nums[index]; } else if (index &amp;lt; k) { lo = index + 1; } else { hi = index - 1; } } return -1; } private int partition(int[] nums, int lo, int high) { int i = lo - 1; int pivot = nums[high]; for (int j = lo; j &amp;lt;= high - 1; j++) { if (nums[j] &amp;lt;= pivot) { i++; swap(nums, i, j); } } swap(nums, i + 1, high); return i + 1; } private void swap(int[] array, int i, int j) { int temp = array[i]; array[i] = array[j]; array[j] = temp; } 过半数的元素 使用**摩尔投票法**：</description>
     </item>
     
     <item>
@@ -990,6 +1004,16 @@ Semaphore sem = new Semaphore(30); if (sem.</description>
     </item>
     
     <item>
+      <title>树</title>
+      <link>https://kunzhao.org/docs/tutorial/algorithm/tree/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/algorithm/tree/</guid>
+      <description>树 BST 第 K 大的数字  二叉搜索树的中序遍历为递增序列。因此这道题可转化为求 “此树的中序遍历倒序的第 k 个节点”。
+ class Solution { int res, k; public int kthLargest(TreeNode root, int k) { this.k = k; dfs(root); return res; } void dfs(TreeNode root) { if (root == null) return; dfs(root.right); if (k == 0) return; if (--k == 0) res = root.val; dfs(root.left); } } 时间复杂度：O(N)，空间复杂度：O(N)，当树退化为链表（全部是右节点）的时候，系统使用 O(N) 大小的栈空间。</description>
+    </item>
+    
+    <item>
       <title>计算属性</title>
       <link>https://kunzhao.org/docs/tutorial/vue3/computed/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1120,7 +1144,7 @@ HTTP3 协议特点 协议栈 可靠性 虽然 UDP 不提供可靠的传输，但
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/java/juc/</guid>
-      <description>JUC 并发包 Java 内存模型 (JMM) 在并发编程中，需要处理两个关键问题：线程之间如何通信及线程之间如何同步。在命令式编程中，线程之间的通信机制有两种：共享内存和消息传递。
+      <description>JUC 并发包 线程安全  无状态对象（例如 Servlet）一定是线程安全的。 对于可能被多个线程访问的可变状态的变量，用锁来保护它。 不可变对象（所有 field 都是 final，this 指针没有逸出）一定是线程安全的。  Java 内存模型 (JMM) 在并发编程中，需要处理两个关键问题：线程之间如何通信及线程之间如何同步。在命令式编程中，线程之间的通信机制有两种：共享内存和消息传递。
 Java的并发采用的是共享内存模型，Java线程之间的通信总是隐式进行，整个通信过程对程序员完全透明。
  线程之间共享程序的公共状态，通过写读内存中的公共状态进行隐式通信。 在共享内存并发模型里，同步是显式进行的。程序员必须显式指定某个方法或某段代码需要在线程之间互斥执行。  Java 线程之间的通信 由 Java 内存模型（本文简称为 JMM ）控制，JMM 决定一个线程对共享变量的写入何时对另一个线程可见。
 本地内存是 JMM 的一个抽象概念，并不真实存在。它涵盖了缓存、写缓冲区、寄存器以及其他的硬件和编译器优化。Java内存模型的抽象结构示意图如下:
@@ -1129,9 +1153,7 @@ JMM 通过控制主内存与每个线程的本地内存之间的交互，来为 
 可见性 可见性是怎么导致的: 是因为每个 CPU 都有自己的缓存导致的。可见性指的是当一个线程修改了某个共享变量的值，其他线程是否能够马上得知这个修改的值。
  禁止编译器/处理器重排序：JMM属于语言级的内存模型，它确保在不同的编译器和不同的处理器平台之上，通过禁止特定类型的编译器重排序和处理器重排序，为程序员提供一致的内存可见性保证。处理器重排序，是通过在生成指令序列时，插入内存屏障来保证可见性。 synchronized：当线程获取锁时会从主内存中获取共享变量的最新值，释放锁的时候会将共享变量同步到主内存中。从而，synchronized具有可见性。 volatile：通过在指令中添加 lock 指令，以实现内存可见性  原子性 原子性指的是一个操作是不可中断的，即使是在多线程环境下，一个操作一旦开始就不会被其他线程影响。 基本数据类型
 JMM 定义了 8 种操作都是原子的，不可再分的。
- lock(锁定)：作用于主内存中的变量，它把一个变量标识为一个线程独占的状态； unlock(解锁):作用于主内存中的变量，它把一个处于锁定状态的变量释放出来，释放后的变量才可以被其他线程锁定 read（读取）：作用于主内存的变量，它把一个变量的值从主内存传输到线程的工作内存中，以便后面的load动作使用； load（载入）：作用于工作内存中的变量，它把read操作从主内存中得到的变量值放入工作内存中的变量副本 use（使用）：作用于工作内存中的变量，它把工作内存中一个变量的值传递给执行引擎，每当虚拟机遇到一个需要使用到变量的值的字节码指令时将会执行这个操作； assign（赋值）：作用于工作内存中的变量，它把一个从执行引擎接收到的值赋给工作内存的变量，每当虚拟机遇到一个给变量赋值的字节码指令时执行这个操作； store（存储）：作用于工作内存的变量，它把工作内存中一个变量的值传送给主内存中以便随后的write操作使用； write（操作）：作用于主内存的变量，它把store操作从工作内存中得到的变量的值放入主内存的变量中。  上面一共有八条原子操作，其中六条可以满足基本数据类型的访问读写具备原子性，还剩下lock和unlock两条原子操作。
- synchronized：如果我们需要更大范围的原子性操作就可以使用lock和unlock原子操作。尽管jvm没有把lock和unlock开放给我们使用，但jvm以更高层次的指令monitorenter和monitorexit指令开放给我们使用，反应到java代码中就是synchronized关键字，也就是说synchronized满足原子性。 volatile：volatile 能保证对这个单个变量的写入、读取的原子性，但是不保证复合操作的原子性。  有序性 synchronized：synchronized 语义就要求线程在访问读写共享变量时只能“串行”执行，因此synchronized具有有序性 volatile：为了性能优化，编译器和处理器会进行指令重排序；也就是说java程序天然的有序性可以总结为：如果在本线程内观察，所有的操作都是有序的；如果在一个线程观察另一个线程，所有的操作都是无序的。
-volatile 包含禁止指令重排序的语义，其具有有序性。</description>
+ lock(锁定)：作用于主内存中的变量，它把一个变量标识为一个线程独占的状态； unlock(解锁):作用于主内存中的变量，它把一个处于锁定状态的变量释放出来，释放后的变量才可以被其他线程锁定 read（读取）：作用于主内存的变量，它把一个变量的值从主内存传输到线程的工作内存中，以便后面的load动作使用； load（载入）：作用于工作内存中的变量，它把read操作从主内存中得到的变量值放入工作内存中的变量副本 use（使用）：作用于工作内存中的变量，它把工作内存中一个变量的值传递给执行引擎，每当虚拟机遇到一个需要使用到变量的值的字节码指令时将会执行这个操作； assign（赋值）：作用于工作内存中的变量，它把一个从执行引擎接收到的值赋给工作内存的变量，每当虚拟机遇到一个给变量赋值的字节码指令时执行这个操作； store（存储）：作用于工作内存的变量，它把工作内存中一个变量的值传送给主内存中以便随后的write操作使用； write（操作）：作用于主内存的变量，它把store操作从工作内存中得到的变量的值放入主内存的变量中。  上面一共有八条原子操作，其中六条可以满足基本数据类型的访问读写具备原子性，还剩下lock和unlock两条原子操作。</description>
     </item>
     
     <item>
@@ -1143,14 +1165,14 @@ volatile 包含禁止指令重排序的语义，其具有有序性。</descripti
       <description>MySQL 索引 索引存储结构 InnoDB 的 B+ 树 每一个索引在 InnoDB 里面对应一棵 B+ 树。B+ 树能够很好地配合磁盘的读写特性，减少单次查询的磁盘访问次数。
 根据叶子节点的内容，索引类型分为主键索引和非主键索引。
  主键索引的叶子节点存的是整行数据。在 InnoDB 里，主键索引也被称为聚簇索引（clustered index）。 非主键索引的叶子节点内容是主键的值。在 InnoDB 里，非主键索引也被称为二级索引（secondary index）。  主键长度越小，普通索引的叶子节点就越小，普通索引占用的空间也就越小。
-MyISAM 的 B+ 树 MyISAM 索引文件和数据文件是分离的，索引文件仅保存数据记录的地址。
-B 树和 B+ 树 B 树示例：
-B+ 树示例：
-B 和 B+ 树的区别在于，B+ 树的非叶子结点只包含导航信息，不包含实际的值，所有的叶子结点和相连的节点使用链表相连，便于区间查找和遍历。
-B+ 树的优点在于：
- 由于 B+ 树在内部节点上不好含数据信息，因此在内存页中能够存放更多的 key。 数据存放的更加紧密，具有更好的空间局部性。因此访问叶子几点上关联的数据也具有更好的缓存命中率。 B+ 树的叶子结点都是相链的，因此对整棵树的便利只需要一次线性遍历叶子结点即可。而且由于数据顺序排列并且相连，所以便于区间查找和搜索。而 B 树则需要进行每一层的递归遍历。相邻的元素可能在内存中不相邻，所以缓存命中性没有 B+ 树好。  但是 B 树也有优点，其优点在于，由于 B 树的每一个节点都包含 key 和 value，因此经常访问的元素可能离根节点更近，因此访问也更迅速。
-回表 回到主键索引树搜索的过程，我们称为回表。
-select * from T where k between 3 and 5 覆盖索引 ID 的值已经在 k 索引树上了，因此可以直接提供查询结果，不需要回表。也就是说，在这个查询里面，索引 k 已经“覆盖了”我们的查询需求，我们称为覆盖索引。</description>
+ 为何可以降低 IO ?
+  InnoDB 叶子节点，数据页是双向，单条数据之间单向。
+  InnoDB 索引一次读多少？
+ 这个 16kb 是 innodb 默认的页大小，为什么会有这个概念呢，因为当涉及到数据库读写的时候，规定数据库每次读写都是以 16k 为单位的，一次最少从磁盘中读取 16KB 的内容到内存中，一次最少把内存中的 16KB 内容刷新到磁盘中。
+ 计算 IO 次数
+ 我们每次 IO 都是读取数据到内存中进行一些计算。当我们遍历 主键索引的B+树 查找数据的时候， IO 次数是近似于 B+ 树的层数 -1，因为根节点是一直在内存中的。
+基本上可以理解为，每次 io 都是在树的一层查找符合的 id 范围的页数据，通过对比页里面的最大最小主键来确定下层的查找范围。
+MyISAM 的 B+ 树 MyISAM 索引文件和数据文件是分离的，索引文件仅保存数据记录的地址。</description>
     </item>
     
     <item>
@@ -1267,6 +1289,18 @@ Client 端 初始化 Bootstrap Client 端初始化 Bootstrap 并尝试连接 Ser
     </item>
     
     <item>
+      <title>字符串</title>
+      <link>https://kunzhao.org/docs/tutorial/algorithm/string/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/algorithm/string/</guid>
+      <description>字符串 最小覆盖子串 原题
+字符串解码 原题
+输入：s = &amp;quot;3[a2[c]]&amp;quot; 输出：&amp;quot;accaccacc&amp;quot; 解法：
+public class Solution { int ptr; public String decodeString(String s) { LinkedList&amp;lt;String&amp;gt; stk = new LinkedList&amp;lt;String&amp;gt;(); ptr = 0; while (ptr &amp;lt; s.length()) { char cur = s.charAt(ptr); if (Character.isDigit(cur)) { // 获取一个数字并进栈  String digits = getDigits(s); stk.addLast(digits); } else if (Character.isLetter(cur) || cur == &amp;#39;[&amp;#39;) { // 获取一个字母并进栈  stk.addLast(String.valueOf(s.charAt(ptr++))); } else { ++ptr; LinkedList&amp;lt;String&amp;gt; sub = new LinkedList&amp;lt;String&amp;gt;(); while (!</description>
+    </item>
+    
+    <item>
       <title>Best Time to Buy and Sell Stock With Cooldown</title>
       <link>https://kunzhao.org/docs/programmer-interview/algorithm/best-time-to-buy-and-sell-stock-with-cooldown/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1334,10 +1368,9 @@ Bob 想要给 Alice 发送 &amp;ldquo;Hello Alice!&amp;rdquo; 这个信息：
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/database/auto-increment-id/</guid>
-      <description>MySQL 自增键 自增 ID 表定义的自增值达到上限后的逻辑是：再申请下一个 id 时，得到的值保持不变。
+      <description>MySQL 自增键 特点  自增键默认从 1 开始，即第一条记录 insert 结束之后，它的键是 1 insert ... on duplicate key，可能会导致，系统自动生成的自增键，在更新阶段用不上。  自增 ID 表定义的自增值达到上限后的逻辑是：再申请下一个 id 时，得到的值保持不变。
 create table t( id int unsigned auto_increment primary key ) auto_increment=4294967295; insert into t values(null); -- Duplicate entry &amp;#39;4294967295&amp;#39; for key &amp;#39;PRIMARY&amp;#39; insert into t values(null); 第一个 insert 语句插入数据成功后，这个表的 AUTO_INCREMENT 没有改变（还是 4294967295），就导致了第二个 insert 语句又拿到相同的自增 id 值，再试图执行插入语句，报主键冲突错误。
-row_id 如果你创建的 InnoDB 表没有指定主键，那么 InnoDB 会给你创建一个不可见的，长度为 6 个字节的 row_id。InnoDB 维护了一个全局的 dict_sys.row_id 值，所有无主键的 InnoDB 表，每插入一行数据，都将当前的 dict_sys.row_id 值作为要插入数据的 row_id，然后把 dict_sys.row_id 的值加 1。
-实际上，在代码实现时 row_id 是一个长度为 8 字节的无符号长整型 (bigint unsigned)。但是，InnoDB 在设计时，给 row_id 留的只是 6 个字节的长度，这样写到数据表中时只放了最后 6 个字节，所以 row_id 能写到数据表中的值，就有两个特征：</description>
+row_id 如果你创建的 InnoDB 表没有指定主键，那么 InnoDB 会给你创建一个不可见的，长度为 6 个字节的 row_id。InnoDB 维护了一个全局的 dict_sys.row_id 值，所有无主键的 InnoDB 表，每插入一行数据，都将当前的 dict_sys.</description>
     </item>
     
     <item>
@@ -1446,6 +1479,17 @@ public @interface Transactional { // REQUIRED: 0,  // SUPPORTS: 1,  // MANDATORY
     </item>
     
     <item>
+      <title>动态规划</title>
+      <link>https://kunzhao.org/docs/tutorial/algorithm/dp/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/algorithm/dp/</guid>
+      <description>动态规划 打家劫舍② 原题
+所有的房屋都 围成一圈 ，这意味着第一个房屋和最后一个房屋是紧挨着的。同时，相邻的房屋装有相互连通的防盗系统，如果两间相邻的房屋在同一晚上被小偷闯入，系统会自动报警 。给定一个代表每个房屋存放金额的非负整数数组，计算你 在不触动警报装置的情况下 ，能够偷窃到的最高金额。
+class Solution { public int rob(int[] nums) { if(nums.length == 0) return 0; if(nums.length == 1) return nums[0]; return Math.max(myRob(Arrays.copyOfRange(nums, 0, nums.length - 1)), myRob(Arrays.copyOfRange(nums, 1, nums.length))); } private int myRob(int[] nums) { int pre = 0, cur = 0, tmp; for(int num : nums) { tmp = cur; cur = Math.max(pre + num, cur); pre = tmp; } return cur; } } </description>
+    </item>
+    
+    <item>
       <title>在 IE 11 运行</title>
       <link>https://kunzhao.org/docs/tutorial/vue3/run-vue-on-ie/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1518,7 +1562,9 @@ CDN 可缓存的内容  静态资源：图片、CSS、JS、HTML 文件、流媒�
 char 能存储中文字符吗 在 Java 中，char 类型占 2 个字节，而且 Java 默认采用 Unicode 编码，一个 Unicode 码是 16 位，所以一个 Unicode 码占两个字节，Java 中无论汉字还是英文字母都是用 Unicode 编码来表示的。所以，在Java中，char 类型变量可以存储一个中文汉字。
 浮点数 单精度浮点数格式：
 字符集 GB2312 收录 6763 个常用汉字；GBK 的 K 是扩展的意思，支持繁体，兼容 GB2312；GB18030 是国家标准，是 GBK 的超集并与之兼容；1994 年公布的 Unicode，编码格式有：UTF-8、UTF-16、UTF-32，UTF 可以理解为对 Unicode 的压缩方式。
-访问权限 </description>
+访问权限 内部类和静态内部类 内部类有对外层类完全的访问权限。静态内部类没有一个指向嵌套类的引用，所以静态内部类不能够调用外层类的非静态方法，或者访问非静态的字段。
+泛型 为什么类型擦除 为了兼容 JDK 5 之前（有泛型功能之前）的项目，否则有大量代码修改的工作。
+//编译器的代码 Node node = new Node&amp;lt;String&amp;gt;(); //编译后的代码 Node node = new Node(); </description>
     </item>
     
     <item>
@@ -1666,7 +1712,7 @@ DNS 层次结构  根 DNS 服务器 ：返回顶级域 DNS 服务器的 IP 地�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/database/mysql-ops/</guid>
-      <description>MySQL 优化与运维 基本命名和约束规范  表字符集选则 UTF-8，如果需要 Emoji 表情，需要使用 UTF8mb4 (MySQL 5.5.3 以后支持) 存储引擎尽量使用 InnoDB 变长字符串尽量使用 varchar 单标数据量控制在 1 亿以下 库名、表名、字段名不使用保留字 库名、表名、字段名、索引名使用小写字母，使用划线分割，见名知意 表名不要设计的过长，尽可能用最少的字符表达表的用途  字段规范  所有字段均为 NOT NULL，除非真的想要存储 NULL (解释：NULL 的存储浪费表存储空间，InnoDB 需要额外一个字节存储，NULL 过多会影响优化器选择执行计划) 字段类型满足要求条件下越小越好，使用 UNSIGNED 存储非负整数，实际需要存储负数的场景不多 使用 TIMESTAMP 存储时间 (只能存储到 2038 年) 使用 varchar 存储变长字符串，varchar(M) 的 M 指的是字符数，不是字节数，使用 UNSIGNED INT 存储 IPV4 地址，不过这种方式存储不了 IPV6 使用 DECIMAL 存储精确浮点数，用 float 类型存储可能会存在数据误差 少用 blob text  索引范围  单个索引字段数不超过 5，单表索引数量不超过 5，索引设计遵循 B+Tree 索引最左前缀匹配原则 选则区分度高的列作为索引 建立的索引能覆盖 80% 主要的查询，不求全，解决问题的主要矛盾就好 DML 要和 order by、group by 字段建立合适的索引 避免索引的隐式转换 避免冗余索引  Online DDL 原生 MySQL 执行 DDL 需要锁表，在锁表期间无法写入数据，这对服务影响很大，下面给出 Facebook OSC 和 5.</description>
+      <description>MySQL 优化与运维 基本命名和约束规范  表字符集选则 UTF-8，如果需要 Emoji 表情，需要使用 UTF8mb4 (MySQL 5.5.3 以后支持) 存储引擎尽量使用 InnoDB 变长字符串尽量使用 varchar 单标数据量控制在 1 亿以下 库名、表名、字段名不使用保留字 库名、表名、字段名、索引名使用小写字母，使用划线分割，见名知意 表名不要设计的过长，尽可能用最少的字符表达表的用途  字段规范  所有字段均为 NOT NULL，除非真的想要存储 NULL (解释：NULL 的存储浪费表存储空间，InnoDB 需要额外一个字节存储，NULL 过多会影响优化器选择执行计划) 字段类型满足要求条件下越小越好，使用 UNSIGNED 存储非负整数，实际需要存储负数的场景不多 使用 TIMESTAMP 存储时间 (只能存储到 2038 年) 使用 varchar 存储变长字符串，varchar(M) 的 M 指的是字符数，不是字节数，使用 UNSIGNED INT 存储 IPV4 地址，不过这种方式存储不了 IPV6 使用 DECIMAL 存储精确浮点数，用 float 类型存储可能会存在数据误差 少用 blob text  索引范围  单个索引字段数不超过 5，单表索引数量不超过 5，索引设计遵循 B+Tree 索引最左前缀匹配原则 选则区分度高的列作为索引 建立的索引能覆盖 80% 主要的查询，不求全，解决问题的主要矛盾就好 DML 要和 order by、group by 字段建立合适的索引 避免索引的隐式转换 避免冗余索引  MySQL 可用性 无缝切换主库的方案：</description>
     </item>
     
     <item>
@@ -1694,7 +1740,7 @@ RedisCluser 采用虚拟槽分区，所有的键根据哈希函数映射到 0 ~ 
 使用 CRC16(key) &amp;amp; 16383 将键映射到槽上：
  虚拟槽分区，解耦了数据和节点之间的关系，简化了节点扩容和收缩难度。
  集群限制  key 批量操作支持有限。如mset、mget，目前只支持具有相同slot值的key执行批量操作。对于映射为不同slot值的key由于执行mSet、mget等操作可能存在于多个节点上因此不被支持。 只支持多key在同一节点上的事务操作，当多个key分布在不同的节点上时无法使用事务功能。 key作为数据分区的最小粒度，因此不能将一个大的键值对象如hash、list等映射到不同的节点。 复制结构只支持一层，从节点只能复制主节点，不支持嵌套树状复制结构。  集群搭建  Redis 集群一般由多个节点组成，节点数量至少为6个才能保证组成完整高可用的集群。 节点握手是指一批运行在集群模式下的节点通过Gossip协议彼此通信，达到感知对方的过程。 Redis集群把所有的数据映射到16384个槽中。每个key会映射为一个固定的槽，只有当节点分配了槽，才能响应和这些槽关联的键命令。 redis-trib.rb是采用Ruby实现的Redis集群管理工具。内部通过Cluster相关命令帮我们简化集群创建、检查、槽迁移和均衡等常见运维操作，使用之前需要安装Ruby依赖环境。  redis-trib.rb create节点通信 Gossip 协议的信息交换机制具有天然的分布式特性，但是有成本：加重带宽和计算的负担。因此选择每次需要通信的节点，变得非常重要：
- 每秒随机选取 5 个最久没有通信的节点发送 ping 消息。 每 100 毫秒会扫描本地节点列表，发现最近一次接受 pong 时间大于 cluster_node_timeout / 2 ，则立刻发送 pong 消息，防止该节点信息太长时间未更新。  集群伸缩 redis-trib.</description>
+ 每秒随机选取 5 个最久没有通信的节点发送 ping 消息。 每 100 毫秒会扫描本地节点列表，发现最近一次接受 pong 时间大于 cluster_node_timeout / 2 ，则立刻发送 pong 消息，防止该节点信息太长时间未更新。  Gossip 协议类似病毒扩散的方式，将信息传播到其他的节点，这种协议效率很高，只需要广播到附近节点，然后被广播的节点继续做同样的操作即可。当然这种协议也有一个弊端就是：会存在浪费，哪怕一个节点之前被通知到了，下次被广播后仍然会重复转发。</description>
     </item>
     
     <item>
@@ -1738,11 +1784,16 @@ RedisCluser 采用虚拟槽分区，所有的键根据哈希函数映射到 0 ~ 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/distributed/multi-replica-consistency/</guid>
-      <description>副本一致性算法 Paxos Raft  Raft 之所以会出现，主要是因为 Paxos 晦涩难懂，大家表示很难看懂。
-  Paxos 可以多点写入，无需选举 Leader，每个节点都可以接受写请求。虽然为了避免活锁问题，Multi Paxos 可以选举一个 Leader，但是也不是强制执行的，允许同一时间有多个 Leader 同时存在。多点写入，这增加了复杂度。 Raft 只能单点写入 任意时刻只能有一个有效的 Leader，只能 Leader 接受写请求，Leader 同步给超过半数的 Follower  日志结构  index: 日志的顺序编号，如 1、2、3、4 &amp;hellip; term: 写入日志的 Leader 所在的任期、轮数，其他地方称之为 epoch commitIndex: 这条日志被复制到了多数的机器上 lastApplied: 哪些日志已经回放到了状态机   term 只会单调递增，日志的顺序满足: 后一条日志的 term &amp;gt;= 前一条日志的 term
- term 作用 (1) 防止脑裂
-网络分区恢复，存在两个 Leader，旧 Leader 向 Follower 发送数据，Follower 知道它的 term = 4，就知道它是过期的 Leader，于是拒绝执行写入，同时反馈给老的 Leader，你已经过期了。
-(2) term 如何一直递增?</description>
+      <description>副本一致性算法 Paxos 角色 协议将系统中的节点分为三种角色：Proposer（提案者）、Acceptor（决议者）、Leaner（学习者），他们的具体职责为：
+ 提案者：对key的值提出自己的值； 决议者：对提案者的提议进行投票，选定一个提案，形成最终决策； 学习者：学习决议者达成共识的决策。  决策 在 Paxos 中，一个决策过程（Round、Phase）分为两个阶段：
+(1) phase1（准备阶段）：
+Proposer向超过半数（n/2+1）Acceptor发起prepare消息(发送编号)； 如果Acceptor 收到一个编号为 N 的 Prepare 请求，且 N 大于该 Acceptor 已经响应过的所有 Prepare 请求的编号，那么它就会将它已经接受过的编号最大的提案（如果有的话）作为响应反馈给 Proposer，同时该Acceptor 承诺不再接受任何编号小于 N 的提案。否则拒绝返回。
+(2) phase2（决议阶段或投票阶段）：
+如果超过半数 Acceptor 回复 promise，Proposer向Acceptor发送accept消息。注意此时的V：V 就是收到的响应中编号最大的提案的，如果响应中不包含任何提案，那么V 就由 Proposer 自己决定； Acceptor检查accept消息是否符合规则，只要该 Acceptor 没有对编号大于 N 的 Prepare 请求做出过响应，它就接受该提案。
+在实际发展中，Paxos算法也演变出一系列变种：
+PBFT（实用拜占庭容错）算法：是一种共识算法，较高效地解决了拜占庭将军问题； Multi-Paxos算法：优化了prepare阶段的效率，同时允许多个Leader并发提议；以及FastPaxos、EPaxos等，这些演变是针对某些问题进行的优化，内核思想还是依托于Paxos。
+Raft  Raft 之所以会出现，主要是因为 Paxos 晦涩难懂，大家表示很难看懂。
+  Paxos 可以多点写入，无需选举 Leader，每个节点都可以接受写请求。虽然为了避免活锁问题，Multi Paxos 可以选举一个 Leader，但是也不是强制执行的，允许同一时间有多个 Leader 同时存在。多点写入，这增加了复杂度。 Raft 只能单点写入 任意时刻只能有一个有效的 Leader，只能 Leader 接受写请求，Leader 同步给超过半数的 Follower  角色 在 Raft 中，节点被分为 Leader、Follower、Candidate 三种角色：</description>
     </item>
     
     <item>
@@ -1804,10 +1855,9 @@ plugins: [ // plugins 的配置  // html-webpack-plugin  // 功能：默认会�
 除了微调过期时间，我们还可以通过服务降级，来应对缓存雪崩。
 所谓的服务降级，是指发生缓存雪崩时，针对不同的数据采取不同的处理方式。
  当业务应用访问的是非核心数据（例如电商商品属性）时，暂时停止从缓存中查询这些数据，而是直接返回预定义信息、空值或是错误信息。 当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。  Redis 缓存实例故障宕机  保证缓存层服务高可用性。和飞机都有多个引擎一样。可以采用限流或降级方案。   依赖隔离组件为后端限流并降级  热点 Key 重建优化 在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。
- 互斥锁  MySQL 同步到 Redis 数据更新服务只负责处理业务逻辑，更新 MySQL，完全不用管如何去更新缓存。负责更新缓存的服务，把自己伪装成一个 MySQL 的从节点，从 MySQL 接收 Binlog，解析 Binlog之后，可以得到实时的数据变更信息，然后根据这个变更信息去更新 Redis 缓存。
-这种收 Binlog 更新缓存的方案，和收 MQ 消息更新缓存的方案，其实它们的实现思路是一样的，都是异步订阅实时数据变更信息，去更新 Redis。只不过，直接读取 Binlog 这种方式，它的通用性更强。不要求订单服务再发订单消息了，订单更新服务也不用费劲去解决“发消息失败怎么办？”这种数据一致性问题了。
-这个方案唯一的缺点是，实现订单缓存更新服务有点儿复杂，毕竟不像收消息，拿到的直接就是订单数据，解析 Binlog 还是挺麻烦的。
-有很多开源的项目就提供了订阅和解析 MySQL Binlog 的功能，常用的开源项目有 Canal。</description>
+ 互斥锁  Redis 热 Key 如何解决，降级成本地缓存。不过需要加监测，而且 Redis 本身也有 hotkeys 参数可以监测，还可以实时分析用户请求。
+MySQL 同步到 Redis 数据更新服务只负责处理业务逻辑，更新 MySQL，完全不用管如何去更新缓存。负责更新缓存的服务，把自己伪装成一个 MySQL 的从节点，从 MySQL 接收 Binlog，解析 Binlog之后，可以得到实时的数据变更信息，然后根据这个变更信息去更新 Redis 缓存。
+这种收 Binlog 更新缓存的方案，和收 MQ 消息更新缓存的方案，其实它们的实现思路是一样的，都是异步订阅实时数据变更信息，去更新 Redis。只不过，直接读取 Binlog 这种方式，它的通用性更强。不要求订单服务再发订单消息了，订单更新服务也不用费劲去解决“发消息失败怎么办？”这种数据一致性问题了。</description>
     </item>
     
     <item>
@@ -1843,14 +1893,14 @@ public class TransactionMQProducer extends DefaultMQProducer { @Override public 
       
       <guid>https://kunzhao.org/docs/tutorial/network/tcp/</guid>
       <description>TCP TCP 头 三次握手  三次握手恰好可以保证 Client 和 Server 对自己的发送、接受能力做了一次确认。
+  connect 和 bind 区别？
+  Socket 层面的，是如何和三次握手的过程对应的？
  四次挥手 TIME_WAIT 状态的设计  为什么不直接进入 CLOSED 状态，而是中间有一个 TIME_WAIT 状态 ?
  4元组 (客户端 IP、客户端 Port、服务器 IP、服务器 Port)，无法区分出新连接还是老连接，这会导致老连接上的数据包会串到新的连接上来。
 TCP/IP 定义了一个值 MSL，表示数据包在网络上最长逗留时间，默认是 120s。连接保持在 TIME_WAIT 状态，再等待 2 × MSL 时间就可以进入 CLOSED 状态了，防止串数据。
  为什么是两倍的 MSL ?
  因为上图第 4 次发送的数据包，服务器是否收到是不确定的。而如果服务器没有收到，那么服务器会重新发送第三次的数据包。所以整个的时间，最长是两个 MSL。
- 为何服务器收到第 4 个 ACK 之后，立刻进入 CLOSED 状态，而不是也进入 TIME_WAIT 状态 ?
- 没有必要，因为客户端处于 TIME_WAIT 状态，意味着四元组代表的这个连接要到 2 × MSL 时间之后才能重新启用，服务器即使想要立即连接也无法实现。
-大量 TIME_WAIT 状态 如果存在大量的 TIME_WAIT，往往是因为短连接太多，不断的创建连接，然后释放连接，从而导致很多连接在这个状态，可能会导致无法发起新的连接。解决的方式往往是：</description>
+ 为何服务器收到第 4 个 ACK 之后，立刻进入 CLOSED 状态，而不是也进入 TIME_WAIT 状态 ?</description>
     </item>
     
     <item>
@@ -1968,7 +2018,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/network/udp/</guid>
-      <description>UDP UDP 头 与 TCP 区别  无连接 不保证不丢失、不保证按序到达 基于数据报，一个一个发，一个一个收 无拥塞控制，让我发，我就发，管它洪水滔天 无状态服务  应用场景  需要资源少，网络情况较好的内网，或者对于丢包不敏感的应用 不需要一对一沟通建立连接，可以广播的应用: DHCP 处理速度快、低时延、可以容忍少数丢包 Quick UDP Internet Connections: Google 提出的，降低通信时延 流媒体协议，有的帧比较重要，有的不重要 实时游戏。游戏玩家多，服务器却不多，而维护 TCP 需要一些数据结构 IoT 物联网 4G 网络，数据流量上网的数据面对的协议 GTP-U 就是基于 UDP 的  </description>
+      <description>UDP UDP 头 与 TCP 区别  无连接 不保证不丢失、不保证按序到达 基于数据报，一个一个发，一个一个收 无拥塞控制，让我发，我就发，管它洪水滔天 无状态服务  应用场景  需要资源少，网络情况较好的内网，或者对于丢包不敏感的应用 不需要一对一沟通建立连接，可以广播的应用: DHCP 处理速度快、低时延、可以容忍少数丢包 Quick UDP Internet Connections: Google 提出的，降低通信时延 流媒体协议，有的帧比较重要，有的不重要 实时游戏。游戏玩家多，服务器却不多，而维护 TCP 需要一些数据结构 IoT 物联网 4G 网络，数据流量上网的数据面对的协议 GTP-U 就是基于 UDP 的  迅雷为什么用 UDP 便于 NAT 穿透。</description>
     </item>
     
     <item>
@@ -2256,10 +2306,8 @@ IP 报文在互联网上传输时,可能要经历多个物理网络,才能从源
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/distributed/distributed-id/</guid>
-      <description>分布式 ID 设计 Twitter Snowflake 整体长度通常是 64 （1 + 41 + 10+ 12 = 64）位，适合使用 Java 语言中的 long 类型来存储。头部是 1 位的正负标识位。紧跟着的高位部分包含 41 位时间戳，通常使用 System.currentTimeMillis()。后面是 10 位的 WorkerID，标准定义是 5 位数据中心 + 5 位机器 ID，组成了机器编号，以区分不同的集群节点。最后的 12 位就是单位毫秒内可生成的序列号数目的理论极限。
-基于 Java 的实现有很多：Snowflake。
-MongoDB 的 ObjectId 提供了一个 12 byte（96 位）的 ID 定义，其中 32 位用于记录以秒为单位的时间，机器 ID 则为 24 位，16 位用作进程 ID，24 位随机起始的计数序列。
-微信的 seqsvr  微信序列号生成器架构设计及演变  百度的 UidGenerator  UidGenerator  </description>
+      <description>分布式 ID 设计 自己设计 ID 类型  QPS 高：那么粒度要粗一些 粒度小：到达毫秒级，每个毫秒预留 10 位顺序号，所以 QPS 最高达到 1024。每毫秒最多产生 1000 多个 ID。  时间同步 使用 Linux 的 crontab 周期性核准服务器时间：
+ntpupdate -u pool.ntp.orgpool.ntp.org ReentrantLock 生成序列 long sequence = 0; long lastTimestamp = -1; Lock = new ReentrantLock(); public void populateId(Id id, IdMeta idMeta) { lock.lock(); try { long timestamp = TimeUtils.genTime(); if (timestamp == lastTimestamp) { sequence++; sequence &amp;amp;= idMeta.geSeqBitsMask(); // 比如最多 1024 个  if (sequence == 0) { timestamp = TimeUtils.</description>
     </item>
     
     <item>
@@ -2312,8 +2360,11 @@ git push &amp;lt;remote_name&amp;gt; &amp;lt;branch_name&amp;gt; git pull &amp;l
       <guid>https://kunzhao.org/docs/tutorial/spring/springboot-startup/</guid>
       <description>SpringBoot 启动过程  基于 Spring 的事件发布和监听机制开始说起。
  初始化 启动流程主要分为三个部分，第一部分进行 SpringApplication 的初始化模块，配置一些基本的环境变量、资源、构造器、监听器。
-开始启动 第二部分实现了应用具体的启动方案，包括启动流程的监听模块、加载配置环境模块、及核心的创建上下文环境模块。
-自动化配置模块 参考  SpringBoot启动流程解析  </description>
+自动配置 @EnableAutoConfiguration 完成了一下功能：
+从 classpath 中搜寻所有的 META-INF/spring.factories 配置文件，并将其中 org.springframework.boot.autoconfigure.EnableutoConfiguration 对应的配置项通过反射实例化为对应的标注了 @Configuration 的 JavaConfig 形式的 IoC 容器配置类，然后汇总为一个并加载到 IoC 容器。
+加载 ApplicationContextInitializer 加载所有配置的 ApplicationContextInitializer 并进行实例化，加载 ApplicationContextInitializer 是在 SpringFactoriesLoader.loadFactoryNames 方法里面进行的。这个方法会尝试从类路径的 META-INF/spring.factories 读取相应配置文件，然后进行遍历，读取配置文件中Key为：org.springframework.context.ApplicationContextInitializer 的 value。以 spring-boot 这个包为例，它的 META-INF/spring.factories 部分定义如下所示：
+# Initializers org.springframework.context.ApplicationContextInitializer=\ org.springframework.boot.context.ConfigurationWarningsApplicationContextInitializer,\ org.springframework.boot.context.ContextIdApplicationContextInitializer,\ org.springframework.boot.context.config.DelegatingApplicationContextInitializer,\ org.springframework.boot.context.embedded.ServerPortInfoApplicationContextInitializer  接口 ApplicationContextInitializer 的定义
+ public interface ApplicationContextInitializer&amp;lt;C extends ConfigurableApplicationContext&amp;gt; { /** * Initialize the given application context.</description>
     </item>
     
     <item>
@@ -2334,7 +2385,13 @@ git push &amp;lt;remote_name&amp;gt; &amp;lt;branch_name&amp;gt; git pull &amp;l
       <description>设计微博系统 架构 信息流聚合一般有三种架构：推模式、拉模式以及推拉结合。
 针对关注的粉丝量大的用户采用拉模式，而对于一般用户来说，他们的粉丝量有限，采用推模式问题不大，这样的话一个用户要获取所有关注人的微博，一方面要请求粉丝量大的关注人的发件箱列表，另一方面要请求自己的收件箱列表，再把两者聚合在一起就可以得到完整的 Feed 了。虽然推拉结合的方式看似更加合理，但是由此带来的业务复杂度就比较高了，因为用户的粉丝数是不断变化的，所以对于哪些用户使用推模式，哪些用户使用拉模式，维护起来成本就很高了。所以综合考量下来，微博 Feed 采用了拉模式。
 前面提到采用拉模式的话，需要拉取所有关注人的发件箱，在关注人只有几十几百个的时候，获取效率还是非常高的。但是当关注人上千以后，耗时就会增加很多，实际验证获取超过 4000 个用户的发件箱，耗时要几百 ms，并且长尾请求（也就是单次请求耗时超过 1s）的概率也会大大增加。为了解决关注人数上千的用户拉取 Feed 效率低的问题，我们采用了分而治之的思想，在拉取之前把用户的关注人分为几组，并行拉取，这样的话就把一次性的聚合计算操作给分解成多次聚合计算操作，最后再把多次聚合计算操作的结果汇总在一起，类似于 MapReduce 的思路。经过我们的实际验证，通过这种方法可以有效地降级关注人数上千用户拉取 Feed 的耗时，长尾请求的数量也大大减少了。
-存储 UID range 作为分片 UID hash 作为分片 </description>
+存储 UID range 作为分片 UID hash 作为分片 关系的存储 (1) 最简单的只需要两张表就够了：
+用户信息表：
+| user_id | user_info | ...用户关系表，表示，follower_user 关注了 followee_user：
+| id | follower_user_id | followee_user_id |
+查看 user_a 粉丝多少人：
+SELECT COUNT(*) FROM table_relation WHERE followee_user = `user_a`; 查看 user_a 关注了多少人：
+SELECT COUNT(*) FROM table_relation WHERE follower_user = `user_a`;  (2) 不过随着用户增长，比如达到1亿，那么平均一对用户关系可能就会有100条关系，那么将会扩展到百亿级别。所以必须水平拆分。用户表好选取拆分的键，就是 user_id。不过关系表，根据 follower_user_id 拆分，那么查询这个人关注了多少人好查询，但是查询某个人有多少粉丝，就需要去所有分片上查询汇总了，相反按照 followee_user_id 拆分，那么这个人查询关注了多少人，就不好查询了。也就是总有一半的场景查询效率低下。</description>
     </item>
     
     <item>
@@ -2422,6 +2479,15 @@ jdump 命令需要很长时间，线上无法服务，应该先摘掉机器，�
     </item>
     
     <item>
+      <title>Hystrix</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/hystrix/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/hystrix/</guid>
+      <description>Hystrix Hystrix 隔离策略  THREAD 隔离：在单独的线程上执行，并发请求受到线程池中线程数量的限制。 SEMAPHORE 隔离：在调用线程上执行，并发请求受到信号计数的限制。  通常情况下，使用信号量隔离的场景，调用量非常的，线程切换开销太高，只适用于非网络调用。</description>
+    </item>
+    
+    <item>
       <title>Redis 6</title>
       <link>https://kunzhao.org/docs/tutorial/redis/redis6/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -2433,26 +2499,14 @@ jdump 命令需要很长时间，线上无法服务，应该先摘掉机器，�
 为了应对这个问题，一般有两种方法。
 第一种方法是，用用戶态网络协议栈（例如DPDK）取代内核网络协议栈，让网络请求的处理不用在内核里执行，直接在用戶态完成处理就行。
 对于高性能的Redis来说，避免频繁让内核进行网络请求处理，可以很好地提升请求处理效率。但是，这个方法要求在Redis的整体架构中，添加对用戶态网络协议栈的支持，需要修改Redis源码中和网络相关的部分（例如修改所有的网络收发请求函数），这会带来很多开发工作量。而且新增代码还可能引入新Bug，导致系统不稳定。所以，Redis 6.0中并没有采用这个方法。
-第二种方法就是采用多个IO线程来处理网络请求，提高网络请求处理的并行度。Redis6.0就是采用的这种方法。
+第二种方法就是采用多个IO线程来处理网络请求，提高网络请求处理的并行度。Redis 6.0就是采用的这种方法。
 但是，Redis的多IO线程只是用来处理网络请求的，对于读写命令，Redis仍然使用单线程来处理。这是因为，Redis处理请求时，网络处理经常是瓶颈，通过多个IO线程并行处理网络操作，可以提升实例的整体处理性能。而继续使用单线程执行命令操作，就不用为了保证Lua脚本、事务的原子性，额外开发多线程互斥机制了。这样一来，Redis线程模型实现就简单了。
-Redis 6.0中，多线程机制默认是关闭的，如果需要使用多线程功能，需要在 redis.conf 中完成两个设置。
- 1.设置io-thread-do-reads配置项为yes，表示启用多线程。  io-threads-do-reads yes  2.设置线程个数。一般来说，线程个数要小于Redis实例所在机器的CPU核个数，例如，对于一个8核的机器来说，Redis官方建议配置6个IO线程。  io-threads 6 如果你在实际应用中，发现Redis实例的CPU开销不大，吞吐量却没有提升，可以考虑使用Redis 6.0的多线程机制，加速网络处理，进而提升实例的吞吐量。
-客户端缓存 和之前的版本相比，Redis 6.0新增了一个重要的特性，就是实现了服务端协助的客戶端缓存功能，也称为跟踪（Tracking）功能。有了这个功能，业务应用中的Redis客戶端就可以把读取的数据缓存在业务应用本地了，应用就可以直接在本地快速读取数据了。
-如果数据被修改了或是失效了，如何通知客戶端对缓存的数据做失效处理？
-6.0实现的Tracking功能实现了两种模式，来解决这个问题。
-第一种模式是普通模式。
-在这个模式下，实例会在服务端记录客戶端读取过的key，并监测key是否有修改。一旦key的值发生变化，服务端会给客戶端发送invalidate消息，通知客戶端缓存失效了。
-在使用普通模式时，有一点你需要注意一下，服务端对于记录的key只会报告一次invalidate消息，也就是说，服务端在给客戶端发送过一次invalidate消息后，如果key再被修改，此时，服务端就不会再次给客戶端发送invalidate消息。
-只有当客戶端再次执行读命令时，服务端才会再次监测被读取的key，并在key修改时发送invalidate消息。这样设计的考虑是节省有限的内存空间。毕竟，如果客戶端不再访问这个key了，而服务端仍然记录key的修改情况，就会浪费内存资源
-我们可以通过执行下面的命令，打开或关闭普通模式下的Tracking功能。
-CLIENT TRACKING ON|OFF 第二种模式是广播模式。
-在这个模式下，服务端会给客戶端广播所有key的失效情况，不过，这样做了之后，如果 key 被频繁修改，服务端会发送大量的失效广播消息，这就会消耗大量的网络带宽资源。
-所以，在实际应用时，我们会让客戶端注册希望跟踪的key的前缀，当带有注册前缀的key被修改时，服务端会把失效消息广播给所有注册的客戶端。和普通模式不同，在广播模式下，即使客戶端还没有读取过和普通模式不同，在广播模式下，即使客戶端还没有读取过key，但只要它注册了要跟踪的key，服务端都会把key失效消息通知给这个客戶端key，但只要它注册了要跟踪的key，服务端都会把key失效消息通知给这个客戶端。
-我给你举个例子，带你看一下客戶端如何使用广播模式接收key失效消息。当我们在客戶端执行下面的命令后，如果服务端更新了user:id:1003这个key，那么，客戶端就会收到invalidate消息。
-CLIENT TRACKING ON BCAST PREFIX user 这种监测带有前缀的key的广播模式，和我们对key的命名规范非常匹配。我们在实际应用时，会给同一业务下的key设置相同的业务名前缀，所以，我们就可以非常方便地使用广播模式。
-不过，刚才介绍的普通模式和广播模式，需要客戶端使用RESP 3协议，RESP 3协议是6.0新启用的通信协议。
-权限控制 在Redis 6.0 版本之前，要想实现实例的安全访问，只能通过设置密码来控制，例如，客戶端连接实例前需要输入密码。
-此外，对于一些高⻛险的命令（例如KEYS、FLUSHDB、FLUSHALL等），在Redis 6.0 之前，我们也只能通过rename-command来重新命名这些命令，避免客戶端直接调用。</description>
+Multiple Reactors 目前 Linux 平台上主流的高性能网络库/框架中，大都采用 Reactor 模式，比如 netty、libevent、libuv、POE(Perl)、Twisted(Python)等。
+Reactor 模式本质上指的是使用 I/O 多路复用(I/O multiplexing) + 非阻塞 I/O(non-blocking I/O) 的模式。
+单 Reactor 模式，引入多线程之后会进化为 Multi-Reactors 模式，基本工作模式如下：
+区别于单 Reactor 模式，这种模式不再是单线程的事件循环，而是有多个线程（Sub Reactors）各自维护一个独立的事件循环，由 Main Reactor 负责接收新连接并分发给 Sub Reactors 去独立处理，最后 Sub Reactors 回写响应给客户端。
+Multiple Reactors 模式通常也可以等同于 Master-Workers 模式，比如 Nginx 和 Memcached 等就是采用这种多线程模型，虽然不同的项目实现细节略有区别，但总体来说模式是一致的。
+Redis 网络多线程设计思路 Redis 虽然也实现了多线程，但是却不是标准的 Multi-Reactors/Master-Workers 模式：</description>
     </item>
     
     <item>
@@ -2468,12 +2522,34 @@ CLIENT TRACKING ON BCAST PREFIX user 这种监测带有前缀的key的广播模�
     </item>
     
     <item>
+      <title>架构案例参考</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/architecture-cases/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/architecture-cases/</guid>
+      <description>架构案例参考 本文收集了一些其他文章中所写的，在做系统设计时候的对于一些案例的思考。
+在腾讯 QQ 的红包活动中，对于活动的展示、错峰的内容、预下载资源的内容等，都是采取的全局配置策略进行全局控制的。而为了让用户能够错峰进入活动，避免给后台带来瞬间冲击的问题，其采用 uid % gap 的方式对用户的进入时间进行了错峰划分，但是这样带来的问题是有可能身边的人都看到活动入口了，但是自己还看不到入口，所以还应该将地理位置因素也考虑进去：
+ 根据用户地理位置 adcode 和错峰配置进行映射，得到映射后的分区索引 i； 计算得到一次错峰时间：T1 = T0 + i*interval； 对于同一批次的用户，通过随机时间，将这些用户随机均匀地映射分布到对应较小的时间段内，计算得到二次错峰时间：T2 = T1 + hash(uin)%interval； 得到的二次错峰时间T2即为用户实际可以看到入口参与活动的时间：T = T2； 对于地理位置一次错峰可能出现的异常情况，如用户未授权获取地理位置（占比30%左右）、国外用户无adcode未匹配到分区索引等，客户端可采取一定的兜底策略，如根据用户账号uin进行随机映射到某个分区：i = hash(uin) % regions.count 。  而在活动期间产生的数据的上报流程如下所示，可以看到其上报的时机、上报的方式等都支持非常灵活的调整策略：
+而在上报的链路中，SSO接入层和上报服务后台也分别用过载策略和降级策略来应对过载的风险，其后台接口中包含了 reportLevel 和 reportLevelTime 这两个上报降级信息字段。
+参考  大流量冲击下，腾讯QQ客户端如何保障春节红包活动的用户体验？  </description>
+    </item>
+    
+    <item>
       <title>寻找重复数字</title>
       <link>https://kunzhao.org/docs/programmer-interview/algorithm/findtheduplicatenumber/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/programmer-interview/algorithm/findtheduplicatenumber/</guid>
       <description>寻找重复数字 // Given an array nums containing n + 1 integers where each integer is between 1 and n (inclusive), // prove that at least one duplicate number must exist. // Assume that there is only one duplicate number, find the duplicate one. // // 1 到 n 的数字，某个数字重复，可能重复次数 &amp;gt; 1 // // Input: [3,1,3,4,2] // Output: 3 // // https://leetcode.com/problems/find-the-duplicate-number/ public class FindtheDuplicateNumber { // ==================================  // 数组不允许修改版本  //  // 剑指 Offer  // ==================================  public int findDuplicate(int[] nums) { int lo = 1; int hi = nums.</description>
+    </item>
+    
+    <item>
+      <title>设计 Youtube</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/design-youtube/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/design-youtube/</guid>
+      <description>设计 Youtube 参考  How to Design Youtube (Part II)  </description>
     </item>
     
     <item>
@@ -3191,12 +3267,14 @@ StringBuffer str = new StringBuffer(&amp;#34;Hello world&amp;#34;); 假设以上
     </item>
     
     <item>
-      <title>Oracle VS MySQL</title>
-      <link>https://kunzhao.org/docs/tutorial/database/oracls-vs-mysql/</link>
+      <title>Oracle</title>
+      <link>https://kunzhao.org/docs/tutorial/database/oracle/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://kunzhao.org/docs/tutorial/database/oracls-vs-mysql/</guid>
-      <description>Oracle VS MySQL     Oracle MySQL     事务默认隔离级别 read commited repeatable read   价格 ORACLE 11g 标准版售价在六位数 开源免费   AUTO_INCREMENT 不可以声明，主键自带自增长 可以声明   索引 Oracle 的索引是数据库级别，不可以同名 MySQL 的索引是表级别的，可以同名   数字类型 NUMBER INT/DECIMAL   分页 Oracle 是需要用到伪列 ROWNUM 和嵌套查询 LIMIT X, Y   默认端口 1521 3306    参考  Oracle与MySQL的SQL语句区别  </description>
+      <guid>https://kunzhao.org/docs/tutorial/database/oracle/</guid>
+      <description>Oracle 执行计划 使用 EXPLAIN PLAN 得到 SQL 语句的执行计划：
+EXPLAIN PLAN FOR SELECT * FROM emp WHERE deptno = 10 ORDER BY ename; SELECT plan_table_output FROM TABLE(DBMS_XPLAN.DISPLAY(&amp;#39;PLAN_TABLE&amp;#39;)); -- 或者 SELECT * from table(dbms_xplan.display); Oracle 执行计划显示的是一个树形结构，其阐述了 SQL 引擎执行操作的顺序，树的每一个节点代表一个操作：表访问、连接或排序等，各个操作之间存在父子关系。
+   Operation 解释 SQL     TABLE ACCESS FULL 全表扫描    PARTITION RANGE SINGLE 单个分区扫描 SELECT * FROM t WHERE n1 = 3 AND d1 = to_date(&#39;2007-07-19&#39;, &#39;yyyy-mm-dd&#39;)   PARTITION RANGE ITERATOR 多个分区扫描 SELECT * FROM t WHERE n1 = 3 AND d1 &amp;lt; to_date(&#39;2007-07-19&#39;, &#39;yyyy-mm-dd&#39;)   PARTITION RANGE INLIST 存在 IN 的多个分区扫描 SELECT * FROM t WHERE n1 IN (1, 3) AND d1 = to_date(&#39;2007-07-19&#39;, &#39;yyyy-mm-dd&#39;)   PARTITION RANGE ALL 所有分区扫描 SELECT * FROM t WHERE n1 BETWEEN 6000 AND 7000   PARTITION RANGE OR OR 条件分区扫描 SELECT * FROM t WHERE n1 = 3 OR d1 = to_date(&#39;2007-07-19&#39;, &#39;yyyy-mm-dd&#39;)   INDEX FULL SCAN 全索引扫描    INDEX FAST FULL SCAN 快速全索引扫描    TABLE ACCESS BY USER ROWID 直接指定 ROWID SELECT * FROM emp WHERE rowid IN (&#39;ASDJOWF&#39;, &#39;ADSOFJO&#39;)   TABLE ACCESS BY INDEX ROWID     INDEX UNIQUE SCAN 用上了唯一索引    INDEX RANGE SCAN 用上了非唯一索引     Oracle vs MySQL     Oracle MySQL     事务默认隔离级别 read commited repeatable read   价格 ORACLE 11g 标准版售价在六位数 开源免费   AUTO_INCREMENT 不可以声明，主键自带自增长 可以声明   索引 Oracle 的索引是数据库级别，不可以同名 MySQL 的索引是表级别的，可以同名   数字类型 NUMBER INT/DECIMAL   分页 Oracle 是需要用到伪列 ROWNUM 和嵌套查询 LIMIT X, Y   默认端口 1521 3306    参考  Oracle与MySQL的SQL语句区别 Oracle 执行计划（Explain Plan） 《Oracle性能诊断艺术》  </description>
     </item>
     
     <item>
@@ -3303,8 +3381,8 @@ JSON 示例如下:
       <guid>https://kunzhao.org/docs/tutorial/unix-optimize/high-cpu-and-load/</guid>
       <description>CPU 飙升或 load 飙升 CPU 使用率飙升怎么办 ? 通过 top、ps、pidstat 等工具，你能够轻松找到 CPU 使用率较高（比如 100% ）的进程。接下来，你可能又想知道，占用 CPU 的到底是代码里的哪个函数呢？找到它，你才能更高效、更针对性地进行优化。
 哪种工具适合在第一时间分析进程的 CPU 问题呢？我的推荐是 perf。perf 是 Linux 2.6.31 以后内置的性能分析工具。它以性能事件采样为基础，不仅可以分析系统的各种事件和内核性能，还可以用来分析指定应用程序的性能问题。
-# -g开启调用关系分析，-p指定php-fpm的进程号21515 $ perf top -g -p 21515  用户 CPU 和 Nice CPU 高，说明用户态进程占用了较多的 CPU，所以应该着重排查进程的性能问题。 系统 CPU 高，说明内核态占用了较多的 CPU，所以应该着重排查内核线程或者系统调用的性能问题。  load 飙升怎么办 ? 用 iostat、mpstat、pidstat 等工具，找出平均负载升高的根源。
- 平均负载高有可能是 CPU 密集型进程导致的； 平均负载高并不一定代表 CPU 使用率高，还有可能是 I/O 更繁忙了； 当发现负载高的时候，你可以使用 mpstat、pidstat 等工具，辅助分析负载的来源。  </description>
+# -g开启调用关系分析，-p指定php-fpm的进程号21515 $ perf top -g -p 21515  用户 CPU 和 Nice CPU 高，说明用户态进程占用了较多的 CPU，所以应该着重排查进程的性能问题。 系统 CPU 高，说明内核态占用了较多的 CPU，所以应该着重排查内核线程或者系统调用的性能问题。  Java 高 CPU 传统的方案：
+ top oder by with P：1040 // 首先按进程负载排序找到 axLoad(pid) top -Hp 进程PID：1073 // 找到相关负载 线程PID printf “0x%x\n” 线程PID： 0x431 // 将线程PID转换为 16进制，为后面查找 jstack 日志做准备 jstack 进程PID | vim +/十六进制线程PID - // 例如：jstack 1040|vim +/0x431 -  load 飙升怎么办 ?</description>
     </item>
     
     <item>
@@ -3405,7 +3483,8 @@ struct Person { 1: required string userName, 2: optional i64 favoriteNumber, 3: 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/programmer-interview/java/volatile/</guid>
-      <description>volatile 作用  在多处理器中，保证共享变量的 “可见性”（一个线程修改后，另外一个线程能立即读取到这个最新修改的值） 禁止对指令进行重排序  三大特性  原子性 有序性 可见性  对比 synchronized  volatile 无法保证原子性 volatile 不会使线程陷入阻塞，不会引起线程上下文的切换和调度  典型用法 数绵羊程序：
+      <description>volatile 作用  在多处理器中，保证共享变量的 “可见性”（一个线程修改后，另外一个线程能立即读取到这个最新修改的值） 禁止对指令进行重排序  为什么要指令重排 为了消除指令与指令间的等待，在不影响单线程程序执行结果的前提下，尽可能提高并行度。
+三大特性  原子性 有序性 可见性  对比 synchronized  volatile 无法保证原子性 volatile 不会使线程陷入阻塞，不会引起线程上下文的切换和调度  典型用法 数绵羊程序：
 volatile boolean sleep; while (!sleep) { countSleep(); } 底层原理 有 volatile 变量修饰的共享变量进行写操作的时候会多出一行以 lock;  指令开头的汇编代码。而 lock;  指令相当于一个内存屏障，其作用如下所示：
  将当前处理器缓存行的数据写回到系统内存。 这个写回内存的操作会使在其他 CPU 里缓存了该内存地址的数据无效。  </description>
     </item>
@@ -3889,7 +3968,12 @@ const evtSource = new EventSource(&amp;#39;ssedemo.php&amp;#39;) WebRTC RTC：Re
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/programmer-interview/java/java-exception/</guid>
-      <description>Java 异常 异常架构图 </description>
+      <description>Java 异常 异常架构图 The class Exception and any subclasses that are not also subclasses of RuntimeException are checked exceptions.
+RuntimeException Java 常见 RuntimeException：
+ ArithmeticException ClassCastException ConcurrentModificationException NullPointerException IndexOutOfBoundsException  Exception 常见 Checked Exception：
+ InterruptedException IOException SQLException  NoClassDefFoundError vs ClassNotFoundException 当应用程序运行的过程中尝试使用类加载器去加载 Class 文件的时候，如果没有在 classpath 中查找到指定的类，就会抛出ClassNotFoundException。一般情况下，当我们使用 Class.forName() 或者 ClassLoader.loadClass 以及使用ClassLoader.findSystemClass() 在运行时加载类的时候，如果类没有被找到，那么就会导致 JVM 抛出ClassNotFoundException。
+ NoClassDefFoundError
+ Thrown if the Java Virtual Machine or a ClassLoader instance tries to load in the definition of a class (as part of a normal method call or as part of creating a new instance using the new expression) and no definition of the class could be found.</description>
     </item>
     
     <item>
@@ -4601,6 +4685,18 @@ CSRF 攻击之所以能够成功，是因为服务器误把攻击者发送的请
       <guid>https://kunzhao.org/docs/programmer-interview/algorithm/5-read-1-write/</guid>
       <description>5 个线程读 1 个线程写  微软
  /** * 微软三面面试题: * * - 一个线程写，如果 5 个读线程没有读完，那么等待 * - 5 个线程【同时】读，如果已经读过，那么等待 * * @author zk */ public class ReaderWriter { public static void main(String[] args) { final int READ_COUNT = 5; final ReaderWriter rw = new ReaderWriter(READ_COUNT); Thread writer = new Thread(new Runnable() { @Override public void run() { AtomicInteger atomicInteger = new AtomicInteger(); while (true) { rw.write(atomicInteger.getAndIncrement()); } } }); writer.</description>
+    </item>
+    
+    <item>
+      <title>Linux 性能分析</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-optimize/analyze/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-optimize/analyze/</guid>
+      <description>Linux 性能分析 CPU 性能 内存性能分析 磁盘和文件 I/O 问题 工具 strace strace 可以分析系统调用情况：
+$ strace -p 12280 strace: Process 12280 attached select(0, NULL, NULL, NULL, {tv_sec=0, tv_usec=567708}) = 0 (Timeout) stat(&amp;#34;/usr/local/lib/python3.7/importlib/_bootstrap.py&amp;#34;, {st_mode=S_IFREG|0644, st_size=39278, ...}) = 0 stat(&amp;#34;/usr/local/lib/python3.7/importlib/_bootstrap.py&amp;#34;, {st_mode=S_IFREG|0644, st_size=39278, ...}) = 0 filetop filetop 它是 bcc 软件包的一部分，基于 Linux 内核的 eBPF（extended Berkeley Packet Filters）机制，主要跟踪内核中文件的读写情况，并输出线程 ID（TID）、读写大小、读写类型以及文件名称。
+# -C 选项表示输出新内容时不清空屏幕  $ ./filetop -C filetop 只给出了文件名称，却没有文件路径，还得继续找啊。我再介绍一个好用的工具，opensnoop 。它同属于 bcc 软件包，可以动态跟踪内核中的 open 系统调用。这样，我们就可以找出这些 txt 文件的路径。
+$ opensnoop 12280 python 6 0 /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/650.</description>
     </item>
     
     <item>

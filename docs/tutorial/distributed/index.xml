@@ -102,11 +102,16 @@ RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/distributed/multi-replica-consistency/</guid>
-      <description>副本一致性算法 Paxos Raft  Raft 之所以会出现，主要是因为 Paxos 晦涩难懂，大家表示很难看懂。
-  Paxos 可以多点写入，无需选举 Leader，每个节点都可以接受写请求。虽然为了避免活锁问题，Multi Paxos 可以选举一个 Leader，但是也不是强制执行的，允许同一时间有多个 Leader 同时存在。多点写入，这增加了复杂度。 Raft 只能单点写入 任意时刻只能有一个有效的 Leader，只能 Leader 接受写请求，Leader 同步给超过半数的 Follower  日志结构  index: 日志的顺序编号，如 1、2、3、4 &amp;hellip; term: 写入日志的 Leader 所在的任期、轮数，其他地方称之为 epoch commitIndex: 这条日志被复制到了多数的机器上 lastApplied: 哪些日志已经回放到了状态机   term 只会单调递增，日志的顺序满足: 后一条日志的 term &amp;gt;= 前一条日志的 term
- term 作用 (1) 防止脑裂
-网络分区恢复，存在两个 Leader，旧 Leader 向 Follower 发送数据，Follower 知道它的 term = 4，就知道它是过期的 Leader，于是拒绝执行写入，同时反馈给老的 Leader，你已经过期了。
-(2) term 如何一直递增?</description>
+      <description>副本一致性算法 Paxos 角色 协议将系统中的节点分为三种角色：Proposer（提案者）、Acceptor（决议者）、Leaner（学习者），他们的具体职责为：
+ 提案者：对key的值提出自己的值； 决议者：对提案者的提议进行投票，选定一个提案，形成最终决策； 学习者：学习决议者达成共识的决策。  决策 在 Paxos 中，一个决策过程（Round、Phase）分为两个阶段：
+(1) phase1（准备阶段）：
+Proposer向超过半数（n/2+1）Acceptor发起prepare消息(发送编号)； 如果Acceptor 收到一个编号为 N 的 Prepare 请求，且 N 大于该 Acceptor 已经响应过的所有 Prepare 请求的编号，那么它就会将它已经接受过的编号最大的提案（如果有的话）作为响应反馈给 Proposer，同时该Acceptor 承诺不再接受任何编号小于 N 的提案。否则拒绝返回。
+(2) phase2（决议阶段或投票阶段）：
+如果超过半数 Acceptor 回复 promise，Proposer向Acceptor发送accept消息。注意此时的V：V 就是收到的响应中编号最大的提案的，如果响应中不包含任何提案，那么V 就由 Proposer 自己决定； Acceptor检查accept消息是否符合规则，只要该 Acceptor 没有对编号大于 N 的 Prepare 请求做出过响应，它就接受该提案。
+在实际发展中，Paxos算法也演变出一系列变种：
+PBFT（实用拜占庭容错）算法：是一种共识算法，较高效地解决了拜占庭将军问题； Multi-Paxos算法：优化了prepare阶段的效率，同时允许多个Leader并发提议；以及FastPaxos、EPaxos等，这些演变是针对某些问题进行的优化，内核思想还是依托于Paxos。
+Raft  Raft 之所以会出现，主要是因为 Paxos 晦涩难懂，大家表示很难看懂。
+  Paxos 可以多点写入，无需选举 Leader，每个节点都可以接受写请求。虽然为了避免活锁问题，Multi Paxos 可以选举一个 Leader，但是也不是强制执行的，允许同一时间有多个 Leader 同时存在。多点写入，这增加了复杂度。 Raft 只能单点写入 任意时刻只能有一个有效的 Leader，只能 Leader 接受写请求，Leader 同步给超过半数的 Follower  角色 在 Raft 中，节点被分为 Leader、Follower、Candidate 三种角色：</description>
     </item>
     
     <item>
@@ -181,10 +186,8 @@ DELETE FROM database_lock WHERE resource = 1; 缺点：
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/distributed/distributed-id/</guid>
-      <description>分布式 ID 设计 Twitter Snowflake 整体长度通常是 64 （1 + 41 + 10+ 12 = 64）位，适合使用 Java 语言中的 long 类型来存储。头部是 1 位的正负标识位。紧跟着的高位部分包含 41 位时间戳，通常使用 System.currentTimeMillis()。后面是 10 位的 WorkerID，标准定义是 5 位数据中心 + 5 位机器 ID，组成了机器编号，以区分不同的集群节点。最后的 12 位就是单位毫秒内可生成的序列号数目的理论极限。
-基于 Java 的实现有很多：Snowflake。
-MongoDB 的 ObjectId 提供了一个 12 byte（96 位）的 ID 定义，其中 32 位用于记录以秒为单位的时间，机器 ID 则为 24 位，16 位用作进程 ID，24 位随机起始的计数序列。
-微信的 seqsvr  微信序列号生成器架构设计及演变  百度的 UidGenerator  UidGenerator  </description>
+      <description>分布式 ID 设计 自己设计 ID 类型  QPS 高：那么粒度要粗一些 粒度小：到达毫秒级，每个毫秒预留 10 位顺序号，所以 QPS 最高达到 1024。每毫秒最多产生 1000 多个 ID。  时间同步 使用 Linux 的 crontab 周期性核准服务器时间：
+ntpupdate -u pool.ntp.orgpool.ntp.org ReentrantLock 生成序列 long sequence = 0; long lastTimestamp = -1; Lock = new ReentrantLock(); public void populateId(Id id, IdMeta idMeta) { lock.lock(); try { long timestamp = TimeUtils.genTime(); if (timestamp == lastTimestamp) { sequence++; sequence &amp;amp;= idMeta.geSeqBitsMask(); // 比如最多 1024 个  if (sequence == 0) { timestamp = TimeUtils.</description>
     </item>
     
     <item>
@@ -196,7 +199,13 @@ MongoDB 的 ObjectId 提供了一个 12 byte（96 位）的 ID 定义，其中 3
       <description>设计微博系统 架构 信息流聚合一般有三种架构：推模式、拉模式以及推拉结合。
 针对关注的粉丝量大的用户采用拉模式，而对于一般用户来说，他们的粉丝量有限，采用推模式问题不大，这样的话一个用户要获取所有关注人的微博，一方面要请求粉丝量大的关注人的发件箱列表，另一方面要请求自己的收件箱列表，再把两者聚合在一起就可以得到完整的 Feed 了。虽然推拉结合的方式看似更加合理，但是由此带来的业务复杂度就比较高了，因为用户的粉丝数是不断变化的，所以对于哪些用户使用推模式，哪些用户使用拉模式，维护起来成本就很高了。所以综合考量下来，微博 Feed 采用了拉模式。
 前面提到采用拉模式的话，需要拉取所有关注人的发件箱，在关注人只有几十几百个的时候，获取效率还是非常高的。但是当关注人上千以后，耗时就会增加很多，实际验证获取超过 4000 个用户的发件箱，耗时要几百 ms，并且长尾请求（也就是单次请求耗时超过 1s）的概率也会大大增加。为了解决关注人数上千的用户拉取 Feed 效率低的问题，我们采用了分而治之的思想，在拉取之前把用户的关注人分为几组，并行拉取，这样的话就把一次性的聚合计算操作给分解成多次聚合计算操作，最后再把多次聚合计算操作的结果汇总在一起，类似于 MapReduce 的思路。经过我们的实际验证，通过这种方法可以有效地降级关注人数上千用户拉取 Feed 的耗时，长尾请求的数量也大大减少了。
-存储 UID range 作为分片 UID hash 作为分片 </description>
+存储 UID range 作为分片 UID hash 作为分片 关系的存储 (1) 最简单的只需要两张表就够了：
+用户信息表：
+| user_id | user_info | ...用户关系表，表示，follower_user 关注了 followee_user：
+| id | follower_user_id | followee_user_id |
+查看 user_a 粉丝多少人：
+SELECT COUNT(*) FROM table_relation WHERE followee_user = `user_a`; 查看 user_a 关注了多少人：
+SELECT COUNT(*) FROM table_relation WHERE follower_user = `user_a`;  (2) 不过随着用户增长，比如达到1亿，那么平均一对用户关系可能就会有100条关系，那么将会扩展到百亿级别。所以必须水平拆分。用户表好选取拆分的键，就是 user_id。不过关系表，根据 follower_user_id 拆分，那么查询这个人关注了多少人好查询，但是查询某个人有多少粉丝，就需要去所有分片上查询汇总了，相反按照 followee_user_id 拆分，那么这个人查询关注了多少人，就不好查询了。也就是总有一半的场景查询效率低下。</description>
     </item>
     
     <item>
@@ -211,6 +220,37 @@ MongoDB 的 ObjectId 提供了一个 12 byte（96 位）的 ID 定义，其中 3
 请求 block 或者变慢的时候，用 jstack/jmap/jstat 之类的都来一遍，其他类型的 Linux 程序主要会留 gcore 和各种指标类的数据，top/perf/strace。
 jdump 命令需要很长时间，线上无法服务，应该先摘掉机器，再进行 dump，如果无法摘，则考虑 btrace/housemd 挂到进程上分析，不过 btrace 可能会导致应用假死，几率是几十分之一，慎用。
  参考  《高可用系统 - 第一卷》  </description>
+    </item>
+    
+    <item>
+      <title>Hystrix</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/hystrix/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/hystrix/</guid>
+      <description>Hystrix Hystrix 隔离策略  THREAD 隔离：在单独的线程上执行，并发请求受到线程池中线程数量的限制。 SEMAPHORE 隔离：在调用线程上执行，并发请求受到信号计数的限制。  通常情况下，使用信号量隔离的场景，调用量非常的，线程切换开销太高，只适用于非网络调用。</description>
+    </item>
+    
+    <item>
+      <title>架构案例参考</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/architecture-cases/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/architecture-cases/</guid>
+      <description>架构案例参考 本文收集了一些其他文章中所写的，在做系统设计时候的对于一些案例的思考。
+在腾讯 QQ 的红包活动中，对于活动的展示、错峰的内容、预下载资源的内容等，都是采取的全局配置策略进行全局控制的。而为了让用户能够错峰进入活动，避免给后台带来瞬间冲击的问题，其采用 uid % gap 的方式对用户的进入时间进行了错峰划分，但是这样带来的问题是有可能身边的人都看到活动入口了，但是自己还看不到入口，所以还应该将地理位置因素也考虑进去：
+ 根据用户地理位置 adcode 和错峰配置进行映射，得到映射后的分区索引 i； 计算得到一次错峰时间：T1 = T0 + i*interval； 对于同一批次的用户，通过随机时间，将这些用户随机均匀地映射分布到对应较小的时间段内，计算得到二次错峰时间：T2 = T1 + hash(uin)%interval； 得到的二次错峰时间T2即为用户实际可以看到入口参与活动的时间：T = T2； 对于地理位置一次错峰可能出现的异常情况，如用户未授权获取地理位置（占比30%左右）、国外用户无adcode未匹配到分区索引等，客户端可采取一定的兜底策略，如根据用户账号uin进行随机映射到某个分区：i = hash(uin) % regions.count 。  而在活动期间产生的数据的上报流程如下所示，可以看到其上报的时机、上报的方式等都支持非常灵活的调整策略：
+而在上报的链路中，SSO接入层和上报服务后台也分别用过载策略和降级策略来应对过载的风险，其后台接口中包含了 reportLevel 和 reportLevelTime 这两个上报降级信息字段。
+参考  大流量冲击下，腾讯QQ客户端如何保障春节红包活动的用户体验？  </description>
+    </item>
+    
+    <item>
+      <title>设计 Youtube</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/design-youtube/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/design-youtube/</guid>
+      <description>设计 Youtube 参考  How to Design Youtube (Part II)  </description>
     </item>
     
   </channel>

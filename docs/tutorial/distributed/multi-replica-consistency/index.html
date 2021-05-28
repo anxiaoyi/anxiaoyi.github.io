@@ -5,11 +5,16 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="副本一致性算法"><meta property="og:title" content="副本一致性算法" />
-<meta property="og:description" content="副本一致性算法 Paxos Raft  Raft 之所以会出现，主要是因为 Paxos 晦涩难懂，大家表示很难看懂。
-  Paxos 可以多点写入，无需选举 Leader，每个节点都可以接受写请求。虽然为了避免活锁问题，Multi Paxos 可以选举一个 Leader，但是也不是强制执行的，允许同一时间有多个 Leader 同时存在。多点写入，这增加了复杂度。 Raft 只能单点写入 任意时刻只能有一个有效的 Leader，只能 Leader 接受写请求，Leader 同步给超过半数的 Follower  日志结构  index: 日志的顺序编号，如 1、2、3、4 &hellip; term: 写入日志的 Leader 所在的任期、轮数，其他地方称之为 epoch commitIndex: 这条日志被复制到了多数的机器上 lastApplied: 哪些日志已经回放到了状态机   term 只会单调递增，日志的顺序满足: 后一条日志的 term &gt;= 前一条日志的 term
- term 作用 (1) 防止脑裂
-网络分区恢复，存在两个 Leader，旧 Leader 向 Follower 发送数据，Follower 知道它的 term = 4，就知道它是过期的 Leader，于是拒绝执行写入，同时反馈给老的 Leader，你已经过期了。
-(2) term 如何一直递增?" />
+<meta property="og:description" content="副本一致性算法 Paxos 角色 协议将系统中的节点分为三种角色：Proposer（提案者）、Acceptor（决议者）、Leaner（学习者），他们的具体职责为：
+ 提案者：对key的值提出自己的值； 决议者：对提案者的提议进行投票，选定一个提案，形成最终决策； 学习者：学习决议者达成共识的决策。  决策 在 Paxos 中，一个决策过程（Round、Phase）分为两个阶段：
+(1) phase1（准备阶段）：
+Proposer向超过半数（n/2&#43;1）Acceptor发起prepare消息(发送编号)； 如果Acceptor 收到一个编号为 N 的 Prepare 请求，且 N 大于该 Acceptor 已经响应过的所有 Prepare 请求的编号，那么它就会将它已经接受过的编号最大的提案（如果有的话）作为响应反馈给 Proposer，同时该Acceptor 承诺不再接受任何编号小于 N 的提案。否则拒绝返回。
+(2) phase2（决议阶段或投票阶段）：
+如果超过半数 Acceptor 回复 promise，Proposer向Acceptor发送accept消息。注意此时的V：V 就是收到的响应中编号最大的提案的，如果响应中不包含任何提案，那么V 就由 Proposer 自己决定； Acceptor检查accept消息是否符合规则，只要该 Acceptor 没有对编号大于 N 的 Prepare 请求做出过响应，它就接受该提案。
+在实际发展中，Paxos算法也演变出一系列变种：
+PBFT（实用拜占庭容错）算法：是一种共识算法，较高效地解决了拜占庭将军问题； Multi-Paxos算法：优化了prepare阶段的效率，同时允许多个Leader并发提议；以及FastPaxos、EPaxos等，这些演变是针对某些问题进行的优化，内核思想还是依托于Paxos。
+Raft  Raft 之所以会出现，主要是因为 Paxos 晦涩难懂，大家表示很难看懂。
+  Paxos 可以多点写入，无需选举 Leader，每个节点都可以接受写请求。虽然为了避免活锁问题，Multi Paxos 可以选举一个 Leader，但是也不是强制执行的，允许同一时间有多个 Leader 同时存在。多点写入，这增加了复杂度。 Raft 只能单点写入 任意时刻只能有一个有效的 Leader，只能 Leader 接受写请求，Leader 同步给超过半数的 Follower  角色 在 Raft 中，节点被分为 Leader、Follower、Candidate 三种角色：" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/multi-replica-consistency/" />
 
@@ -17,10 +22,10 @@
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+<link rel="stylesheet" href="/book.min.2c8703ef3571e9e1469d79306fda1ed51333153e6ba74aff763a8bc7a9fdaea2.css" integrity="sha256-LIcD7zVx6eFGnXkwb9oe1RMzFT5rp0r/djqLx6n9rqI=">
 
 
-<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
+<script defer src="/en.search.min.1e7619796b61414a9016ae3ce0c51191e796bfabae1a014100792c00d2d6c838.js" integrity="sha256-HnYZeWthQUqQFq484MURkeeWv6uuGgFBAHksANLWyDg="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -110,6 +115,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/front-end-optimization-guide/" >
       前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
   </a>
 
 
@@ -653,6 +684,36 @@ var _hmt = _hmt || [];
 </li>
       
     
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/hystrix/" >
+      Hystrix
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/architecture-cases/" >
+      架构案例参考
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/design-youtube/" >
+      设计 Youtube
+  </a>
+
+</li>
+      
+    
   </ul>
   
 
@@ -996,9 +1057,15 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#paxos">Paxos</a></li>
+    <li><a href="#paxos">Paxos</a>
+      <ul>
+        <li><a href="#角色">角色</a></li>
+        <li><a href="#决策">决策</a></li>
+      </ul>
+    </li>
     <li><a href="#raft">Raft</a>
       <ul>
+        <li><a href="#角色-1">角色</a></li>
         <li><a href="#日志结构">日志结构</a></li>
         <li><a href="#term-作用">term 作用</a></li>
       </ul>
@@ -1009,6 +1076,7 @@ var _hmt = _hmt || [];
       </ul>
     </li>
     <li><a href="#三种算法对比">三种算法对比</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -1032,6 +1100,25 @@ data-full-width-responsive="true"></ins>
 </script><h1 id="副本一致性算法">副本一致性算法</h1>
 <p><img src="/images/docs/tutorial/distributed/multi-replica-consistency/Snipaste_2020-12-28_21-39-51.png" alt=""></p>
 <h2 id="paxos">Paxos</h2>
+<h3 id="角色">角色</h3>
+<p>协议将系统中的节点分为三种角色：Proposer（提案者）、Acceptor（决议者）、Leaner（学习者），他们的具体职责为：</p>
+<ul>
+<li>提案者：对key的值提出自己的值；</li>
+<li>决议者：对提案者的提议进行投票，选定一个提案，形成最终决策；</li>
+<li>学习者：学习决议者达成共识的决策。</li>
+</ul>
+<p><img src="/images/docs/tutorial/distributed/multi-replica-consistency/paxos_three_role.png" alt=""></p>
+<h3 id="决策">决策</h3>
+<p>在 Paxos 中，一个决策过程（Round、Phase）分为两个阶段：</p>
+<p><strong>(1) phase1（准备阶段）</strong>：</p>
+<p>Proposer向超过半数（n/2+1）Acceptor发起prepare消息(发送编号)；
+如果Acceptor 收到一个编号为 N 的 Prepare 请求，且 N 大于该 Acceptor 已经响应过的所有 Prepare 请求的编号，那么它就会将它已经接受过的编号最大的提案（如果有的话）作为响应反馈给 Proposer，同时该Acceptor 承诺不再接受任何编号小于 N 的提案。否则拒绝返回。</p>
+<p><strong>(2) phase2（决议阶段或投票阶段）</strong>：</p>
+<p>如果超过半数 Acceptor 回复 promise，Proposer向Acceptor发送accept消息。注意此时的V：V 就是收到的响应中编号最大的提案的，如果响应中不包含任何提案，那么V 就由 Proposer 自己决定；
+Acceptor检查accept消息是否符合规则，只要该 Acceptor 没有对编号大于 N 的 Prepare 请求做出过响应，它就接受该提案。</p>
+<p>在实际发展中，Paxos算法也演变出一系列变种：</p>
+<p><code>PBFT</code>（实用拜占庭容错）算法：是一种共识算法，较高效地解决了拜占庭将军问题；
+<code>Multi-Paxos</code>算法：优化了prepare阶段的效率，同时允许多个Leader并发提议；以及<code>FastPaxos</code>、<code>EPaxos</code>等，这些演变是针对某些问题进行的优化，内核思想还是依托于<code>Paxos</code>。</p>
 <h2 id="raft">Raft</h2>
 <blockquote>
 <p>Raft 之所以会出现，主要是因为 Paxos 晦涩难懂，大家表示很难看懂。</p>
@@ -1041,6 +1128,14 @@ data-full-width-responsive="true"></ins>
 <li>Raft 只能<strong>单点写入</strong></li>
 <li><strong>任意时刻只能有一个有效的 Leader</strong>，只能 Leader 接受写请求，Leader 同步给超过半数的 Follower</li>
 </ul>
+<h3 id="角色-1">角色</h3>
+<p>在 Raft 中，节点被分为 Leader、Follower、Candidate 三种角色：</p>
+<ul>
+<li>Leader：处理与客户端的交互和与follower的日志复制等，一般只有一个Leader；</li>
+<li>Follower：被动学习Leader的日志同步，同时也会在leader超时后转变为Candidate参与竞选；</li>
+<li>Candidate：在竞选期间参与竞选；</li>
+</ul>
+<p><img src="/images/docs/tutorial/distributed/multi-replica-consistency/raft_three_role.png" alt=""></p>
 <h3 id="日志结构">日志结构</h3>
 <p><img src="/images/docs/tutorial/distributed/multi-replica-consistency/Snipaste_2020-12-28_22-18-42.png" alt=""></p>
 <ul>
@@ -1067,6 +1162,10 @@ data-full-width-responsive="true"></ins>
 <p>Paxos 和 Raft 用的是前者，ZAB 用的是后者。</p>
 <h2 id="三种算法对比">三种算法对比</h2>
 <p><img src="/images/docs/tutorial/distributed/multi-replica-consistency/Snipaste_2020-12-28_22-45-52.png" alt=""></p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://cloud.tencent.com/developer/article/1794536">从Paxos到Raft，分布式一致性算法解析</a></li>
+</ul>
 
 <ins class="adsbygoogle"
 style="display:block"
@@ -1102,9 +1201,15 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#paxos">Paxos</a></li>
+    <li><a href="#paxos">Paxos</a>
+      <ul>
+        <li><a href="#角色">角色</a></li>
+        <li><a href="#决策">决策</a></li>
+      </ul>
+    </li>
     <li><a href="#raft">Raft</a>
       <ul>
+        <li><a href="#角色-1">角色</a></li>
         <li><a href="#日志结构">日志结构</a></li>
         <li><a href="#term-作用">term 作用</a></li>
       </ul>
@@ -1115,6 +1220,7 @@ data-full-width-responsive="true"></ins>
       </ul>
     </li>
     <li><a href="#三种算法对比">三种算法对比</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 

@@ -12,10 +12,9 @@
 除了微调过期时间，我们还可以通过服务降级，来应对缓存雪崩。
 所谓的服务降级，是指发生缓存雪崩时，针对不同的数据采取不同的处理方式。
  当业务应用访问的是非核心数据（例如电商商品属性）时，暂时停止从缓存中查询这些数据，而是直接返回预定义信息、空值或是错误信息。 当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。  Redis 缓存实例故障宕机  保证缓存层服务高可用性。和飞机都有多个引擎一样。可以采用限流或降级方案。   依赖隔离组件为后端限流并降级  热点 Key 重建优化 在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。
- 互斥锁  MySQL 同步到 Redis 数据更新服务只负责处理业务逻辑，更新 MySQL，完全不用管如何去更新缓存。负责更新缓存的服务，把自己伪装成一个 MySQL 的从节点，从 MySQL 接收 Binlog，解析 Binlog之后，可以得到实时的数据变更信息，然后根据这个变更信息去更新 Redis 缓存。
-这种收 Binlog 更新缓存的方案，和收 MQ 消息更新缓存的方案，其实它们的实现思路是一样的，都是异步订阅实时数据变更信息，去更新 Redis。只不过，直接读取 Binlog 这种方式，它的通用性更强。不要求订单服务再发订单消息了，订单更新服务也不用费劲去解决“发消息失败怎么办？”这种数据一致性问题了。
-这个方案唯一的缺点是，实现订单缓存更新服务有点儿复杂，毕竟不像收消息，拿到的直接就是订单数据，解析 Binlog 还是挺麻烦的。
-有很多开源的项目就提供了订阅和解析 MySQL Binlog 的功能，常用的开源项目有 Canal。" />
+ 互斥锁  Redis 热 Key 如何解决，降级成本地缓存。不过需要加监测，而且 Redis 本身也有 hotkeys 参数可以监测，还可以实时分析用户请求。
+MySQL 同步到 Redis 数据更新服务只负责处理业务逻辑，更新 MySQL，完全不用管如何去更新缓存。负责更新缓存的服务，把自己伪装成一个 MySQL 的从节点，从 MySQL 接收 Binlog，解析 Binlog之后，可以得到实时的数据变更信息，然后根据这个变更信息去更新 Redis 缓存。
+这种收 Binlog 更新缓存的方案，和收 MQ 消息更新缓存的方案，其实它们的实现思路是一样的，都是异步订阅实时数据变更信息，去更新 Redis。只不过，直接读取 Binlog 这种方式，它的通用性更强。不要求订单服务再发订单消息了，订单更新服务也不用费劲去解决“发消息失败怎么办？”这种数据一致性问题了。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/cache/" />
 
@@ -23,10 +22,10 @@
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+<link rel="stylesheet" href="/book.min.2c8703ef3571e9e1469d79306fda1ed51333153e6ba74aff763a8bc7a9fdaea2.css" integrity="sha256-LIcD7zVx6eFGnXkwb9oe1RMzFT5rp0r/djqLx6n9rqI=">
 
 
-<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
+<script defer src="/en.search.min.1e7619796b61414a9016ae3ce0c51191e796bfabae1a014100792c00d2d6c838.js" integrity="sha256-HnYZeWthQUqQFq484MURkeeWv6uuGgFBAHksANLWyDg="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -116,6 +115,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/front-end-optimization-guide/" >
       前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
   </a>
 
 
@@ -1081,6 +1106,7 @@ data-full-width-responsive="true"></ins>
 <li>互斥锁</li>
 </ul>
 <p><img src="/images/docs/tutorial/redis/cache/Snipaste_2021-01-06_21-35-20.png" alt=""></p>
+<p>Redis 热 Key 如何解决，<strong>降级成本地缓存</strong>。不过需要加监测，而且 Redis 本身也有 hotkeys 参数可以监测，还可以实时分析用户请求。</p>
 <h2 id="mysql-同步到-redis">MySQL 同步到 Redis</h2>
 <p>数据更新服务只负责处理业务逻辑，更新 MySQL，完全不用管如何去更新缓存。负责更新缓存的服务，把自己伪装成一个 MySQL 的从节点，从 MySQL 接收 Binlog，解析 Binlog之后，可以得到实时的数据变更信息，然后根据这个变更信息去更新 Redis 缓存。</p>
 <p><img src="/images/docs/tutorial/redis/cache/Screenshot-from-2021-02-24-23-23-48.png" alt=""></p>

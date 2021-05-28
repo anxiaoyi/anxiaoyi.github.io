@@ -19,10 +19,10 @@
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.c8ac34190f548946cdf00c75980f55bfec0ade2e9e49918cccdcace897f8b279.css" integrity="sha256-yKw0GQ9UiUbN8Ax1mA9Vv&#43;wK3i6eSZGMzNys6Jf4snk=">
+<link rel="stylesheet" href="/book.min.2c8703ef3571e9e1469d79306fda1ed51333153e6ba74aff763a8bc7a9fdaea2.css" integrity="sha256-LIcD7zVx6eFGnXkwb9oe1RMzFT5rp0r/djqLx6n9rqI=">
 
 
-<script defer src="/en.search.min.021f7091b7a1f818d937962458046cb3b12f01ec56052d8cf0e5b363144a7b57.js" integrity="sha256-Ah9wkbeh&#43;BjZN5YkWARss7EvAexWBS2M8OWzYxRKe1c="></script>
+<script defer src="/en.search.min.1e7619796b61414a9016ae3ce0c51191e796bfabae1a014100792c00d2d6c838.js" integrity="sha256-HnYZeWthQUqQFq484MURkeeWv6uuGgFBAHksANLWyDg="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -112,6 +112,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/front-end-optimization-guide/" >
       前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
   </a>
 
 
@@ -985,6 +1011,13 @@ var _hmt = _hmt || [];
       </ul>
     </li>
     <li><a href="#fail-fast-机制">fail-fast 机制</a></li>
+    <li><a href="#copyonwritearraylist">CopyOnWriteArrayList</a>
+      <ul>
+        <li><a href="#底层数据结构">底层数据结构</a></li>
+        <li><a href="#添加元素">添加元素</a></li>
+        <li><a href="#读取元素">读取元素</a></li>
+      </ul>
+    </li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -1187,12 +1220,13 @@ table<span style="color:#f92672">[</span>bucketIndex<span style="color:#f92672">
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="concurrenthashmap">ConcurrentHashMap</h2>
 <ul>
-<li>jdk1.8之前，<code>ConcurrentHashMap</code> 采用分段锁（Segment），对不同段的Entry进行操作互不影响；</li>
-<li>jdk1.8之后，<code>ConcurrentHashMap</code> 直接使用Node数组+链表+红黑树，通过synchronized和CAS来保证并发的可靠性。</li>
+<li><code>jdk1.8</code> 之前，<code>ConcurrentHashMap</code> 采用分段锁（Segment），对不同段的 <code>Entry</code> 进行操作互不影响；</li>
+<li><code>jdk1.8</code> 之后，<code>ConcurrentHashMap</code> 直接使用Node数组+链表+红黑树，通过 <code>synchronized</code> 和 <code>CAS</code> 来保证并发的可靠性。</li>
 </ul>
 <p><img src="/images/docs/tutorial/java/java-collection/concurrenthashmap-store-structure.png" alt=""></p>
 <h3 id="插入流程">插入流程</h3>
 <p><img src="/images/docs/tutorial/java/java-collection/concurrenthashmap-insert-flow.png" alt=""></p>
+<p>在插入的時候，有多个地方用到了 <code>synchronized</code>，以 <code>putVal</code> 举例子，在发现想要插入的这个槽的 <code>Node&lt;K, V&gt;</code> 不为空的时候，就会去 <code>synchronized (node)</code> ，去锁住这个槽的链表的第一个 <code>Node&lt;K, V&gt;</code> 节点。</p>
 <h3 id="扩容流程">扩容流程</h3>
 <p><img src="/images/docs/tutorial/java/java-collection/concurrenthashmap-resize.png" alt=""></p>
 <h3 id="jdk7-获取集合大小流程">JDK7 获取集合大小流程</h3>
@@ -1295,6 +1329,39 @@ list<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><s
         list<span style="color:#f92672">.</span><span style="color:#a6e22e">remove</span><span style="color:#f92672">(</span>s<span style="color:#f92672">);</span>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
+</code></pre></div><h2 id="copyonwritearraylist">CopyOnWriteArrayList</h2>
+<h3 id="底层数据结构">底层数据结构</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">transient</span> ReentrantLock lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ReentrantLock<span style="color:#f92672">();</span>
+
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> <span style="color:#66d9ef">volatile</span> Object<span style="color:#f92672">[]</span> array<span style="color:#f92672">;</span>
+
+<span style="color:#75715e">// 内部只能通过 getArray() 访问 array
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">final</span> Object<span style="color:#f92672">[]</span> <span style="color:#a6e22e">getArray</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> array<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="添加元素">添加元素</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">add</span><span style="color:#f92672">(</span>E e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">final</span> ReentrantLock lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">lock</span><span style="color:#f92672">;</span>
+    lock<span style="color:#f92672">.</span><span style="color:#a6e22e">lock</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+        Object<span style="color:#f92672">[]</span> elements <span style="color:#f92672">=</span> getArray<span style="color:#f92672">();</span>
+        <span style="color:#66d9ef">int</span> len <span style="color:#f92672">=</span> elements<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span>
+        Object<span style="color:#f92672">[]</span> newElements <span style="color:#f92672">=</span> Arrays<span style="color:#f92672">.</span><span style="color:#a6e22e">copyOf</span><span style="color:#f92672">(</span>elements<span style="color:#f92672">,</span> len <span style="color:#f92672">+</span> 1<span style="color:#f92672">);</span>
+        newElements<span style="color:#f92672">[</span>len<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> e<span style="color:#f92672">;</span>
+        setArray<span style="color:#f92672">(</span>newElements<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
+        lock<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="读取元素">读取元素</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> E <span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>Object<span style="color:#f92672">[]</span> a<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> index<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#f92672">(</span>E<span style="color:#f92672">)</span> a<span style="color:#f92672">[</span>index<span style="color:#f92672">];</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">public</span> E <span style="color:#a6e22e">get</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> index<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> get<span style="color:#f92672">(</span>getArray<span style="color:#f92672">(),</span> index<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
 </code></pre></div><h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://zhuanlan.zhihu.com/p/106638832">Java集合之LinkedHashMap实现与原理</a></li>
@@ -1381,6 +1448,13 @@ data-full-width-responsive="true"></ins>
       </ul>
     </li>
     <li><a href="#fail-fast-机制">fail-fast 机制</a></li>
+    <li><a href="#copyonwritearraylist">CopyOnWriteArrayList</a>
+      <ul>
+        <li><a href="#底层数据结构">底层数据结构</a></li>
+        <li><a href="#添加元素">添加元素</a></li>
+        <li><a href="#读取元素">读取元素</a></li>
+      </ul>
+    </li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>

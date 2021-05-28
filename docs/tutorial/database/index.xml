@@ -61,14 +61,14 @@ binlog 的写入机制 其实，binlog 的写入逻辑比较简单：事务执�
       <description>MySQL 索引 索引存储结构 InnoDB 的 B+ 树 每一个索引在 InnoDB 里面对应一棵 B+ 树。B+ 树能够很好地配合磁盘的读写特性，减少单次查询的磁盘访问次数。
 根据叶子节点的内容，索引类型分为主键索引和非主键索引。
  主键索引的叶子节点存的是整行数据。在 InnoDB 里，主键索引也被称为聚簇索引（clustered index）。 非主键索引的叶子节点内容是主键的值。在 InnoDB 里，非主键索引也被称为二级索引（secondary index）。  主键长度越小，普通索引的叶子节点就越小，普通索引占用的空间也就越小。
-MyISAM 的 B+ 树 MyISAM 索引文件和数据文件是分离的，索引文件仅保存数据记录的地址。
-B 树和 B+ 树 B 树示例：
-B+ 树示例：
-B 和 B+ 树的区别在于，B+ 树的非叶子结点只包含导航信息，不包含实际的值，所有的叶子结点和相连的节点使用链表相连，便于区间查找和遍历。
-B+ 树的优点在于：
- 由于 B+ 树在内部节点上不好含数据信息，因此在内存页中能够存放更多的 key。 数据存放的更加紧密，具有更好的空间局部性。因此访问叶子几点上关联的数据也具有更好的缓存命中率。 B+ 树的叶子结点都是相链的，因此对整棵树的便利只需要一次线性遍历叶子结点即可。而且由于数据顺序排列并且相连，所以便于区间查找和搜索。而 B 树则需要进行每一层的递归遍历。相邻的元素可能在内存中不相邻，所以缓存命中性没有 B+ 树好。  但是 B 树也有优点，其优点在于，由于 B 树的每一个节点都包含 key 和 value，因此经常访问的元素可能离根节点更近，因此访问也更迅速。
-回表 回到主键索引树搜索的过程，我们称为回表。
-select * from T where k between 3 and 5 覆盖索引 ID 的值已经在 k 索引树上了，因此可以直接提供查询结果，不需要回表。也就是说，在这个查询里面，索引 k 已经“覆盖了”我们的查询需求，我们称为覆盖索引。</description>
+ 为何可以降低 IO ?
+  InnoDB 叶子节点，数据页是双向，单条数据之间单向。
+  InnoDB 索引一次读多少？
+ 这个 16kb 是 innodb 默认的页大小，为什么会有这个概念呢，因为当涉及到数据库读写的时候，规定数据库每次读写都是以 16k 为单位的，一次最少从磁盘中读取 16KB 的内容到内存中，一次最少把内存中的 16KB 内容刷新到磁盘中。
+ 计算 IO 次数
+ 我们每次 IO 都是读取数据到内存中进行一些计算。当我们遍历 主键索引的B+树 查找数据的时候， IO 次数是近似于 B+ 树的层数 -1，因为根节点是一直在内存中的。
+基本上可以理解为，每次 io 都是在树的一层查找符合的 id 范围的页数据，通过对比页里面的最大最小主键来确定下层的查找范围。
+MyISAM 的 B+ 树 MyISAM 索引文件和数据文件是分离的，索引文件仅保存数据记录的地址。</description>
     </item>
     
     <item>
@@ -77,10 +77,9 @@ select * from T where k between 3 and 5 覆盖索引 ID 的值已经在 k 索引
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/database/auto-increment-id/</guid>
-      <description>MySQL 自增键 自增 ID 表定义的自增值达到上限后的逻辑是：再申请下一个 id 时，得到的值保持不变。
+      <description>MySQL 自增键 特点  自增键默认从 1 开始，即第一条记录 insert 结束之后，它的键是 1 insert ... on duplicate key，可能会导致，系统自动生成的自增键，在更新阶段用不上。  自增 ID 表定义的自增值达到上限后的逻辑是：再申请下一个 id 时，得到的值保持不变。
 create table t( id int unsigned auto_increment primary key ) auto_increment=4294967295; insert into t values(null); -- Duplicate entry &amp;#39;4294967295&amp;#39; for key &amp;#39;PRIMARY&amp;#39; insert into t values(null); 第一个 insert 语句插入数据成功后，这个表的 AUTO_INCREMENT 没有改变（还是 4294967295），就导致了第二个 insert 语句又拿到相同的自增 id 值，再试图执行插入语句，报主键冲突错误。
-row_id 如果你创建的 InnoDB 表没有指定主键，那么 InnoDB 会给你创建一个不可见的，长度为 6 个字节的 row_id。InnoDB 维护了一个全局的 dict_sys.row_id 值，所有无主键的 InnoDB 表，每插入一行数据，都将当前的 dict_sys.row_id 值作为要插入数据的 row_id，然后把 dict_sys.row_id 的值加 1。
-实际上，在代码实现时 row_id 是一个长度为 8 字节的无符号长整型 (bigint unsigned)。但是，InnoDB 在设计时，给 row_id 留的只是 6 个字节的长度，这样写到数据表中时只放了最后 6 个字节，所以 row_id 能写到数据表中的值，就有两个特征：</description>
+row_id 如果你创建的 InnoDB 表没有指定主键，那么 InnoDB 会给你创建一个不可见的，长度为 6 个字节的 row_id。InnoDB 维护了一个全局的 dict_sys.row_id 值，所有无主键的 InnoDB 表，每插入一行数据，都将当前的 dict_sys.</description>
     </item>
     
     <item>
@@ -102,7 +101,7 @@ mysql&amp;gt; delete from t where a&amp;gt;=4 and t_modified&amp;lt;=&amp;#39;20
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/database/mysql-ops/</guid>
-      <description>MySQL 优化与运维 基本命名和约束规范  表字符集选则 UTF-8，如果需要 Emoji 表情，需要使用 UTF8mb4 (MySQL 5.5.3 以后支持) 存储引擎尽量使用 InnoDB 变长字符串尽量使用 varchar 单标数据量控制在 1 亿以下 库名、表名、字段名不使用保留字 库名、表名、字段名、索引名使用小写字母，使用划线分割，见名知意 表名不要设计的过长，尽可能用最少的字符表达表的用途  字段规范  所有字段均为 NOT NULL，除非真的想要存储 NULL (解释：NULL 的存储浪费表存储空间，InnoDB 需要额外一个字节存储，NULL 过多会影响优化器选择执行计划) 字段类型满足要求条件下越小越好，使用 UNSIGNED 存储非负整数，实际需要存储负数的场景不多 使用 TIMESTAMP 存储时间 (只能存储到 2038 年) 使用 varchar 存储变长字符串，varchar(M) 的 M 指的是字符数，不是字节数，使用 UNSIGNED INT 存储 IPV4 地址，不过这种方式存储不了 IPV6 使用 DECIMAL 存储精确浮点数，用 float 类型存储可能会存在数据误差 少用 blob text  索引范围  单个索引字段数不超过 5，单表索引数量不超过 5，索引设计遵循 B+Tree 索引最左前缀匹配原则 选则区分度高的列作为索引 建立的索引能覆盖 80% 主要的查询，不求全，解决问题的主要矛盾就好 DML 要和 order by、group by 字段建立合适的索引 避免索引的隐式转换 避免冗余索引  Online DDL 原生 MySQL 执行 DDL 需要锁表，在锁表期间无法写入数据，这对服务影响很大，下面给出 Facebook OSC 和 5.</description>
+      <description>MySQL 优化与运维 基本命名和约束规范  表字符集选则 UTF-8，如果需要 Emoji 表情，需要使用 UTF8mb4 (MySQL 5.5.3 以后支持) 存储引擎尽量使用 InnoDB 变长字符串尽量使用 varchar 单标数据量控制在 1 亿以下 库名、表名、字段名不使用保留字 库名、表名、字段名、索引名使用小写字母，使用划线分割，见名知意 表名不要设计的过长，尽可能用最少的字符表达表的用途  字段规范  所有字段均为 NOT NULL，除非真的想要存储 NULL (解释：NULL 的存储浪费表存储空间，InnoDB 需要额外一个字节存储，NULL 过多会影响优化器选择执行计划) 字段类型满足要求条件下越小越好，使用 UNSIGNED 存储非负整数，实际需要存储负数的场景不多 使用 TIMESTAMP 存储时间 (只能存储到 2038 年) 使用 varchar 存储变长字符串，varchar(M) 的 M 指的是字符数，不是字节数，使用 UNSIGNED INT 存储 IPV4 地址，不过这种方式存储不了 IPV6 使用 DECIMAL 存储精确浮点数，用 float 类型存储可能会存在数据误差 少用 blob text  索引范围  单个索引字段数不超过 5，单表索引数量不超过 5，索引设计遵循 B+Tree 索引最左前缀匹配原则 选则区分度高的列作为索引 建立的索引能覆盖 80% 主要的查询，不求全，解决问题的主要矛盾就好 DML 要和 order by、group by 字段建立合适的索引 避免索引的隐式转换 避免冗余索引  MySQL 可用性 无缝切换主库的方案：</description>
     </item>
     
     <item>
@@ -117,12 +116,14 @@ mysql&amp;gt; delete from t where a&amp;gt;=4 and t_modified&amp;lt;=&amp;#39;20
     </item>
     
     <item>
-      <title>Oracle VS MySQL</title>
-      <link>https://kunzhao.org/docs/tutorial/database/oracls-vs-mysql/</link>
+      <title>Oracle</title>
+      <link>https://kunzhao.org/docs/tutorial/database/oracle/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://kunzhao.org/docs/tutorial/database/oracls-vs-mysql/</guid>
-      <description>Oracle VS MySQL     Oracle MySQL     事务默认隔离级别 read commited repeatable read   价格 ORACLE 11g 标准版售价在六位数 开源免费   AUTO_INCREMENT 不可以声明，主键自带自增长 可以声明   索引 Oracle 的索引是数据库级别，不可以同名 MySQL 的索引是表级别的，可以同名   数字类型 NUMBER INT/DECIMAL   分页 Oracle 是需要用到伪列 ROWNUM 和嵌套查询 LIMIT X, Y   默认端口 1521 3306    参考  Oracle与MySQL的SQL语句区别  </description>
+      <guid>https://kunzhao.org/docs/tutorial/database/oracle/</guid>
+      <description>Oracle 执行计划 使用 EXPLAIN PLAN 得到 SQL 语句的执行计划：
+EXPLAIN PLAN FOR SELECT * FROM emp WHERE deptno = 10 ORDER BY ename; SELECT plan_table_output FROM TABLE(DBMS_XPLAN.DISPLAY(&amp;#39;PLAN_TABLE&amp;#39;)); -- 或者 SELECT * from table(dbms_xplan.display); Oracle 执行计划显示的是一个树形结构，其阐述了 SQL 引擎执行操作的顺序，树的每一个节点代表一个操作：表访问、连接或排序等，各个操作之间存在父子关系。
+   Operation 解释 SQL     TABLE ACCESS FULL 全表扫描    PARTITION RANGE SINGLE 单个分区扫描 SELECT * FROM t WHERE n1 = 3 AND d1 = to_date(&#39;2007-07-19&#39;, &#39;yyyy-mm-dd&#39;)   PARTITION RANGE ITERATOR 多个分区扫描 SELECT * FROM t WHERE n1 = 3 AND d1 &amp;lt; to_date(&#39;2007-07-19&#39;, &#39;yyyy-mm-dd&#39;)   PARTITION RANGE INLIST 存在 IN 的多个分区扫描 SELECT * FROM t WHERE n1 IN (1, 3) AND d1 = to_date(&#39;2007-07-19&#39;, &#39;yyyy-mm-dd&#39;)   PARTITION RANGE ALL 所有分区扫描 SELECT * FROM t WHERE n1 BETWEEN 6000 AND 7000   PARTITION RANGE OR OR 条件分区扫描 SELECT * FROM t WHERE n1 = 3 OR d1 = to_date(&#39;2007-07-19&#39;, &#39;yyyy-mm-dd&#39;)   INDEX FULL SCAN 全索引扫描    INDEX FAST FULL SCAN 快速全索引扫描    TABLE ACCESS BY USER ROWID 直接指定 ROWID SELECT * FROM emp WHERE rowid IN (&#39;ASDJOWF&#39;, &#39;ADSOFJO&#39;)   TABLE ACCESS BY INDEX ROWID     INDEX UNIQUE SCAN 用上了唯一索引    INDEX RANGE SCAN 用上了非唯一索引     Oracle vs MySQL     Oracle MySQL     事务默认隔离级别 read commited repeatable read   价格 ORACLE 11g 标准版售价在六位数 开源免费   AUTO_INCREMENT 不可以声明，主键自带自增长 可以声明   索引 Oracle 的索引是数据库级别，不可以同名 MySQL 的索引是表级别的，可以同名   数字类型 NUMBER INT/DECIMAL   分页 Oracle 是需要用到伪列 ROWNUM 和嵌套查询 LIMIT X, Y   默认端口 1521 3306    参考  Oracle与MySQL的SQL语句区别 Oracle 执行计划（Explain Plan） 《Oracle性能诊断艺术》  </description>
     </item>
     
     <item>
