@@ -7,8 +7,8 @@
 <meta name="description" content="CPU 飙升或 load 飙升"><meta property="og:title" content="CPU 飙升或 load 飙升" />
 <meta property="og:description" content="CPU 飙升或 load 飙升 CPU 使用率飙升怎么办 ? 通过 top、ps、pidstat 等工具，你能够轻松找到 CPU 使用率较高（比如 100% ）的进程。接下来，你可能又想知道，占用 CPU 的到底是代码里的哪个函数呢？找到它，你才能更高效、更针对性地进行优化。
 哪种工具适合在第一时间分析进程的 CPU 问题呢？我的推荐是 perf。perf 是 Linux 2.6.31 以后内置的性能分析工具。它以性能事件采样为基础，不仅可以分析系统的各种事件和内核性能，还可以用来分析指定应用程序的性能问题。
-# -g开启调用关系分析，-p指定php-fpm的进程号21515 $ perf top -g -p 21515  用户 CPU 和 Nice CPU 高，说明用户态进程占用了较多的 CPU，所以应该着重排查进程的性能问题。 系统 CPU 高，说明内核态占用了较多的 CPU，所以应该着重排查内核线程或者系统调用的性能问题。  Java 高 CPU 传统的方案：
- top oder by with P：1040 // 首先按进程负载排序找到 axLoad(pid) top -Hp 进程PID：1073 // 找到相关负载 线程PID printf “0x%x\n” 线程PID： 0x431 // 将线程PID转换为 16进制，为后面查找 jstack 日志做准备 jstack 进程PID | vim &#43;/十六进制线程PID - // 例如：jstack 1040|vim &#43;/0x431 -  load 飙升怎么办 ?" />
+# -g开启调用关系分析，-p指定php-fpm的进程号21515 $ perf top -g -p 21515  用户 CPU 和 Nice CPU 高，说明用户态进程占用了较多的 CPU，所以应该着重排查进程的性能问题。 系统 CPU 高，说明内核态占用了较多的 CPU，所以应该着重排查内核线程或者系统调用的性能问题。  CPU 毛刺  参考  某服务所在机器统计显示，其 CPU 使用率在高峰时段出现毛刺。
+ 查看 CPU 1 分钟平均负载，发现 1 分钟平均负载有高有低，波动明显。说明机器上有些进程使用 CPU 波动很大。 登录机器排查进程，使用top指令。因为 CPU 会明显上升，重点怀疑使用 CPU 总时间高的进程，在打开 top 后，使用shift &#43;t可以按照 CPU TIME 进行排序。 perf top -p 45558 gcore pid 可以保留堆栈信息，明确看到负载的位置  Java 高 CPU 传统的方案：" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/high-cpu-and-load/" />
 
@@ -16,10 +16,10 @@
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.2c8703ef3571e9e1469d79306fda1ed51333153e6ba74aff763a8bc7a9fdaea2.css" integrity="sha256-LIcD7zVx6eFGnXkwb9oe1RMzFT5rp0r/djqLx6n9rqI=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.1e7619796b61414a9016ae3ce0c51191e796bfabae1a014100792c00d2d6c838.js" integrity="sha256-HnYZeWthQUqQFq484MURkeeWv6uuGgFBAHksANLWyDg="></script>
+<script defer src="/en.search.min.7ff6371bb6484efda115bec00fe88569aafbf1b72757fbb1266d8222e93c5d6b.js" integrity="sha256-f/Y3G7ZITv2hFb7AD&#43;iFaar78bcnV/uxJm2CIuk8XWs="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -690,6 +690,32 @@ var _hmt = _hmt || [];
 
       
     
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/technique/" >
+      技术
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
   </ul>
   
 
@@ -972,6 +998,7 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#cpu-使用率飙升怎么办-">CPU 使用率飙升怎么办 ?</a></li>
+    <li><a href="#cpu-毛刺">CPU 毛刺</a></li>
     <li><a href="#java-高-cpu">Java 高 CPU</a></li>
     <li><a href="#load-飙升怎么办-">load 飙升怎么办 ?</a></li>
     <li><a href="#参考">参考</a></li>
@@ -1004,6 +1031,17 @@ $ perf top -g -p <span style="color:#ae81ff">21515</span>
 </code></pre></div><ul>
 <li>用户 CPU 和 Nice CPU 高，说明<strong>用户态进程</strong>占用了较多的 CPU，所以应该着重排查<strong>进程</strong>的性能问题。</li>
 <li>系统 CPU 高，说明<strong>内核态</strong>占用了较多的 CPU，所以应该着重排查<strong>内核线程或者系统调用</strong>的性能问题。</li>
+</ul>
+<h2 id="cpu-毛刺">CPU 毛刺</h2>
+<ul>
+<li><a href="https://cloud.tencent.com/developer/inventory/12684/article/1717779">参考</a></li>
+</ul>
+<p>某服务所在机器统计显示，其 CPU 使用率在高峰时段出现毛刺。</p>
+<ul>
+<li><strong>查看 CPU 1 分钟平均负载</strong>，发现 1 分钟平均负载有高有低，波动明显。说明机器上有些进程使用 CPU 波动很大。</li>
+<li>登录机器排查进程，使用<code>top</code>指令。因为 CPU 会明显上升，重点怀疑使用 CPU 总时间高的进程，在打开 top 后，使用<code>shift +t</code>可以按照 <strong>CPU TIME</strong> 进行排序。</li>
+<li><code>perf top -p 45558</code></li>
+<li><code>gcore pid</code> 可以保留堆栈信息，明确看到负载的位置</li>
 </ul>
 <h2 id="java-高-cpu">Java 高 CPU</h2>
 <p>传统的方案：</p>
@@ -1061,6 +1099,7 @@ data-full-width-responsive="true"></ins>
   <nav id="TableOfContents">
   <ul>
     <li><a href="#cpu-使用率飙升怎么办-">CPU 使用率飙升怎么办 ?</a></li>
+    <li><a href="#cpu-毛刺">CPU 毛刺</a></li>
     <li><a href="#java-高-cpu">Java 高 CPU</a></li>
     <li><a href="#load-飙升怎么办-">load 飙升怎么办 ?</a></li>
     <li><a href="#参考">参考</a></li>
@@ -1073,8 +1112,6 @@ data-full-width-responsive="true"></ins>
   </main>
 
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-
-  <script type="text/javascript">document.write(unescape("%3Cspan id='cnzz_stat_icon_1279346965'%3E%3C/span%3E%3Cscript src='https://v1.cnzz.com/z_stat.php%3Fid%3D1279346965%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
 </body>
 
 

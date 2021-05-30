@@ -39,8 +39,8 @@ $ uptime 22:39:37 up 2:47, 1 user, load average: 1.44, 1.12, 0.79 含义：
       <guid>https://kunzhao.org/docs/tutorial/unix-optimize/high-cpu-and-load/</guid>
       <description>CPU 飙升或 load 飙升 CPU 使用率飙升怎么办 ? 通过 top、ps、pidstat 等工具，你能够轻松找到 CPU 使用率较高（比如 100% ）的进程。接下来，你可能又想知道，占用 CPU 的到底是代码里的哪个函数呢？找到它，你才能更高效、更针对性地进行优化。
 哪种工具适合在第一时间分析进程的 CPU 问题呢？我的推荐是 perf。perf 是 Linux 2.6.31 以后内置的性能分析工具。它以性能事件采样为基础，不仅可以分析系统的各种事件和内核性能，还可以用来分析指定应用程序的性能问题。
-# -g开启调用关系分析，-p指定php-fpm的进程号21515 $ perf top -g -p 21515  用户 CPU 和 Nice CPU 高，说明用户态进程占用了较多的 CPU，所以应该着重排查进程的性能问题。 系统 CPU 高，说明内核态占用了较多的 CPU，所以应该着重排查内核线程或者系统调用的性能问题。  Java 高 CPU 传统的方案：
- top oder by with P：1040 // 首先按进程负载排序找到 axLoad(pid) top -Hp 进程PID：1073 // 找到相关负载 线程PID printf “0x%x\n” 线程PID： 0x431 // 将线程PID转换为 16进制，为后面查找 jstack 日志做准备 jstack 进程PID | vim +/十六进制线程PID - // 例如：jstack 1040|vim +/0x431 -  load 飙升怎么办 ?</description>
+# -g开启调用关系分析，-p指定php-fpm的进程号21515 $ perf top -g -p 21515  用户 CPU 和 Nice CPU 高，说明用户态进程占用了较多的 CPU，所以应该着重排查进程的性能问题。 系统 CPU 高，说明内核态占用了较多的 CPU，所以应该着重排查内核线程或者系统调用的性能问题。  CPU 毛刺  参考  某服务所在机器统计显示，其 CPU 使用率在高峰时段出现毛刺。
+ 查看 CPU 1 分钟平均负载，发现 1 分钟平均负载有高有低，波动明显。说明机器上有些进程使用 CPU 波动很大。 登录机器排查进程，使用top指令。因为 CPU 会明显上升，重点怀疑使用 CPU 总时间高的进程，在打开 top 后，使用shift +t可以按照 CPU TIME 进行排序。 perf top -p 45558 gcore pid 可以保留堆栈信息，明确看到负载的位置  Java 高 CPU 传统的方案：</description>
     </item>
     
     <item>
