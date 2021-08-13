@@ -22,7 +22,7 @@ while((n = read(diskfd, buf, BUF_SIZE)) &gt; 0) write(sockfd, buf , n); 那么�
 <link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.7ff6371bb6484efda115bec00fe88569aafbf1b72757fbb1266d8222e93c5d6b.js" integrity="sha256-f/Y3G7ZITv2hFb7AD&#43;iFaar78bcnV/uxJm2CIuk8XWs="></script>
+<script defer src="/en.search.min.323245901a81c17590d167fbe33cae708707ce477e9e7c031439ad85cd6017d6.js" integrity="sha256-MjJFkBqBwXWQ0Wf74zyucIcHzkd&#43;nnwDFDmthc1gF9Y="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -700,6 +700,32 @@ var _hmt = _hmt || [];
     
       
 
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
   <a href="/docs/tutorial/technique/" >
       技术
   </a>
@@ -1013,6 +1039,7 @@ var _hmt = _hmt || [];
         <li><a href="#方法六写时复制">方法六：写时复制</a></li>
         <li><a href="#方法七缓冲区共享">方法七：缓冲区共享</a></li>
         <li><a href="#高性能网络-io-框架netmap">高性能网络 I/O 框架——netmap</a></li>
+        <li><a href="#java-实现零拷贝">Java 实现零拷贝</a></li>
       </ul>
     </li>
   </ul>
@@ -1130,6 +1157,9 @@ write(sockfd, buf, len);
 <p>Netmap 基于共享内存的思想，是一个高性能收发原始数据包的框架，由Luigi Rizzo 等人开发完成，其包含了内核模块以及用户态库函数。其目标是，不修改现有操作系统软件以及不需要特殊硬件支持，实现用户态和网卡之间数据包的高性能传递。</p>
 <p><img src="/images/docs/tutorial/unix-optimize/zero-copy/20201221140739.jpg" alt=""></p>
 <p>在 Netmap 框架下，内核拥有数据包池，发送环\接收环上的数据包不需要动态申请，有数据到达网卡时，当有数据到达后，直接从数据包池中取出一个数据包，然后将数据放入此数据包中，再将数据包的描述符放入接收环中。内核中的数据包池，通过 mmap 技术映射到用户空间。用户态程序最终通过 netmap_if 获取接收发送环 netmap_ring，进行数据包的获取发送。</p>
+<h3 id="java-实现零拷贝">Java 实现零拷贝</h3>
+<p>Linux 内核中的 <code>mmap</code> 函数可以代替 <code>read</code>、<code>write</code> 的 I/O 读写操作，实现用户空间和内核空间共享一个缓存数据。<code>mmap</code> 将用户空间的一块地址和内核空间的一块地址同时映射到相同的一块物理内存地址，不管是用户空间还是内核空间都是虚拟地址，最终要通过地址映射映射到物理内存地址。这种方式避免了内核空间与用户空间的数据交换。I/O 复用中的 <code>epoll</code> 函数中就是使用了 <code>mmap</code> 减少了内存拷贝。</p>
+<p>在 Java 的 NIO 编程中，则是使用到了 Direct Buffer 来实现内存的零拷贝。Java 直接在 <strong>JVM 内存空间之外开辟了一个物理内存空间</strong>，这样内核和用户进程都能共享一份缓存数据。</p>
 
 <ins class="adsbygoogle"
 style="display:block"
@@ -1178,6 +1208,7 @@ data-full-width-responsive="true"></ins>
         <li><a href="#方法六写时复制">方法六：写时复制</a></li>
         <li><a href="#方法七缓冲区共享">方法七：缓冲区共享</a></li>
         <li><a href="#高性能网络-io-框架netmap">高性能网络 I/O 框架——netmap</a></li>
+        <li><a href="#java-实现零拷贝">Java 实现零拷贝</a></li>
       </ul>
     </li>
   </ul>

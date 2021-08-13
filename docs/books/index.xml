@@ -107,9 +107,8 @@ struct __attribute__ ((__packed__))sdshdr8 { uint8_t len; // 已使用长度  ui
       <description>深度剖析 Apache Dubbo 核心技术 SPI 扩展 Dubbo 支持扩展的核心接口上，都会通过类似 @SPI(&amp;quot;dubbo&amp;quot;) 这样的注解，来标识当前接口的默认实现。如果你想替换掉这个默认实现，那么需要两个步骤。第一，实现 Protocol 接口，然后在 META-INF/dubbo 目录下创建一个名字为 org.apache.dubbo.rpc.Protocol 的文本文件。这个 META-INF 目录如果使用的是 IDEA 开发，那么其应该放到 resources 目录下的顶层，这样打 jar 包的时候，其也会被复制到 jar 包的第一级目录。内容如下：
 myProtocol = com.zk.MyProtocol 第二，需要在 XML 配置文件中，声明使用这个扩展实现：
 &amp;lt;dubbo:protocol name=&amp;#34;myProtocol&amp;#34;&amp;gt; 其实 JDK 本身也提供了 SPI 扩展，Dubbo 之所以没有使用默认提供的实现，是因为：
- JDK 标准的 SPI 一次性实例化扩展点的所有实现，如果有些没有使用到，那么会浪费资源。 扩展点加载失败的异常提示不是很好。 增强了 Ioc 和 AOP 的支持。  性能 Dubbo 会给每个服务提供者的实现类生产一个 Wrapper 类，这个 Wrapper 类里面最终调用服务提供者的接口实现类，Wrapper 类的存在是为了减少反射的调用。当服务提供方收到消费方发来的请求后，需要根据消费者传递过来的方法名和参数反射调用服务提供者的实现类，而反射本身是有性能开销的，Dubbo 把每个服务提供者的实现类通过 JavaAssist 包装为一个 Wrapper 类以减少反射调用开销。
-其实就是由反射改为了比较方法名称，然后调用，伪代码如下：
-GreetingServiceImpl impl = (GreetingServiceImpl) object; if (&amp;#34;sayHello&amp;#34;.</description>
+ JDK 标准的 SPI 一次性实例化扩展点的所有实现，如果有些没有使用到，那么会浪费资源。 扩展点加载失败的异常提示不是很好。 增强了 Ioc 和 AOP 的支持。  Java SPI 缺点 Java SPI的使用很简单。也做到了基本的加载扩展点的功能。但Java SPI有以下的不足:
+ 需要遍历所有的实现，并实例化，然后我们在循环中才能找到我们需要的实现。 配置文件中只是简单的列出了所有的扩展实现，而没有给他们命名。导致在程序中很难去准确的引用它们。 扩展如果依赖其他的扩展，做不到自动注入和装配 不提供类似于 Spring 的 IOC 和 AOP 功能 扩展很难和其他的框架集成，比如扩展里面依赖了一个 Spring bean，原生的 Java SPI 不支持  性能 Dubbo 会给每个服务提供者的实现类生产一个 Wrapper 类，这个 Wrapper 类里面最终调用服务提供者的接口实现类，Wrapper 类的存在是为了减少反射的调用。当服务提供方收到消费方发来的请求后，需要根据消费者传递过来的方法名和参数反射调用服务提供者的实现类，而反射本身是有性能开销的，Dubbo 把每个服务提供者的实现类通过 JavaAssist 包装为一个 Wrapper 类以减少反射调用开销。</description>
     </item>
     
     <item>

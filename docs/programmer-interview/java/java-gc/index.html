@@ -24,7 +24,7 @@ StringBuffer str = new StringBuffer(&#34;Hello world&#34;); 假设以上代码�
 <link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.7ff6371bb6484efda115bec00fe88569aafbf1b72757fbb1266d8222e93c5d6b.js" integrity="sha256-f/Y3G7ZITv2hFb7AD&#43;iFaar78bcnV/uxJm2CIuk8XWs="></script>
+<script defer src="/en.search.min.323245901a81c17590d167fbe33cae708707ce477e9e7c031439ad85cd6017d6.js" integrity="sha256-MjJFkBqBwXWQ0Wf74zyucIcHzkd&#43;nnwDFDmthc1gF9Y="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -694,8 +694,10 @@ var _hmt = _hmt || [];
         <li><a href="#垃圾回收器怎么选择">垃圾回收器怎么选择</a></li>
       </ul>
     </li>
-    <li><a href="#fullgc">FullGC</a>
+    <li><a href="#full-gc">Full GC</a>
       <ul>
+        <li><a href="#full-gc-vs-majorgc">Full GC vs MajorGC</a></li>
+        <li><a href="#gc-触发策略">GC 触发策略</a></li>
         <li><a href="#systemgc">System.gc()</a></li>
         <li><a href="#老年代空间不足">老年代空间不足</a></li>
         <li><a href="#永生区空间不足">永生区空间不足</a></li>
@@ -923,6 +925,14 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/programmer-interview/java/java-gc/Snipaste_2021-02-12_11-52-53.png" alt=""></p>
 <p>在上图中，我们注意到还有一些Region标明了<code>H</code>，它代表Humongous，这表示这些Region存储的是巨大对象（humongous object，H-obj），即大小大于等于region一半的对象。</p>
 <p>一个Region的大小可以通过参数<code>-XX:G1HeapRegionSize</code>设定，取值范围从 <code>1M</code> 到 <code>32M</code>，且是 2 的指数。如果不设定，那么G1会根据Heap大小自动决定。</p>
+<blockquote>
+<p>G1 采用的算法</p>
+</blockquote>
+<p>从 GC 算法的角度，G1 选择的是<strong>复合算法</strong>，可以简化理解为：</p>
+<ul>
+<li>在<strong>新生代</strong>，G1 采用的仍然是<strong>并行的复制算法</strong>，所以同样会发生 Stop-The-World 的暂停。</li>
+<li>在<strong>老年代</strong>，大部分情况下都是<strong>并发标记</strong>，而整理（Compact）则是和新生代 GC 时捎带进行，并且不是整体性的整理，而是增量进行的。</li>
+</ul>
 <h3 id="zgc">ZGC</h3>
 <h3 id="默认垃圾收集器">默认垃圾收集器</h3>
 <p>参考 <a href="http://download.oracle.com/javase/6/docs/technotes/guides/vm/gc-ergonomics.html">1</a> 说: 对于 server-class 机器，默认 GC 从 serial 改为了 parallel 收集器。</p>
@@ -937,8 +947,28 @@ data-full-width-responsive="true"></ins>
 <blockquote>
 <p>并发和并行都可以表示两个或者多个任务一起执行，但是偏重点不同。并发偏重于<strong>多个任务交替执行</strong>，而多个任务之间有可能还是串行的。而并行是真正意义上的“同时执行”。</p>
 </blockquote>
-<h2 id="fullgc">FullGC</h2>
+<h2 id="full-gc">Full GC</h2>
 <p>什么情况下会触发 FullGC ? <a href="https://www.cnblogs.com/jichi/p/12588087.html">参考</a></p>
+<h3 id="full-gc-vs-majorgc">Full GC vs MajorGC</h3>
+<p>针对HotSpot VM的实现，它里面的GC其实准确分类只有两大种：</p>
+<ul>
+<li>Partial GC：并不收集整个GC堆的模式
+<ul>
+<li>Young GC：只收集young gen的GC</li>
+<li>Old GC：只收集old gen的GC。只有CMS的concurrent collection是这个模式</li>
+<li>Mixed GC：收集整个young gen以及部分old gen的GC。只有G1有这个模式</li>
+</ul>
+</li>
+<li>Full GC：收集整个堆，包括young gen、old gen、perm gen（如果存在的话）等所有部分的模式。</li>
+</ul>
+<p>Major GC通常是跟full GC是等价的，收集整个GC堆。但因为HotSpot VM发展了这么多年，外界对各种名词的解读已经完全混乱了，当有人说“major GC”的时候一定要问清楚他想要指的是上面的full GC还是old GC。</p>
+<h3 id="gc-触发策略">GC 触发策略</h3>
+<p>最简单的分代式GC策略，按HotSpot VM的serial GC的实现来看，触发条件是：</p>
+<ul>
+<li>young GC：当young gen中的eden区分配满的时候触发。注意young GC中有部分存活对象会晋升到old gen，所以young GC后old gen的占用量通常会有所升高。</li>
+<li>full GC：当准备要触发一次young GC时，如果发现统计数据说之前young GC的平均晋升大小比目前old gen剩余的空间大，则不会触发young GC而是转为触发full GC（因为HotSpot VM的GC里，除了CMS的concurrent collection之外，其它能收集old gen的GC都会同时收集整个GC堆，包括young gen，所以不需要事先触发一次单独的young GC）；或者，如果有perm gen的话，要在perm gen分配空间但已经没有足够空间时，也要触发一次full GC；或者System.gc()、heap dump带GC，默认也是触发full GC。</li>
+</ul>
+<p>HotSpot VM里其它非并发GC的触发条件复杂一些，不过大致的原理与上面说的其实一样。当然也总有例外。Parallel Scavenge（-XX:+UseParallelGC）框架下，默认是在要触发full GC前先执行一次young GC，并且两次GC之间能让应用程序稍微运行一小下，以期降低full GC的暂停时间（因为young GC会尽量清理了young gen的死对象，减少了full GC的工作量）。控制这个行为的VM参数是-XX:+ScavengeBeforeFullGC。并发GC的触发条件就不太一样。以CMS GC为例，它主要是定时去检查old gen的使用量，当使用量超过了触发比例就会启动一次CMS GC，对old gen做并发收集。</p>
 <h3 id="systemgc">System.gc()</h3>
 <p>默认情况下(即未开启 <code>-XX:+DisableExplictGC</code> 参数的情况下)，调用 <code>System.gc()</code> 会显示触发 FullGC，同时对新生代和老年代进行回收。</p>
 <h3 id="老年代空间不足">老年代空间不足</h3>
@@ -1011,6 +1041,7 @@ data-full-width-responsive="true"></ins>
 <li>《码出高效：Java 开发手册》</li>
 <li><a href="https://www.cnblogs.com/aspirant/p/8663872.html">G1 垃圾收集器架构和如何做到可预测的停顿(阿里)</a></li>
 <li><a href="https://tech.meituan.com/2016/09/23/g1.html">Java Hotspot G1 GC的一些关键技术</a></li>
+<li><a href="https://www.zhihu.com/question/41922036/answer/93079526">Major GC和Full GC的区别是什么？触发条件呢？</a></li>
 </ul>
 
 <ins class="adsbygoogle"
@@ -1079,8 +1110,10 @@ data-full-width-responsive="true"></ins>
         <li><a href="#垃圾回收器怎么选择">垃圾回收器怎么选择</a></li>
       </ul>
     </li>
-    <li><a href="#fullgc">FullGC</a>
+    <li><a href="#full-gc">Full GC</a>
       <ul>
+        <li><a href="#full-gc-vs-majorgc">Full GC vs MajorGC</a></li>
+        <li><a href="#gc-触发策略">GC 触发策略</a></li>
         <li><a href="#systemgc">System.gc()</a></li>
         <li><a href="#老年代空间不足">老年代空间不足</a></li>
         <li><a href="#永生区空间不足">永生区空间不足</a></li>

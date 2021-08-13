@@ -11,7 +11,7 @@ char 能存储中文字符吗 在 Java 中，char 类型占 2 个字节，而且
 字符集 GB2312 收录 6763 个常用汉字；GBK 的 K 是扩展的意思，支持繁体，兼容 GB2312；GB18030 是国家标准，是 GBK 的超集并与之兼容；1994 年公布的 Unicode，编码格式有：UTF-8、UTF-16、UTF-32，UTF 可以理解为对 Unicode 的压缩方式。
 访问权限 内部类和静态内部类 内部类有对外层类完全的访问权限。静态内部类没有一个指向嵌套类的引用，所以静态内部类不能够调用外层类的非静态方法，或者访问非静态的字段。
 泛型 为什么类型擦除 为了兼容 JDK 5 之前（有泛型功能之前）的项目，否则有大量代码修改的工作。
-//编译器的代码 Node node = new Node&lt;String&gt;(); //编译后的代码 Node node = new Node(); " />
+//编译器的代码 Node node = new Node&lt;String&gt;(); //编译后的代码 Node node = new Node(); 反射 Class." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/basic/" />
 
@@ -22,7 +22,7 @@ char 能存储中文字符吗 在 Java 中，char 类型占 2 个字节，而且
 <link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.7ff6371bb6484efda115bec00fe88569aafbf1b72757fbb1266d8222e93c5d6b.js" integrity="sha256-f/Y3G7ZITv2hFb7AD&#43;iFaar78bcnV/uxJm2CIuk8XWs="></script>
+<script defer src="/en.search.min.323245901a81c17590d167fbe33cae708707ce477e9e7c031439ad85cd6017d6.js" integrity="sha256-MjJFkBqBwXWQ0Wf74zyucIcHzkd&#43;nnwDFDmthc1gF9Y="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -690,6 +690,32 @@ var _hmt = _hmt || [];
     
       
 
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
   <a href="/docs/tutorial/technique/" >
       技术
   </a>
@@ -1004,6 +1030,11 @@ var _hmt = _hmt || [];
         <li><a href="#为什么类型擦除">为什么类型擦除</a></li>
       </ul>
     </li>
+    <li><a href="#反射">反射</a>
+      <ul>
+        <li><a href="#classforname-和-classloader">Class.forName 和 ClassLoader</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 
@@ -1047,6 +1078,15 @@ data-full-width-responsive="true"></ins>
 </span><span style="color:#75715e"></span>Node node <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Node<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">&gt;();</span>
 <span style="color:#75715e">//编译后的代码
 </span><span style="color:#75715e"></span>Node node <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Node<span style="color:#f92672">();</span>
+</code></pre></div><h2 id="反射">反射</h2>
+<h3 id="classforname-和-classloader">Class.forName 和 ClassLoader</h3>
+<p>Class.forName 内部也是调用的 ClassLoader，只是调用 <code>forName0</code> 的第二个参数设置为了 <code>true</code>，这个参数的含义是<strong>是否对加载的类进行初始化</strong>，会执行类里面的<strong>静态代码块</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a6e22e">@CallerSensitive</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> Class<span style="color:#f92672">&lt;?&gt;</span> forName<span style="color:#f92672">(</span>String className<span style="color:#f92672">)</span>
+            <span style="color:#66d9ef">throws</span> ClassNotFoundException <span style="color:#f92672">{</span>
+    Class<span style="color:#f92672">&lt;?&gt;</span> caller <span style="color:#f92672">=</span> Reflection<span style="color:#f92672">.</span><span style="color:#a6e22e">getCallerClass</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">return</span> forName0<span style="color:#f92672">(</span>className<span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">,</span> ClassLoader<span style="color:#f92672">.</span><span style="color:#a6e22e">getClassLoader</span><span style="color:#f92672">(</span>caller<span style="color:#f92672">),</span> caller<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
 </code></pre></div>
 <ins class="adsbygoogle"
 style="display:block"
@@ -1094,6 +1134,11 @@ data-full-width-responsive="true"></ins>
     <li><a href="#泛型">泛型</a>
       <ul>
         <li><a href="#为什么类型擦除">为什么类型擦除</a></li>
+      </ul>
+    </li>
+    <li><a href="#反射">反射</a>
+      <ul>
+        <li><a href="#classforname-和-classloader">Class.forName 和 ClassLoader</a></li>
       </ul>
     </li>
   </ul>

@@ -11,6 +11,7 @@
  申请的内存小于 128K，使用 brk() 函数完成，也就是从上图中的堆中分配的内存 申请的内存大于 128K，使用 mmap() 内存映射函数完成，也就是从上图中的文件映射中分配的内存  内存回收 应用程序应通过 free() 或 unmap() 来释放内存。
 当然，系统也会监管进程的内存，当发现系统内存不足时，会采取措施：
  使用 LRU 算法回收缓存 回收不常访问的内存，写到 Swap 区（位于硬盘上） 杀死进程  虚拟内存 分段机制 分段机制下的虚拟地址由两部分组成，段选择子和段内偏移量。段选择子就保存在咱们前面讲过的段寄存器里面。段选择子里面最重要的是段号，用作段表的索引。段表里面保存的是这个段的基地址、段的界限和特权等级等。虚拟地址中的段内偏移量应该位于 0 和段界限之间。如果段内偏移量是合法的，就将段基地址加上段内偏移量得到物理内存地址。
+分段对内存区域的映射以程序为单位，内存不足，换入换出到磁盘的是整个程序，粒度比较大，产生大量磁盘 IO，而根据程序的局部性原理，程序运行时，某个时间段，一般只是频繁用到很小的一部分数据。那么可以利用更小粒度的内存分割和映射方法，这就是分页。
 分页 (Paging) 对于物理内存，操作系统把它分成一块一块大小相同的页，这样更方便管理，例如有的内存页面长时间不用了，可以暂时写到硬盘上，称为换出。一旦需要的时候，再加载进来，叫做换入。这样可以扩大可用物理内存的大小，提高物理内存的利用率。
 这个换入和换出都是以页为单位的。页面的大小一般为 4KB。为了能够定位和访问每个页，需要有个页表，保存每个页的起始地址，再加上在页内的偏移量，组成线性地址，就能对于内存中的每个位置进行访问了。
 虚拟地址分为两部分，页号和页内偏移。页号作为页表的索引，页表包含物理页每页所在物理内存的基地址。这个基地址与页内偏移的组合就形成了物理内存地址。
@@ -25,7 +26,7 @@
 <link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.7ff6371bb6484efda115bec00fe88569aafbf1b72757fbb1266d8222e93c5d6b.js" integrity="sha256-f/Y3G7ZITv2hFb7AD&#43;iFaar78bcnV/uxJm2CIuk8XWs="></script>
+<script defer src="/en.search.min.323245901a81c17590d167fbe33cae708707ce477e9e7c031439ad85cd6017d6.js" integrity="sha256-MjJFkBqBwXWQ0Wf74zyucIcHzkd&#43;nnwDFDmthc1gF9Y="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -703,6 +704,32 @@ var _hmt = _hmt || [];
     
       
 
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
   <a href="/docs/tutorial/technique/" >
       技术
   </a>
@@ -1016,6 +1043,7 @@ var _hmt = _hmt || [];
     <li><a href="#查看某个进程的内存">查看某个进程的内存</a></li>
     <li><a href="#buffer-vs-cache">Buffer vs Cache</a></li>
     <li><a href="#内存回收机制">内存回收机制</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
@@ -1060,6 +1088,7 @@ data-full-width-responsive="true"></ins>
 <h3 id="分段机制">分段机制</h3>
 <p><img src="/images/docs/tutorial/unix-optimize/memory/9697ae17b9f561e78514890f9d58d4eb.jpg" alt=""></p>
 <p>分段机制下的虚拟地址由两部分组成，段选择子和段内偏移量。段选择子就保存在咱们前面讲过的段寄存器里面。段选择子里面最重要的是段号，用作段表的索引。段表里面保存的是这个段的基地址、段的界限和特权等级等。虚拟地址中的段内偏移量应该位于 0 和段界限之间。如果段内偏移量是合法的，就将段基地址加上段内偏移量得到物理内存地址。</p>
+<p>分段对内存区域的映射<strong>以程序为单位</strong>，内存不足，换入换出到磁盘的是<strong>整个程序</strong>，粒度比较大，产生大量磁盘 IO，而根据程序的局部性原理，程序运行时，某个时间段，<strong>一般只是频繁用到很小的一部分数据</strong>。那么可以利用更小粒度的内存分割和映射方法，这就是<strong>分页</strong>。</p>
 <h3 id="分页-paging">分页 (Paging)</h3>
 <p>对于物理内存，操作系统把它分成一块一块大小相同的页，这样更方便管理，例如有的内存页面长时间不用了，可以暂时写到硬盘上，称为<strong>换出</strong>。一旦需要的时候，再加载进来，叫做<strong>换入</strong>。这样可以扩大可用物理内存的大小，提高物理内存的利用率。</p>
 <p>这个换入和换出都是以页为单位的。页面的大小一般为 4KB。为了能够定位和访问每个页，需要有个页表，保存每个页的起始地址，再加上在页内的偏移量，组成线性地址，就能对于内存中的每个位置进行访问了。</p>
@@ -1104,6 +1133,10 @@ PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
 </ul>
 <p>而匿名页虽无法直接回收，但是通过 Swap 机制可以将不常用的内存写到磁盘中，然后释放内存，给其他程序用。</p>
 <p>通过调节 <code>/proc/sys/vm/swappiness</code> 值（0 - 100）可以控制回收匿名页的优先级，值越大，越优先回收匿名页。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li>《程序员的自我修养》</li>
+</ul>
 
 <ins class="adsbygoogle"
 style="display:block"
@@ -1152,6 +1185,7 @@ data-full-width-responsive="true"></ins>
     <li><a href="#查看某个进程的内存">查看某个进程的内存</a></li>
     <li><a href="#buffer-vs-cache">Buffer vs Cache</a></li>
     <li><a href="#内存回收机制">内存回收机制</a></li>
+    <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
 
