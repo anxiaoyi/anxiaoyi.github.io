@@ -5,15 +5,11 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="TCP"><meta property="og:title" content="TCP" />
-<meta property="og:description" content="TCP TCP 头 三次握手  三次握手恰好可以保证 Client 和 Server 对自己的发送、接受能力做了一次确认。
-  connect 和 bind 区别？
-  Socket 层面的，是如何和三次握手的过程对应的？
- 四次挥手 TIME_WAIT 状态的设计  为什么不直接进入 CLOSED 状态，而是中间有一个 TIME_WAIT 状态 ?
- 4元组 (客户端 IP、客户端 Port、服务器 IP、服务器 Port)，无法区分出新连接还是老连接，这会导致老连接上的数据包会串到新的连接上来。
-TCP/IP 定义了一个值 MSL，表示数据包在网络上最长逗留时间，默认是 120s。连接保持在 TIME_WAIT 状态，再等待 2 × MSL 时间就可以进入 CLOSED 状态了，防止串数据。
- 为什么是两倍的 MSL ?
- 因为上图第 4 次发送的数据包，服务器是否收到是不确定的。而如果服务器没有收到，那么服务器会重新发送第三次的数据包。所以整个的时间，最长是两个 MSL。
- 为何服务器收到第 4 个 ACK 之后，立刻进入 CLOSED 状态，而不是也进入 TIME_WAIT 状态 ?" />
+<meta property="og:description" content="TCP TCP 头 TCP 分段  在传输层（TCP协议）里，叫分段。在网络层（IP层），叫分片 (Fragmentation)
+ 数据链路层，长度范围是 [64 byte, 1518 byte] 其中 18 byte 的数据是链路层本身的数据。具体格式：
+6 byte 目标 MAC 地址 &#43; 6 byte 源 MAC 地址 &#43; 2 byte 类型 &#43; 网络层的数据(IP 包) &#43; 4 byte 校验和 留给网络层的数据长度是 [64 - 18, 1518 - 18] = [46, 1500]。我们把 1500 这个值，称为 以太网 的 MTU ：Maximum Transmission Unit 。
+网络层的 IP 协议，也会自动填充协议头，协议头一般占用了 20 byte。也就是说留给传输层数据 只有：[46-20, 1500-20] = [26, 1480]
+传输层的 TCP 协议头占了 20 byte， UDP 协议头占了 8 byte。TCP 可以传的用户数据实际上只有 [26 - 20, 1480 - 20] = [6, 1460]" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/network/tcp/" />
 
@@ -24,7 +20,7 @@ TCP/IP 定义了一个值 MSL，表示数据包在网络上最长逗留时间，
 <link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.323245901a81c17590d167fbe33cae708707ce477e9e7c031439ad85cd6017d6.js" integrity="sha256-MjJFkBqBwXWQ0Wf74zyucIcHzkd&#43;nnwDFDmthc1gF9Y="></script>
+<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -680,6 +676,32 @@ var _hmt = _hmt || [];
     
       
 
+  <a href="/docs/tutorial/softskill/" >
+      箴言箴句
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
   <a href="/docs/tutorial/database/" >
       数据库
   </a>
@@ -1059,11 +1081,20 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#tcp-头">TCP 头</a></li>
+    <li><a href="#tcp-分段">TCP 分段</a></li>
     <li><a href="#三次握手">三次握手</a></li>
     <li><a href="#四次挥手">四次挥手</a>
       <ul>
         <li><a href="#time_wait-状态的设计">TIME_WAIT 状态的设计</a></li>
         <li><a href="#大量-time_wait-状态">大量 TIME_WAIT 状态</a></li>
+      </ul>
+    </li>
+    <li><a href="#tcp-定时器">TCP 定时器</a>
+      <ul>
+        <li><a href="#重传定时器">重传定时器</a></li>
+        <li><a href="#persistence-定时器">Persistence 定时器</a></li>
+        <li><a href="#keepalive-定时器">Keepalive 定时器</a></li>
+        <li><a href="#time-wait-定时器">TIME-WAIT 定时器</a></li>
       </ul>
     </li>
     <li><a href="#起始序列号-isn">起始序列号 ISN</a>
@@ -1141,6 +1172,24 @@ data-full-width-responsive="true"></ins>
 </script><h1 id="tcp">TCP</h1>
 <h2 id="tcp-头">TCP 头</h2>
 <p><img src="/images/docs/tutorial/network/tcp/tcp-header-1.png" alt=""></p>
+<h2 id="tcp-分段">TCP 分段</h2>
+<blockquote>
+<p>在传输层（TCP协议）里，叫<strong>分段</strong>。在网络层（IP层），叫<strong>分片 (Fragmentation)</strong></p>
+</blockquote>
+<p>数据链路层，长度范围是 [64 byte, 1518 byte] 其中 18 byte 的数据是链路层本身的数据。具体格式：</p>
+<pre><code>6 byte 目标 MAC 地址 + 6 byte 源 MAC 地址 + 2 byte 类型 + 网络层的数据(IP 包) + 4 byte 校验和
+</code></pre><p>留给网络层的数据长度是 [64 - 18, 1518 - 18] = <code>[46, 1500]</code>。我们把 1500 这个值，称为 以太网 的 <strong>MTU</strong> ：Maximum Transmission Unit 。</p>
+<p>网络层的 IP 协议，也会自动填充协议头，协议头一般占用了 20 byte。也就是说留给传输层数据 只有：[46-20, 1500-20] = <code>[26, 1480]</code></p>
+<p>传输层的 TCP 协议头占了 20 byte， UDP 协议头占了 8 byte。TCP 可以传的用户数据实际上只有 [26 - 20, 1480 - 20] = <code>[6, 1460]</code></p>
+<p>对于 TCP 而言，<strong>MSS</strong>（Maxitum Segment Size）最大分段大小，它是 TCP 协议里面的一个概念。MSS 是 TCP 用来<strong>限制应用层</strong>最大的发送字节数。假设 MTU = 1500 byte，那么 MSS = 1500 - 20(IP Header) - 20 (TCP Header) = 1460 byte，如果应用层有 2000 byte 发送，那么需要两个切片才可以完成发送，第一个 TCP 切片 = 1460，第二个 TCP 切片 = 540。TCP 在<strong>建立连接</strong>的时候，会协商双方的 MSS 值，通常这个 MSS 会控制在 MTU 以内：最大 IP 包大小减去 IP 和 TCP 协议头的大小。（其最终目的：就是<strong>尽量避免 IP 分片</strong>）。这样 TCP 就可以在自己这一层，把用户发送的数据，预先分成多个大小限制在 MTU 里的 TCP 包。每个 TCP 的分片包，都完整了包含了 TCP 头信息，方便在接收方重组。如果某些情况导致：已经分好的 TCP 分片，还是大于了 MTU，那就在 IP 层中，再执行一次分片。这个时候如果数据丢了，那也只需要重传这一个 TCP 的分片，而不是整个原始的 50k 数据。</p>
+<p><img src="/images/docs/tutorial/network/tcp/v2-402f9787b9b99dedfb2e403ebbb92d66_1440w.jpg" alt=""></p>
+<p>每次执行 TCP 发送消息的函数时，会重新计算一次 MSS，再进行分段操作。</p>
+<p>IP 层会分片，TCP 还要分段的原因是<strong>丢包</strong>后，重传的是 TCP 层不分段的数据。如果TCP把这份数据，分段为 N 个小于等于MSS长度的数据包，到了IP层后加上IP头和TCP头，还是小于MTU，那么IP层也不会再进行分包。此时在传输路上发生了丢包，那么TCP重传的时候也<strong>只是重传那一小部分的MSS段</strong>。效率会比TCP不分段时更高。</p>
+<p>UDP 本身不会分段，所以当数据量较大时，只能交给IP层去分片，然后传到底层进行发送。</p>
+<p><strong>TCP分段了，IP层就一定不会分片了吗</strong>？整个传输链路中，可能还会有其他网络层设备，而这些设备的 MTU 可能小于发送端的 MTU。此时虽然数据包在发送端已经分段过了，但是在IP层就还会再分片一次。如果链路上还有设备有更小的MTU，那么还会再分片，最后所有的分片都会在接收端处进行组装。</p>
+<p><strong>如何让 IP 层不再分片</strong>：整个链路上，最小的 MTU，就叫 <strong>PMTU（path MTU）</strong>。<code>cat /proc/sys/net/ipv4/ip_no_pmtu_disc</code> 如果是 0，说明开启了 Path MTU Discovery 功能。IP 数据报头中标红的标志位 <strong>DF（Don&rsquo;t Fragment）</strong>，当它置为 1，意味着这个IP报文不分片。当链路上某个路由器，收到了这个报文，当IP报文长度大于路由器的MTU时，路由器会看下这个IP报文的DF。如果为0（允许分片），就会分片并把分片后的数据传到下一个路由器；如果为1，就会把数据丢弃，同时返回一个<code>ICMP</code>包给发送端，并告诉它数据不可达，需要分片，同时带上当前机器的MTU。发送端收到这个ICMP消息，会更新自己的MTU，同时记录到一个<strong>PMTU表</strong>中。因为TCP的可靠性，会尝试重传这个消息，同时以这个新MTU值计算出MSS进行分段，此时新的IP包就可以顺利被刚才的路由器转发。</p>
+<p><img src="/images/docs/tutorial/network/tcp/v2-ee9953fc366f7d95fe19e851d6790ff4_1440w.jpg" alt=""></p>
+<p>本节参考<a href="https://zhuanlan.zhihu.com/p/378153230">动图图解！既然IP层会分片，为什么TCP层也还要分段？</a></p>
 <h2 id="三次握手">三次握手</h2>
 <blockquote>
 <p>三次握手恰好可以保证 Client 和 Server 对自己的发送、接受能力<strong>做了一次确认</strong>。</p>
@@ -1177,6 +1226,24 @@ data-full-width-responsive="true"></ins>
 <li>打开 <code>tcp_tw_reuse</code> 和 <code>tcp_timestamps</code> 选项；</li>
 <li>程序中使用 <code>SO_LINGER</code>，应用强制使用 <code>rst</code> 关闭。</li>
 </ul>
+<h2 id="tcp-定时器">TCP 定时器</h2>
+<blockquote>
+<p>引用自 《TCP IP Protocol Suite 第4版》</p>
+</blockquote>
+<p>多数 TCP 协议的实现都至少有如下 4 个定时器：</p>
+<p><img src="/images/docs/tutorial/network/tcp/Snipaste_2021-10-07_18-53-29.png" alt=""></p>
+<h3 id="重传定时器">重传定时器</h3>
+<p>TCP 发送 segment 的时候，定时器开始计时，当超时（超时时间 RTO: retransmission time-out）后依然没有 ACK，那么会重新发送 segment，那么定时器重新开始计时。</p>
+<p>计算 RTO 需要先计算 RTT。</p>
+<p><img src="/images/docs/tutorial/network/tcp/Snipaste_2021-10-07_19-00-02.png" alt=""></p>
+<h3 id="persistence-定时器">Persistence 定时器</h3>
+<p>如果接受窗口大小变为 0，发送窗口将停止发送 segments，直到接受窗口返回一个非 0 的 ACK segment。不过这个 segment 可能会丢失。为了防止两边互相等待造成的死锁，当发送端收到了窗口置为 0 的 ACK 后，它启动 Persistence 定时器，当这个定时器 goes off 的时候，它会发送 1 字节的特殊的称为 probe 的 segment。probe 将会让接收端重新发送 ACK。</p>
+<p>定时器的时间：</p>
+<pre><code>RTO -&gt; 2*RTO -&gt; 4*RTO -&gt; 60s -&gt; 60s -&gt; 60s -&gt; ...
+</code></pre><h3 id="keepalive-定时器">Keepalive 定时器</h3>
+<p>Server 如果 2 小时之内没有收到任何来自 Client 的数据，Server 将会发送一个 <code>probe</code>，10 个相隔 75s 的 <code>probe</code> 之后如果依然没有响应，那么会关闭这条连接。</p>
+<h3 id="time-wait-定时器">TIME-WAIT 定时器</h3>
+<p>2MSL 定时器用于连接关闭的时候。</p>
 <h2 id="起始序列号-isn">起始序列号 ISN</h2>
 <h3 id="isn-为什么不从-1-开始">ISN 为什么不从 1 开始</h3>
 <p>client 第一次尝试建立连接: client 发送 1,2,3 数据包给 server，我们假设这个时候 3 这个数据包丢失了。紧接着 client 第二次尝试建立连接: client 发送 1,2 给 server，主观上并没有想发送 3 这个数据包，但是第一次的 3 数据包可能又会回来发送给 server，因此造成<strong>数据错误</strong>)。</p>
@@ -1560,11 +1627,20 @@ data-full-width-responsive="true"></ins>
   <nav id="TableOfContents">
   <ul>
     <li><a href="#tcp-头">TCP 头</a></li>
+    <li><a href="#tcp-分段">TCP 分段</a></li>
     <li><a href="#三次握手">三次握手</a></li>
     <li><a href="#四次挥手">四次挥手</a>
       <ul>
         <li><a href="#time_wait-状态的设计">TIME_WAIT 状态的设计</a></li>
         <li><a href="#大量-time_wait-状态">大量 TIME_WAIT 状态</a></li>
+      </ul>
+    </li>
+    <li><a href="#tcp-定时器">TCP 定时器</a>
+      <ul>
+        <li><a href="#重传定时器">重传定时器</a></li>
+        <li><a href="#persistence-定时器">Persistence 定时器</a></li>
+        <li><a href="#keepalive-定时器">Keepalive 定时器</a></li>
+        <li><a href="#time-wait-定时器">TIME-WAIT 定时器</a></li>
       </ul>
     </li>
     <li><a href="#起始序列号-isn">起始序列号 ISN</a>

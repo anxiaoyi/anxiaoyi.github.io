@@ -82,7 +82,7 @@ public class ApolloApplicationContextInitializer implements ApplicationContextIn
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/spring/spring-ioc/</guid>
-      <description>Spring IOC Bean 加载过程 转化 BeanName 我们解析完 XML 配置后创建的 Map，使用的是 beanName 作为 key：
+      <description>Spring IOC @Autowired 和 @Resource 区别  @Resource 是 JSR-250 规范提供的，@Resource 默认按照 byName 自动注入。 @Autowired 按照 byType 自动注入。  Bean 加载过程 转化 BeanName 我们解析完 XML 配置后创建的 Map，使用的是 beanName 作为 key：
 public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory implements ConfigurableListableBeanFactory, BeanDefinitionRegistry, Serializable { // key: bean name  private final Map&amp;lt;String, BeanDefinition&amp;gt; beanDefinitionMap = new ConcurrentHashMap&amp;lt;&amp;gt;(256); } 在获取 Bean 的时候，alias bean name、factory bean name 都要转化为 bean name：
 public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport implements ConfigurableBeanFactory { protected &amp;lt;T&amp;gt; T doGetBean(final String name, @Nullable final Class&amp;lt;T&amp;gt; requiredType, @Nullable final Object[] args, boolean typeCheckOnly) throws BeansException { final String beanName = transformedBeanName(name); } protected String transformedBeanName(String name) { return canonicalName(BeanFactoryUtils.</description>
     </item>
@@ -94,6 +94,19 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
       
       <guid>https://kunzhao.org/docs/tutorial/spring/spring-aop/</guid>
       <description>Spring AOP AspectJ5 Pointcut 表达式 语法    表达式 说明     call(Signature) 匹配 Signature 的任何的对于方法或者构造器的调用   execution(Signature) 匹配 Signature 的任何方法或者构造器的执行   get(Signature) 匹配 Signature 的任何的对于字段的引用   set(Signature) 匹配 Signature 的任何的对于字段的赋值   within(TypePattern) every join point from code defined in a type in TypePattern   target(Type or Id) every join point when the target executing object is an instance of Type or Id&amp;rsquo;s type   args(Type or Id, .</description>
+    </item>
+    
+    <item>
+      <title>Spring 基础</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/spring-basic/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/spring-basic/</guid>
+      <description>Spring 基础 Bean 的 Scope Spring 支持如下5种作用域：
+ singleton：单例模式，在整个Spring IoC容器中，使用singleton定义的Bean将只有一个实例 prototype：原型模式，每次通过容器的getBean方法获取prototype定义的Bean时，都将产生一个新的Bean实例 request：对于每次HTTP请求，使用request定义的Bean都将产生一个新实例，即每次HTTP请求将会产生不同的Bean实例。只有在Web应用中使用Spring时，该作用域才有效 session：对于每次HTTP Session，使用session定义的Bean都将产生一个新实例。同样只有在Web应用中使用Spring时，该作用域才有效 globalsession：每个全局的HTTP Session，使用session定义的Bean都将产生一个新实例。典型情况下，仅在使用portlet context的时候有效。同样只有在Web应用中使用Spring时，该作用域才有效  Bean 的生命周期 Spring 将 bean 的生命周期定义为实例化、属性填充、初始化和销毁四个阶段，并为每个阶段提供了多个拓展点用于自定义 bean 的创建过程。
+实例化 创建 bean 对象实例的过程，包括使用工厂模式创建和调用构造函数。Spring 通过 InstantiationAwareBeanPostProcessor 接口在实例化前和后各提供了两个通用拓展点，加上对象实例化的过程，执行顺序如下：
+ postProcessBeforeInstantiation：在普通 bean 对象实例化开始之前调用 对象实例化 postProcessAfterInstantiation：在普通 bean 对象实例化完成之后调用  属性填充 如果对象中有 setter 函数，并通过配置元数据指定了注入的属性，Spring 容器会在这一步为其注入配置的值。完成属性填充后，Spring 通过 Aware（意为感知） 接口提供了十个专用拓展点，这些拓展点用于在 bean 自身内部、感知信息和属性校验使用，执行顺序如下（注意下方列表是第零条是 Bean 属性填充，所以此处一共有十个拓展点）：
+ Bean 属性填充 BeanNameAware#setBeanName BeanClassLoaderAware#setBeanClassLoader BeanFactoryAware#setBeanFactory EnvironmentAware#setEnvironment EmbeddedValueResolverAware#setEmbeddedValueResolver ResourceLoaderAware#setResourceLoader（仅在 ApplicationContext 中有效） ApplicationEventPublisherAware#setApplicationEventPublisher（仅在 - ApplicationContext 中有效） MessageSourceAware#setMessageSource（仅在 ApplicationContext 中有效） ApplicationContextAware#setApplicationContext（仅在 ApplicationContext 中有效） ServletContextAware#setServletContext（仅在 WebApplicationContext 中有效）  第一至第三个拓展点用于感知与 Bean 自身相关的信息、称之为 Bean 信息拓展点，第四至第八个拓展点统称为外部信息拓展点，随后第九第十两个拓展点与 ApplicationContext 有关。</description>
     </item>
     
     <item>

@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Kubernetes Patterns"><meta property="og:title" content="Kubernetes Patterns" />
+<meta property="og:description" content="Kubernetes Patterns 简介 创建好的云原生应用所需要的技能：
+ Domain-Driven Design：从为了使架构更加贴切现实世界的业务视角来去进行软件设计。 微服务架构：提供了设计分布式应用的一系列准则甚至标准。 容器：打包和运行分布式应用的标准。  程序员在 Kubernetes 中可用的资源：
+可预测的需求 你应该怎样声明你应用程序需要哪些 runtime 依赖、资源需求？
+磁盘 容器文件系统是临时的，容器关闭的时候就消失了；Kubernetes 提供了 Pod 级别的存储：volume。如果应用需要比 Pod 级别更长生命周期的存储机制，那么需要使用 volumnes 来主动声明：
+apiVersion: v1 kind: Pod metadata: name: random-generator spec: containers: - image: k8spatterns/random-generator:1.0 name: random-generator volumeMounts: - mountPath: &#34;/logs&#34; name: log-volume volumes: - name: log-volume persistentVolumeClaim: claimName: random-generator-log 参数配置 apiVersion: v1 kind: Pod metadata: name: random-generator spec: containers: - image: k8spatterns/random-generator:1.0 name: random-generator env: - name: PATTERN valueFrom: configMapKeyRef: name: random-generator-config key: pattern 资源限制 apiVersion: v1 kind: Pod metadata: name: random-generator spec: containers: - image: k8spatterns/random-generator:1." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/technique/k8s-patterns/" />
+
+<title>Kubernetes Patterns | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+
+
+<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/softskill/" >
+      箴言箴句
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/technique/" >
+      技术
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/technique/k8s/" >
+      Kubernetes
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/technique/k8s-patterns/"  class="active">
+      Kubernetes Patterns
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Kubernetes Patterns</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#简介">简介</a></li>
+    <li><a href="#可预测的需求">可预测的需求</a>
+      <ul>
+        <li><a href="#磁盘">磁盘</a></li>
+        <li><a href="#参数配置">参数配置</a></li>
+        <li><a href="#资源限制">资源限制</a></li>
+        <li><a href="#pod-优先级">Pod 优先级</a></li>
+      </ul>
+    </li>
+    <li><a href="#声明式部署">声明式部署</a>
+      <ul>
+        <li><a href="#滚动更新">滚动更新</a></li>
+        <li><a href="#fixed-部署">Fixed 部署</a></li>
+        <li><a href="#蓝绿发布">蓝绿发布</a></li>
+        <li><a href="#金丝雀发布">金丝雀发布</a></li>
+        <li><a href="#对比">对比</a></li>
+      </ul>
+    </li>
+    <li><a href="#健康探测">健康探测</a>
+      <ul>
+        <li><a href="#liveness-探测">Liveness 探测</a></li>
+        <li><a href="#readiness-探测">Readiness 探测</a></li>
+      </ul>
+    </li>
+    <li><a href="#生命周期管理">生命周期管理</a></li>
+    <li><a href="#automated-placement">Automated Placement</a>
+      <ul>
+        <li><a href="#调度过程">调度过程</a></li>
+      </ul>
+    </li>
+    <li><a href="#批量作业">批量作业</a>
+      <ul>
+        <li><a href="#kubernetes-job">Kubernetes Job</a></li>
+      </ul>
+    </li>
+    <li><a href="#周期作业">周期作业</a>
+      <ul>
+        <li><a href="#cronjob">CronJob</a></li>
+      </ul>
+    </li>
+    <li><a href="#daemon-服务">Daemon 服务</a></li>
+    <li><a href="#单例服务">单例服务</a>
+      <ul>
+        <li><a href="#out-of-application-锁">Out-of-Application 锁</a></li>
+        <li><a href="#in-application-锁">In-Application 锁</a></li>
+      </ul>
+    </li>
+    <li><a href="#有状态的服务">有状态的服务</a>
+      <ul>
+        <li><a href="#statefulset">StatefulSet</a></li>
+      </ul>
+    </li>
+    <li><a href="#服务发现">服务发现</a></li>
+    <li><a href="#self-awareness">Self Awareness</a></li>
+    <li><a href="#init-容器">Init 容器</a></li>
+    <li><a href="#sidecar">Sidecar</a></li>
+    <li><a href="#adapter-模式">Adapter 模式</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="kubernetes-patterns">Kubernetes Patterns</h1>
+<h2 id="简介">简介</h2>
+<p>创建好的云原生应用所需要的技能：</p>
+<ul>
+<li><strong>Domain-Driven Design</strong>：从为了使架构更加贴切现实世界的业务视角来去进行软件设计。</li>
+<li><strong>微服务架构</strong>：提供了设计分布式应用的一系列准则甚至标准。</li>
+<li><strong>容器</strong>：打包和运行分布式应用的标准。</li>
+</ul>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-21_23-06-38.png" alt=""></p>
+<p>程序员在 Kubernetes 中可用的资源：</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-21_23-15-06.png" alt=""></p>
+<h2 id="可预测的需求">可预测的需求</h2>
+<p>你应该怎样声明你应用程序需要哪些 runtime 依赖、资源需求？</p>
+<h3 id="磁盘">磁盘</h3>
+<p>容器文件系统是<strong>临时的</strong>，容器关闭的时候就消失了；Kubernetes 提供了 <strong>Pod 级别</strong>的存储：<code>volume</code>。如果应用需要比 Pod 级别更长生命周期的存储机制，那么需要使用 <code>volumnes</code> 来主动声明：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Pod</span>
+<span style="color:#f92672">metadata</span>:
+ <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+<span style="color:#f92672">spec</span>:
+ <span style="color:#f92672">containers</span>:
+ - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+   <span style="color:#f92672">volumeMounts</span>:
+   - <span style="color:#f92672">mountPath</span>: <span style="color:#e6db74">&#34;/logs&#34;</span>
+     <span style="color:#f92672">name</span>: <span style="color:#ae81ff">log-volume</span>
+ <span style="color:#f92672">volumes</span>:
+ - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">log-volume</span>
+   <span style="color:#f92672">persistentVolumeClaim</span>:
+     <span style="color:#f92672">claimName</span>: <span style="color:#ae81ff">random-generator-log</span>
+</code></pre></div><h3 id="参数配置">参数配置</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Pod</span>
+<span style="color:#f92672">metadata</span>:
+ <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+<span style="color:#f92672">spec</span>:
+ <span style="color:#f92672">containers</span>:
+ - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+   <span style="color:#f92672">env</span>:
+   - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">PATTERN</span>
+     <span style="color:#f92672">valueFrom</span>:
+     <span style="color:#f92672">configMapKeyRef</span>:
+       <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator-config</span>
+       <span style="color:#f92672">key</span>: <span style="color:#ae81ff">pattern</span>
+</code></pre></div><h3 id="资源限制">资源限制</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Pod</span>
+<span style="color:#f92672">metadata</span>:
+ <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+<span style="color:#f92672">spec</span>:
+ <span style="color:#f92672">containers</span>:
+ - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+ <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+ <span style="color:#f92672">resources</span>:
+   <span style="color:#f92672">requests</span>:
+     <span style="color:#f92672">cpu</span>: <span style="color:#ae81ff">100m</span>
+     <span style="color:#f92672">memory</span>: <span style="color:#ae81ff">100Mi</span>
+ <span style="color:#f92672">limits</span>:
+   <span style="color:#f92672">cpu</span>: <span style="color:#ae81ff">200m</span>
+   <span style="color:#f92672">memory</span>: <span style="color:#ae81ff">200Mi</span>
+</code></pre></div><p><code>requests</code> 声明的是初始的资源限制，而 <code>limits</code> 是我们能使用的最大的资源限制。</p>
+<h3 id="pod-优先级">Pod 优先级</h3>
+<p>资源饥荒的时候应该先杀死哪个 Pod？应该保留哪个 Pod？</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">scheduling.k8s.io/v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">PriorityClass</span>
+<span style="color:#f92672">metadata</span>:
+ <span style="color:#f92672">name</span>: <span style="color:#ae81ff">high-priority</span>
+<span style="color:#f92672">value</span>: <span style="color:#ae81ff">1000</span>
+<span style="color:#f92672">globalDefault</span>: <span style="color:#66d9ef">false</span>
+<span style="color:#f92672">description</span>: <span style="color:#ae81ff">This is a very high priority Pod class</span>
+---------
+<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Pod</span>
+<span style="color:#f92672">metadata</span>:
+ <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+ <span style="color:#f92672">labels</span>:
+   <span style="color:#f92672">env</span>: <span style="color:#ae81ff">random-generator</span>
+<span style="color:#f92672">spec</span>:
+ <span style="color:#f92672">containers</span>:
+ - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+ <span style="color:#f92672">priorityClassName</span>: <span style="color:#ae81ff">high-priority</span>
+</code></pre></div><h2 id="声明式部署">声明式部署</h2>
+<p>服务上线过程：平滑的停止旧的 Pod，启动新的 Pod，等待，验证，或者回滚 … 这些事情要靠人去做吗？</p>
+<h3 id="滚动更新">滚动更新</h3>
+<p>这种机制确保服务零停机：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">apps/v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Deployment</span>
+<span style="color:#f92672">metadata</span>:
+ <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+<span style="color:#f92672">spec</span>:
+ <span style="color:#f92672">replicas</span>: <span style="color:#ae81ff">3</span>
+ <span style="color:#f92672">strategy</span>:
+ <span style="color:#f92672">type</span>: <span style="color:#ae81ff">RollingUpdate</span>
+ <span style="color:#f92672">rollingUpdate</span>:
+  <span style="color:#f92672">maxSurge</span>: <span style="color:#ae81ff">1</span>
+  <span style="color:#f92672">maxUnavailable</span>: <span style="color:#ae81ff">1</span>
+ <span style="color:#f92672">selector</span>:
+   <span style="color:#f92672">matchLabels</span>:
+    <span style="color:#f92672">app</span>: <span style="color:#ae81ff">random-generator</span>
+ <span style="color:#f92672">template</span>:
+   <span style="color:#f92672">metadata</span>:
+      <span style="color:#f92672">labels</span>:
+        <span style="color:#f92672">app</span>: <span style="color:#ae81ff">random-generator</span>
+   <span style="color:#f92672">spec</span>:
+      <span style="color:#f92672">containers</span>:
+      - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+        <span style="color:#f92672">readinessProbe</span>:
+          <span style="color:#f92672">exec</span>:
+            <span style="color:#f92672">command</span>: [ <span style="color:#e6db74">&#34;stat&#34;</span>, <span style="color:#e6db74">&#34;/random-generator-ready&#34;</span> ]
+</code></pre></div><ul>
+<li><code>maxSurge</code> 表示最多额外多运行几个 Pod，也就是此次最多运行 4 个 Pod</li>
+<li><code>maxUnavailable</code> 表示最多额外不可用几个 Pod，也就是此次至少 2 个 Pod 处于可以运行状态</li>
+</ul>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-21_23-51-50.png" alt=""></p>
+<h3 id="fixed-部署">Fixed 部署</h3>
+<p>滚动更新的弊端：两个不同版本的服务同时运行，有些情况下可能不太合适。使用 <code>Recreate</code> 策略即可。</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-21_23-55-47.png" alt=""></p>
+<h3 id="蓝绿发布">蓝绿发布</h3>
+<p>先把绿色的都启动起来，然后一把切换流量：</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-21_23-59-46.png" alt=""></p>
+<h3 id="金丝雀发布">金丝雀发布</h3>
+<p>替换一小部分的实例为新的版本：</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-22_00-00-43.png" alt=""></p>
+<h3 id="对比">对比</h3>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-22_00-02-32.png" alt=""></p>
+<h2 id="健康探测">健康探测</h2>
+<p>如何知道一个服务是否能够接受请求？</p>
+<h3 id="liveness-探测">Liveness 探测</h3>
+<p>怎么知道程序死锁了？</p>
+<p>Kubelet 代理定时询问容器是否依然健康。</p>
+<ul>
+<li>HTTP GET 方法发送到 IP 地址，期望得到一个位于 200-399 之间的 HTTP 响应码</li>
+<li>TCP Socket 检测是否可以正常创建 TCP 连接</li>
+<li><code>Exec</code> 探测是否可以执行命令，并且返回码是 <code>0</code></li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Pod</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">pod-with-liveness-check</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">containers</span>:
+  - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+  <span style="color:#f92672">env</span>:
+  - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">DELAY_STARTUP</span>
+    <span style="color:#f92672">value</span>: <span style="color:#e6db74">&#34;20&#34;</span>
+  <span style="color:#f92672">ports</span>:
+  - <span style="color:#f92672">containerPort</span>: <span style="color:#ae81ff">8080</span>
+  <span style="color:#f92672">protocol</span>: <span style="color:#ae81ff">TCP</span>
+  <span style="color:#f92672">livenessProbe</span>:
+    <span style="color:#f92672">httpGet</span>:
+      <span style="color:#f92672">path</span>: <span style="color:#ae81ff">/actuator/health</span>
+      <span style="color:#f92672">port</span>: <span style="color:#ae81ff">8080</span>
+    <span style="color:#f92672">initialDelaySeconds</span>: <span style="color:#ae81ff">30</span>
+</code></pre></div><h3 id="readiness-探测">Readiness 探测</h3>
+<p>容器正在启动、容器过载、容器响应延迟比较大，你打算让它缓一下过一会儿再接受请求。readiness 探测如果失败，那么这个容器将会被移除掉，不会再接受任何请求。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Pod</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">pod-with-readiness-check</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">containers</span>:
+  - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+  <span style="color:#f92672">readinessProbe</span>:
+    <span style="color:#f92672">exec</span>:
+      <span style="color:#f92672">command</span>: [<span style="color:#e6db74">&#34;stat&#34;</span>, <span style="color:#e6db74">&#34;/var/run/random-generator-ready&#34;</span>]
+</code></pre></div><h2 id="生命周期管理">生命周期管理</h2>
+<p>成为云原生世界的公民，就要听从这个平台发布的各种事件、关注平台的各种生命周期。</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-22_20-22-46.png" alt=""></p>
+<ul>
+<li><code>SIGTERM</code> 信号：Kubernetes 要关闭容器了。收到这个信号，应用程序应该应该要尽快的 shut down 自己。</li>
+<li><code>SIGKILL</code> 信号：<code>SIGTERM</code> 之后容器进程没有 shut down，那么 <code>SIGKILL</code> 信号将会在等待 30 秒 (<code>.spec.terminationGracePeriodSeconds</code>) 之后发出来以便强制关闭。</li>
+<li><code>postStart</code> hook：容器创建之后将会执行，<code>postStart</code> 执行期间，Pod 处于 <code>Pending</code> 状态。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Pod</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">post-start-hook</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">containers</span>:
+  - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+    <span style="color:#f92672">lifecycle</span>:
+      <span style="color:#f92672">postStart</span>:
+        <span style="color:#f92672">exec</span>:
+          <span style="color:#f92672">command</span>:
+          - <span style="color:#ae81ff">sh</span>
+          - -<span style="color:#ae81ff">c</span>
+          - <span style="color:#ae81ff">sleep 30 &amp;&amp; echo &#34;Wake up!&#34; &gt; /tmp/postStart_done</span>
+</code></pre></div><ul>
+<li><code>preStop</code> hook：容器 terminated 之前将会执行。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Pod</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">pre-stop-hook</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">containers</span>:
+  - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+    <span style="color:#f92672">lifecycle</span>:
+      <span style="color:#f92672">preStop</span>:
+        <span style="color:#f92672">httpGet</span>:
+          <span style="color:#f92672">port</span>: <span style="color:#ae81ff">8080</span>
+          <span style="color:#f92672">path</span>: <span style="color:#ae81ff">/shutdown</span>
+</code></pre></div><h2 id="automated-placement">Automated Placement</h2>
+<p>这种功能是 Kubernetes 的核心功能，它能够自动将 Pod 放置到正确的节点上，以便满足容器资源以及调度策略的需要。调度器做的事情简而言之：为每一个新创建的 Pod 选择一个节点。</p>
+<p>调度策略示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JSON" data-lang="JSON">{
+ <span style="color:#f92672">&#34;kind&#34;</span> : <span style="color:#e6db74">&#34;Policy&#34;</span>,
+ <span style="color:#f92672">&#34;apiVersion&#34;</span> : <span style="color:#e6db74">&#34;v1&#34;</span>,
+ <span style="color:#f92672">&#34;predicates&#34;</span> : [
+  {<span style="color:#f92672">&#34;name&#34;</span> : <span style="color:#e6db74">&#34;PodFitsHostPorts&#34;</span>},
+  {<span style="color:#f92672">&#34;name&#34;</span> : <span style="color:#e6db74">&#34;PodFitsResources&#34;</span>},
+  {<span style="color:#f92672">&#34;name&#34;</span> : <span style="color:#e6db74">&#34;NoDiskConflict&#34;</span>},
+  {<span style="color:#f92672">&#34;name&#34;</span> : <span style="color:#e6db74">&#34;NoVolumeZoneConflict&#34;</span>},
+  {<span style="color:#f92672">&#34;name&#34;</span> : <span style="color:#e6db74">&#34;MatchNodeSelector&#34;</span>},
+  {<span style="color:#f92672">&#34;name&#34;</span> : <span style="color:#e6db74">&#34;HostName&#34;</span>}
+ ],
+ <span style="color:#f92672">&#34;priorities&#34;</span> : [
+  {<span style="color:#f92672">&#34;name&#34;</span> : <span style="color:#e6db74">&#34;LeastRequestedPriority&#34;</span>, <span style="color:#f92672">&#34;weight&#34;</span> : <span style="color:#ae81ff">2</span>},
+  {<span style="color:#f92672">&#34;name&#34;</span> : <span style="color:#e6db74">&#34;BalancedResourceAllocation&#34;</span>, <span style="color:#f92672">&#34;weight&#34;</span> : <span style="color:#ae81ff">1</span>},
+  {<span style="color:#f92672">&#34;name&#34;</span> : <span style="color:#e6db74">&#34;ServiceSpreadingPriority&#34;</span>, <span style="color:#f92672">&#34;weight&#34;</span> : <span style="color:#ae81ff">2</span>},
+  {<span style="color:#f92672">&#34;name&#34;</span> : <span style="color:#e6db74">&#34;EqualPriority&#34;</span>, <span style="color:#f92672">&#34;weight&#34;</span> : <span style="color:#ae81ff">1</span>}
+ ]
+}
+</code></pre></div><h3 id="调度过程">调度过程</h3>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-22_20-50-06.png" alt=""></p>
+<p>某些情况下，选择合适 node 可能需要一些约束条件，比如必须选择具备 SSD 磁盘类型的：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Pod</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">containers</span>:
+  - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+  <span style="color:#f92672">nodeSelector</span>:
+    <span style="color:#f92672">disktype</span>: <span style="color:#ae81ff">ssd</span>
+</code></pre></div><h2 id="批量作业">批量作业</h2>
+<p>用来可靠地运行 short-lived Pods，运行完之后然后关闭容器。</p>
+<p>创建 Pod 有三种方式：</p>
+<ul>
+<li>Bare Pod：手工创建 Pod 以便运行容器</li>
+<li>ReplicaSet：确保 Pod 运行的平稳持续</li>
+<li>DaemonSet：在每一个节点上运行单独 Pod 的 Controller，一般用于：监控、日志聚合、存储容器等</li>
+</ul>
+<p>上述 Pod 都属于长期运行的进程。</p>
+<h3 id="kubernetes-job">Kubernetes Job</h3>
+<p>这种 Job 创建数个 Pod，然后确保它们运行成功。如果运行结束，那么 Pod 也会关闭。Job 运行结束，不会被删除以便用以追踪的目的，Pod 结束也不会被删除以便检查容器日志。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">batch/v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Job</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">completions</span>: <span style="color:#ae81ff">5</span>
+  <span style="color:#f92672">parallelism</span>: <span style="color:#ae81ff">2</span>
+  <span style="color:#f92672">template</span>:
+    <span style="color:#f92672">metadata</span>:
+      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+    <span style="color:#f92672">spec</span>:
+      <span style="color:#f92672">restartPolicy</span>: <span style="color:#ae81ff">OnFailure</span>
+      <span style="color:#f92672">containers</span>:
+      - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+        <span style="color:#f92672">command</span>: [ <span style="color:#e6db74">&#34;java&#34;</span>, <span style="color:#e6db74">&#34;-cp&#34;</span>, <span style="color:#e6db74">&#34;/&#34;</span>, <span style="color:#e6db74">&#34;RandomRunner&#34;</span>, <span style="color:#e6db74">&#34;/numbers.txt&#34;</span>, <span style="color:#e6db74">&#34;10000&#34;</span> ]
+</code></pre></div><p>上述定义了一个 Job，运行 5 个 Pod，这 5 个 Pod 必须都成功，最多并行两个 Pod。<code>.spec.template.spec.restartPolicy</code> 在 ReplicaSet 中的默认值是 <code>Always</code>，它还有其它两个值：<code>OnFailure</code> 和 <code>Never</code>。</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-22_21-25-28.png" alt=""></p>
+<p>根据两个参数的不同，有如下几种类型的作业：</p>
+<ul>
+<li>单 Pod 作业：<code>.completions</code> 和 <code>.parallelism</code> 都不设置，也就是都是默认值 1.</li>
+<li>固定完成数的作业：<code>.completions</code> 是大于 1 的值。也就是只有满足 <code>.completions</code> 个 Pod 都成功，才会人为是成功的。</li>
+<li>任务队列的作业：<code>.completions</code> 和 <code>.parallelism</code> 都大于 1.</li>
+</ul>
+<h2 id="周期作业">周期作业</h2>
+<ul>
+<li>Cron、Quartz、Spring Batch、<code>ScheduledThreadPoolExecutor</code> 高可用不是很容易</li>
+</ul>
+<h3 id="cronjob">CronJob</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">batch/v1beta1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">CronJob</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#75715e"># Every three minutes</span>
+  <span style="color:#f92672">schedule</span>: <span style="color:#e6db74">&#34;*/3 * * * *&#34;</span>
+  <span style="color:#f92672">jobTemplate</span>:
+    <span style="color:#f92672">spec</span>:
+      <span style="color:#f92672">template</span>:
+        <span style="color:#f92672">spec</span>:
+        <span style="color:#f92672">containers</span>:
+        - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8spatterns/random-generator:1.0</span>
+          <span style="color:#f92672">name</span>: <span style="color:#ae81ff">random-generator</span>
+          <span style="color:#f92672">command</span>: [ <span style="color:#e6db74">&#34;java&#34;</span>, <span style="color:#e6db74">&#34;-cp&#34;</span>, <span style="color:#e6db74">&#34;/&#34;</span>, <span style="color:#e6db74">&#34;RandomRunner&#34;</span>, <span style="color:#e6db74">&#34;/numbers.txt&#34;</span>, <span style="color:#e6db74">&#34;10000&#34;</span> ]
+        <span style="color:#f92672">restartPolicy</span>: <span style="color:#ae81ff">OnFailure</span>
+</code></pre></div><h2 id="daemon-服务">Daemon 服务</h2>
+<p>daemon 通常指一个长期运行、自我恢复的一个后台程序。在 Unix 中，daemons 的服务通常以 <code>d</code> 结尾：<code>httpd</code>、<code>named</code>、<code>sshd</code>。</p>
+<h2 id="单例服务">单例服务</h2>
+<p>任何时候只有一个应用程序在运行，当然肯定是高可用的。</p>
+<p>当我们需要 active-passive (或者也可以叫做 master-slave) 拓扑结构的时候，我们就需要确保只有一个实例是激活的状态，其它的都是 passive 状态。</p>
+<h3 id="out-of-application-锁">Out-of-Application 锁</h3>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-22_21-50-11.png" alt=""></p>
+<p>Kubernetes 启动一个具有一个副本的 Pod，当然我们还需要为 Pod 配备一个 controller 例如 ReplicaSet 来让其变为高可用的单例。注意 ReplicaSet 在副本的个数层级，执行的语义是 &ldquo;at least&rdquo; 而非 &ldquo;at most&rdquo;。能够提供严格单例保证的是 StatefulSet，其更倾向于一致性。</p>
+<h3 id="in-application-锁">In-Application 锁</h3>
+<p>这种实现需要外部锁，例如 ZooKeeper、Consul、Redis、Etcd 等实现的锁。在 Kubernetes 中，最好的方式是使用自带的 API 来通过 Etcd 来实现锁的能力，Etcd 内部通过 Raft 协议来维护副本一致性。</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-22_21-58-14.png" alt=""></p>
+<h2 id="有状态的服务">有状态的服务</h2>
+<h3 id="statefulset">StatefulSet</h3>
+<p>在 Kubernetes 中运行的有状态的分布式应用程序：</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-08-22_22-50-41.png" alt=""></p>
+<h2 id="服务发现">服务发现</h2>
+<p>在 Kubernetes 到来之前，一般服务发现都是采用如下 Client-side 服务发现的方式：</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-09-01_20-54-53.png" alt=""></p>
+<p>如下展示了 Kubernetes 是如何进行服务注册与发现的 (Server-side 服务发现)：</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-09-01_20-58-41.png" alt=""></p>
+<h2 id="self-awareness">Self Awareness</h2>
+<p>询问 Kubernetes 的一些元信息：</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-09-01_21-07-21.png" alt=""></p>
+<h2 id="init-容器">Init 容器</h2>
+<p>就是执行一些<strong>初始化逻辑</strong>，这些逻辑是运行你应用程序的前置条件，是<strong>强依赖</strong>：</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-09-01_21-12-17.png" alt=""></p>
+<blockquote>
+<p>Init 容器需要是<strong>幂等</strong>的。</p>
+</blockquote>
+<h2 id="sidecar">Sidecar</h2>
+<p>Sidecar 无需改变即可<strong>增强</strong>单容器的功能。一个理想的容器功能应该像 Linux 的一个进程一样，它解决并且只解决一件事，将他解决好。Sidecar 模式提供了达到可重用/扩展容器功能/容器间协作的方式。</p>
+<p>下面是一种 Sidecar 示例：</p>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-09-01_21-35-19.png" alt=""></p>
+<p>Sidecar 其实也类似于<strong>组合</strong>模式。</p>
+<h2 id="adapter-模式">Adapter 模式</h2>
+<p><img src="/images/docs/tutorial/technique/k8s-patterns/Snipaste_2021-09-01_21-42-07.png" alt=""></p>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#简介">简介</a></li>
+    <li><a href="#可预测的需求">可预测的需求</a>
+      <ul>
+        <li><a href="#磁盘">磁盘</a></li>
+        <li><a href="#参数配置">参数配置</a></li>
+        <li><a href="#资源限制">资源限制</a></li>
+        <li><a href="#pod-优先级">Pod 优先级</a></li>
+      </ul>
+    </li>
+    <li><a href="#声明式部署">声明式部署</a>
+      <ul>
+        <li><a href="#滚动更新">滚动更新</a></li>
+        <li><a href="#fixed-部署">Fixed 部署</a></li>
+        <li><a href="#蓝绿发布">蓝绿发布</a></li>
+        <li><a href="#金丝雀发布">金丝雀发布</a></li>
+        <li><a href="#对比">对比</a></li>
+      </ul>
+    </li>
+    <li><a href="#健康探测">健康探测</a>
+      <ul>
+        <li><a href="#liveness-探测">Liveness 探测</a></li>
+        <li><a href="#readiness-探测">Readiness 探测</a></li>
+      </ul>
+    </li>
+    <li><a href="#生命周期管理">生命周期管理</a></li>
+    <li><a href="#automated-placement">Automated Placement</a>
+      <ul>
+        <li><a href="#调度过程">调度过程</a></li>
+      </ul>
+    </li>
+    <li><a href="#批量作业">批量作业</a>
+      <ul>
+        <li><a href="#kubernetes-job">Kubernetes Job</a></li>
+      </ul>
+    </li>
+    <li><a href="#周期作业">周期作业</a>
+      <ul>
+        <li><a href="#cronjob">CronJob</a></li>
+      </ul>
+    </li>
+    <li><a href="#daemon-服务">Daemon 服务</a></li>
+    <li><a href="#单例服务">单例服务</a>
+      <ul>
+        <li><a href="#out-of-application-锁">Out-of-Application 锁</a></li>
+        <li><a href="#in-application-锁">In-Application 锁</a></li>
+      </ul>
+    </li>
+    <li><a href="#有状态的服务">有状态的服务</a>
+      <ul>
+        <li><a href="#statefulset">StatefulSet</a></li>
+      </ul>
+    </li>
+    <li><a href="#服务发现">服务发现</a></li>
+    <li><a href="#self-awareness">Self Awareness</a></li>
+    <li><a href="#init-容器">Init 容器</a></li>
+    <li><a href="#sidecar">Sidecar</a></li>
+    <li><a href="#adapter-模式">Adapter 模式</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

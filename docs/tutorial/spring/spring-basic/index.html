@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Spring 基础"><meta property="og:title" content="Spring 基础" />
+<meta property="og:description" content="Spring 基础 Bean 的 Scope Spring 支持如下5种作用域：
+ singleton：单例模式，在整个Spring IoC容器中，使用singleton定义的Bean将只有一个实例 prototype：原型模式，每次通过容器的getBean方法获取prototype定义的Bean时，都将产生一个新的Bean实例 request：对于每次HTTP请求，使用request定义的Bean都将产生一个新实例，即每次HTTP请求将会产生不同的Bean实例。只有在Web应用中使用Spring时，该作用域才有效 session：对于每次HTTP Session，使用session定义的Bean都将产生一个新实例。同样只有在Web应用中使用Spring时，该作用域才有效 globalsession：每个全局的HTTP Session，使用session定义的Bean都将产生一个新实例。典型情况下，仅在使用portlet context的时候有效。同样只有在Web应用中使用Spring时，该作用域才有效  Bean 的生命周期 Spring 将 bean 的生命周期定义为实例化、属性填充、初始化和销毁四个阶段，并为每个阶段提供了多个拓展点用于自定义 bean 的创建过程。
+实例化 创建 bean 对象实例的过程，包括使用工厂模式创建和调用构造函数。Spring 通过 InstantiationAwareBeanPostProcessor 接口在实例化前和后各提供了两个通用拓展点，加上对象实例化的过程，执行顺序如下：
+ postProcessBeforeInstantiation：在普通 bean 对象实例化开始之前调用 对象实例化 postProcessAfterInstantiation：在普通 bean 对象实例化完成之后调用  属性填充 如果对象中有 setter 函数，并通过配置元数据指定了注入的属性，Spring 容器会在这一步为其注入配置的值。完成属性填充后，Spring 通过 Aware（意为感知） 接口提供了十个专用拓展点，这些拓展点用于在 bean 自身内部、感知信息和属性校验使用，执行顺序如下（注意下方列表是第零条是 Bean 属性填充，所以此处一共有十个拓展点）：
+ Bean 属性填充 BeanNameAware#setBeanName BeanClassLoaderAware#setBeanClassLoader BeanFactoryAware#setBeanFactory EnvironmentAware#setEnvironment EmbeddedValueResolverAware#setEmbeddedValueResolver ResourceLoaderAware#setResourceLoader（仅在 ApplicationContext 中有效） ApplicationEventPublisherAware#setApplicationEventPublisher（仅在 - ApplicationContext 中有效） MessageSourceAware#setMessageSource（仅在 ApplicationContext 中有效） ApplicationContextAware#setApplicationContext（仅在 ApplicationContext 中有效） ServletContextAware#setServletContext（仅在 WebApplicationContext 中有效）  第一至第三个拓展点用于感知与 Bean 自身相关的信息、称之为 Bean 信息拓展点，第四至第八个拓展点统称为外部信息拓展点，随后第九第十两个拓展点与 ApplicationContext 有关。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/spring/spring-basic/" />
+
+<title>Spring 基础 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+
+
+<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/annotations/" >
+      Spring 常用注解
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/resttemplate/" >
+      RestTemplate
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/ots-parsing-error/" >
+      ots parsing error
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/deploy-to-tomcat/" >
+      SpringBoot 打包成 WAR 部署到 Tomcat
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/transactional/" >
+      Transactional
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-plugin/" >
+      Spring 插件扩展
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-read-properties/" >
+      Spring 读取 Properties 实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-ioc/" >
+      Spring IOC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-aop/" >
+      Spring AOP
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-basic/"  class="active">
+      Spring 基础
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-webmvc/" >
+      Spring WebMVC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/springboot-autoconfig/" >
+      SpringBoot 自动配置原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/springboot-startup/" >
+      SpringBoot 启动过程
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/softskill/" >
+      箴言箴句
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/technique/" >
+      技术
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Spring 基础</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#bean-的-scope">Bean 的 Scope</a></li>
+    <li><a href="#bean-的生命周期">Bean 的生命周期</a>
+      <ul>
+        <li><a href="#实例化">实例化</a></li>
+        <li><a href="#属性填充">属性填充</a></li>
+        <li><a href="#初始化">初始化</a></li>
+        <li><a href="#销毁">销毁</a></li>
+      </ul>
+    </li>
+    <li><a href="#spring-常见设计模式">Spring 常见设计模式</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="spring-基础">Spring 基础</h1>
+<h2 id="bean-的-scope">Bean 的 Scope</h2>
+<p>Spring 支持如下5种作用域：</p>
+<ul>
+<li><strong>singleton</strong>：单例模式，在整个Spring IoC容器中，使用singleton定义的Bean将只有一个实例</li>
+<li><strong>prototype</strong>：原型模式，每次通过容器的getBean方法获取prototype定义的Bean时，都将产生一个新的Bean实例</li>
+<li><strong>request</strong>：对于每次HTTP请求，使用request定义的Bean都将产生一个新实例，即每次HTTP请求将会产生不同的Bean实例。只有在Web应用中使用Spring时，该作用域才有效</li>
+<li><strong>session</strong>：对于每次HTTP Session，使用session定义的Bean都将产生一个新实例。同样只有在Web应用中使用Spring时，该作用域才有效</li>
+<li><strong>globalsession</strong>：每个全局的HTTP Session，使用session定义的Bean都将产生一个新实例。典型情况下，仅在使用portlet context的时候有效。同样只有在Web应用中使用Spring时，该作用域才有效</li>
+</ul>
+<h2 id="bean-的生命周期">Bean 的生命周期</h2>
+<p>Spring 将 bean 的生命周期定义为实例化、属性填充、初始化和销毁四个阶段，并为每个阶段提供了多个拓展点用于自定义 bean 的创建过程。</p>
+<p><img src="/images/docs/tutorial/spring/spring-basic/Snipaste_2021-09-11_21-47-54.png" alt=""></p>
+<h3 id="实例化">实例化</h3>
+<p>创建 bean 对象实例的过程，包括使用工厂模式创建和调用构造函数。Spring 通过 <code>InstantiationAwareBeanPostProcessor</code> 接口在实例化前和后各提供了两个通用拓展点，加上对象实例化的过程，执行顺序如下：</p>
+<ul>
+<li><code>postProcessBeforeInstantiation</code>：在普通 bean 对象实例化开始之前调用</li>
+<li>对象实例化</li>
+<li><code>postProcessAfterInstantiation</code>：在普通 bean 对象实例化完成之后调用</li>
+</ul>
+<p><img src="/images/docs/tutorial/spring/spring-basic/Snipaste_2021-09-11_21-51-53.png" alt=""></p>
+<h3 id="属性填充">属性填充</h3>
+<p>如果对象中有 setter 函数，并通过配置元数据指定了注入的属性，Spring 容器会在这一步为其注入配置的值。完成属性填充后，Spring 通过 Aware（意为感知） 接口提供了十个专用拓展点，这些拓展点用于在 bean 自身内部、感知信息和属性校验使用，执行顺序如下（注意下方列表是第零条是 Bean 属性填充，所以此处一共有十个拓展点）：</p>
+<ul>
+<li>Bean 属性填充</li>
+<li>BeanNameAware#setBeanName</li>
+<li>BeanClassLoaderAware#setBeanClassLoader</li>
+<li>BeanFactoryAware#setBeanFactory</li>
+<li>EnvironmentAware#setEnvironment</li>
+<li>EmbeddedValueResolverAware#setEmbeddedValueResolver</li>
+<li>ResourceLoaderAware#setResourceLoader（仅在 ApplicationContext 中有效）</li>
+<li>ApplicationEventPublisherAware#setApplicationEventPublisher（仅在 - ApplicationContext 中有效）</li>
+<li>MessageSourceAware#setMessageSource（仅在 ApplicationContext 中有效）</li>
+<li>ApplicationContextAware#setApplicationContext（仅在 ApplicationContext 中有效）</li>
+<li>ServletContextAware#setServletContext（仅在 WebApplicationContext 中有效）</li>
+</ul>
+<p><img src="/images/docs/tutorial/spring/spring-basic/Snipaste_2021-09-11_21-53-15.png" alt=""></p>
+<p>第一至第三个拓展点用于感知与 Bean 自身相关的信息、称之为 Bean 信息拓展点，第四至第八个拓展点统称为外部信息拓展点，随后第九第十两个拓展点与 ApplicationContext 有关。</p>
+<h3 id="初始化">初始化</h3>
+<p>初始化是指通过 bean 在将要工作前进行的最后准备工作，通常是 @Bean 的initMethod 属性定义的函数执行的过程 。Spring 通过 BeanPostProcessor 接口在初始化之前和之后提供了两个通用拓展点，加上 InitializingBean#afterPropertiesSet 和初始化函数执行顺序为：</p>
+<ul>
+<li>postProcessBeforeInitialization</li>
+<li>InitializingBean#afterPropertiesSet</li>
+<li>自定义的初始化函数</li>
+<li>postProcessAfterInitialization</li>
+</ul>
+<p><img src="/images/docs/tutorial/spring/spring-basic/Snipaste_2021-09-11_22-02-11.png" alt=""></p>
+<h3 id="销毁">销毁</h3>
+<p>销毁是指 bean 释放其占用的一些外部资源的过程，通常是 @Bean 注解的 destroyMethod 属性定义的销毁函数执行的过程。Spring 通过 DestructionAwareBeanPostProcessor#postProcessBeforeDestruction 接口提供了通用拓展点，再加上 DisposableBean#destroy 提供的专用拓展点，三者执行顺序为：</p>
+<ul>
+<li>DestructionAwareBeanPostProcessor#postProcessBeforeDestruction</li>
+<li>DisposableBean#destroy</li>
+<li>自定义的销毁函数。</li>
+</ul>
+<p><img src="/images/docs/tutorial/spring/spring-basic/Snipaste_2021-09-11_22-03-11.png" alt=""></p>
+<p><a href="https://cncsl.github.io/2021/0303/Spring-bean-%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/">参考</a></p>
+<h2 id="spring-常见设计模式">Spring 常见设计模式</h2>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#bean-的-scope">Bean 的 Scope</a></li>
+    <li><a href="#bean-的生命周期">Bean 的生命周期</a>
+      <ul>
+        <li><a href="#实例化">实例化</a></li>
+        <li><a href="#属性填充">属性填充</a></li>
+        <li><a href="#初始化">初始化</a></li>
+        <li><a href="#销毁">销毁</a></li>
+      </ul>
+    </li>
+    <li><a href="#spring-常见设计模式">Spring 常见设计模式</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

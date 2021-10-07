@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="RocketMQ 逻辑队列"><meta property="og:title" content="RocketMQ 逻辑队列" />
+<meta property="og:description" content="RocketMQ 逻辑队列 当前，MessageQueue 和 Broker 耦合在一起，意味着 Broker 数量变化之后，消息队列的数量也会发生变化，这会造成所有的队列都需要一个重新平衡的过程，这个过程可能需要数分钟才能恢复。增加逻辑队列之后，Broker 数量的变化不会影响逻辑队列数量的变化，二者可以独立变化。
+架构设计    brokerName MessageQueue LogicalQueue     broker1 0 0   broker1 1 1   broker2 0 2   broker2 1 3    假设当前一个 LogicalQueue 从 broker1 迁移到了 broker2，我们迁移的仅仅是映射关系，而非实际的数据，所以 broker1 依然能够正常消费 LogicalQueue-0 这个逻辑队列里面的数据，但是我们会将这个队列的状态置位只读，故这个队列不能再写入消息:
+   brokerName MessageQueue LogicalQueue QueueStatus     broker1 0 0(0-100) ReadOnly   broker1 1 1 Normal   broker2 0 2 Normal   broker2 1 3 Normal   broker2 2 0(101-) Normal    当 broker1 从 commit log 和 consume queue 中清除了所有数据后，QueueStatus 变为 Expired (不可读也不可写):" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-logicqueue/" />
+
+<title>RocketMQ 逻辑队列 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+
+
+<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-send-message-flow/" >
+      RocketMQ 消息发送流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-store-flow/" >
+      RocketMQ 消息存储流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-receive-flow/" >
+      RocketMQ 消息接受流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-filter-flow/" >
+      RocketMQ 消息过滤流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-message-indexing-flow/" >
+      RocketMQ 消息索引流程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-timing-message-and-retry-message/" >
+      RocketMQ 定时消息和重试消息
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-master-slave-sync/" >
+      RocketMQ 主备同步
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-transaction/" >
+      RocketMQ 事务消息
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-acl/" >
+      RocketMQ ACL 权限控制
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/rocketmq/rocketmq-logicqueue/"  class="active">
+      RocketMQ 逻辑队列
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>RocketMQ 逻辑队列</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#架构设计">架构设计</a></li>
+    <li><a href="#实现">实现</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="rocketmq-逻辑队列">RocketMQ 逻辑队列</h1>
+<p>当前，<code>MessageQueue</code> 和 Broker 耦合在一起，意味着 Broker 数量变化之后，消息队列的数量也会发生变化，这会造成所有的队列都需要一个重新平衡的过程，这个过程可能需要数分钟才能恢复。增加逻辑队列之后，Broker 数量的变化不会影响逻辑队列数量的变化，二者可以独立变化。</p>
+<h2 id="架构设计">架构设计</h2>
+<table>
+<thead>
+<tr>
+<th>brokerName</th>
+<th>MessageQueue</th>
+<th>LogicalQueue</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>broker1</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>0</td>
+<td>2</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>1</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+<p>假设当前一个 LogicalQueue 从 broker1 迁移到了 broker2，我们迁移的仅仅是映射关系，而非实际的数据，所以 broker1 依然能够正常<strong>消费</strong> LogicalQueue-0 这个逻辑队列里面的数据，但是我们会将这个队列的状态置位<strong>只读</strong>，故这个队列不能再写入消息:</p>
+<table>
+<thead>
+<tr>
+<th>brokerName</th>
+<th>MessageQueue</th>
+<th>LogicalQueue</th>
+<th>QueueStatus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>broker1</strong></td>
+<td><strong>0</strong></td>
+<td><strong>0(0-100)</strong></td>
+<td><strong>ReadOnly</strong></td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>1</td>
+<td>1</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>0</td>
+<td>2</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>1</td>
+<td>3</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td><strong>broker2</strong></td>
+<td><strong>2</strong></td>
+<td><strong>0(101-)</strong></td>
+<td><strong>Normal</strong></td>
+</tr>
+</tbody>
+</table>
+<p>当 broker1 从 commit log 和 consume queue 中清除了所有数据后，<code>QueueStatus</code> 变为 <code>Expired</code> (不可读也不可写):</p>
+<table>
+<thead>
+<tr>
+<th>brokerName</th>
+<th>MessageQueue</th>
+<th>LogicalQueue</th>
+<th>QueueStatus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>broker1</strong></td>
+<td><strong>0</strong></td>
+<td><strong>0(-)</strong></td>
+<td><strong>Expired</strong></td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>1</td>
+<td>1</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>0</td>
+<td>2</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>1</td>
+<td>3</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>2</td>
+<td>0(101-)</td>
+<td>Normal</td>
+</tr>
+</tbody>
+</table>
+<p>如果这个 LogicQueue 再次迁移回 broker1，它会重用这个过期的 <code>MessageQueue</code>:</p>
+<table>
+<thead>
+<tr>
+<th>brokerName</th>
+<th>MessageQueue</th>
+<th>LogicalQueue</th>
+<th>QueueStatus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>broker1</strong></td>
+<td><strong>0</strong></td>
+<td><strong>0(201-)</strong></td>
+<td><strong>Normal</strong></td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>1</td>
+<td>1</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>0</td>
+<td>2</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>1</td>
+<td>3</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>2</td>
+<td>0(101-200)</td>
+<td><strong>ReadOnly</strong></td>
+</tr>
+</tbody>
+</table>
+<p>如果这个 LogicQueue 再次迁移回 broker1 的时候，当前没有过期的 <code>MessageQueue</code>，它会创建一个新的 <code>MessageQueue</code>:</p>
+<table>
+<thead>
+<tr>
+<th>brokerName</th>
+<th>MessageQueue</th>
+<th>LogicalQueue</th>
+<th>QueueStatus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>broker1</td>
+<td>0</td>
+<td>0(0-100)</td>
+<td>ReadOnly</td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>1</td>
+<td>1</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker1</td>
+<td><strong>2</strong></td>
+<td><strong>0(201-)</strong></td>
+<td><strong>Normal</strong></td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>0</td>
+<td>2</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>1</td>
+<td>3</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>2</td>
+<td>0(101-200)</td>
+<td>ReadOnly</td>
+</tr>
+</tbody>
+</table>
+<p>如果 broker2 下线了，那么上面的所有的 LogicQueue 都应该进行迁移:</p>
+<table>
+<thead>
+<tr>
+<th>brokerName</th>
+<th>MessageQueue</th>
+<th>LogicalQueue</th>
+<th>QueueStatus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>broker1</td>
+<td>0</td>
+<td>0</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>1</td>
+<td>1</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>2</td>
+<td>2(101-)</td>
+<td><strong>Normal</strong></td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>3</td>
+<td>3(101-)</td>
+<td><strong>Normal</strong></td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>0</td>
+<td>2(0-100)</td>
+<td>ReadOnly</td>
+</tr>
+<tr>
+<td>broker2</td>
+<td>1</td>
+<td>3(0-100)</td>
+<td>ReadOnly</td>
+</tr>
+</tbody>
+</table>
+<p>当 broker2 上面的所有数据包括 commit log 和 consume queue 被消费完后，那么 broker2 可以被移除掉了:</p>
+<table>
+<thead>
+<tr>
+<th>brokerName</th>
+<th>MessageQueue</th>
+<th>LogicalQueue</th>
+<th>QueueStatus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>broker1</td>
+<td>0</td>
+<td>0</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>1</td>
+<td>1</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>2</td>
+<td>2(101-)</td>
+<td><strong>Normal</strong></td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>3</td>
+<td>3(101-)</td>
+<td><strong>Normal</strong></td>
+</tr>
+</tbody>
+</table>
+<p>当部署了新的 broker 后，我们可以使用命令来迁移一些 LogicQueue 到这个 broker 上，来分担一些流量:</p>
+<table>
+<thead>
+<tr>
+<th>brokerName</th>
+<th>MessageQueue</th>
+<th>LogicalQueue</th>
+<th>QueueStatus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>broker1</td>
+<td>0</td>
+<td>0</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>1</td>
+<td>1</td>
+<td>Normal</td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>2</td>
+<td>2(101-200)</td>
+<td><strong>ReadOnly</strong></td>
+</tr>
+<tr>
+<td>broker1</td>
+<td>3</td>
+<td>3(101-200)</td>
+<td><strong>ReadOnly</strong></td>
+</tr>
+<tr>
+<td>broker3</td>
+<td>0</td>
+<td>2(201-)</td>
+<td><strong>Normal</strong></td>
+</tr>
+<tr>
+<td>broker3</td>
+<td>1</td>
+<td>3(201-)</td>
+<td><strong>Normal</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="实现">实现</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LogicalQueuesInfo</span> <span style="color:#66d9ef">extends</span> HashMap<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">,</span> List<span style="color:#f92672">&lt;</span>LogicalQueueRouteData<span style="color:#f92672">&gt;&gt;</span> <span style="color:#f92672">{</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">/**
+</span><span style="color:#75715e"> * logical queue offset -&gt; message queue offset mapping
+</span><span style="color:#75715e"> */</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LogicalQueueRouteData</span> <span style="color:#66d9ef">implements</span> Comparable<span style="color:#f92672">&lt;</span>LogicalQueueRouteData<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+    
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">int</span> logicalQueueIndex <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>1<span style="color:#f92672">;</span> <span style="color:#75715e">/* -1 means not set */</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> logicalQueueDelta <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>1<span style="color:#f92672">;</span> <span style="color:#75715e">/* inclusive, -1 means not set, occurred in writeOnly state */</span>
+
+    <span style="color:#66d9ef">private</span> MessageQueue messageQueue<span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">volatile</span> MessageQueueRouteState state <span style="color:#f92672">=</span> MessageQueueRouteState<span style="color:#f92672">.</span><span style="color:#a6e22e">Normal</span><span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> offsetDelta <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> <span style="color:#75715e">// valid when Normal/WriteOnly/ReadOnly
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> offsetMax <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>1<span style="color:#f92672">;</span> <span style="color:#75715e">// exclusive, valid when ReadOnly
+</span><span style="color:#75715e"></span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>话题路由信息 <code>TopicRouteData</code> 中增加了和逻辑队列相关的信息:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TopicRouteData</span> <span style="color:#66d9ef">extends</span> RemotingSerializable <span style="color:#f92672">{</span>
+
+	<span style="color:#66d9ef">private</span> LogicalQueuesInfo logicalQueuesInfo<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>在构造器中，<code>logicQueueIdx</code> 封装为了一个 <code>brokerName</code> 是 <code>__logical_queue_broker__</code>，同时 <code>queueId</code> 是 <code>logicQueueIdx</code> 的 <code>MessageQueue</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SendResultForLogicalQueue</span> <span style="color:#66d9ef">extends</span> SendResult <span style="color:#f92672">{</span>
+
+	<span style="color:#66d9ef">public</span> <span style="color:#a6e22e">SendResultForLogicalQueue</span><span style="color:#f92672">(</span>SendResult sendResult<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> logicalQueueIdx<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">super</span><span style="color:#f92672">(</span>sendResult<span style="color:#f92672">.</span><span style="color:#a6e22e">getSendStatus</span><span style="color:#f92672">(),</span> sendResult<span style="color:#f92672">.</span><span style="color:#a6e22e">getMsgId</span><span style="color:#f92672">(),</span> sendResult<span style="color:#f92672">.</span><span style="color:#a6e22e">getOffsetMsgId</span><span style="color:#f92672">(),</span>
+            	<span style="color:#66d9ef">new</span> MessageQueue<span style="color:#f92672">(</span>sendResult<span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageQueue</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getTopic</span><span style="color:#f92672">(),</span> MixAll<span style="color:#f92672">.</span><span style="color:#a6e22e">LOGICAL_QUEUE_MOCK_BROKER_NAME</span><span style="color:#f92672">,</span> logicalQueueIdx<span style="color:#f92672">),</span>
+            	sendResult<span style="color:#f92672">.</span><span style="color:#a6e22e">getQueueOffset</span><span style="color:#f92672">());</span>
+        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PullResultWithLogicalQueues</span> <span style="color:#66d9ef">extends</span> PullResultExt <span style="color:#f92672">{</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://github.com/apache/rocketmq/wiki/%5BRIP-19%5D-Server-side-rebalance,--lightweight-consumer-client-support">RIP 19 Server side rebalance, lightweight consumer client support</a></li>
+<li><a href="https://github.com/apache/rocketmq/wiki/RIP-21-logical-queue-abstraction-for-fast-scale-out">RIP 21 logical queue abstraction for fast scale out</a></li>
+<li><a href="https://mp.weixin.qq.com/s?__biz=MjM5MDE0Mjc4MA==&amp;mid=2651086856&amp;idx=1&amp;sn=88001575127805d3a53ae21727732e9b&amp;chksm=bdb9985b8ace114d07b86ca2f1b21c3a897497975fa5144771ced5e949bf75ae943364c03143&amp;mpshare=1&amp;scene=1&amp;srcid=0813GH3Cmr57KKFNbDnLQBRr&amp;sharer_sharetime=1628865642264&amp;sharer_shareid=658dd90a8f6c659831039438f17d5ac5&amp;exportkey=AZ%2BKdjjSOw3Xmh9ePxBeCmM%3D&amp;pass_ticket=ID8sWmpNB0cBGic2jVYr4f%2FRMUMcqEgjMmeQpa90gNOXaRmkI2u1JL7z45jwfW0E&amp;wx_header=0#rd">InfoQ - RocketMQ 发布 5.0</a></li>
+</ul>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#架构设计">架构设计</a></li>
+    <li><a href="#实现">实现</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
