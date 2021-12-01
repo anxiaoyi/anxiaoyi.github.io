@@ -11,16 +11,18 @@ MySQL 隔离级别 可以通过查看 MySQL 中的系统变量 tx_isolation 的�
 mysql&gt; select @@tx_isolation; &#43;-----------------&#43; | @@tx_isolation | &#43;-----------------&#43; | REPEATABLE-READ | &#43;-----------------&#43; 另外可以使用 SET TRANSACTION 命令修改 MySQL 的隔离级别：
 mysql&gt; set session transaction isolation level read committed; 示例 mysql&gt; create table T(c int) engine=InnoDB; insert into T(c) values(1);  读未提交：V1 = V2 = V3 = 2，事务 B 虽然还没有提交，但是结果已经被 A 看到了。 读提交：V1 = 1，V2 = V3 = 2，事务 B 的更新在提交后才能被 A 看到。 可重复读：V1 = V2 = 1，V3 = 2，事务在执行期间看到的数据前后必须是一致的。 串行化：在事务 B 执行“将 1 改成 2”的时候，会被锁住。直到事务 A 提交后，事务 B 才可以继续执行。  隔离级别是如何实现的 在实现上，数据库里面会创建一个视图，访问的时候以视图的逻辑结果为准。在“可重复读”隔离级别下，这个视图是在事务启动时创建的，整个事务存在期间都用这个视图。在“读提交”隔离级别下，这个视图是在每个 SQL 语句开始执行的时候创建的。这里需要注意的是，“读未提交”隔离级别下直接返回记录上的最新值，没有视图概念；而“串行化”隔离级别下直接用加锁的方式来避免并行访问。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/transaction-internal/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/transaction-internal/" /><meta property="article:section" content="docs" />
+
+
 
 <title>MySQL 事务实现原理 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -136,6 +138,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/algorithm/" >
       算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
   </a>
 
 
@@ -664,6 +692,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/database/mvcc/" >
+      MVCC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/database/mybatis/" >
       MyBatis
   </a>
@@ -695,7 +733,7 @@ var _hmt = _hmt || [];
         <li>
 
   <a href="/docs/tutorial/database/sharding-sphere/" >
-      ShardingSphere 3.X
+      ShardingSphere
   </a>
 
 </li>
@@ -1042,7 +1080,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1145,16 +1183,16 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/database/transaction-internal/currnet-read-snapshot-read.png" alt=""></p>
 <h3 id="mysql-隔离级别">MySQL 隔离级别</h3>
 <p>可以通过查看 MySQL 中的系统变量 <code>tx_isolation</code> 的值来确定当前 MySQL 正在使用什么隔离级别。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> <span style="color:#f92672">@@</span>tx_isolation;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> <span style="color:#f92672">@@</span>tx_isolation;
 <span style="color:#f92672">+</span><span style="color:#75715e">-----------------+
 </span><span style="color:#75715e"></span><span style="color:#f92672">|</span> <span style="color:#f92672">@@</span>tx_isolation  <span style="color:#f92672">|</span>
 <span style="color:#f92672">+</span><span style="color:#75715e">-----------------+
 </span><span style="color:#75715e"></span><span style="color:#f92672">|</span> <span style="color:#66d9ef">REPEATABLE</span><span style="color:#f92672">-</span><span style="color:#66d9ef">READ</span> <span style="color:#f92672">|</span>
 <span style="color:#f92672">+</span><span style="color:#75715e">-----------------+
 </span></code></pre></div><p>另外可以使用 <code>SET TRANSACTION</code> 命令修改 MySQL 的隔离级别：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">set</span> <span style="color:#66d9ef">session</span> <span style="color:#66d9ef">transaction</span> <span style="color:#66d9ef">isolation</span> <span style="color:#66d9ef">level</span> <span style="color:#66d9ef">read</span> <span style="color:#66d9ef">committed</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">set</span> <span style="color:#66d9ef">session</span> <span style="color:#66d9ef">transaction</span> <span style="color:#66d9ef">isolation</span> <span style="color:#66d9ef">level</span> <span style="color:#66d9ef">read</span> <span style="color:#66d9ef">committed</span>;
 </code></pre></div><h3 id="示例">示例</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">create</span> <span style="color:#66d9ef">table</span> T(<span style="color:#66d9ef">c</span> int) engine<span style="color:#f92672">=</span>InnoDB;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">create</span> <span style="color:#66d9ef">table</span> T(<span style="color:#66d9ef">c</span> int) engine<span style="color:#f92672">=</span>InnoDB;
 <span style="color:#66d9ef">insert</span> <span style="color:#66d9ef">into</span> T(<span style="color:#66d9ef">c</span>) <span style="color:#66d9ef">values</span>(<span style="color:#ae81ff">1</span>);
 </code></pre></div><p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2021-01-09_18-51-52.png" alt=""></p>
 <ul>
@@ -1180,12 +1218,12 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2021-01-10_17-06-43.png" alt=""></p>
 <h3 id="update-的一致性逻辑">UPDATE 的一致性逻辑</h3>
 <p><strong>更新数据都是先读后写的，而这个读，只能读当前的值，称为“当前读”（current read）。</strong> 其实，除了 update 语句外，select 语句如果加锁，也是当前读。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> k <span style="color:#66d9ef">from</span> t <span style="color:#66d9ef">where</span> id<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> <span style="color:#66d9ef">lock</span> <span style="color:#66d9ef">in</span> <span style="color:#66d9ef">share</span> <span style="color:#66d9ef">mode</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> k <span style="color:#66d9ef">from</span> t <span style="color:#66d9ef">where</span> id<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> <span style="color:#66d9ef">lock</span> <span style="color:#66d9ef">in</span> <span style="color:#66d9ef">share</span> <span style="color:#66d9ef">mode</span>;
 mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> k <span style="color:#66d9ef">from</span> t <span style="color:#66d9ef">where</span> id<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">update</span>;
 </code></pre></div><p>可重复读的核心就是一致性读（consistent read）；而事务更新数据的时候，只能用当前读。<strong>如果当前的记录的行锁被其他事务占用的话，就需要进入锁等待。</strong></p>
 <h2 id="幻读介绍及原因">幻读介绍及原因</h2>
 <p>在可重复读隔离级别下，普通的查询是快照读，是不会看到别的事务插入的数据的。因此，幻读在“当前读”下才会出现。幻读仅专指“<strong>新插入的行</strong>”。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> T <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">5</span>);
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> T <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">5</span>);
 </code></pre></div><p>产生幻读的原因是，<strong>行锁只能锁住行</strong>，但是新插入记录这个动作，要<strong>更新的是记录之间的“间隙”</strong>。因此，为了解决幻读问题，InnoDB 只好引入新的锁，也就是间隙锁 (Gap Lock)。顾名思义，<strong>间隙锁，锁的就是两个值之间的空隙</strong>。</p>
 <p><img src="/images/docs/tutorial/database/transaction-internal/Snipaste_2021-01-09_17-15-03.png" alt=""></p>
 <p>这样，当你执行 <code>select * from t where d=5 for update</code> 的时候，就不止是给数据库中已有的 6 个记录加上了行锁，还同时加了 7 个间隙锁。这样就确保了无法再插入新的记录。也就是说这时候，在一行行扫描的过程中，不仅将给行加上了行锁，还给行两边的空隙，也加上了间隙锁。</p>
@@ -1320,11 +1358,11 @@ mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select<
 </li>
 </ul>
 <h3 id="全局锁">全局锁</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">Flush tables <span style="color:#66d9ef">with</span> <span style="color:#66d9ef">read</span> <span style="color:#66d9ef">lock</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">Flush tables <span style="color:#66d9ef">with</span> <span style="color:#66d9ef">read</span> <span style="color:#66d9ef">lock</span>;
 </code></pre></div><p>当你需要让整个库处于只读状态的时候，可以使用这个命令，之后其他线程的以下语句会被阻塞：数据更新语句（数据的增删改）、数据定义语句（包括建表、修改表结构等）和更新类事务的提交语句。全局锁的典型使用场景是，做<strong>全库逻辑备份</strong>。</p>
 <h3 id="表锁">表锁</h3>
 <p>表锁的语法是 <code>lock tables … read/write</code>。与 FTWRL 类似，可以用 <code>unlock tables</code> 主动释放锁，也可以在客户端断开的时候自动释放。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 第一个窗口执行
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 第一个窗口执行
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">LOCK</span> <span style="color:#66d9ef">TABLE</span> t2 <span style="color:#66d9ef">READ</span>; <span style="color:#75715e">-- 加读锁
 </span><span style="color:#75715e"></span>
 <span style="color:#75715e">-- 第二个窗口执行
@@ -1338,7 +1376,7 @@ mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select<
 </span><span style="color:#75715e"></span>UNLOCK TABLES;
 </code></pre></div><h3 id="行锁">行锁</h3>
 <p><strong>在 InnoDB 事务中，行锁是在需要的时候才加上的，但并不是不需要了就立刻释放，而是要等到事务结束时才释放。这个就是两阶段锁协议</strong>。如果你的事务中需要锁多个行，要把最可能造成锁冲突、最可能影响并发度的锁的申请时机尽量往后放。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 首先看一下我们的表
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 首先看一下我们的表
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> t (
   id TINYINT(<span style="color:#ae81ff">3</span>) UNSIGNED <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> AUTO_INCREMENT,
   name VARCHAR(<span style="color:#ae81ff">10</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span><span style="color:#960050;background-color:#1e0010">，</span>
@@ -1372,7 +1410,7 @@ mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select<
 <blockquote>
 <p><code>id</code> 不是索引了。</p>
 </blockquote>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 首先看一下我们的表
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 首先看一下我们的表
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> t (
   <span style="color:#75715e">-- ↓ (id 不是索引字段)
 </span><span style="color:#75715e"></span>  id TINYINT(<span style="color:#ae81ff">3</span>) UNSIGNED <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> AUTO_INCREMENT,
@@ -1390,9 +1428,9 @@ mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select<
 </span><span style="color:#75715e">--                              ↓ (非索引条件)
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">UPDATE</span> t <span style="color:#66d9ef">SET</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;d2&#39;</span> <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>; <span style="color:#75715e">-- 陷入表锁等待
 </span></code></pre></div><h3 id="乐观锁">乐观锁</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">update</span> <span style="color:#66d9ef">table</span> <span style="color:#66d9ef">set</span> x <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, <span style="color:#66d9ef">version</span> <span style="color:#f92672">=</span> <span style="color:#f92672">#</span><span style="color:#960050;background-color:#1e0010">{</span><span style="color:#66d9ef">version</span><span style="color:#960050;background-color:#1e0010">}</span> <span style="color:#66d9ef">where</span> id <span style="color:#f92672">=</span> <span style="color:#f92672">#</span><span style="color:#960050;background-color:#1e0010">{</span>id<span style="color:#960050;background-color:#1e0010">}</span> <span style="color:#66d9ef">and</span> <span style="color:#66d9ef">version</span> <span style="color:#f92672">=</span> <span style="color:#f92672">#</span><span style="color:#960050;background-color:#1e0010">{</span><span style="color:#66d9ef">version</span><span style="color:#960050;background-color:#1e0010">}</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">update</span> <span style="color:#66d9ef">table</span> <span style="color:#66d9ef">set</span> x <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, <span style="color:#66d9ef">version</span> <span style="color:#f92672">=</span> <span style="color:#f92672">#</span><span style="color:#960050;background-color:#1e0010">{</span><span style="color:#66d9ef">version</span><span style="color:#960050;background-color:#1e0010">}</span> <span style="color:#66d9ef">where</span> id <span style="color:#f92672">=</span> <span style="color:#f92672">#</span><span style="color:#960050;background-color:#1e0010">{</span>id<span style="color:#960050;background-color:#1e0010">}</span> <span style="color:#66d9ef">and</span> <span style="color:#66d9ef">version</span> <span style="color:#f92672">=</span> <span style="color:#f92672">#</span><span style="color:#960050;background-color:#1e0010">{</span><span style="color:#66d9ef">version</span><span style="color:#960050;background-color:#1e0010">}</span>
 </code></pre></div><h3 id="悲观锁">悲观锁</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- (写锁，排他锁) 必须要在事务中才可以起作用
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- (写锁，排他锁) 必须要在事务中才可以起作用
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> <span style="color:#66d9ef">table</span> <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">update</span>
 </code></pre></div><h3 id="sx-锁">S/X 锁</h3>
 <ul>
@@ -1434,18 +1472,18 @@ mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select<
 <ul>
 <li>查看 InnoDB 引擎最近一次的死锁日志：</li>
 </ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SHOW</span> ENGINE INNODB STATUS;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SHOW</span> ENGINE INNODB STATUS;
 </code></pre></div><p><strong>（6）死锁示例</strong></p>
 <p>Client A:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> t (i INT) ENGINE <span style="color:#f92672">=</span> InnoDB;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> t (i INT) ENGINE <span style="color:#f92672">=</span> InnoDB;
 <span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> t (i) <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>);
 <span style="color:#66d9ef">START</span> <span style="color:#66d9ef">TRANSACTION</span>;
 <span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> t <span style="color:#66d9ef">WHERE</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">FOR</span> <span style="color:#66d9ef">SHARE</span>;
 </code></pre></div><p>Client B:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">START</span> <span style="color:#66d9ef">TRANSACTION</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">START</span> <span style="color:#66d9ef">TRANSACTION</span>;
 <span style="color:#66d9ef">DELETE</span> <span style="color:#66d9ef">FROM</span> t <span style="color:#66d9ef">WHERE</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
 </code></pre></div><p>Client A:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">DELETE</span> <span style="color:#66d9ef">FROM</span> t <span style="color:#66d9ef">WHERE</span> t <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">DELETE</span> <span style="color:#66d9ef">FROM</span> t <span style="color:#66d9ef">WHERE</span> t <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
 ERROR <span style="color:#ae81ff">1213</span> (<span style="color:#ae81ff">40001</span>): Deadlockfound <span style="color:#66d9ef">when</span> trying <span style="color:#66d9ef">to</span> <span style="color:#66d9ef">get</span> <span style="color:#66d9ef">lock</span>;
 try restarting <span style="color:#66d9ef">transaction</span>
 </code></pre></div><p>解释：</p>

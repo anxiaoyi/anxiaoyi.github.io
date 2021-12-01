@@ -7,16 +7,18 @@
 <meta name="description" content="Spring AOP"><meta property="og:title" content="Spring AOP" />
 <meta property="og:description" content="Spring AOP AspectJ5 Pointcut 表达式 语法    表达式 说明     call(Signature) 匹配 Signature 的任何的对于方法或者构造器的调用   execution(Signature) 匹配 Signature 的任何方法或者构造器的执行   get(Signature) 匹配 Signature 的任何的对于字段的引用   set(Signature) 匹配 Signature 的任何的对于字段的赋值   within(TypePattern) every join point from code defined in a type in TypePattern   target(Type or Id) every join point when the target executing object is an instance of Type or Id&rsquo;s type   args(Type or Id, ." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/spring/spring-aop/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/spring/spring-aop/" /><meta property="article:section" content="docs" />
+
+
 
 <title>Spring AOP | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -132,6 +134,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/algorithm/" >
       算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
   </a>
 
 
@@ -574,6 +602,26 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/spring/spring-read-properties/" >
       Spring 读取 Properties 实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-cloud-alibaba/" >
+      《Spring Cloud Alibaba 微服务原理与实战》读书笔记
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/spring/spring-uncover-secrets/" >
+      《Spring 揭秘》读书笔记
   </a>
 
 </li>
@@ -1058,7 +1106,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1094,6 +1142,8 @@ var _hmt = _hmt || [];
     </li>
     <li><a href="#java-原理">Java 原理</a></li>
     <li><a href="#enableaspectjautoproxy">EnableAspectJAutoProxy</a></li>
+    <li><a href="#aop-执行顺序">AOP 执行顺序</a></li>
+    <li><a href="#this-调用失效问题">this 调用失效问题</a></li>
     <li><a href="#收集切面">收集切面</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
@@ -1164,8 +1214,8 @@ data-full-width-responsive="true"></ins>
 <td>同时符合 Pointcut0 和 Pointcut1</td>
 </tr>
 <tr>
-<td><code>Pointcut0 || Pointcut1</code></td>
-<td>符合 Pointcut0 或者 Pointcut1</td>
+<td>`Pointcut0</td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -1196,10 +1246,100 @@ data-full-width-responsive="true"></ins>
 <p>Java 中实现切面，通过<strong>JDK 动态代理</strong>或者<strong>动态字节码技术如 CGLIB</strong>实现 <code>AOP</code>。JDK 动态代理通过<strong>反射</strong>来接收被代理的类，并且要求被代理的类<strong>必须实现一个接口</strong>。JDK 动态代理的核心是 <code>InvocationHandler</code> 接口和 <code>Proxy</code> 类。如果目标类没有实现接口，那么 Spring AOP 会选择使用 CGLIB 来动态代理目标类。CGLIB（Code Generation Library），是一个代码生成的类库，可以在运行时动态的生成某个类的子类，注意，CGLIB 是通过<strong>继承</strong>的方式做的动态代理，因此如果某个类被标记为 <code>final</code>，那么它是无法使用CGLIB 做动态代理的。</p>
 <h2 id="enableaspectjautoproxy">EnableAspectJAutoProxy</h2>
 <p>使用 <code>@EnableAspectJAutoProxy</code> 来开启 AOP。</p>
-<h2 id="收集切面">收集切面</h2>
+<h2 id="aop-执行顺序">AOP 执行顺序</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Order</span><span style="color:#f92672">(</span>1<span style="color:#f92672">)</span>
+<span style="color:#a6e22e">@Aspect</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">StudentAspectA</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Pointcut</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;execution(void Student.setAge(int))&#34;</span><span style="color:#f92672">)</span>
+    <span style="color:#66d9ef">public</span> Object <span style="color:#a6e22e">doAround</span><span style="color:#f92672">(</span>JointPoint jp<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;A pre setAge&#34;</span><span style="color:#f92672">);</span>
+        Object obj <span style="color:#f92672">=</span> jp<span style="color:#f92672">.</span><span style="color:#a6e22e">invoke</span><span style="color:#f92672">();</span>
+        System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;A after setAge&#34;</span><span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">return</span> obj<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+
+<span style="color:#a6e22e">@Order</span><span style="color:#f92672">(</span>2<span style="color:#f92672">)</span>
+<span style="color:#a6e22e">@Aspect</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">StudentAspectB</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Pointcut</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;execution(void Student.setAge(int))&#34;</span><span style="color:#f92672">)</span>
+    <span style="color:#66d9ef">public</span> Object <span style="color:#a6e22e">doAround</span><span style="color:#f92672">(</span>JointPoint jp<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;B pre setAge&#34;</span><span style="color:#f92672">);</span>
+        Object obj <span style="color:#f92672">=</span> jp<span style="color:#f92672">.</span><span style="color:#a6e22e">invoke</span><span style="color:#f92672">();</span>
+        System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;B after setAge&#34;</span><span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">return</span> obj<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>因为 <code>StudentAspectA</code> 的 <code>Order</code> 比 <code>StudentAspectB</code> 的 <code>Order</code> 小，因此 <code>StudentAspectA</code> 的优先级更高，因此先执行 <code>A</code>，最终顺序如下：</p>
+<pre><code>A pre setAge
+    B pre setAge
+        setAge
+    B after setAge
+A after setAge
+</code></pre><h2 id="this-调用失效问题">this 调用失效问题</h2>
+<blockquote>
+<p>本节参考自 <a href="https://my.oschina.net/guangshan/blog/1807721">透过现象看原理：详解Spring中Bean的this调用导致AOP失效的原因</a></p>
+</blockquote>
+<p>AOP 动态代理的方法真实调用，会使用真实被代理对象实例进行方法调用，故在实例方法中通过<code>this</code>获取的都是被代理的<strong>真实对象</strong>的实例，而不是代理对象自身。</p>
+<p>如何解决：</p>
+<ul>
+<li>自己注入自己，应该是可以生效的，不过没有实际验证，这种方法参考自<a href="https://www.cnblogs.com/yjmyzz/p/why-spring-aop-does-not-work.html">spring中aop不生效的几种解决办法</a>。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Component</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AsyncService</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@Autowired</span>
+    <span style="color:#66d9ef">private</span> AsyncService asyncService<span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">async1</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;1:&#34;</span> <span style="color:#f92672">+</span> Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getName</span><span style="color:#f92672">());</span>
+        asyncService<span style="color:#f92672">.</span><span style="color:#a6e22e">async2</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#a6e22e">@Async</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">async2</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;2:&#34;</span> <span style="color:#f92672">+</span> Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getName</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><pre><code>
+- 通过 `ApplicationContext` 来获得动态代理对象
+
+``` Java
+@Component
+public class AsyncService implements ApplicationContextAware {
+
+    private ApplicationContext applicationContext;
+
+    public void async1() {
+        System.out.println(&quot;1:&quot; + Thread.currentThread().getName());
+        // 使用AppicationContext来获得动态代理的bean
+        this.applicationContext.getBean(AsyncService.class).async2();
+    }
+
+    @Async
+    public void async2() {
+        System.out.println(&quot;2:&quot; + Thread.currentThread().getName());
+    }
+
+    // 注入ApplicationContext
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+}
+</code></pre><ul>
+<li>通过 <code>AopContext</code> 获取动态代理对象。注解必须加上 <code>@EnableAspectJAutoProxy(exposeProxy = true)</code>。如果是 <code>@Transactional</code> 事务注解可以生效，<code>@Async</code> 不生效。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#f92672">((</span>AsyncService<span style="color:#f92672">)</span> AopContext<span style="color:#f92672">.</span><span style="color:#a6e22e">currentProxy</span><span style="color:#f92672">()).</span><span style="color:#a6e22e">async2</span><span style="color:#f92672">();</span>
+</code></pre></div><h2 id="收集切面">收集切面</h2>
 <p>首先需要 Spring 能先从所有 Bean 中识别出我们的<strong>切面类</strong>，<code>AnnotationAwareAspectJAutoProxyCreator</code> 类重写的<code>postProcessBeforeInstantiation</code> 方法就是专门处理这个问题的，此操作的要求是<strong>必须在其它普通 Bean 对象创建完放入容器前解析</strong>。</p>
 <p>它的父类 <code>AbstractAutoProxyCreator</code> 实现了 <code>BeanPostProcessor</code>：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// AbstractAutoProxyCreator.java
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// AbstractAutoProxyCreator.java
 </span><span style="color:#75715e"></span>Override
 <span style="color:#66d9ef">public</span> Object <span style="color:#a6e22e">postProcessAfterInitialization</span><span style="color:#f92672">(</span><span style="color:#a6e22e">@Nullable</span> Object bean<span style="color:#f92672">,</span> String beanName<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>bean <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -1294,6 +1434,8 @@ data-full-width-responsive="true"></ins>
     </li>
     <li><a href="#java-原理">Java 原理</a></li>
     <li><a href="#enableaspectjautoproxy">EnableAspectJAutoProxy</a></li>
+    <li><a href="#aop-执行顺序">AOP 执行顺序</a></li>
+    <li><a href="#this-调用失效问题">this 调用失效问题</a></li>
     <li><a href="#收集切面">收集切面</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>

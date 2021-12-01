@@ -15,16 +15,18 @@ XA 则规范了 TM 与 RM 之间的通信接口，在 TM 与多个 RM 之间形�
  系统 A 增加一张消息表，消息写入到消息表中和 DB1 的扣钱操作放到一个数据库的事务里，保证原子性。 系统 A 后台程序源源不断地将消息表中的消息传送给消息中间件，失败了也尝试重传。 系统 B 通过消息中间件的 ACK 机制，明确自己是否消费成功。 系统 B 增加判重表，记录处理成功的消息 ID 和消息中间件对应的 offset，实现业务幂等性，应对重复消费问题；如果业务本身有业务数据，可以判断是否重复，那么就无需这个判重表。  消息中间件如 RocketMQ 本身提供事务消息：
 RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认的消息，回调给发送方，询问这条消息是要发送出去，还是取消。发送方根据自己的业务数，知道这条消息是应该发送出去 (DB 更新成功)，还是应该取消 (DB 更新失败)。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/transaction/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/transaction/" /><meta property="article:section" content="docs" />
+
+
 
 <title>分布式事务解决方案汇总 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -140,6 +142,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/algorithm/" >
       算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
   </a>
 
 
@@ -598,6 +626,16 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/distributed/transaction/"  class="active">
       分布式事务解决方案汇总
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/raft/" >
+      Raft
   </a>
 
 </li>
@@ -1116,7 +1154,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1154,6 +1192,8 @@ var _hmt = _hmt || [];
     <li><a href="#妥协方案弱一致性基于状态的补偿">妥协方案：弱一致性+基于状态的补偿</a></li>
     <li><a href="#妥协方案重试回滚报警人工修复">妥协方案：重试+回滚+报警+人工修复</a></li>
     <li><a href="#业务无侵入方案-seatafescar">业务无侵入方案-Seata(Fescar)</a></li>
+    <li><a href="#saga">Saga</a></li>
+    <li><a href="#一致性事务不是银弹">一致性事务不是银弹</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>
@@ -1219,7 +1259,7 @@ data-full-width-responsive="true"></ins>
 <table>
 <thead>
 <tr>
-<th></th>
+<th>TCC/XA</th>
 <th>TCC</th>
 <th>XA</th>
 </tr>
@@ -1310,6 +1350,36 @@ data-full-width-responsive="true"></ins>
 <p>如果 TC 决议要全局回滚，会通知 RM 进行回滚操作，通过 <code>XID</code> 找到对应的回滚日志记录，通过回滚记录生成反向更新 <code>SQL</code>，进行更新回滚操作。</p>
 <p>以上我们可以保证一个事务的原子性和一致性，但隔离性如何保证呢？</p>
 <p>Seata 设计通过事务协调器维护的<strong>全局写排它锁</strong>，来保证事务间的写隔离，而读写隔离级别则默认为未提交读的隔离级别。</p>
+<h2 id="saga">Saga</h2>
+<p>理论基础：Hector &amp; Kenneth 发表论⽂ Sagas （1987）</p>
+<p><code>Saga</code> 模式是 SEATA 提供的长事务解决方案，在 Saga 模式中，业务流程中每个参与者都提交本地事务，当出现某一个参与者失败则补偿前面已经成功的参与者，一阶段正向服务和二阶段补偿服务都由业务开发实现。</p>
+<p><img src="/images/docs/tutorial/distributed/transaction-solution/TB1Y2kuw7T2gK0jSZFkXXcIQFXa-445-444.png" alt=""></p>
+<p><strong>适用场景</strong>：</p>
+<ul>
+<li>业务流程长、业务流程多</li>
+<li>参与者包含其它公司或遗留系统服务，无法提供 TCC 模式要求的三个接口</li>
+</ul>
+<p><strong>优势</strong>：</p>
+<ul>
+<li>一阶段提交本地事务，无锁，高性能</li>
+<li>事件驱动架构，参与者可异步执行，高吞吐</li>
+<li>补偿服务易于实现</li>
+</ul>
+<p><strong>缺点</strong>：</p>
+<ul>
+<li>不保证隔离性</li>
+</ul>
+<p><strong>隔离性的问题</strong>：</p>
+<p>由于 Saga 事务不保证隔离性, 在极端情况下可能由于脏写无法完成回滚操作, 比如举一个极端的例子, 分布式事务内先给用户 A 充值, 然后给用户B扣减余额, 如果在给A用户充值成功, 在事务提交以前, <strong>A 用户把余额消费掉了</strong>, 如果事务发生回滚, 这时则没有办法进行补偿了，有些业务场景可以允许让业务最终成功, 在回滚不了的情况下可以继续重试完成后面的流程, 基于状态机引擎除可以提供“回滚”能力外, 还可以提供“向前”恢复上下文继续执行的能力, 让业务最终执行成功, 达到最终一致性的目的，所以在实际生产中基于状态机的实现应用更多。</p>
+<p><strong>侵入性的问题</strong>：</p>
+<p>Saga 是有侵入性的，要配置状态机 json，如果<strong>服务多改造会比较大</strong>。</p>
+<h2 id="一致性事务不是银弹">一致性事务不是银弹</h2>
+<blockquote>
+<p>此段参考自 <a href="https://zhuanlan.zhihu.com/p/97887325">知乎</a></p>
+</blockquote>
+<p>基于 ACID 的<strong>两阶段事务</strong>和<strong>基于 BASE 的最终一致性事务</strong>都不是银弹，可通过下表详细对比它们之间的区别：</p>
+<p><img src="/images/docs/tutorial/distributed/transaction-solution/v2-d7978bbf40a219c50ce06752d1d3afbb_1440w.jpg" alt=""></p>
+<p>放眼当前，实难找到无需权衡即可放之四海而皆准的分布式事务解决方案。</p>
 <h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://book.douban.com/subject/30443578/">《软件架构设计》</a></li>
@@ -1359,6 +1429,8 @@ data-full-width-responsive="true"></ins>
     <li><a href="#妥协方案弱一致性基于状态的补偿">妥协方案：弱一致性+基于状态的补偿</a></li>
     <li><a href="#妥协方案重试回滚报警人工修复">妥协方案：重试+回滚+报警+人工修复</a></li>
     <li><a href="#业务无侵入方案-seatafescar">业务无侵入方案-Seata(Fescar)</a></li>
+    <li><a href="#saga">Saga</a></li>
+    <li><a href="#一致性事务不是银弹">一致性事务不是银弹</a></li>
     <li><a href="#参考">参考</a></li>
   </ul>
 </nav>

@@ -18,16 +18,18 @@ mysql -h$ip -P$port -u$user -p 连接完成后，如果你没有后续的动作�
 ResultSet 的数据存放在哪里 实际上，服务端并不需要保存一个完整的结果集。取数据和发数据的流程是这样的：
  获取一行，写到 net_buffer 中。这块内存的大小是由参数 net_buffer_length 定义的，默认是 16k。 重复获取行，直到 net_buffer 写满，调用网络接口发出去。 如果发送成功，就清空 net_buffer，然后继续取下一行，并写入 net_buffer。 如果发送函数返回 EAGAIN 或 WSAEWOULDBLOCK，就表示本地网络栈（socket send buffer）写满了，进入等待。直到网络栈重新可写，再继续发送。  MySQL 是“边读边发的”，这个概念很重要。这就意味着，如果客户端接收得慢，会导致 MySQL 服务端由于结果发不出去，这个事务的执行时间变长。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-query/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-query/" /><meta property="article:section" content="docs" />
+
+
 
 <title>MySQL 查询 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -143,6 +145,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/algorithm/" >
       算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
   </a>
 
 
@@ -671,6 +699,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/database/mvcc/" >
+      MVCC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/database/mybatis/" >
       MyBatis
   </a>
@@ -702,7 +740,7 @@ var _hmt = _hmt || [];
         <li>
 
   <a href="/docs/tutorial/database/sharding-sphere/" >
-      ShardingSphere 3.X
+      ShardingSphere
   </a>
 
 </li>
@@ -1049,7 +1087,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1109,7 +1147,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/database/mysql-query/0d2070e8f84c4801adbfa03bda1f98d9.png" alt=""></p>
 <h2 id="连接器">连接器</h2>
 <p>第一步，你会先连接到这个数据库上，这时候接待你的就是连接器。连接器负责跟客户端建立连接、获取权限、维持和管理连接。连接命令一般是这么写的：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql <span style="color:#f92672">-</span>h$ip <span style="color:#f92672">-</span>P$port <span style="color:#f92672">-</span>u$user <span style="color:#f92672">-</span>p
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql <span style="color:#f92672">-</span>h$ip <span style="color:#f92672">-</span>P$port <span style="color:#f92672">-</span>u$user <span style="color:#f92672">-</span>p
 </code></pre></div><p>连接完成后，如果你没有后续的动作，这个连接就处于空闲状态，你可以在 <code>show processlist</code> 命令中看到它。客户端如果太长时间没动静，连接器就会自动将它断开。这个时间是由参数 <code>wait_timeout </code>控制的，默认值是 <code>8</code> 小时。</p>
 <h2 id="查询缓存">查询缓存</h2>
 <p>连接建立完成后，你就可以执行 <code>select</code> 语句了。执行逻辑就会来到第二步：查询缓存。MySQL 拿到一个查询请求后，会先到查询缓存看看，之前是不是执行过这条语句。之前执行过的语句及其结果可能会以 key-value 对的形式，被直接缓存在内存中。key 是查询的语句，value 是查询的结果。如果你的查询能够直接在这个缓存中找到 key，那么这个 value 就会被直接返回给客户端。</p>

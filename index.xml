@@ -116,7 +116,7 @@ WebService  @WebService 用来将**某个类(一个 Interface)**声明为一个 
       <pubDate>Fri, 07 Aug 2020 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/posts/oracle/</guid>
-      <description>内置数据类型    分类 数据类型 介绍     字符 CHAR [(size [BYTE | CHAR])] 定长字符串，占据 n 字节    NCHAR[(size)] 定长字符串，占据 2n 字节    VARCHAR2(size) 可变长度的字符串    NVARCHAR2(size) 可变长度的 UNICODE 字符串   数值 NUMBER(p,s) p 代表精度(1 - 38)，s 代表 scale (-84 - 127)    FLOAT [(p)] 小数，精度不高    LONG 仅仅为了兼容   日期 DATE 大小固定占用 7 bytes    TIMESTAMP    字节 RAW(size) 定长    LONG RAW 变长，图像、声音、文档、数组，建议使用 LOB    LOB     ROWID 伪列 SELECT ROWID from your_table;  ROWID 不能被用作主键。</description>
+      <description>内置数据类型    分类 数据类型 介绍     字符 `CHAR [(size [BYTE CHAR])]`    NCHAR[(size)] 定长字符串，占据 2n 字节    VARCHAR2(size) 可变长度的字符串    NVARCHAR2(size) 可变长度的 UNICODE 字符串   数值 NUMBER(p,s) p 代表精度(1 - 38)，s 代表 scale (-84 - 127)    FLOAT [(p)] 小数，精度不高    LONG 仅仅为了兼容   日期 DATE 大小固定占用 7 bytes    TIMESTAMP    字节 RAW(size) 定长    LONG RAW 变长，图像、声音、文档、数组，建议使用 LOB    LOB     ROWID 伪列 SELECT ROWID from your_table;  ROWID 不能被用作主键。</description>
     </item>
     
     <item>
@@ -356,6 +356,20 @@ ResultSet 的数据存放在哪里 实际上，服务端并不需要保存一个
     </item>
     
     <item>
+      <title>raft storage</title>
+      <link>https://kunzhao.org/docs/tutorial/raft/raft-storage/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/raft/raft-storage/</guid>
+      <description>raft storage 元信息、Log、Snapshot 在磁盘上的存储示例：
+元信息 RaftMetaStorage 负责存储当前的 Term、当前的投票情况：
+public interface RaftMetaStorage extends Lifecycle&amp;lt;RaftMetaStorageOptions&amp;gt;, Storage { boolean setTerm(final long term); long getTerm(); boolean setVotedFor(final PeerId peerId); PeerId getVotedFor(); boolean setTermAndVotedFor(final long term, final PeerId peerId); } Term 就是任期/学期的意思，比如这一学期选举班长投给了小 A，下一学期选班长投给了小 B，诸如此类的意思。Term 在时间概念上是单调递增的。
+LocalRaftMetaStorage 是 RaftMetaStorage 的默认实现，其启动的时候，从用户指定的 raft_meta 文件路径中 (例如 /tmp/server1/raft_meta/raft_meta) 去加载当前的 term 和 vote 信息。在 shutdown()、setTerm()、setVotedFor() 之后又会立即将当前这两个信息持久化到磁盘上。
+文件的格式是 protobuf 格式的，如下是其对应的 protobuf 文件的字段内容：
+message StablePBMeta { required int64 term = 1; required string votedfor = 2;};关于 save() 方法，其首先将内容写入到一个 raft_meta.</description>
+    </item>
+    
+    <item>
       <title>Redis 数据结构</title>
       <link>https://kunzhao.org/docs/tutorial/redis/datastructure/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -410,10 +424,7 @@ Stream&amp;lt;Integer&amp;gt; stream = Stream.of(1, 2, 3, 4, 5); int[] result = 
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/backtracking/</guid>
       <description>回溯法 回溯法的套路解法在这篇文章中给了详细的说明。
-Subsets 返回一个数组的所有 subsets:
-Input: nums = [1,2,3] Output: [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]] 解法：
-public List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; subsets(int[] nums) { List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; list = new ArrayList&amp;lt;&amp;gt;(); Arrays.sort(nums); backtrack(list, new ArrayList&amp;lt;&amp;gt;(), nums, 0); return list; } private void backtrack(List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; list , List&amp;lt;Integer&amp;gt; tempList, int [] nums, int start){ list.add(new ArrayList&amp;lt;&amp;gt;(tempList)); for(int i = start; i &amp;lt; nums.length; i++){ tempList.add(nums[i]); backtrack(list, tempList, nums, i + 1); tempList.remove(tempList.size() - 1); } } 如果这个数组中有重复的数字，那么下面算法展示的是去掉重复数字的写法：
-public List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; subsetsWithDup(int[] nums) { List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; list = new ArrayList&amp;lt;&amp;gt;(); Arrays.</description>
+岛屿数量 输入：grid = [ [&amp;quot;1&amp;quot;,&amp;quot;1&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;], [&amp;quot;1&amp;quot;,&amp;quot;1&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;], [&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;1&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;], [&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;1&amp;quot;,&amp;quot;1&amp;quot;] ] 输出：3  图的深度优先遍历，将 1 置为 0  public int numIslands(char[][] grid) { int num = 0; for (int i = 0; i &amp;lt; grid.length; i++) { for (int j = 0; j &amp;lt; grid[i].length; j++) { if (grid[i][j] == &amp;#39;1&amp;#39;) { num++; mark(grid, i, j); } } } return num; } private void mark(char[][] grid, int i, int j) { if (i &amp;lt; 0 || i &amp;gt;= grid.</description>
     </item>
     
     <item>
@@ -699,6 +710,18 @@ BEGIN { FS = &amp;#34;\t&amp;#34; printf(&amp;#34;%10s %6s %5s %s\n\n&amp;#34;, 
     </item>
     
     <item>
+      <title>raft select leader</title>
+      <link>https://kunzhao.org/docs/tutorial/raft/leader/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/raft/leader/</guid>
+      <description>raft select leader 有限状态机 底层基于高性能异步无锁处理框架 Disruptor。
+什么时候可以允许选举 (NodeImpl.java TODO)：
+ 节点的 priority 是 ElectionPriority.NotElected，则不允许选举，这是一种特殊状态的节点，这种节点永远都不会参与选举 Leader 的过程。 节点禁用了 priority 属性，即 priority &amp;lt;= ElectionPriority.Disabled 那么直接可以选举。  有新的日志上来：
+// 当前是二年级下半学期 // 现在收到了一个来自一年级上半学期的日志，自然需要将其忽略掉 if (request.getTerm() &amp;lt; this.currTerm) { return false; } // 收到了一个来自三年级上半学期的日志 if (requestTerm &amp;gt; this.currTerm) { } 收到投票 // 必须是 CANDIDATE 才能成为计数 if (this.state != State.STATE_CANDIDATE) { return; } // 必须是同一个 TERM if (term != this.currTerm) { return; } if (response.getTerm() &amp;gt; this.</description>
+    </item>
+    
+    <item>
       <title>Redis 线程 I/O 模型</title>
       <link>https://kunzhao.org/docs/tutorial/redis/io-pattern/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -811,7 +834,7 @@ public interface Metric extends DebugSupport { // 添加 n 个异常  void addEx
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/array/</guid>
-      <description>数组 无序数组第 K 大的数字 public int findKthLargest(int[] nums, int k) { k = nums.length - k; // 1 2 3 4 5 6  // ↑(第 2 大)  // ↑(partition = 2 的时候，实际上指向的是这里)  int lo = 0; int hi = nums.length - 1; // ==========================  // while (lo &amp;lt; hi)  // nums = [1]，这种情况进入不了循环  //  // ==========================  while (lo &amp;lt;= hi) { int index = partition(nums, lo, hi); if (index == k) { return nums[index]; } else if (index &amp;lt; k) { lo = index + 1; } else { hi = index - 1; } } return -1; } private int partition(int[] nums, int lo, int high) { int i = lo - 1; int pivot = nums[high]; for (int j = lo; j &amp;lt;= high - 1; j++) { if (nums[j] &amp;lt;= pivot) { i++; swap(nums, i, j); } } swap(nums, i + 1, high); return i + 1; } private void swap(int[] array, int i, int j) { int temp = array[i]; array[i] = array[j]; array[j] = temp; } 过半数的元素 使用**摩尔投票法**：</description>
+      <description>数组 无序数组第 K 大的数字  partition 算法每次返回的都是 pivot 所在的索引 partition 算法实现的思路，i 指向的是小于 pivot 的数列的最后一个值的索引。j 在前面探路，如果遇见小于等于 pivot 的值 arr[j]，说明这个值应该放在前半段，那么它应该前半段的谁交换呢？答案就是这个 arr[j] 应该添加到 i 的下一个位置。也就是需要 swap(++i, j)。 最后 swap(++i, high)，将 pivot 放到中间。  小小小小小大大大大小...pivot i j public int findKthLargest(int[] nums, int k) { k = nums.length - k; // 1 2 3 4 5 6  // ↑(第 2 大)  // ↑(partition = 2 的时候，实际上指向的是这里)  int lo = 0; int hi = nums.</description>
     </item>
     
     <item>
@@ -982,12 +1005,10 @@ ls -l 显示结果：
       <guid>https://kunzhao.org/docs/tutorial/database/mysql-crash-safe/</guid>
       <description>MySQL Crash Safe  MySQL 是如何保证数据不丢的？
  WAL 机制 只要 redo log 和 binlog 保证持久化到磁盘，就能确保 MySQL 异常重启后，数据可以恢复。
-binlog 的写入机制 其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。
+update 语句的执行流程 update T set c = c + 1 where ID = 2; binlog 的写入机制 MySQL Server 层自己的日志，称为 binlog (归档日志)，binlog 本身实现不了 crash safe 的能力 (不是两阶段提交，只是为了归档)，binlog 是逻辑日志，可以追加写。
+其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。
 系统给 binlog cache 分配了一片内存，每个线程一个，参数 binlog_cache_size 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。
-事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。
-每个线程有自己 binlog cache，但是共用同一份 binlog 文件。
- 图中的 write，指的就是指把日志写入到文件系统的 page cache，并没有把数据持久化到磁盘，所以速度比较快。 图中的 fsync，才是将数据持久化到磁盘的操作。一般情况下，我们认为 fsync 才占磁盘的 IOPS。  write 和 fsync 的时机，是由参数 sync_binlog 控制的：
- sync_binlog=0 的时候，表示每次提交事务都只 write，不 fsync； sync_binlog=1 的时候，表示每次提交事务都会执行 fsync； sync_binlog=N(N&amp;gt;1) 的时候，表示每次提交事务都 write，但累积 N 个事务后才 fsync。  redo log 写入机制 事务在执行过程中，生成的 redo log 是要先写到 redo log buffer 的。redo log 可能存在的三种状态：</description>
+事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。</description>
     </item>
     
     <item>
@@ -1072,9 +1093,7 @@ Semaphore sem = new Semaphore(30); if (sem.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/tree/</guid>
-      <description>树 BST 第 K 大的数字  二叉搜索树的中序遍历为递增序列。因此这道题可转化为求 “此树的中序遍历倒序的第 k 个节点”。
- class Solution { int res, k; public int kthLargest(TreeNode root, int k) { this.k = k; dfs(root); return res; } void dfs(TreeNode root) { if (root == null) return; dfs(root.right); if (k == 0) return; if (--k == 0) res = root.val; dfs(root.left); } } 时间复杂度：O(N)，空间复杂度：O(N)，当树退化为链表（全部是右节点）的时候，系统使用 O(N) 大小的栈空间。
-BST 中序遍历的下一个节点 这道题是 《剑指 Offer》 上的题目，先确定有无指向父节点的指针？</description>
+      <description>树 二叉树的最近公共祖先  先看孩子是否有可能是公共祖先，最后看树根有没有可能是公共祖先。因为树根总是祖先。是用来兜底的。 root 是 p 的祖先，那么 p 是 root 的子系亲属或者孙子系亲属，即向下的亲属关系。  public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) { if (root != null) { TreeNode left = lowestCommonAncestor(root.left, p, q); if (left != null) { return left; } TreeNode right = lowestCommonAncestor(root.right, p, q); if (right != null) { return right; } if (isSubNode(root, p) &amp;amp;&amp;amp; isSubNode(root, q)) { return root; } } return null; } private boolean isSubNode(TreeNode root, TreeNode p) { if (root == null) { return false; } if (root.</description>
     </item>
     
     <item>
@@ -1358,10 +1377,7 @@ Client 端 初始化 Bootstrap Client 端初始化 Bootstrap 并尝试连接 Ser
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/string/</guid>
-      <description>字符串 最小覆盖子串 原题
-字符串解码 原题
-输入：s = &amp;quot;3[a2[c]]&amp;quot; 输出：&amp;quot;accaccacc&amp;quot; 解法：
-public class Solution { int ptr; public String decodeString(String s) { LinkedList&amp;lt;String&amp;gt; stk = new LinkedList&amp;lt;String&amp;gt;(); ptr = 0; while (ptr &amp;lt; s.length()) { char cur = s.charAt(ptr); if (Character.isDigit(cur)) { // 获取一个数字并进栈  String digits = getDigits(s); stk.addLast(digits); } else if (Character.isLetter(cur) || cur == &amp;#39;[&amp;#39;) { // 获取一个字母并进栈  stk.addLast(String.valueOf(s.charAt(ptr++))); } else { ++ptr; LinkedList&amp;lt;String&amp;gt; sub = new LinkedList&amp;lt;String&amp;gt;(); while (!</description>
+      <description>字符串 字符串相加  使用两个指针 index-- 即可  public String addStrings(String num1, String num2) { if (num1 == null) { return num2; } if (num2 == null) { return num1; } final StringBuilder sb = new StringBuilder(Math.max(num1.length(), num2.length()) + 1); int index1 = num1.length() - 1; int index2 = num2.length() - 1; int remainder = 0; while (index1 &amp;gt;= 0 &amp;amp;&amp;amp; index2 &amp;gt;= 0) { char a = num1.charAt(index1); char b = num2.</description>
     </item>
     
     <item>
@@ -1496,6 +1512,15 @@ MQAdminStartup.main(new String[] { &amp;#34;queryMsgById&amp;#34;, &amp;#34;-n&a
     </item>
     
     <item>
+      <title>tcpdump</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-command/tcpdump/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-command/tcpdump/</guid>
+      <description>tcpdump tcpdump -i any port 3306 -w test.pcap  any: 表示所有网络接口 port: tcp 端口  Wireshark Wireshark可以理解为是一个带图形界面的tcpdump，同时集成了非常多的协议解析插件，可以帮助我们方便的抓取和分析各种协议。</description>
+    </item>
+    
+    <item>
       <title>top</title>
       <link>https://kunzhao.org/docs/tutorial/unix-command/top/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1548,9 +1573,9 @@ public @interface Transactional { // REQUIRED: 0,  // SUPPORTS: 1,  // MANDATORY
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/dp/</guid>
-      <description>动态规划 打家劫舍② 原题
-所有的房屋都 围成一圈 ，这意味着第一个房屋和最后一个房屋是紧挨着的。同时，相邻的房屋装有相互连通的防盗系统，如果两间相邻的房屋在同一晚上被小偷闯入，系统会自动报警 。给定一个代表每个房屋存放金额的非负整数数组，计算你 在不触动警报装置的情况下 ，能够偷窃到的最高金额。
-class Solution { public int rob(int[] nums) { if(nums.length == 0) return 0; if(nums.length == 1) return nums[0]; return Math.max(myRob(Arrays.copyOfRange(nums, 0, nums.length - 1)), myRob(Arrays.copyOfRange(nums, 1, nums.length))); } private int myRob(int[] nums) { int pre = 0, cur = 0, tmp; for(int num : nums) { tmp = cur; cur = Math.max(pre + num, cur); pre = tmp; } return cur; } } </description>
+      <description>动态规划 买卖股票的最佳时机  用一个变量记录一个历史最低价格 minprice，如果当前值比 minPrice 小，则更新 minPrice。即我们全程都在寻找一个历史最低值。 否则就考虑是否可以卖出：看当前值减去 minPrice 是否可以更新 maxProfit。  public int maxProfit(int prices[]) { int minprice = Integer.MAX_VALUE; int maxprofit = 0; for (int i = 0; i &amp;lt; prices.length; i++) { if (prices[i] &amp;lt; minprice) { minprice = prices[i]; } else if (prices[i] - minprice &amp;gt; maxprofit) { maxprofit = prices[i] - minprice; } } return maxprofit; } 最大子序和 找到一个具有最大和的连续子数组。
+ 看当前累加的 sum 对求最终的最大和是否有正向的增益效果。
+ 腾讯：返回子数组</description>
     </item>
     
     <item>
@@ -1730,6 +1755,19 @@ myProtocol = com.zk.MyProtocol 第二，需要在 XML 配置文件中，声明�
     </item>
     
     <item>
+      <title>链表</title>
+      <link>https://kunzhao.org/docs/tutorial/algorithm/linkedlist/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/algorithm/linkedlist/</guid>
+      <description>链表 反转链表 头条：迭代、递归都要写出来。
+迭代版本：
+public ListNode reverseList(ListNode head) { ListNode newHead = new ListNode(); while (head != null) { // 5 -&amp;gt; 4 -&amp;gt; 3  //  ListNode tmp = head.next; head.next = newHead.next; newHead.next = head; head = tmp; } return newHead.next; } 递归版本。
+ 将链表想象为：head -&amp;gt; 其余部分，那么翻转 其余部分 如何翻转：p = reverseList(head.next)。其余部分 的 next 的节点需要指向 head，head 的 next 节点需要置为 null，以确保 head 变成了末尾节点。最后返回 p 节点。
+  在写的时候，有一次写成了 p.next = head，这里是不正确的。head.</description>
+    </item>
+    
+    <item>
       <title>Binary Search 二分搜索</title>
       <link>https://kunzhao.org/docs/programmer-interview/algorithm/binary-search/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1745,7 +1783,8 @@ myProtocol = com.zk.MyProtocol 第二，需要在 XML 配置文件中，声明�
       
       <guid>https://kunzhao.org/docs/tutorial/network/dns/</guid>
       <description>DNS DNS 使用的传输层协议 主要使用 UDP 协议，端口 53, 也有一些采用 TCP 来实现。
-DNS 层次结构  根 DNS 服务器 ：返回顶级域 DNS 服务器的 IP 地址 顶级域 DNS 服务器：返回权威 DNS 服务器的 IP 地址 权威 DNS 服务器 ：返回相应主机的 IP 地址  DNS 数据库的记录类型    类型 描述     A、AAAA IP 地址   MX SMTP mail exchangers   NS name servers   CNAME domain name aliases    DNS 的解析流程 DNS 做负载均衡 DNS 除了可以通过名称映射为 IP 地址，它还可以做另外一件事，就是负载均衡。</description>
+DNS 其实两种协议都使用(DNS or other Services works on both TCP and UDP)。UDP 包不能大于 512 字节。DNS uses TCP for Zone transfer and UDP for name, and queries either regular (primary) or reverse. 传输少量信息的可以使用 UDP，然而大于 512 字节的必须使用 TCP. If a client doesn&amp;rsquo;t get response from DNS, it must retransmit the data using TCP after 3-5 seconds of interval.
+There should be consistency in DNS Zone database.</description>
     </item>
     
     <item>
@@ -1788,6 +1827,17 @@ DNS 层次结构  根 DNS 服务器 ：返回顶级域 DNS 服务器的 IP 地�
     </item>
     
     <item>
+      <title>Raft</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/raft/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/raft/</guid>
+      <description>Raft  本文基于 alibaba/nacos 源码中的 raft 进行分析
+ Raft 协议 nacos 对一致性协议进行抽象，将其关键的方法抽象到 ConsistencyProtocol 接口中，关键的方法有同步/异步读写数据等：
+public interface ConsistencyProtocol&amp;lt;T extends Config, P extends RequestProcessor&amp;gt; extends CommandOperations { // 初始化  void init(T config); Response getData(ReadRequest request) throws Exception; Response write(WriteRequest request) throws Exception; CompletableFuture&amp;lt;Response&amp;gt; aGetData(ReadRequest request); CompletableFuture&amp;lt;Response&amp;gt; writeAsync(WriteRequest request); // 新的成员节点列表，一致性协议自行处理相应的成员节点是加入还是离开  void memberChange(Set&amp;lt;String&amp;gt; addresses); } // CP 协议 public interface CPProtocol&amp;lt;C extends Config, P extends RequestProcessor4CP&amp;gt; extends ConsistencyProtocol&amp;lt;C, P&amp;gt; { boolean isLeader(String group); } // AP 协议 public interface APProtocol&amp;lt;C extends Config, P extends RequestProcessor4AP&amp;gt; extends ConsistencyProtocol&amp;lt;C, P&amp;gt; { } JRaft 参考  蚂蚁金服开源 SOFAJRaft：生产级 Java Raft 算法库 Raft 算法解读  </description>
+    </item>
+    
+    <item>
       <title>Redis 集群</title>
       <link>https://kunzhao.org/docs/tutorial/redis/cluster/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1827,6 +1877,38 @@ RedisCluser 采用虚拟槽分区，所有的键根据哈希函数映射到 0 ~ 
       
       <guid>https://kunzhao.org/docs/tutorial/spring/spring-read-properties/</guid>
       <description>Spring 读取 Properties 实现原理 public class SpringApplication { private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners listeners, DefaultBootstrapContext bootstrapContext, ApplicationArguments applicationArguments) { // Create and configure the environment 	ConfigurableEnvironment environment = getOrCreateEnvironment(); configureEnvironment(environment, applicationArguments.getSourceArgs()); ConfigurationPropertySources.attach(environment); listeners.environmentPrepared(bootstrapContext, environment); // ...  } protected void configureEnvironment(ConfigurableEnvironment environment, String[] args) { // ... 	configurePropertySources(environment, args); configureProfiles(environment, args); } private ConfigurableEnvironment getOrCreateEnvironment() { if (this.environment != null) { return this.environment; } switch (this.webApplicationType) { case SERVLET: return new StandardServletEnvironment(); case REACTIVE: return new StandardReactiveWebEnvironment(); default: return new StandardEnvironment(); } } } 上述代码可知，SpringApplication 在启动的时候先创建 Environment，然后再配置 Profiles，然后再添加 configurationProperties。一般情况下创建的都是 StandardServletEnvironment 环境。</description>
+    </item>
+    
+    <item>
+      <title>《Spring Cloud Alibaba 微服务原理与实战》读书笔记</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/spring-cloud-alibaba/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/spring-cloud-alibaba/</guid>
+      <description>《Spring Cloud Alibaba 微服务原理与实战》读书笔记  感觉不怎么样……
+ Spring 体系简介 Spring Cloud 是一套基于 Spring Boot 整合了各大公司开源技术的规范，它屏蔽掉了复杂的配置，给开发者良好的开箱即用的微服务开发体验。
+Spring Boot 诞生的一个原因是：Mike Youngstorm 想要在 Spring 框架中支持无容器 Web 应用的程序体系结构。其并不是一个新的技术框架，作用就是简化 Spring 应用的开发，达成此目的的最核心的思想就是：约定优于配置：
+ Maven 目录结构的约定 默认配置文件及其配置文件属性的约定 依赖 Spring MVC 依赖，则自动依赖 Tomcat 容器 Starter 组件自动完成装配  Spring Boot 的核心：
+ Starter 组件 自动装配 Bean Actuator 监控 Spring Boot CLI  自动装配的实现：通过内置在 @SpringBootApplication 中的 @EnableAutoConfiguration 注解来开启的，在 @EnableAutoConfiguration 内部则引入了 @Import 注解。@Import 注解的参数一般是配置类，在此则是 AutoConfigurationImportSelector.class。
+AutoConfigurationImportSelector 实现了 ImportSelector，其可以实现批量装配，并且可以通过逻辑来选择性装配。AutoConfigurationImportSelector 中的 selectImports 方法从 META-INF/spring-autoconfigure-metadata.</description>
+    </item>
+    
+    <item>
+      <title>《Spring 揭秘》读书笔记</title>
+      <link>https://kunzhao.org/docs/tutorial/spring/spring-uncover-secrets/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/spring/spring-uncover-secrets/</guid>
+      <description>《Spring 揭秘》读书笔记  豆瓣评分：9.1 分。书是 2009 年出版的，使用的 Spring 版本应该是 2.5，比较老了，不过思想一流。
+ IoC 章节 装修新房，需要用家具，我们要么 new，多数情况下还是我们自己去家具厂将家具买回来，有一个共同点就是我们都是自己主动去获取依赖的对象！IoC 的理念，让别人为你服务！
+如何暗示对方你需要什么样的适当的服务？构造方法注入：构造方法中声明依赖对象的参数列表；Setter 注入：更为宽松随意；接口注入：自己需要实现某个接口来进行暗示，已经不流行了。
+IoC Service Provider 的职责：业务对象的构建管理、业务对象间的依赖绑定。如何管理对象间的依赖关系：直接编码、XML 配置文件等方式来记录对象间的关系。
+Spring 的 Ioc 容器类型：BeanFactory 和 ApplicationContext，其中 ApplicationContext 更为高级，比如事件发布、国际化信息支持等。BeanFactory 像是一个汽车生产厂，其他零件厂商送入零件放入这个汽车工厂，只需要从终点获得成品汽车 Object getBean(String name) 就可以了，我们需要交给它一份生产图纸 (XML 配置文件)。
+BeanFactory 只是一个接口，好比我们跟图书馆打交道，书本实际上是放置在书架 BeanDefinitionRegistry 上的，每一本书都有一个 BeanDefinition 与之相对应。
+虽然 lazy-init-bean 是延迟初始化的，但是因为依赖它的 not-lazy-init-bean 并不是延迟初始化的，所以还是会被提前初始化。所以需要保证依赖于该 bean 定义的其他 bean 定义也同样设置为延迟初始化：&amp;lt;beans default-lazy-init=&amp;quot;true&amp;quot;&amp;gt;。
+prototype 生命周期，当对象实例返回给请求方之后，就任由这个对象自生自灭了，需要请求方自己负责这个对象的后续生命周期的管理工作。
+FactoryBean 是 Spring 容器提供的一种可以扩展容器对象实例化逻辑的接口，其主语是 Bean，它是生产对象 getObject() 的工厂。某些对象的实例化逻辑过于繁琐，或者第三方库不能直接注册到 Spring 容器的时候，就可以实现 FactoryBean 接口，给出自己的对象实例化逻辑代码。
+Spring 的 Ioc 容器启动的流程分为：容器启动阶段(装配生产线：依赖 BeanDefinitionReader 解析，编组为 BeanDefinition，最后将其注册到 BeanDefinitionRegistry 中)和 Bean 实例化阶段(getBean 方法：装配好的生产线生产具体的产品)。</description>
     </item>
     
     <item>
@@ -1895,6 +1977,16 @@ plugins: [ // plugins 的配置  // html-webpack-plugin  // 功能：默认会�
     </item>
     
     <item>
+      <title>MVCC</title>
+      <link>https://kunzhao.org/docs/tutorial/database/mvcc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/mvcc/</guid>
+      <description>MVCC  当事务写入一个对象的时候，数据库创建这个对象的一个新版本 当事务读取的时候，读取自事务开始后的该对象的最新版本  并发协议  Timestamp Ordering，每个事务关联一个时间戳，以检测顺序 Optimistic Concurrency Control Two-Phase Locking。Txns acquire appropriate lock on physical version before they can read/write a logical tuple .  Tuple 的格式：
+版本存储  Append-Only 存储：每一次更新，在表的空位置添加一个新版本的 Tuple。   Time-Travel 存储。每一次新增，将当前的版本拷贝到 Time Travel 表中。   增量存储。每次更新，只拷贝改变的字段到增量存储中。  MVCC CONFIGURATION EVALUATION 参考  CMU SCS 15-721 (Spring 2020) :: Multi-Version Concurrency Control CMU 15-445/645 Database Systems (Fall 2019) :: Multi-Version Concurrency Control  </description>
+    </item>
+    
+    <item>
       <title>MyBatis</title>
       <link>https://kunzhao.org/docs/tutorial/database/mybatis/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1955,11 +2047,10 @@ public class TransactionMQProducer extends DefaultMQProducer { @Override public 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/network/tcp/</guid>
-      <description>TCP TCP 头 TCP 分段  在传输层（TCP协议）里，叫分段。在网络层（IP层），叫分片 (Fragmentation)
+      <description>TCP TCP 头 选项 TCP 分段  在传输层（TCP协议）里，叫分段。在网络层（IP层），叫分片 (Fragmentation)
  数据链路层，长度范围是 [64 byte, 1518 byte] 其中 18 byte 的数据是链路层本身的数据。具体格式：
 6 byte 目标 MAC 地址 + 6 byte 源 MAC 地址 + 2 byte 类型 + 网络层的数据(IP 包) + 4 byte 校验和 留给网络层的数据长度是 [64 - 18, 1518 - 18] = [46, 1500]。我们把 1500 这个值，称为 以太网 的 MTU ：Maximum Transmission Unit 。
-网络层的 IP 协议，也会自动填充协议头，协议头一般占用了 20 byte。也就是说留给传输层数据 只有：[46-20, 1500-20] = [26, 1480]
-传输层的 TCP 协议头占了 20 byte， UDP 协议头占了 8 byte。TCP 可以传的用户数据实际上只有 [26 - 20, 1480 - 20] = [6, 1460]</description>
+网络层的 IP 协议，也会自动填充协议头，协议头一般占用了 20 byte。也就是说留给传输层数据 只有：[46-20, 1500-20] = [26, 1480]</description>
     </item>
     
     <item>
@@ -2200,7 +2291,8 @@ git reset 参考  How to resolve merge conflicts in Git  扫描下面二维码�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/rocketmq/rocketmq-logicqueue/</guid>
-      <description>RocketMQ 逻辑队列 当前，MessageQueue 和 Broker 耦合在一起，意味着 Broker 数量变化之后，消息队列的数量也会发生变化，这会造成所有的队列都需要一个重新平衡的过程，这个过程可能需要数分钟才能恢复。增加逻辑队列之后，Broker 数量的变化不会影响逻辑队列数量的变化，二者可以独立变化。
+      <description>RocketMQ 逻辑队列  本篇文章还未写完…
+ 当前，MessageQueue 和 Broker 耦合在一起，意味着 Broker 数量变化之后，消息队列的数量也会发生变化，这会造成所有的队列都需要一个重新平衡的过程，这个过程可能需要数分钟才能恢复。增加逻辑队列之后，Broker 数量的变化不会影响逻辑队列数量的变化，二者可以独立变化。
 架构设计    brokerName MessageQueue LogicalQueue     broker1 0 0   broker1 1 1   broker2 0 2   broker2 1 3    假设当前一个 LogicalQueue 从 broker1 迁移到了 broker2，我们迁移的仅仅是映射关系，而非实际的数据，所以 broker1 依然能够正常消费 LogicalQueue-0 这个逻辑队列里面的数据，但是我们会将这个队列的状态置位只读，故这个队列不能再写入消息:
    brokerName MessageQueue LogicalQueue QueueStatus     broker1 0 0(0-100) ReadOnly   broker1 1 1 Normal   broker2 0 2 Normal   broker2 1 3 Normal   broker2 2 0(101-) Normal    当 broker1 从 commit log 和 consume queue 中清除了所有数据后，QueueStatus 变为 Expired (不可读也不可写):</description>
     </item>
@@ -2246,8 +2338,9 @@ Google 的冗余请求是指：客户端首先发送一个请求，并等待服�
 广告系统的扣费是异步化的：
 LSM 树是异步落盘，提高写入性能的：
 Pipeline 也属于异步化，Leader 一批批地处理消息：
-容量规划  机器数量怎么计算?
- 机器数 = 预估总流量/单机容量  分母是预估(通过历史数据估算，过去24小时的调用量分布，取其中的峰值，再乘以一个系数，比如2倍、3倍)的值 分子通过压力测试得到  必须使用峰值测算，不能用均值，虽然持续时间短，可是没办法，的确需要这么多台机器，这也正是云计算 (弹性计算) 要解决的问题。</description>
+高并发读资源优化思路  本节内容来源 阿里Sentinel原理解析
+ 资源与slot chain的对应关系存放在CtSph类全局静态变量chainMap中：
+private static volatile Map&amp;lt;ResourceWrapper, ProcessorSlotChain&amp;gt; chainMap = new HashMap&amp;lt;ResourceWrapper, ProcessorSlotChain&amp;gt;(); 这也意味着系统所有资源的访问都会经过chainMap,这也意味着chainMap是一个竞态热点访问数据。这就要求访问chainMap是高性能的同时，chainMap的更新也是线程安全的。</description>
     </item>
     
     <item>
@@ -3445,10 +3538,11 @@ SELECT tweets.*, users.* FROM tweets JOIN users ON tweets.sender_id = users.</de
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/programmer-interview/java/synchronized/</guid>
-      <description>synchronized 锁的对象是谁 当你使用 synchronized 关键字的时候，JVM 底层使用 Monitor 锁来实现同步。而锁的对象可以分为：
+      <description>synchronized 简介 Java Monitor 支持两种线程同步：
+ mutual exclusion：通过锁来支持 cooperation：通过 Object.wait() 和 Object.notify() 来支持。  锁的对象是谁 当你使用 synchronized 关键字的时候，JVM 底层使用 Monitor 锁来实现同步。而锁的对象可以分为：
  如果 synchronized 的是普通方法，那么锁是当前实例 如果 synchronized 的是静态方法，那么锁是当前类的 Class 如果 synchronized 的是同步块，那么锁是括号里面的对象  synchronized 同步块 底层基于 monitorenter 和 monitorexit 这一对指令实现的。
-public void foo(Object lock) { synchronized (lock) { lock.hashCode(); } } 上面的Java代码将编译为下面的字节码：
-public void foo(java.lang.Object); Code: 0: aload_1 1: dup 2: astore_2 3: monitorenter 4: aload_1 5: invokevirtual java/lang/Object.hashCode:()I 8: pop 9: aload_2 10: monitorexit 11: goto 19 14: astore_3 15: aload_2 16: monitorexit 17: aload_3 18: athrow 19: return Exception table: from to target type 4 11 14 any 14 17 14 any synchronized 方法 方法标记为 ACC_SYNCHRONIZED，同样需要进行 monitorenter 操作。</description>
+public void foo(Object lock) { synchronized (lock) { lock.hashCode(); } } 上面的 Java 代码将编译为下面的字节码：
+public void foo(java.lang.Object); Code: 0: aload_1 1: dup 2: astore_2 3: monitorenter 4: aload_1 5: invokevirtual java/lang/Object.</description>
     </item>
     
     <item>
@@ -3987,12 +4081,12 @@ let b = new Foo(); b.__proto___ === Foo.prototype // true 自 ECMAScript5 起，
     </item>
     
     <item>
-      <title>ShardingSphere 3.X</title>
+      <title>ShardingSphere</title>
       <link>https://kunzhao.org/docs/tutorial/database/sharding-sphere/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/database/sharding-sphere/</guid>
-      <description>ShardingSphere 3.X 分片 分片键 用于分片的数据库字段，是将数据库(表)水平拆分的关键字段。例：将订单表中的订单主键的尾数取模分片，则订单主键为分片字段。 SQL中如果无分片字段，将执行全路由，性能较差。 除了对单分片字段的支持，ShardingSphere也支持根据多个字段进行分片。
+      <description>ShardingSphere 分片 分片键 用于分片的数据库字段，是将数据库(表)水平拆分的关键字段。例：将订单表中的订单主键的尾数取模分片，则订单主键为分片字段。 SQL中如果无分片字段，将执行全路由，性能较差。 除了对单分片字段的支持，ShardingSphere也支持根据多个字段进行分片。
 分片算法 通过分片算法将数据分片，支持通过=、BETWEEN和IN分片。分片算法需要应用方开发者自行实现，可实现的灵活度非常高。
  精确分片算法 PreciseShardingAlgorithm: 用于处理使用单一键作为分片键的 = 与 IN 进行分片的场景。 范围分片算法 RangeShardingAlgorithm: 用于处理使用单一键作为分片键的 BETWEEN AND 进行分片的场景。 复合分片算法 ComplexKeysShardingAlgorithm: 用于处理使用多键作为分片键进行分片的场景。 Hint 分片算法 HintShardingAlgorithm: 用于处理使用 Hint 行分片的场景。  分片策略 包含分片键和分片算法，由于分片算法的独立性，将其独立抽离。真正可用于分片操作的是分片键 + 分片算法，也就是分片策略。目前提供5种分片策略。
  标准分片策略 复合分片策略 行表达式分片策略: 使用 Groovy 表达式 Hint 分片策略 不分片策略   行表达式语法说明
@@ -4014,22 +4108,21 @@ online_table1, online_table2, online_table3, offline_table1, offline_table2, off
     </item>
     
     <item>
-      <title>内存</title>
+      <title>内存管理</title>
       <link>https://kunzhao.org/docs/tutorial/unix-optimize/memory/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/unix-optimize/memory/</guid>
-      <description>内存  作者：赵坤
- 内存分配 首先给出 32 位系统虚拟内存空间分布图：
-在 C 语言中，内存分配采用 malloc() 函数进行分配。底层实现：
+      <description>内存 内存分配 虚拟内存空间的管理，每个进程看到的是独立的、互不干扰的虚拟地址空间。
+首先给出 32 位系统虚拟内存空间分布图。从程序的视角看，有 2^32 = 4G 的内存可以供自己使用。当然最顶部的空间是给内核使用的，下面的才是用户可以使用的。
+ 只读段，即 Text Segment，存放二进制可执行代码 数据段，即 Data Segment，存放静态常量 数据段上面其实还有 BSS Segment，存放未初始化的静态常量 内核代码也是 ELF 格式的，也有上述这 3 个段  在 C 语言中，内存分配采用 malloc() 函数进行分配。底层实现：
  申请的内存小于 128K，使用 brk() 函数完成，也就是从上图中的堆中分配的内存 申请的内存大于 128K，使用 mmap() 内存映射函数完成，也就是从上图中的文件映射中分配的内存  内存回收 应用程序应通过 free() 或 unmap() 来释放内存。
 当然，系统也会监管进程的内存，当发现系统内存不足时，会采取措施：
  使用 LRU 算法回收缓存 回收不常访问的内存，写到 Swap 区（位于硬盘上） 杀死进程  虚拟内存 分段机制 分段机制下的虚拟地址由两部分组成，段选择子和段内偏移量。段选择子就保存在咱们前面讲过的段寄存器里面。段选择子里面最重要的是段号，用作段表的索引。段表里面保存的是这个段的基地址、段的界限和特权等级等。虚拟地址中的段内偏移量应该位于 0 和段界限之间。如果段内偏移量是合法的，就将段基地址加上段内偏移量得到物理内存地址。
 分段对内存区域的映射以程序为单位，内存不足，换入换出到磁盘的是整个程序，粒度比较大，产生大量磁盘 IO，而根据程序的局部性原理，程序运行时，某个时间段，一般只是频繁用到很小的一部分数据。那么可以利用更小粒度的内存分割和映射方法，这就是分页。
 分页 (Paging) 对于物理内存，操作系统把它分成一块一块大小相同的页，这样更方便管理，例如有的内存页面长时间不用了，可以暂时写到硬盘上，称为换出。一旦需要的时候，再加载进来，叫做换入。这样可以扩大可用物理内存的大小，提高物理内存的利用率。
 这个换入和换出都是以页为单位的。页面的大小一般为 4KB。为了能够定位和访问每个页，需要有个页表，保存每个页的起始地址，再加上在页内的偏移量，组成线性地址，就能对于内存中的每个位置进行访问了。
-虚拟地址分为两部分，页号和页内偏移。页号作为页表的索引，页表包含物理页每页所在物理内存的基地址。这个基地址与页内偏移的组合就形成了物理内存地址。
-内存映射  用户态内存映射函数 mmap，包括用它来做匿名映射和文件映射。 用户态的页表结构，存储位置在 mm_struct 中。 在用户态访问没有映射的内存会引发缺页异常，分配物理页表、补齐页表。如果是匿名映射则分配物理内存；如果是 swap，则将 swap 文件读入；如果是文件映射，则将文件读入。  查看整个系统的内存 $ free total used free shared buff/cache available Mem: 6030036 2312004 266488 624252 3451544 2911700 Swap: 2097148 256 2096892 查看某个进程的内存 使用 top 或 ps：</description>
+虚拟地址分为两部分，页号和页内偏移。页号作为页表的索引，页表包含物理页每页所在物理内存的基地址。这个基地址与页内偏移的组合就形成了物理内存地址。</description>
     </item>
     
     <item>
@@ -4078,6 +4171,23 @@ RuntimeException Java 常见 RuntimeException：
  InterruptedException IOException SQLException  NoClassDefFoundError vs ClassNotFoundException 当应用程序运行的过程中尝试使用类加载器去加载 Class 文件的时候，如果没有在 classpath 中查找到指定的类，就会抛出ClassNotFoundException。一般情况下，当我们使用 Class.forName() 或者 ClassLoader.loadClass 以及使用ClassLoader.findSystemClass() 在运行时加载类的时候，如果类没有被找到，那么就会导致 JVM 抛出ClassNotFoundException。
  NoClassDefFoundError
  Thrown if the Java Virtual Machine or a ClassLoader instance tries to load in the definition of a class (as part of a normal method call or as part of creating a new instance using the new expression) and no definition of the class could be found.</description>
+    </item>
+    
+    <item>
+      <title>Linux tail 命令源码解析</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-optimize/tail/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-optimize/tail/</guid>
+      <description>Linux tail 命令源码解析 基础用法 tail 命令是在 Linux 系统上经常使用的一个命令，其能快速查看文件尾部的内容。它的基本用法如下所示。
+(1) -n 查看末尾指定行数的内容，n 代表的是 number 的意思：
+$ tail -n 15 word-list.txt (2) -c 查看末尾指定字节数的内容：
+$ tail -c 93 list-2.txt (3) -f 实时打印日志。某个文件的末尾有新的追加行的时候，立即在控制台上显示出来，经常用这个命令查看某个文件的实时输出的日志，方便跟踪问题：
+tail -f nginx.log tail 还有一些其他用法，可以通过执行 man tail 来查看。
+读取倒数 n 行源码 tail 命令从文件尾部来显示文件内容，那么它是如何做到从尾部动态或者静态的去显示文件呢，它使用中有哪些需要注意的地方呢？接下来就带大家分析一下 tail 命令的源码。
+在 tail 源码顶部，即定义了一个常量，表示如果没有指定查看的长度 (tail abc.txt)，那么就默认显示这个文件后 10 行的内容：
+/* Number of items to tail. */ #define DEFAULT_N_LINES 10 首先是打开文件：
+fd = open (f-&amp;gt;name, O_RDONLY | O_BINARY); 然后调用 tail 函数，tail 函数内部会根据参数的不同，选择 tail_lines 还是 tail_bytes 来调用。再次我们选择 tail_lines 函数来解释。</description>
     </item>
     
     <item>
@@ -4479,17 +4589,28 @@ handleCallback({&amp;#34;status&amp;#34;: true, &amp;#34;user&amp;#34;: &amp;#34
     </item>
     
     <item>
+      <title>性能优化命令</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-optimize/tools/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-optimize/tools/</guid>
+      <description>性能优化常用命令 CPU 负载    命令 解释     uptime 0.63, 0.83, 0.88   grep &#39;model name&#39; /proc/cpuinfo | wc -l 查看有几个CPU，以便对比uptime是否超过负载   mpstat -P ALL 5 监控所有CPU，后面数字5表示间隔5秒后输出一组数据   pidstat -u 5 1 间隔5秒后输出一组数据   stress --cpu 1 --timeout 600 模拟 CPU 密集型进程，pidstat的%usr升高   stress -i 1 --timeout 600 模拟 I/O 压力，即不停地执行 sync，pidstat的iowait升高   stress -c 8 --timeout 600 模拟大量进程，pidstat的%wait升高     平均负载 uptime 是指单位时间内，系统处于可运行状态和不可中断状态的平均进程数，也就是平均活跃进程数。通过 ps 命令可以看到进程的状态。</description>
+    </item>
+    
+    <item>
       <title>线程和进程</title>
       <link>https://kunzhao.org/docs/tutorial/unix-optimize/thread_process/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/unix-optimize/thread_process/</guid>
-      <description>线程和进程 线程 线程通信方式  POSIX 信号量 互斥锁 (互斥量)：独占方式访问关键代码段。 条件变量：某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程。  线程的数据 生命周期 另外一副 Java 线程的状态转换图：
+      <description>线程和进程 执行二进制文件 Linux 下二进制文件格式一般是 ELF(Executable and Linkable Format) 格式。
+执行二进制文件的过程，简而言之就是先 load_elf_binary 加载二进制文件，然后 start_thread 。
+其中 load_elf_binary 加载二进制文件中，很重要的一步就是建立内存映射：
+ 设置内存映射区 mmap_base 设置 vm_area_struct，栈底、栈顶 将 ELF 文件中的代码映射到内存 设置 vm_area_struct 将依赖的 so 文件映射到内存的内存映射区域  最后行程下面的内存映射图：
+线程 线程通信方式  POSIX 信号量 互斥锁 (互斥量)：独占方式访问关键代码段。 条件变量：某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程。  线程的数据 生命周期 另外一副 Java 线程的状态转换图：
 另外一副更为详细的：
 何时可以响应中断  线程在运行态是不响应中断的。
-    状态 中断效果 描述     NEW 无    RUNNABLE 设置中断标志位 用户自己判断是否中断，以及如何处理   BLOCKED 设置中断标志位 用户自己判断是否中断，以及如何处理   WAITING 抛InterruptedException异常，并清空中断标志位    TIMED_WAITING 抛InterruptedException异常，并清空中断标志位    TERMINATED 无     自发性上下文切换 自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。sleep()、wait()、yield()、join()、park()、synchronized、lock。
-停止线程 (1) volatile 标志位
-// set this to true to stop the thread volatile boolean shutdown = false; .</description>
+    状态 中断效果 描述     NEW 无    RUNNABLE 设置中断标志位 用户自己判断是否中断，以及如何处理   BLOCKED 设置中断标志位 用户自己判断是否中断，以及如何处理   WAITING 抛InterruptedException异常，并清空中断标志位    TIMED_WAITING 抛InterruptedException异常，并清空中断标志位    TERMINATED 无     自发性上下文切换 自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。sleep()、wait()、yield()、join()、park()、synchronized、lock。</description>
     </item>
     
     <item>

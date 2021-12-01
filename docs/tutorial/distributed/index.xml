@@ -97,6 +97,17 @@ RocketMQ 会定期 (默认 1min) 扫描所有的预发送但是还没有确认�
     </item>
     
     <item>
+      <title>Raft</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/raft/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/raft/</guid>
+      <description>Raft  本文基于 alibaba/nacos 源码中的 raft 进行分析
+ Raft 协议 nacos 对一致性协议进行抽象，将其关键的方法抽象到 ConsistencyProtocol 接口中，关键的方法有同步/异步读写数据等：
+public interface ConsistencyProtocol&amp;lt;T extends Config, P extends RequestProcessor&amp;gt; extends CommandOperations { // 初始化  void init(T config); Response getData(ReadRequest request) throws Exception; Response write(WriteRequest request) throws Exception; CompletableFuture&amp;lt;Response&amp;gt; aGetData(ReadRequest request); CompletableFuture&amp;lt;Response&amp;gt; writeAsync(WriteRequest request); // 新的成员节点列表，一致性协议自行处理相应的成员节点是加入还是离开  void memberChange(Set&amp;lt;String&amp;gt; addresses); } // CP 协议 public interface CPProtocol&amp;lt;C extends Config, P extends RequestProcessor4CP&amp;gt; extends ConsistencyProtocol&amp;lt;C, P&amp;gt; { boolean isLeader(String group); } // AP 协议 public interface APProtocol&amp;lt;C extends Config, P extends RequestProcessor4AP&amp;gt; extends ConsistencyProtocol&amp;lt;C, P&amp;gt; { } JRaft 参考  蚂蚁金服开源 SOFAJRaft：生产级 Java Raft 算法库 Raft 算法解读  </description>
+    </item>
+    
+    <item>
       <title>副本一致性算法</title>
       <link>https://kunzhao.org/docs/tutorial/distributed/multi-replica-consistency/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -164,8 +175,9 @@ Google 的冗余请求是指：客户端首先发送一个请求，并等待服�
 广告系统的扣费是异步化的：
 LSM 树是异步落盘，提高写入性能的：
 Pipeline 也属于异步化，Leader 一批批地处理消息：
-容量规划  机器数量怎么计算?
- 机器数 = 预估总流量/单机容量  分母是预估(通过历史数据估算，过去24小时的调用量分布，取其中的峰值，再乘以一个系数，比如2倍、3倍)的值 分子通过压力测试得到  必须使用峰值测算，不能用均值，虽然持续时间短，可是没办法，的确需要这么多台机器，这也正是云计算 (弹性计算) 要解决的问题。</description>
+高并发读资源优化思路  本节内容来源 阿里Sentinel原理解析
+ 资源与slot chain的对应关系存放在CtSph类全局静态变量chainMap中：
+private static volatile Map&amp;lt;ResourceWrapper, ProcessorSlotChain&amp;gt; chainMap = new HashMap&amp;lt;ResourceWrapper, ProcessorSlotChain&amp;gt;(); 这也意味着系统所有资源的访问都会经过chainMap,这也意味着chainMap是一个竞态热点访问数据。这就要求访问chainMap是高性能的同时，chainMap的更新也是线程安全的。</description>
     </item>
     
     <item>

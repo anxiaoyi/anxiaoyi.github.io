@@ -5,23 +5,27 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="线程和进程"><meta property="og:title" content="线程和进程" />
-<meta property="og:description" content="线程和进程 线程 线程通信方式  POSIX 信号量 互斥锁 (互斥量)：独占方式访问关键代码段。 条件变量：某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程。  线程的数据 生命周期 另外一副 Java 线程的状态转换图：
+<meta property="og:description" content="线程和进程 执行二进制文件 Linux 下二进制文件格式一般是 ELF(Executable and Linkable Format) 格式。
+执行二进制文件的过程，简而言之就是先 load_elf_binary 加载二进制文件，然后 start_thread 。
+其中 load_elf_binary 加载二进制文件中，很重要的一步就是建立内存映射：
+ 设置内存映射区 mmap_base 设置 vm_area_struct，栈底、栈顶 将 ELF 文件中的代码映射到内存 设置 vm_area_struct 将依赖的 so 文件映射到内存的内存映射区域  最后行程下面的内存映射图：
+线程 线程通信方式  POSIX 信号量 互斥锁 (互斥量)：独占方式访问关键代码段。 条件变量：某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程。  线程的数据 生命周期 另外一副 Java 线程的状态转换图：
 另外一副更为详细的：
 何时可以响应中断  线程在运行态是不响应中断的。
-    状态 中断效果 描述     NEW 无    RUNNABLE 设置中断标志位 用户自己判断是否中断，以及如何处理   BLOCKED 设置中断标志位 用户自己判断是否中断，以及如何处理   WAITING 抛InterruptedException异常，并清空中断标志位    TIMED_WAITING 抛InterruptedException异常，并清空中断标志位    TERMINATED 无     自发性上下文切换 自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。sleep()、wait()、yield()、join()、park()、synchronized、lock。
-停止线程 (1) volatile 标志位
-// set this to true to stop the thread volatile boolean shutdown = false; ." />
+    状态 中断效果 描述     NEW 无    RUNNABLE 设置中断标志位 用户自己判断是否中断，以及如何处理   BLOCKED 设置中断标志位 用户自己判断是否中断，以及如何处理   WAITING 抛InterruptedException异常，并清空中断标志位    TIMED_WAITING 抛InterruptedException异常，并清空中断标志位    TERMINATED 无     自发性上下文切换 自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。sleep()、wait()、yield()、join()、park()、synchronized、lock。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/thread_process/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/thread_process/" /><meta property="article:section" content="docs" />
+
+
 
 <title>线程和进程 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -161,6 +165,32 @@ var _hmt = _hmt || [];
     
       
 
+  <a href="/docs/tutorial/raft/" >
+      raft
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
   <a href="/docs/tutorial/unix-command/" >
       UNIX 常用命令大全
   </a>
@@ -236,7 +266,17 @@ var _hmt = _hmt || [];
         <li>
 
   <a href="/docs/tutorial/unix-optimize/memory/" >
-      内存
+      内存管理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/tail/" >
+      Linux tail 命令源码解析
   </a>
 
 </li>
@@ -267,6 +307,16 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/unix-optimize/async_block/" >
       同步/异步与阻塞/非阻塞
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/tools/" >
+      性能优化命令
   </a>
 
 </li>
@@ -1023,7 +1073,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1051,6 +1101,7 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#执行二进制文件">执行二进制文件</a></li>
     <li><a href="#线程">线程</a>
       <ul>
         <li><a href="#线程通信方式">线程通信方式</a></li>
@@ -1095,6 +1146,19 @@ data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="线程和进程">线程和进程</h1>
+<h2 id="执行二进制文件">执行二进制文件</h2>
+<p>Linux 下二进制文件格式一般是 ELF(Executable and Linkable Format) 格式。</p>
+<p>执行二进制文件的过程，简而言之就是<strong>先 <code>load_elf_binary</code> 加载二进制文件，然后 <code>start_thread</code></strong> 。</p>
+<p>其中 <code>load_elf_binary</code> 加载二进制文件中，很重要的一步就是<strong>建立内存映射</strong>：</p>
+<ul>
+<li>设置内存映射区 <code>mmap_base</code></li>
+<li>设置 <code>vm_area_struct</code>，栈底、栈顶</li>
+<li>将 ELF 文件中的<strong>代码</strong>映射到内存</li>
+<li>设置 <code>vm_area_struct</code></li>
+<li>将依赖的 <code>so</code> 文件映射到内存的<strong>内存映射区域</strong></li>
+</ul>
+<p>最后行程下面的内存映射图：</p>
+<p><img src="/images/docs/tutorial/unix-optimize/thread/7af58012466c7d006511a7e16143314c.webp" alt=""></p>
 <h2 id="线程">线程</h2>
 <h3 id="线程通信方式">线程通信方式</h3>
 <ul>
@@ -1159,7 +1223,7 @@ data-full-width-responsive="true"></ins>
 <p>自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。<code>sleep()</code>、<code>wait()</code>、<code>yield()</code>、<code>join()</code>、<code>park()</code>、<code>synchronized</code>、<code>lock</code>。</p>
 <h3 id="停止线程">停止线程</h3>
 <p>(1) volatile 标志位</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// set this to true to stop the thread
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// set this to true to stop the thread
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">boolean</span> shutdown <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
 <span style="color:#f92672">...</span>
 <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
@@ -1168,7 +1232,7 @@ data-full-width-responsive="true"></ins>
 </span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>(2) interrupt 中断</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Thread t <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread<span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Runnable<span style="color:#f92672">(){</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Thread t <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread<span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Runnable<span style="color:#f92672">(){</span>
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span>Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">().</span><span style="color:#a6e22e">isInterrupted</span><span style="color:#f92672">()){</span>
@@ -1190,7 +1254,7 @@ t<span style="color:#f92672">.</span><span style="color:#a6e22e">interrupt</span
 <ul>
 <li><code>wait</code> 可以被另外一个线程通过调用 <code>notify</code> 唤醒，<code>wait</code>/<code>notify</code> 必须放到 <code>synchronized</code> 块中，<code>wait</code> 之后在 <code>notify</code> 之前操作系统不会给这个线程任何的时间片。</li>
 </ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Object mon <span style="color:#f92672">=</span> <span style="color:#f92672">...;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Object mon <span style="color:#f92672">=</span> <span style="color:#f92672">...;</span>
 <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>mon<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     mon<span style="color:#f92672">.</span><span style="color:#a6e22e">wait</span><span style="color:#f92672">();</span>
 <span style="color:#f92672">}</span> 
@@ -1217,7 +1281,7 @@ t<span style="color:#f92672">.</span><span style="color:#a6e22e">interrupt</span
 <ul>
 <li>复制结构</li>
 </ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">// 复制结构
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">// 复制结构
 </span><span style="color:#75715e"></span>p <span style="color:#f92672">=</span> dup_task_struct(current, node);
 <span style="color:#75715e">// 重新设置进程运行的统计量
 </span><span style="color:#75715e"></span>retval <span style="color:#f92672">=</span> copy_creds(p, clone_flags);
@@ -1237,7 +1301,7 @@ retval <span style="color:#f92672">=</span> copy_signal(clone_flags, p);
 </code></pre></div><ul>
 <li>唤醒新进程</li>
 </ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C">p<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">=</span> TASK_RUNNING;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C">p<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">=</span> TASK_RUNNING;
 enqueue_task_fair(); <span style="color:#75715e">// 放入到 CFS 调度队列
 </span></code></pre></div><p>创建进程的话，调用的系统调用是 <code>fork</code>，在 <code>copy_process</code> 函数里面，会将五大结构 <code>files_struct</code>、<code>fs_struct</code>、<code>sighand_struct</code>、<code>signal_struct</code>、<code>mm_struct</code> 都复制一遍，从此<strong>父进程和子进程各用各的数据结构</strong>。而创建线程的话，调用的是系统调用 <code>clone</code>，在 <code>copy_process</code> 函数里面， 五大结构<strong>仅仅是引用计数加一</strong>，也即线程共享进程的数据结构。</p>
 <h3 id="进程状态">进程状态</h3>
@@ -1248,7 +1312,7 @@ enqueue_task_fair(); <span style="color:#75715e">// 放入到 CFS 调度队列
 <p>参考自 《Linux 高性能服务器编程》</p>
 </blockquote>
 <ul>
-<li><strong>信号</strong></li>
+<li><strong>信号</strong>。这些信号是什么含义可以通过 <code>man 7 signal</code> 查看。</li>
 </ul>
 <pre><code># kill -l
  1) SIGHUP       2) SIGINT       3) SIGQUIT      4) SIGILL       5) SIGTRAP
@@ -1256,19 +1320,19 @@ enqueue_task_fair(); <span style="color:#75715e">// 放入到 CFS 调度队列
 11) SIGSEGV     12) SIGUSR2     13) SIGPIPE     14) SIGALRM     15) SIGTERM
 ...
 </code></pre><ul>
-<li><strong>匿名管道</strong>：<code>tail -f log.txt | grep abc | sort</code></li>
-<li><strong>管道</strong>：可以在父子进程传递数据，利用的是 <code>fork</code> 调用之后两个管道文件描述符都保持打开。<code>mkfifo hello</code></li>
+<li><strong>匿名管道</strong>：<code>tail -f log.txt | grep abc | sort</code>。所谓的匿名管道，其实就是<strong>内核里面的一串缓存</strong>：<code>struct pipe_buffer *bufs</code>。</li>
+<li><strong>管道</strong>：可以在父子进程传递数据，利用的是 <code>fork</code> 调用之后两个管道文件描述符都保持打开。<code>mkfifo hello</code>。所谓的命名管道，其实是<strong>也是内核里面的一串缓存</strong>。</li>
 <li><strong>信号量</strong>：多个进程同时访问系统上某个资源，就需要考虑同步问题。</li>
-<li><strong>共享内存</strong>：<strong>最高效率</strong>的 IPC 机制，因为它在两个进程之间不需要传输任何数据。</li>
-<li><strong>消息队列</strong>：两个进程之间传递二进制块最简单有效的一种方式。</li>
+<li><strong>共享内存</strong>：<strong>最高效率</strong>的 IPC 机制，因为它在两个进程之间不需要传输任何数据。为了访问共享内存，需要<strong>信号量</strong>进行保护。生产者和消费者都通过 <code>shmat</code> 将共享内存映射到<strong>各自的内存空间</strong>，在不同的进程里面映射的位置不同。</li>
+<li><strong>消息队列</strong>：两个进程之间传递二进制块最简单有效的一种方式。一般不使用</li>
 <li><strong>套接字</strong></li>
 </ul>
 <p><strong>共享内存加信号量</strong>是常用的模式。这个需要牢记，常见到一些知名的以 C 语言开发的开源软件都会用到它。</p>
 <h3 id="进程调度算法">进程调度算法</h3>
 <p>在 Linux 里面，进程大概可以分成两种：<strong>实时进程</strong>和<strong>普通进程</strong>。在 <code>task_struct</code> 结构体中的 <code>policy</code> 是这个进程的调度策略：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> policy;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> policy;
 </code></pre></div><p>配合调度策略的，还有<strong>优先级</strong>，也在 <code>task_struct</code> 中。优先级其实就是一个数值，对于实时进程，优先级的范围是 <code>0～99</code>；对于普通进程，优先级的范围是 <code>100～139</code>。<strong>数值越小，优先级越高</strong>。从这里可以看出，所有的实时进程都比普通进程优先级要高。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">int</span> prio, static_prio, normal_prio;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">int</span> prio, static_prio, normal_prio;
 <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> rt_priority;
 </code></pre></div><p>(1) 实时调度策略</p>
 <p>其中 <code>SCHED_FIFO</code>、<code>SCHED_RR</code>、<code>SCHED_DEADLINE</code> 是实时进程的调度策略。</p>
@@ -1327,6 +1391,7 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#执行二进制文件">执行二进制文件</a></li>
     <li><a href="#线程">线程</a>
       <ul>
         <li><a href="#线程通信方式">线程通信方式</a></li>

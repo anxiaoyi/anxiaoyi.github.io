@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Linux tail 命令源码解析"><meta property="og:title" content="Linux tail 命令源码解析" />
+<meta property="og:description" content="Linux tail 命令源码解析 基础用法 tail 命令是在 Linux 系统上经常使用的一个命令，其能快速查看文件尾部的内容。它的基本用法如下所示。
+(1) -n 查看末尾指定行数的内容，n 代表的是 number 的意思：
+$ tail -n 15 word-list.txt (2) -c 查看末尾指定字节数的内容：
+$ tail -c 93 list-2.txt (3) -f 实时打印日志。某个文件的末尾有新的追加行的时候，立即在控制台上显示出来，经常用这个命令查看某个文件的实时输出的日志，方便跟踪问题：
+tail -f nginx.log tail 还有一些其他用法，可以通过执行 man tail 来查看。
+读取倒数 n 行源码 tail 命令从文件尾部来显示文件内容，那么它是如何做到从尾部动态或者静态的去显示文件呢，它使用中有哪些需要注意的地方呢？接下来就带大家分析一下 tail 命令的源码。
+在 tail 源码顶部，即定义了一个常量，表示如果没有指定查看的长度 (tail abc.txt)，那么就默认显示这个文件后 10 行的内容：
+/* Number of items to tail. */ #define DEFAULT_N_LINES 10 首先是打开文件：
+fd = open (f-&gt;name, O_RDONLY | O_BINARY); 然后调用 tail 函数，tail 函数内部会根据参数的不同，选择 tail_lines 还是 tail_bytes 来调用。再次我们选择 tail_lines 函数来解释。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/tail/" /><meta property="article:section" content="docs" />
+
+
+
+<title>Linux tail 命令源码解析 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+
+
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/avg-load/" >
+      平均负载
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/context-switch/" >
+      CPU 上下文切换
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/high-cpu-and-load/" >
+      CPU 飙升或 load 飙升
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/memory/" >
+      内存管理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/tail/"  class="active">
+      Linux tail 命令源码解析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/io/" >
+      磁盘 I/O
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/zero-copy/" >
+      Linux 零拷贝
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/async_block/" >
+      同步/异步与阻塞/非阻塞
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/tools/" >
+      性能优化命令
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/thread_process/" >
+      线程和进程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/analyze/" >
+      Linux 性能分析
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/softskill/" >
+      箴言箴句
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/technique/" >
+      技术
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Linux tail 命令源码解析</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#基础用法">基础用法</a></li>
+    <li><a href="#读取倒数-n-行源码">读取倒数 n 行源码</a></li>
+    <li><a href="#无限读取文件">无限读取文件</a></li>
+    <li><a href="#链接">链接</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="linux-tail-命令源码解析">Linux tail 命令源码解析</h1>
+<h2 id="基础用法">基础用法</h2>
+<p><code>tail</code> 命令是在 Linux 系统上经常使用的一个命令，其能快速查看<strong>文件尾部</strong>的内容。它的基本用法如下所示。</p>
+<p>(1) <code>-n</code> 查看末尾指定行数的内容，<code>n</code> 代表的是 <code>number</code> 的意思：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ tail -n <span style="color:#ae81ff">15</span> word-list.txt
+</code></pre></div><p>(2) <code>-c</code> 查看末尾指定字节数的内容：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ tail -c <span style="color:#ae81ff">93</span> list-2.txt
+</code></pre></div><p>(3) <code>-f</code> 实时打印日志。某个文件的末尾有新的追加行的时候，立即在控制台上显示出来，经常用这个命令查看某个文件的实时输出的日志，方便跟踪问题：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">tail -f nginx.log
+</code></pre></div><p><code>tail</code> 还有一些其他用法，可以通过执行 <code>man tail</code> 来查看。</p>
+<h2 id="读取倒数-n-行源码">读取倒数 n 行源码</h2>
+<p><code>tail</code> 命令从文件尾部来显示文件内容，那么它是如何做到从尾部动态或者静态的去显示文件呢，它使用中有哪些需要注意的地方呢？接下来就带大家分析一下 <code>tail</code> 命令的源码。</p>
+<p>在 <code>tail</code> 源码顶部，即定义了一个常量，表示如果没有指定查看的长度 (<code>tail abc.txt</code>)，那么就默认显示这个文件后 10 行的内容：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">/* Number of items to tail.  */</span>
+<span style="color:#75715e">#define DEFAULT_N_LINES 10
+</span></code></pre></div><p>首先是打开文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C">fd <span style="color:#f92672">=</span> open (f<span style="color:#f92672">-&gt;</span>name, O_RDONLY <span style="color:#f92672">|</span> O_BINARY);
+</code></pre></div><p>然后调用 <code>tail</code> 函数，<code>tail</code> 函数内部会根据参数的不同，选择 <code>tail_lines</code> 还是 <code>tail_bytes</code> 来调用。再次我们选择 <code>tail_lines</code> 函数来解释。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">bool</span>
+<span style="color:#a6e22e">tail</span> (<span style="color:#66d9ef">char</span> <span style="color:#66d9ef">const</span> <span style="color:#f92672">*</span>filename, <span style="color:#66d9ef">int</span> fd, uintmax_t n_units,
+      uintmax_t <span style="color:#f92672">*</span>read_pos)
+{
+  <span style="color:#f92672">*</span>read_pos <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+  <span style="color:#66d9ef">if</span> (count_lines)
+    <span style="color:#66d9ef">return</span> tail_lines (filename, fd, n_units, read_pos);
+  <span style="color:#66d9ef">else</span>
+    <span style="color:#66d9ef">return</span> tail_bytes (filename, fd, n_units, read_pos);
+}
+</code></pre></div><p><code>tail_lines</code> 内部，其检查这个文件是否是一个 <strong>regular</strong> 文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C">S_ISREG (stats.st_mode)
+</code></pre></div><p>Linux 中一切皆文件。平日接触到的文件，例如可执行文件、文本文件、图片等这些都是 <strong>regular</strong> 文件，读或者写这些文件，其操作通常都与磁盘打交道。然后接下来使用 <code>(start_pos = lseek (fd, 0, SEEK_CUR)) != -1</code> 这句话用来检测文件是否可以 <code>seek</code>，如果可以，那么 <code>lseek (fd, 0, SEEK_END)</code> 将文件 <code>seek</code> 到尾部，并将文件偏移量赋值给 <code>end_pos</code>，并调用下一个函数 <code>file_lines</code>。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">if</span> ( <span style="color:#f92672">!</span> presume_input_pipe
+    <span style="color:#f92672">&amp;&amp;</span> S_ISREG (stats.st_mode)
+    <span style="color:#f92672">&amp;&amp;</span> (start_pos <span style="color:#f92672">=</span> lseek (fd, <span style="color:#ae81ff">0</span>, SEEK_CUR)) <span style="color:#f92672">!=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+    <span style="color:#f92672">&amp;&amp;</span> start_pos <span style="color:#f92672">&lt;</span> (end_pos <span style="color:#f92672">=</span> lseek (fd, <span style="color:#ae81ff">0</span>, SEEK_END)))
+{
+    <span style="color:#f92672">*</span>read_pos <span style="color:#f92672">=</span> end_pos;
+    <span style="color:#66d9ef">if</span> (end_pos <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>
+        <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">!</span> file_lines (pretty_filename, fd, n_lines,
+                        start_pos, end_pos, read_pos))
+    <span style="color:#66d9ef">return</span> false;
+}
+</code></pre></div><p><code>file_lines</code> 是 <code>tail</code> 函数的核心。其首先定义了每次读取的缓冲区间 <code>char buffer[BUFSIZ]</code>，这个 <code>BUFSIZ</code> 大小在我自己电脑上的值是 <code>8192</code>。然后从尾部开始先读取 <code>((pos - start_pos) % BUFSIZ)</code> 字节到 <code>buffer</code> 中，即把不是 <code>BUFSIZ</code> 整数倍的这部分字节先读取掉，然后再倒着每次读取 <code>BUFSIZ</code> 个，如下图所示从尾部倒着读取：</p>
+<pre><code>    __________
+ ^ |   ...    | ...
+ | |__________|
+ | |          | BUFSIZ
+ | |__________|
+ | |          | BUFSIZ
+ | |__________|
+ | |__________| ((pos - start_pos) % BUFSIZ)
+</code></pre><p>每次读取的位置都是通过 <code>xlseek</code> 函数来定位的，<code>pos</code> 值也相应的每次减去 <code>BUFSIZ</code> 个单位 <code>pos -= BUFSIZ</code>，读取的数据也是存放到了 <code>buffer</code> 中 ：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C">pos <span style="color:#f92672">-=</span> BUFSIZ;
+xlseek (fd, pos, SEEK_SET, pretty_filename);
+bytes_read <span style="color:#f92672">=</span> safe_read (fd, buffer, BUFSIZ);
+</code></pre></div><p>在每次读取数据之后，都会从这数据中去寻找有没有换行符，以便统计当前已经读取了多少行。<code>memrchr</code> 函数用于在前 <code>n</code> 个字节中，从后往前查找指定字符出现的位置，每找到一个换行符，<code>n_lines</code> 就递减一下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C">size_t n <span style="color:#f92672">=</span> bytes_read;
+<span style="color:#66d9ef">while</span> (n)
+{
+    <span style="color:#66d9ef">char</span> <span style="color:#66d9ef">const</span> <span style="color:#f92672">*</span>nl;
+    nl <span style="color:#f92672">=</span> memrchr (buffer, line_end, n);
+    <span style="color:#66d9ef">if</span> (nl <span style="color:#f92672">==</span> NULL)
+        <span style="color:#66d9ef">break</span>;
+    n <span style="color:#f92672">=</span> nl <span style="color:#f92672">-</span> buffer;
+    <span style="color:#66d9ef">if</span> (n_lines<span style="color:#f92672">--</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) 
+    {
+        <span style="color:#75715e">// 打印数据
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> true;
+    }
+}
+</code></pre></div><p>当最后 <code>n_lines</code> 减少为 0 的时候，说明已经读取到了倒数第 <code>n</code> 行的位置，那么此时开始往屏幕上打印尾部 <code>n</code> 行的数据：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C">xwrite_stdout (nl <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>, bytes_read <span style="color:#f92672">-</span> (n <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>));
+<span style="color:#f92672">*</span>read_pos <span style="color:#f92672">+=</span> dump_remainder (false, pretty_filename, fd,
+                            end_pos <span style="color:#f92672">-</span> (pos <span style="color:#f92672">+</span> bytes_read));
+</code></pre></div><p>如下图所示，其首先打印从 <code>nl + 1</code> 字符开始的 <code>bytes - (n + 1)</code> 个字符：</p>
+<pre><code>buffer                   bytes_read
+   [     \n         \n      ]
+         nl----------------&gt;
+</code></pre><p>最后一次从当前 <code>pos</code> 位置读取数据到 <code>BUFFER</code> 的时候，文件的位置也移动到了 <code>pos + bytes</code> 的位置 (<code>safe_read</code> 本身会改变 <code>fd</code> 关联的位置)，然后调用 <code>dump_remainder</code> 函数，再从 <code>fd</code> 的当前位置每隔 <code>BUFSIZ</code> 读取并打印一下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">while</span> (true)
+{
+    <span style="color:#66d9ef">char</span> buffer[BUFSIZ];
+    size_t n <span style="color:#f92672">=</span> MIN (n_remaining, BUFSIZ);
+    size_t bytes_read <span style="color:#f92672">=</span> safe_read (fd, buffer, n);
+    <span style="color:#66d9ef">if</span> (bytes_read <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)
+        <span style="color:#66d9ef">break</span>;
+
+    xwrite_stdout (buffer, bytes_read);
+}
+</code></pre></div><h2 id="无限读取文件">无限读取文件</h2>
+<p>当 <code>tail</code> 函数增加 <code>-f</code> 选项的时候，那么在打印出倒数若干行之后，接下来只要这个文件有变动，便会立即打印出来尾部追加变动的数据到控制台上。</p>
+<p>在默认配置下，<code>tail</code> 使用 <code>xnanosleep</code> 函数每隔 1 秒检测一次文件是否有变化。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">// 每隔 1 秒检查一次
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">double</span> sleep_interval <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.0</span>;
+tail_forever (F, n_files, sleep_interval);
+</code></pre></div><p>在 <code>tail_forever</code> 函数内部，如下所示，其根据<strong>文件大小</strong>以及<strong>文件的修改日期</strong>，来判断文件是否发生变化：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">if</span> (f[i].mode <span style="color:#f92672">==</span> stats.st_mode
+    <span style="color:#f92672">&amp;&amp;</span> (<span style="color:#f92672">!</span> S_ISREG (stats.st_mode) <span style="color:#f92672">||</span> f[i].size <span style="color:#f92672">==</span> stats.st_size)
+    <span style="color:#f92672">&amp;&amp;</span> timespec_cmp (f[i].mtime, get_stat_mtime (<span style="color:#f92672">&amp;</span>stats)) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)
+{
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">continue</span>;
+}
+</code></pre></div><p>如果发生了变化，其调用 <code>dump_remainder</code> 函数将当前位置到末尾的数据打印到控制台上。</p>
+<h2 id="链接">链接</h2>
+<ul>
+<li><a href="http://git.savannah.gnu.org/cgit/coreutils.git/tree/src/tail.c">coreutils.git: tail</a></li>
+</ul>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#基础用法">基础用法</a></li>
+    <li><a href="#读取倒数-n-行源码">读取倒数 n 行源码</a></li>
+    <li><a href="#无限读取文件">无限读取文件</a></li>
+    <li><a href="#链接">链接</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -18,19 +18,22 @@ Google 的冗余请求是指：客户端首先发送一个请求，并等待服�
 广告系统的扣费是异步化的：
 LSM 树是异步落盘，提高写入性能的：
 Pipeline 也属于异步化，Leader 一批批地处理消息：
-容量规划  机器数量怎么计算?
- 机器数 = 预估总流量/单机容量  分母是预估(通过历史数据估算，过去24小时的调用量分布，取其中的峰值，再乘以一个系数，比如2倍、3倍)的值 分子通过压力测试得到  必须使用峰值测算，不能用均值，虽然持续时间短，可是没办法，的确需要这么多台机器，这也正是云计算 (弹性计算) 要解决的问题。" />
+高并发读资源优化思路  本节内容来源 阿里Sentinel原理解析
+ 资源与slot chain的对应关系存放在CtSph类全局静态变量chainMap中：
+private static volatile Map&lt;ResourceWrapper, ProcessorSlotChain&gt; chainMap = new HashMap&lt;ResourceWrapper, ProcessorSlotChain&gt;(); 这也意味着系统所有资源的访问都会经过chainMap,这也意味着chainMap是一个竞态热点访问数据。这就要求访问chainMap是高性能的同时，chainMap的更新也是线程安全的。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/high-concurrency/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/high-concurrency/" /><meta property="article:section" content="docs" />
+
+
 
 <title>高并发设计方案 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -146,6 +149,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/algorithm/" >
       算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
   </a>
 
 
@@ -604,6 +633,16 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/distributed/transaction/" >
       分布式事务解决方案汇总
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/raft/" >
+      Raft
   </a>
 
 </li>
@@ -1122,7 +1161,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1152,6 +1191,8 @@ var _hmt = _hmt || [];
   <ul>
     <li><a href="#高并发读">高并发读</a></li>
     <li><a href="#高并发写">高并发写</a></li>
+    <li><a href="#高并发读资源优化思路">高并发读资源优化思路</a></li>
+    <li><a href="#高并发写资源优化思路-分桶思想">高并发写资源优化思路 (分桶思想)</a></li>
     <li><a href="#容量规划">容量规划</a></li>
   </ul>
 </nav>
@@ -1195,6 +1236,60 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/distributed/high-concurrency/Snipaste_2020-12-30_21-59-50.png" alt=""></p>
 <p>Pipeline 也属于异步化，Leader <strong>一批批</strong>地处理消息：</p>
 <p><img src="/images/docs/tutorial/distributed/high-concurrency/Snipaste_2020-12-30_23-02-13.png" alt=""></p>
+<h2 id="高并发读资源优化思路">高并发读资源优化思路</h2>
+<blockquote>
+<p>本节内容来源 <a href="https://zhuanlan.zhihu.com/p/64786381">阿里Sentinel原理解析</a></p>
+</blockquote>
+<p>资源与<code>slot chain</code>的对应关系存放在<code>CtSph</code>类全局静态变量<code>chainMap</code>中：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">volatile</span> Map<span style="color:#f92672">&lt;</span>ResourceWrapper<span style="color:#f92672">,</span> ProcessorSlotChain<span style="color:#f92672">&gt;</span> chainMap
+        <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HashMap<span style="color:#f92672">&lt;</span>ResourceWrapper<span style="color:#f92672">,</span> ProcessorSlotChain<span style="color:#f92672">&gt;();</span>
+</code></pre></div><p>这也意味着系统所有资源的访问都会经过<code>chainMap</code>,这也意味着<code>chainMap</code>是一个<strong>竞态热点访问数据</strong>。这就要求访问<code>chainMap</code>是高性能的同时，<code>chainMap</code>的更新也是线程安全的。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 根据资源获取对应的SlotChain
+</span><span style="color:#75715e"></span>ProcessorSlot<span style="color:#f92672">&lt;</span>Object<span style="color:#f92672">&gt;</span> <span style="color:#a6e22e">lookProcessChain</span><span style="color:#f92672">(</span>ResourceWrapper resourceWrapper<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    ProcessorSlotChain chain <span style="color:#f92672">=</span> chainMap<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>resourceWrapper<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>chain <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>LOCK<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            chain <span style="color:#f92672">=</span> chainMap<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>resourceWrapper<span style="color:#f92672">);</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>chain <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#75715e">// Entry size limit.
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>chainMap<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;=</span> Constants<span style="color:#f92672">.</span><span style="color:#a6e22e">MAX_SLOT_CHAIN_SIZE</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+
+                chain <span style="color:#f92672">=</span> SlotChainProvider<span style="color:#f92672">.</span><span style="color:#a6e22e">newSlotChain</span><span style="color:#f92672">();</span>
+                Map<span style="color:#f92672">&lt;</span>ResourceWrapper<span style="color:#f92672">,</span> ProcessorSlotChain<span style="color:#f92672">&gt;</span> newMap <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HashMap<span style="color:#f92672">&lt;</span>ResourceWrapper<span style="color:#f92672">,</span> ProcessorSlotChain<span style="color:#f92672">&gt;(</span>
+                    chainMap<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">()</span> <span style="color:#f92672">+</span> 1<span style="color:#f92672">);</span>
+                newMap<span style="color:#f92672">.</span><span style="color:#a6e22e">putAll</span><span style="color:#f92672">(</span>chainMap<span style="color:#f92672">);</span>
+                newMap<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>resourceWrapper<span style="color:#f92672">,</span> chain<span style="color:#f92672">);</span>
+                
+                <span style="color:#75715e">// 切换引用即可
+</span><span style="color:#75715e"></span>                chainMap <span style="color:#f92672">=</span> newMap<span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">return</span> chain<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>我们看到代码没有对<code>chainMap</code>加任何锁，只是在更新<code>chainMap</code>时是通过额外加锁和复制替换的形式。这里面用到的技巧包括了<code>volatile</code>特性、<code>copyOnWrite</code>、<code>synchronized</code>。这样高并发下读写操作是并行的，只有写写操作之间串行。但注意的是写操作是一个纯内存操作，只有第一次访问资源时才会触发，其时间花费只与资源的数量成正比，正常应用资源个数一般在数千以内，并且对象是共享的，这个花费的时间是非常的少。另外阿里也做了资源数量的限制： <code>MAX_SLOT_CHAIN_SIZE = 6000</code>。所以写写操作也是非常的快，比例也很少。再加上<code>volatile</code>关键字的特性，<code>chainMap</code>更新后对所有线程都可见，线程安全。</p>
+<blockquote>
+<p>为什么不用 <code>ConcurrentHashMap</code>，是因为<strong>读远远多于写</strong>。每次读都要 CAS，是没有必要的。</p>
+</blockquote>
+<h2 id="高并发写资源优化思路-分桶思想">高并发写资源优化思路 (分桶思想)</h2>
+<blockquote>
+<p>本节内容来自 <a href="https://blog.csdn.net/baidu_28523317/article/details/103675910">Alibaba Sentinel是如何统计QPS实现限流的</a></p>
+</blockquote>
+<p>Sentinel 是以 <code>Bucket</code>（桶）为单位记录一段时间内的<strong>请求总数</strong>、<strong>异常总数</strong>、<strong>总耗时</strong>的，而一个<code>Bucket</code>可以是记录<strong>一秒内</strong>的数据，也可以是<strong>10毫秒内</strong>的数据，我们称这个时间区间为<code>Bucket</code>的统计单位，是由使用者自定义的。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MetricBucket</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">/**
+</span><span style="color:#75715e">     * 存储各事件的计数，比如异常总数、请求总数等
+</span><span style="color:#75715e">     */</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> LongAdder<span style="color:#f92672">[]</span> counters<span style="color:#f92672">;</span>
+    <span style="color:#75715e">/**
+</span><span style="color:#75715e">     * 这段事件内的最小耗时
+</span><span style="color:#75715e">     */</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> minRt<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>有了Bucket之后，假设我们需要让Bucket存储一秒钟的数据，这样我们就能够知道每秒处理成功的请求数(成功QPS)、每秒处理失败的请求数(失败QPS)，以及处理每个成功请求的平均耗时(avg RT)。但是我们如何才能确保Bucket存储的就是精确到1秒的数据呢？</p>
+<p>Sentinel是这样实现的。它定义一个Bucket数组，根据时间戳来定位到数组下标。假设我们需要统计每1秒处理的请求数等数据，且只需要保存最近一分钟的数据。那么Bucket数组的大小就可以设置为60，每个Bucket的<code>windowLengthInMs</code>窗口大小就是1000毫秒（1秒）。这个数组可以<strong>循环使用</strong>，永远只保存最近1分钟的数据。</p>
 <h2 id="容量规划">容量规划</h2>
 <blockquote>
 <p>机器数量怎么计算?</p>
@@ -1242,6 +1337,8 @@ data-full-width-responsive="true"></ins>
   <ul>
     <li><a href="#高并发读">高并发读</a></li>
     <li><a href="#高并发写">高并发写</a></li>
+    <li><a href="#高并发读资源优化思路">高并发读资源优化思路</a></li>
+    <li><a href="#高并发写资源优化思路-分桶思想">高并发写资源优化思路 (分桶思想)</a></li>
     <li><a href="#容量规划">容量规划</a></li>
   </ul>
 </nav>

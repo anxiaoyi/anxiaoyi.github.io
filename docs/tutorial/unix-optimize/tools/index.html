@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="性能优化命令"><meta property="og:title" content="性能优化命令" />
+<meta property="og:description" content="性能优化常用命令 CPU 负载    命令 解释     uptime 0.63, 0.83, 0.88   grep &#39;model name&#39; /proc/cpuinfo | wc -l 查看有几个CPU，以便对比uptime是否超过负载   mpstat -P ALL 5 监控所有CPU，后面数字5表示间隔5秒后输出一组数据   pidstat -u 5 1 间隔5秒后输出一组数据   stress --cpu 1 --timeout 600 模拟 CPU 密集型进程，pidstat的%usr升高   stress -i 1 --timeout 600 模拟 I/O 压力，即不停地执行 sync，pidstat的iowait升高   stress -c 8 --timeout 600 模拟大量进程，pidstat的%wait升高     平均负载 uptime 是指单位时间内，系统处于可运行状态和不可中断状态的平均进程数，也就是平均活跃进程数。通过 ps 命令可以看到进程的状态。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/tools/" /><meta property="article:section" content="docs" />
+
+
+
+<title>性能优化命令 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+
+
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/avg-load/" >
+      平均负载
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/context-switch/" >
+      CPU 上下文切换
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/high-cpu-and-load/" >
+      CPU 飙升或 load 飙升
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/memory/" >
+      内存管理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/tail/" >
+      Linux tail 命令源码解析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/io/" >
+      磁盘 I/O
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/zero-copy/" >
+      Linux 零拷贝
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/async_block/" >
+      同步/异步与阻塞/非阻塞
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/tools/"  class="active">
+      性能优化命令
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/thread_process/" >
+      线程和进程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/unix-optimize/analyze/" >
+      Linux 性能分析
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/softskill/" >
+      箴言箴句
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/technique/" >
+      技术
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>性能优化命令</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#cpu-负载">CPU 负载</a></li>
+    <li><a href="#网络">网络</a></li>
+    <li><a href="#工具包">工具包</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="性能优化常用命令">性能优化常用命令</h1>
+<h2 id="cpu-负载">CPU 负载</h2>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>uptime</code></td>
+<td>0.63, 0.83, 0.88</td>
+</tr>
+<tr>
+<td><code>grep 'model name' /proc/cpuinfo | wc -l</code></td>
+<td>查看有几个CPU，以便对比<code>uptime</code>是否超过负载</td>
+</tr>
+<tr>
+<td><code>mpstat -P ALL 5</code></td>
+<td>监控所有CPU，后面数字5表示间隔5秒后输出一组数据</td>
+</tr>
+<tr>
+<td><code>pidstat -u 5 1</code></td>
+<td>间隔5秒后输出一组数据</td>
+</tr>
+<tr>
+<td><code>stress --cpu 1 --timeout 600</code></td>
+<td>模拟 CPU 密集型进程，<code>pidstat</code>的<code>%usr</code>升高</td>
+</tr>
+<tr>
+<td><code>stress -i 1 --timeout 600</code></td>
+<td>模拟 I/O 压力，即不停地执行 <code>sync</code>，<code>pidstat</code>的<code>iowait</code>升高</td>
+</tr>
+<tr>
+<td><code>stress -c 8 --timeout 600</code></td>
+<td>模拟大量进程，<code>pidstat</code>的<code>%wait</code>升高</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>平均负载 <code>uptime</code> 是指单位时间内，系统处于<strong>可运行状态</strong>和<strong>不可中断状态</strong>的平均进程数，也就是平均活跃进程数。通过 <code>ps</code> 命令可以看到进程的状态。</p>
+</blockquote>
+<p><code>uptime</code> 和 <code>CPU 率高低</code> 的关系：</p>
+<ul>
+<li>CPU 密集型进程，两个值都高</li>
+<li>I/O 密集型进程，CPU 使用率不一定会高，但是 <code>uptime</code> 会高</li>
+<li>大量等待 CPU 的进程调度，两个值也会都高</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vmstat 5</code></td>
+<td>每隔5秒输出1组数据，<code>cs</code>每秒上下文切换次数，<code>in</code>每秒中断次数</td>
+</tr>
+<tr>
+<td><code>pidstat -w 5</code></td>
+<td>查看每个进程上下文切换的情况，<code>cswch</code>每秒自愿上下文切换，<code>nvcswch</code>每秒非自愿上下文切换</td>
+</tr>
+<tr>
+<td><code>pidstat -w -u 1</code></td>
+<td><code>-w</code>参数表示输出进程切换指标，而<code>-u</code>参数则表示输出CPU使用指标</td>
+</tr>
+<tr>
+<td><code>pidstat -wt 1</code></td>
+<td><code>-wt</code> 参数表示输出<strong>线程</strong>的上下文切换指标</td>
+</tr>
+<tr>
+<td><code>sysbench --threads=10 --max-time=300 threads run</code></td>
+<td>以10个线程运行5分钟的基准测试，模拟多线程切换的问题</td>
+</tr>
+<tr>
+<td><code>watch -d cat /proc/interrupts</code></td>
+<td>查看系统中断的类型，<code>-d</code> 参数表示高亮显示变化的区域</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>所谓<strong>自愿上下文切换</strong>，是指进程无法获取所需资源，导致的上下文切换。比如说， I/O、内存等系统资源不足时，就会发生自愿上下文切换。而<strong>非自愿上下文切换</strong>，则是指进程由于时间片已到等原因，被系统强制调度，进而发生的上下文切换。比如说，大量进程都在争抢 CPU 时，就容易发生非自愿上下文切换。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cat /proc/stat</code></td>
+<td>CPU总使用率</td>
+</tr>
+<tr>
+<td><code>/proc/[pid]/stat</code></td>
+<td>各个进程的CPU使用率，使用<code>man proc</code>查看帮助文档</td>
+</tr>
+<tr>
+<td><code>top</code></td>
+<td>按下<code>1</code>显示每个CPU的使用率</td>
+</tr>
+<tr>
+<td><code>perf top -g -p &lt;pid&gt;</code></td>
+<td>实时显示占用 CPU 时钟最多的函数或者指令，因此可以用来查找热点函数</td>
+</tr>
+<tr>
+<td><code>perf record -g</code></td>
+<td>保存数据</td>
+</tr>
+<tr>
+<td><code>perf report</code></td>
+<td>使用这个命令解析<code>record</code>保存的数据</td>
+</tr>
+<tr>
+<td><code>ab -c 10 -n 100 http://192.168.0.10:10000/</code></td>
+<td>并发10个请求测试Nginx性能，总共测试100个请求</td>
+</tr>
+<tr>
+<td><code>pstree | grep stress</code></td>
+<td>查看<code>stress</code>进程的父进程</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dstat 1 10</code></td>
+<td>间隔1秒输出10组数据</td>
+</tr>
+<tr>
+<td><code>pidstat -d -p 4344 1 3</code></td>
+<td><code>-d</code> 展示 I/O 统计数据，<code>-p</code> 指定进程号，间隔 1 秒输出 3 组数据</td>
+</tr>
+</tbody>
+</table>
+<p>软中断，实际遇到的大多是网络收发的软中断性能瓶颈：</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>watch -d cat /proc/softirqs</code></td>
+<td>各种软中断类型的次数</td>
+</tr>
+</tbody>
+</table>
+<h2 id="网络">网络</h2>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sar -n DEV 1</code></td>
+<td><code>-n DEV</code> 表示显示网络收发的报告，间隔1秒输出一组数据</td>
+</tr>
+<tr>
+<td><code>tcpdump -i eth0 -n tcp port 80</code></td>
+<td><code>-i eth0</code> 只抓取eth0网卡，<code>-n</code>不解析协议名和主机名，<code>tcp port 80</code>表示只抓取tcp协议并且端口号为80的网络帧</td>
+</tr>
+</tbody>
+</table>
+<h2 id="工具包">工具包</h2>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stress</code></td>
+<td>Linux 系统压力测试工具</td>
+</tr>
+<tr>
+<td><code>sysstat</code></td>
+<td>包含 <code>mpstat</code> 和 <code>pidstat</code></td>
+</tr>
+<tr>
+<td><code>mpstat</code></td>
+<td>常用的多核 CPU 性能分析工具，用来实时查看每个 CPU 的性能指标，以及所有 CPU 的平均指标</td>
+</tr>
+<tr>
+<td><code>pidstat</code></td>
+<td>常用的进程性能分析工具，用来实时查看进程的 CPU、内存、I/O 以及上下文切换等性能指标</td>
+</tr>
+<tr>
+<td><code>vmstat</code></td>
+<td>常用的系统性能分析工具，主要用来分析系统的内存使用情况，也常用来分析 CPU 上下文切换和中断的次数</td>
+</tr>
+<tr>
+<td><code>sysbench</code></td>
+<td>多线程基准测试工具</td>
+</tr>
+<tr>
+<td><code>ab</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>execsnoop</code></td>
+<td>一个专为短时进程设计的工具</td>
+</tr>
+<tr>
+<td><code>dstat</code></td>
+<td>同时查看 CPU 和 I/O 这两种资源的使用情况</td>
+</tr>
+</tbody>
+</table>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#cpu-负载">CPU 负载</a></li>
+    <li><a href="#网络">网络</a></li>
+    <li><a href="#工具包">工具包</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

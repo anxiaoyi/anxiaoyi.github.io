@@ -7,16 +7,18 @@
 <meta name="description" content="MySQL 优化与运维"><meta property="og:title" content="MySQL 优化与运维" />
 <meta property="og:description" content="MySQL 优化与运维 基本命名和约束规范  表字符集选则 UTF-8，如果需要 Emoji 表情，需要使用 UTF8mb4 (MySQL 5.5.3 以后支持) 存储引擎尽量使用 InnoDB 变长字符串尽量使用 varchar 单标数据量控制在 1 亿以下 库名、表名、字段名不使用保留字 库名、表名、字段名、索引名使用小写字母，使用划线分割，见名知意 表名不要设计的过长，尽可能用最少的字符表达表的用途  字段规范  所有字段均为 NOT NULL，除非真的想要存储 NULL (解释：NULL 的存储浪费表存储空间，InnoDB 需要额外一个字节存储，NULL 过多会影响优化器选择执行计划) 字段类型满足要求条件下越小越好，使用 UNSIGNED 存储非负整数，实际需要存储负数的场景不多 使用 TIMESTAMP 存储时间 (只能存储到 2038 年) 使用 varchar 存储变长字符串，varchar(M) 的 M 指的是字符数，不是字节数，使用 UNSIGNED INT 存储 IPV4 地址，不过这种方式存储不了 IPV6 使用 DECIMAL 存储精确浮点数，用 float 类型存储可能会存在数据误差 少用 blob text  索引范围  单个索引字段数不超过 5，单表索引数量不超过 5，索引设计遵循 B&#43;Tree 索引最左前缀匹配原则 选则区分度高的列作为索引 建立的索引能覆盖 80% 主要的查询，不求全，解决问题的主要矛盾就好 DML 要和 order by、group by 字段建立合适的索引 避免索引的隐式转换 避免冗余索引  MySQL 可用性 无缝切换主库的方案：" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-ops/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-ops/" /><meta property="article:section" content="docs" />
+
+
 
 <title>MySQL 优化与运维 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -132,6 +134,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/algorithm/" >
       算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
   </a>
 
 
@@ -660,6 +688,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/database/mvcc/" >
+      MVCC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/database/mybatis/" >
       MyBatis
   </a>
@@ -691,7 +729,7 @@ var _hmt = _hmt || [];
         <li>
 
   <a href="/docs/tutorial/database/sharding-sphere/" >
-      ShardingSphere 3.X
+      ShardingSphere
   </a>
 
 </li>
@@ -1038,7 +1076,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1221,7 +1259,7 @@ data-full-width-responsive="true"></ins>
 <h3 id="join-优化">JOIN 优化</h3>
 <p>JOIN 有两种 JOIN 算法：</p>
 <p><strong>（1） Index Nested-Loop Join (NLJ)</strong></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> t1 straight_join t2 <span style="color:#66d9ef">ON</span> (t1.a <span style="color:#f92672">=</span> t2.a);
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> t1 straight_join t2 <span style="color:#66d9ef">ON</span> (t1.a <span style="color:#f92672">=</span> t2.a);
 </code></pre></div><p>执行流程：遍历 t1 表，取出每一行的 a 值，去表 t2 中查找满足条件的记录。</p>
 <ul>
 <li>t1 表做全表扫描 (<strong>小表做驱动表</strong>)</li>
@@ -1229,20 +1267,20 @@ data-full-width-responsive="true"></ins>
 </ul>
 <p><strong>（2）Block Nested-Loop Join (BNL)</strong></p>
 <p>如果 t2 表没有索引，那么会用 Simple Nested-Loop Join 算法：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> t1 straight_join t2 <span style="color:#66d9ef">ON</span> (t1.a <span style="color:#f92672">=</span> t2.b);
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> t1 straight_join t2 <span style="color:#66d9ef">ON</span> (t1.a <span style="color:#f92672">=</span> t2.b);
 </code></pre></div><p>那么每一次根据 a 去匹配的时候，都要去全表扫描 t2 表。这种算法看起来效率非常低下，MySQL 默认不会用这种算法，而使用了 BNL 算法。</p>
 <p>执行流程：t1 数据读入线程内存 join_buffer，由于我们写的是 <code>SELECT *</code>，因此整个 b1 表都放入了内存，扫描表 t2，表 t2 的每一行取出来，根 join_buffer 中的数据做对比，满足 join 条件的，作为结果集的一部分返回。这个对比是在<strong>内存中对比</strong>的，因此效率好很多。</p>
 <p>join_buffer 大小由参数 <code>join_buffer_size</code> 设定，默认值 256K，如果放不下表 t1，那么就需要<strong>分段放</strong>，比如每次放入 100行，然后 t2 每一行跟 join_buffer 对比，对比完了满足条件的作为结果集的一部分返回；然后清空 join_buffer，继续放入下 100 行，如此反复。<code>Block</code> 的含义也在这个地方，就是<strong>分块 join</strong>。</p>
 <p>如果 <code>EXPLAIN</code> 的 <code>EXTRA</code> 字段里面出现了 <code>Block Nested Loop</code> 字样，就代表使用的是 <code>BNL</code> 算法，这种应该尽量规避，不要使用这种算法。</p>
 <p><strong>（3）Multi-Range Read 优化</strong></p>
 <p>下面这条语句涉及到回表查询，那么回表默认情况下是不是<strong>一条一条的去查询数据</strong> ?</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> t1 <span style="color:#66d9ef">WHERE</span> a <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">AND</span> a <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">100</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> t1 <span style="color:#66d9ef">WHERE</span> a <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">AND</span> a <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">100</span>;
 </code></pre></div><p>MRR 优化思路：根据索引 a，定位到记录，将 id 放入 read_rnd_buffer 中；堆 read_rnd_buffer 中的 id 进行递增排序；排序后的 ID 数组，依次到主键 ID 索引中查询记录，作为结果返回。也就是改为了<strong>按照主键的 id 递增顺序去查询记录</strong>，接近顺序读，提升读性能。</p>
 <p><strong>（4）Batched Key Access</strong></p>
 <p>一次从 t1 表多拿出一些数据，不要每次拿一条了，这些拿出来的数据放到 join_buffer 中。</p>
 <p><strong>（5）使用临时表</strong></p>
 <p>有些表的字段不适合加上索引，所以可以使用临时表来优化：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">craete <span style="color:#66d9ef">temporary</span> <span style="color:#66d9ef">table</span> temp_t(id int <span style="color:#66d9ef">primary</span> <span style="color:#66d9ef">key</span>, a int, b int, <span style="color:#66d9ef">index</span>(b)) engine <span style="color:#f92672">=</span> innodb;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">craete <span style="color:#66d9ef">temporary</span> <span style="color:#66d9ef">table</span> temp_t(id int <span style="color:#66d9ef">primary</span> <span style="color:#66d9ef">key</span>, a int, b int, <span style="color:#66d9ef">index</span>(b)) engine <span style="color:#f92672">=</span> innodb;
 <span style="color:#66d9ef">insert</span> <span style="color:#66d9ef">into</span> temp_t <span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> t2 <span style="color:#66d9ef">where</span> b <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">and</span> b <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">2000</span>;
 <span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> t1 <span style="color:#66d9ef">join</span> temp_t <span style="color:#66d9ef">on</span> (t1.b <span style="color:#f92672">=</span> temp_t.b);
 </code></pre></div><h2 id="mysql-不停机更换数据库">MySQL 不停机更换数据库</h2>
@@ -1273,7 +1311,7 @@ data-full-width-responsive="true"></ins>
 <h2 id="场景">场景</h2>
 <h3 id="连接池满了">连接池满了</h3>
 <p>1.查看连接数配置（MySQL服务器允许的最大连接数16384）</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-mysql" data-lang="mysql"><span style="color:#66d9ef">show</span> variables <span style="color:#66d9ef">like</span> <span style="color:#e6db74">&#39;%max_connections%&#39;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-mysql" data-lang="mysql"><span style="color:#66d9ef">show</span> variables <span style="color:#66d9ef">like</span> <span style="color:#e6db74">&#39;%max_connections%&#39;</span>
 </code></pre></div><p>2.查看当前连接数</p>
 <ul>
 <li>方法1：<code>show full processlist</code> （需要用管理员帐号）</li>

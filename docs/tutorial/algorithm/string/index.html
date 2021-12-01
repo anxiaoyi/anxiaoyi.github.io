@@ -5,21 +5,20 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="字符串"><meta property="og:title" content="字符串" />
-<meta property="og:description" content="字符串 最小覆盖子串 原题
-字符串解码 原题
-输入：s = &quot;3[a2[c]]&quot; 输出：&quot;accaccacc&quot; 解法：
-public class Solution { int ptr; public String decodeString(String s) { LinkedList&lt;String&gt; stk = new LinkedList&lt;String&gt;(); ptr = 0; while (ptr &lt; s.length()) { char cur = s.charAt(ptr); if (Character.isDigit(cur)) { // 获取一个数字并进栈  String digits = getDigits(s); stk.addLast(digits); } else if (Character.isLetter(cur) || cur == &#39;[&#39;) { // 获取一个字母并进栈  stk.addLast(String.valueOf(s.charAt(ptr&#43;&#43;))); } else { &#43;&#43;ptr; LinkedList&lt;String&gt; sub = new LinkedList&lt;String&gt;(); while (!" />
+<meta property="og:description" content="字符串 字符串相加  使用两个指针 index-- 即可  public String addStrings(String num1, String num2) { if (num1 == null) { return num2; } if (num2 == null) { return num1; } final StringBuilder sb = new StringBuilder(Math.max(num1.length(), num2.length()) &#43; 1); int index1 = num1.length() - 1; int index2 = num2.length() - 1; int remainder = 0; while (index1 &gt;= 0 &amp;&amp; index2 &gt;= 0) { char a = num1.charAt(index1); char b = num2." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/algorithm/string/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/algorithm/string/" /><meta property="article:section" content="docs" />
+
+
 
 <title>字符串 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -198,8 +197,44 @@ var _hmt = _hmt || [];
 </li>
       
     
+      
+        <li>
+
+  <a href="/docs/tutorial/algorithm/linkedlist/" >
+      链表
+  </a>
+
+</li>
+      
+    
   </ul>
   
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
+  </a>
+
+
+    
+
+    
+
+
+
 
 
 
@@ -981,7 +1016,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1009,6 +1044,10 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#字符串相加">字符串相加</a></li>
+    <li><a href="#最长回文子串">最长回文子串</a></li>
+    <li><a href="#无重复字符的最长-substring">无重复字符的最长 substring</a></li>
+    <li><a href="#字符串转换整数-atoi">字符串转换整数 (atoi)</a></li>
     <li><a href="#最小覆盖子串">最小覆盖子串</a></li>
     <li><a href="#字符串解码">字符串解码</a></li>
   </ul>
@@ -1032,14 +1071,224 @@ data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="字符串">字符串</h1>
-<h2 id="最小覆盖子串">最小覆盖子串</h2>
+<h2 id="字符串相加">字符串相加</h2>
+<ul>
+<li>使用两个指针 <code>index--</code> 即可</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> String <span style="color:#a6e22e">addStrings</span><span style="color:#f92672">(</span>String num1<span style="color:#f92672">,</span> String num2<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>num1 <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> num2<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>num2 <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> num1<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">final</span> StringBuilder sb <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StringBuilder<span style="color:#f92672">(</span>Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>num1<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">(),</span> num2<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">())</span> <span style="color:#f92672">+</span> 1<span style="color:#f92672">);</span>
+
+    <span style="color:#66d9ef">int</span> index1 <span style="color:#f92672">=</span> num1<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> 1<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">int</span> index2 <span style="color:#f92672">=</span> num2<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> 1<span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">int</span> remainder <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>index1 <span style="color:#f92672">&gt;=</span> 0 <span style="color:#f92672">&amp;&amp;</span> index2 <span style="color:#f92672">&gt;=</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">char</span> a <span style="color:#f92672">=</span> num1<span style="color:#f92672">.</span><span style="color:#a6e22e">charAt</span><span style="color:#f92672">(</span>index1<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">char</span> b <span style="color:#f92672">=</span> num2<span style="color:#f92672">.</span><span style="color:#a6e22e">charAt</span><span style="color:#f92672">(</span>index2<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">int</span> num <span style="color:#f92672">=</span> <span style="color:#f92672">((</span>a <span style="color:#f92672">-</span> <span style="color:#e6db74">&#39;0&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>b <span style="color:#f92672">-</span> <span style="color:#e6db74">&#39;0&#39;</span><span style="color:#f92672">))</span> <span style="color:#f92672">+</span> remainder<span style="color:#f92672">;</span>
+
+        remainder <span style="color:#f92672">=</span> num <span style="color:#f92672">/</span> 10<span style="color:#f92672">;</span>
+        num <span style="color:#f92672">%=</span> 10<span style="color:#f92672">;</span>
+
+        sb<span style="color:#f92672">.</span><span style="color:#a6e22e">append</span><span style="color:#f92672">(</span>num<span style="color:#f92672">);</span>
+
+        index1<span style="color:#f92672">--;</span>
+        index2<span style="color:#f92672">--;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>index1 <span style="color:#f92672">&gt;=</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">char</span> a <span style="color:#f92672">=</span> num1<span style="color:#f92672">.</span><span style="color:#a6e22e">charAt</span><span style="color:#f92672">(</span>index1<span style="color:#f92672">);</span>
+
+        <span style="color:#66d9ef">int</span> num <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>a <span style="color:#f92672">-</span> <span style="color:#e6db74">&#39;0&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">+</span> remainder<span style="color:#f92672">;</span>
+        remainder <span style="color:#f92672">=</span> num <span style="color:#f92672">/</span> 10<span style="color:#f92672">;</span>
+        num <span style="color:#f92672">%=</span> 10<span style="color:#f92672">;</span>
+
+        sb<span style="color:#f92672">.</span><span style="color:#a6e22e">append</span><span style="color:#f92672">(</span>num<span style="color:#f92672">);</span>
+
+        index1<span style="color:#f92672">--;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>index2 <span style="color:#f92672">&gt;=</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">char</span> b <span style="color:#f92672">=</span> num2<span style="color:#f92672">.</span><span style="color:#a6e22e">charAt</span><span style="color:#f92672">(</span>index2<span style="color:#f92672">);</span>
+
+        <span style="color:#66d9ef">int</span> num <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>b <span style="color:#f92672">-</span> <span style="color:#e6db74">&#39;0&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">+</span> remainder<span style="color:#f92672">;</span>
+        remainder <span style="color:#f92672">=</span> num <span style="color:#f92672">/</span> 10<span style="color:#f92672">;</span>
+        num <span style="color:#f92672">%=</span> 10<span style="color:#f92672">;</span>
+
+        sb<span style="color:#f92672">.</span><span style="color:#a6e22e">append</span><span style="color:#f92672">(</span>num<span style="color:#f92672">);</span>
+
+        index2<span style="color:#f92672">--;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>remainder <span style="color:#f92672">!=</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        sb<span style="color:#f92672">.</span><span style="color:#a6e22e">append</span><span style="color:#f92672">(</span>remainder<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">return</span> sb<span style="color:#f92672">.</span><span style="color:#a6e22e">reverse</span><span style="color:#f92672">().</span><span style="color:#a6e22e">toString</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="最长回文子串">最长回文子串</h2>
+<p>采用中心扩展法，以 <code>i</code> 坐标的字符往两边扩展，以 <code>i</code> 和 <code>i + 1</code> 左边的字符往两边扩展，然后看哪个 <code>length</code> 比较大。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> String <span style="color:#a6e22e">longestPalindrome</span><span style="color:#f92672">(</span>String s<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>s<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">()</span> <span style="color:#f92672">&lt;</span> 2<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> s<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    
+    String max <span style="color:#f92672">=</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">substring</span><span style="color:#f92672">(</span>0<span style="color:#f92672">,</span> 1<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> 1<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+        String a <span style="color:#f92672">=</span> expand<span style="color:#f92672">(</span>s<span style="color:#f92672">,</span> i<span style="color:#f92672">,</span> i<span style="color:#f92672">);</span>
+        String b <span style="color:#f92672">=</span> expand<span style="color:#f92672">(</span>s<span style="color:#f92672">,</span> i<span style="color:#f92672">,</span> i <span style="color:#f92672">+</span> 1<span style="color:#f92672">);</span>
+        
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>a<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;</span> max<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            max <span style="color:#f92672">=</span> a<span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+        
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>b<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;</span> max<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            max <span style="color:#f92672">=</span> b<span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    
+    <span style="color:#66d9ef">return</span> max<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#75715e">// 返回最长的回文字符串
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> String <span style="color:#a6e22e">expand</span><span style="color:#f92672">(</span>String s<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> centerI<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> centerJ<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    String max <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">;</span>
+    
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>centerI <span style="color:#f92672">&gt;=</span> 0 <span style="color:#f92672">&amp;&amp;</span> centerJ <span style="color:#f92672">&lt;</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">()</span> <span style="color:#f92672">&amp;&amp;</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">charAt</span><span style="color:#f92672">(</span>centerI<span style="color:#f92672">)</span> <span style="color:#f92672">==</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">charAt</span><span style="color:#f92672">(</span>centerJ<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        max <span style="color:#f92672">=</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">substring</span><span style="color:#f92672">(</span>centerI<span style="color:#f92672">,</span> centerJ <span style="color:#f92672">+</span> 1<span style="color:#f92672">);</span>
+        
+        centerI<span style="color:#f92672">--;</span>
+        centerJ<span style="color:#f92672">++;</span>
+    <span style="color:#f92672">}</span>
+    
+    <span style="color:#66d9ef">return</span> max<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="无重复字符的最长-substring">无重复字符的最长 substring</h2>
+<p><code>i</code> 索引用于在字符串上从左向右进行扫描。如下图所示，<code>[索引left, 字符B]</code> 之间的所有字符都是不重复的，接下来 <code>i</code> 遇到了第二个 <code>A</code>。那么这个时候是不是应该将 <code>[索引left, 第一个字符A]</code> 之间的所有字符都从 <code>Map</code> 中移除掉。这样能够保证 <code>Map</code> 里面放的是 <code>[第一个字符A的下一个字符, 第二个字符A]</code> 这段的所有字符。</p>
+<p>所以，我们的 <code>Map</code> 应该的 <code>key</code> 应该是<strong>字符</strong>，<code>value</code> 应该是这个字符当前的<strong>索引位置</strong>。</p>
+<pre><code>left.......A.......BA
+  |________________| (无重复)
+  |________| (删除)
+</code></pre><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">lengthOfLongestSubstring</span><span style="color:#f92672">(</span>String s<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">char</span><span style="color:#f92672">[]</span> arr <span style="color:#f92672">=</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">toCharArray</span><span style="color:#f92672">();</span>
+    Map<span style="color:#f92672">&lt;</span>Character<span style="color:#f92672">,</span> Integer<span style="color:#f92672">&gt;</span> map <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> HashMap<span style="color:#f92672">&lt;&gt;();</span>
+    <span style="color:#66d9ef">int</span> maxLen <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">int</span> left <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+    
+    <span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>i <span style="color:#f92672">&lt;</span> arr<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>map<span style="color:#f92672">.</span><span style="color:#a6e22e">containsKey</span><span style="color:#f92672">(</span>arr<span style="color:#f92672">[</span>i<span style="color:#f92672">]))</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// 我们需要持续不断的从左侧移除构成当前 map 的字符串的字符
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// 这个 position 一定是大于等于 left 的
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">int</span> position <span style="color:#f92672">=</span> map<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>arr<span style="color:#f92672">[</span>i<span style="color:#f92672">]);</span>
+            
+            <span style="color:#75715e">// 移除所有字符串
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> j <span style="color:#f92672">=</span> left<span style="color:#f92672">;</span> j <span style="color:#f92672">&lt;=</span> position<span style="color:#f92672">;</span> j<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+                map<span style="color:#f92672">.</span><span style="color:#a6e22e">remove</span><span style="color:#f92672">(</span>arr<span style="color:#f92672">[</span>j<span style="color:#f92672">]);</span>
+            <span style="color:#f92672">}</span>
+            
+            <span style="color:#75715e">// 更新 left 的值
+</span><span style="color:#75715e"></span>            left <span style="color:#f92672">=</span> position <span style="color:#f92672">+</span> 1<span style="color:#f92672">;</span>
+            map<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>arr<span style="color:#f92672">[</span>i<span style="color:#f92672">],</span> i<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+            map<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>arr<span style="color:#f92672">[</span>i<span style="color:#f92672">],</span> i<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+        
+        maxLen <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>maxLen<span style="color:#f92672">,</span> map<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">());</span>
+        i<span style="color:#f92672">++;</span>
+    <span style="color:#f92672">}</span>
+    
+    <span style="color:#66d9ef">return</span> maxLen<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="字符串转换整数-atoi">字符串转换整数 (atoi)</h2>
+<p>感觉最难的也就是<strong>处理溢出</strong>的部分。不光要通过 <code>value * 10 / 10</code> 是否等于 <code>value</code> 来判断，加完值之后也要通过 <code>value</code> 是否已经小于 <code>0</code> 来判断是否这个时候已经溢出。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">myAtoi</span><span style="color:#f92672">(</span>String s<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    s <span style="color:#f92672">=</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">trim</span><span style="color:#f92672">();</span>
+
+    <span style="color:#75715e">// 默认正数
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">boolean</span> positive <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+    <span style="color:#75715e">// 已经读取了 sign
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">boolean</span> hasReadSign <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">int</span> value <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">int</span> index <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>index <span style="color:#f92672">&lt;</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">char</span> c <span style="color:#f92672">=</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">charAt</span><span style="color:#f92672">(</span>index<span style="color:#f92672">);</span>
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>c <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;+&#39;</span> <span style="color:#f92672">||</span> c <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;-&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>hasReadSign<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+
+            hasReadSign <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+            positive <span style="color:#f92672">=</span> c <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;+&#39;</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>c <span style="color:#f92672">&gt;=</span> <span style="color:#e6db74">&#39;0&#39;</span> <span style="color:#f92672">&amp;&amp;</span> c <span style="color:#f92672">&lt;=</span> <span style="color:#e6db74">&#39;9&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+            <span style="color:#75715e">// 123
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// 0 * 10 + 1 = 1
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// 1 * 10 + 2 = 12
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// 12 * 10 + 3 = 123
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">//
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// 00123
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// 0 * 10 + 0 = 0
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// 0 * 10 + 0 = 0
+</span><span style="color:#75715e"></span>            <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">boolean</span> earlyExit <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+
+            <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>index <span style="color:#f92672">&lt;</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+                c <span style="color:#f92672">=</span> s<span style="color:#f92672">.</span><span style="color:#a6e22e">charAt</span><span style="color:#f92672">(</span>index<span style="color:#f92672">);</span>
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!(</span>c <span style="color:#f92672">&gt;=</span> <span style="color:#e6db74">&#39;0&#39;</span> <span style="color:#f92672">&amp;&amp;</span> c <span style="color:#f92672">&lt;=</span> <span style="color:#e6db74">&#39;9&#39;</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+                    earlyExit <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+                    <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+
+                <span style="color:#75715e">// 如何防止溢出
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>value <span style="color:#f92672">*</span> 10 <span style="color:#f92672">/</span> 10 <span style="color:#f92672">!=</span> value<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    <span style="color:#66d9ef">return</span> positive <span style="color:#f92672">?</span> Integer<span style="color:#f92672">.</span><span style="color:#a6e22e">MAX_VALUE</span> <span style="color:#f92672">:</span> Integer<span style="color:#f92672">.</span><span style="color:#a6e22e">MIN_VALUE</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+
+                value <span style="color:#f92672">=</span> value <span style="color:#f92672">*</span> 10 <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>c <span style="color:#f92672">-</span> <span style="color:#e6db74">&#39;0&#39;</span><span style="color:#f92672">);</span>
+
+                <span style="color:#75715e">// 加完溢出了
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>value <span style="color:#f92672">&lt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                    <span style="color:#66d9ef">return</span> positive <span style="color:#f92672">?</span> Integer<span style="color:#f92672">.</span><span style="color:#a6e22e">MAX_VALUE</span> <span style="color:#f92672">:</span> Integer<span style="color:#f92672">.</span><span style="color:#a6e22e">MIN_VALUE</span><span style="color:#f92672">;</span>
+                <span style="color:#f92672">}</span>
+
+                index<span style="color:#f92672">++;</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>earlyExit<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+
+            <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// 汇入了其他字符
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">break</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+
+        index<span style="color:#f92672">++;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">return</span> positive <span style="color:#f92672">?</span> value <span style="color:#f92672">:</span> <span style="color:#f92672">-</span>value<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="最小覆盖子串">最小覆盖子串</h2>
 <p><a href="https://leetcode-cn.com/problems/minimum-window-substring/">原题</a></p>
 <h2 id="字符串解码">字符串解码</h2>
 <p><a href="https://leetcode-cn.com/problems/decode-string/">原题</a></p>
 <pre><code>输入：s = &quot;3[a2[c]]&quot;
 输出：&quot;accaccacc&quot;
 </code></pre><p>解法：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Solution</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Solution</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">int</span> ptr<span style="color:#f92672">;</span>
 
     <span style="color:#66d9ef">public</span> String <span style="color:#a6e22e">decodeString</span><span style="color:#f92672">(</span>String s<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -1131,6 +1380,10 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#字符串相加">字符串相加</a></li>
+    <li><a href="#最长回文子串">最长回文子串</a></li>
+    <li><a href="#无重复字符的最长-substring">无重复字符的最长 substring</a></li>
+    <li><a href="#字符串转换整数-atoi">字符串转换整数 (atoi)</a></li>
     <li><a href="#最小覆盖子串">最小覆盖子串</a></li>
     <li><a href="#字符串解码">字符串解码</a></li>
   </ul>

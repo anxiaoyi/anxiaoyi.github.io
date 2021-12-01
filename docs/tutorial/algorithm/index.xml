@@ -13,10 +13,7 @@
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/backtracking/</guid>
       <description>回溯法 回溯法的套路解法在这篇文章中给了详细的说明。
-Subsets 返回一个数组的所有 subsets:
-Input: nums = [1,2,3] Output: [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]] 解法：
-public List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; subsets(int[] nums) { List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; list = new ArrayList&amp;lt;&amp;gt;(); Arrays.sort(nums); backtrack(list, new ArrayList&amp;lt;&amp;gt;(), nums, 0); return list; } private void backtrack(List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; list , List&amp;lt;Integer&amp;gt; tempList, int [] nums, int start){ list.add(new ArrayList&amp;lt;&amp;gt;(tempList)); for(int i = start; i &amp;lt; nums.length; i++){ tempList.add(nums[i]); backtrack(list, tempList, nums, i + 1); tempList.remove(tempList.size() - 1); } } 如果这个数组中有重复的数字，那么下面算法展示的是去掉重复数字的写法：
-public List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; subsetsWithDup(int[] nums) { List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; list = new ArrayList&amp;lt;&amp;gt;(); Arrays.</description>
+岛屿数量 输入：grid = [ [&amp;quot;1&amp;quot;,&amp;quot;1&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;], [&amp;quot;1&amp;quot;,&amp;quot;1&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;], [&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;1&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;], [&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;0&amp;quot;,&amp;quot;1&amp;quot;,&amp;quot;1&amp;quot;] ] 输出：3  图的深度优先遍历，将 1 置为 0  public int numIslands(char[][] grid) { int num = 0; for (int i = 0; i &amp;lt; grid.length; i++) { for (int j = 0; j &amp;lt; grid[i].length; j++) { if (grid[i][j] == &amp;#39;1&amp;#39;) { num++; mark(grid, i, j); } } } return num; } private void mark(char[][] grid, int i, int j) { if (i &amp;lt; 0 || i &amp;gt;= grid.</description>
     </item>
     
     <item>
@@ -25,7 +22,7 @@ public List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; subsetsWithDup(int[] nums
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/array/</guid>
-      <description>数组 无序数组第 K 大的数字 public int findKthLargest(int[] nums, int k) { k = nums.length - k; // 1 2 3 4 5 6  // ↑(第 2 大)  // ↑(partition = 2 的时候，实际上指向的是这里)  int lo = 0; int hi = nums.length - 1; // ==========================  // while (lo &amp;lt; hi)  // nums = [1]，这种情况进入不了循环  //  // ==========================  while (lo &amp;lt;= hi) { int index = partition(nums, lo, hi); if (index == k) { return nums[index]; } else if (index &amp;lt; k) { lo = index + 1; } else { hi = index - 1; } } return -1; } private int partition(int[] nums, int lo, int high) { int i = lo - 1; int pivot = nums[high]; for (int j = lo; j &amp;lt;= high - 1; j++) { if (nums[j] &amp;lt;= pivot) { i++; swap(nums, i, j); } } swap(nums, i + 1, high); return i + 1; } private void swap(int[] array, int i, int j) { int temp = array[i]; array[i] = array[j]; array[j] = temp; } 过半数的元素 使用**摩尔投票法**：</description>
+      <description>数组 无序数组第 K 大的数字  partition 算法每次返回的都是 pivot 所在的索引 partition 算法实现的思路，i 指向的是小于 pivot 的数列的最后一个值的索引。j 在前面探路，如果遇见小于等于 pivot 的值 arr[j]，说明这个值应该放在前半段，那么它应该前半段的谁交换呢？答案就是这个 arr[j] 应该添加到 i 的下一个位置。也就是需要 swap(++i, j)。 最后 swap(++i, high)，将 pivot 放到中间。  小小小小小大大大大小...pivot i j public int findKthLargest(int[] nums, int k) { k = nums.length - k; // 1 2 3 4 5 6  // ↑(第 2 大)  // ↑(partition = 2 的时候，实际上指向的是这里)  int lo = 0; int hi = nums.</description>
     </item>
     
     <item>
@@ -34,9 +31,7 @@ public List&amp;lt;List&amp;lt;Integer&amp;gt;&amp;gt; subsetsWithDup(int[] nums
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/tree/</guid>
-      <description>树 BST 第 K 大的数字  二叉搜索树的中序遍历为递增序列。因此这道题可转化为求 “此树的中序遍历倒序的第 k 个节点”。
- class Solution { int res, k; public int kthLargest(TreeNode root, int k) { this.k = k; dfs(root); return res; } void dfs(TreeNode root) { if (root == null) return; dfs(root.right); if (k == 0) return; if (--k == 0) res = root.val; dfs(root.left); } } 时间复杂度：O(N)，空间复杂度：O(N)，当树退化为链表（全部是右节点）的时候，系统使用 O(N) 大小的栈空间。
-BST 中序遍历的下一个节点 这道题是 《剑指 Offer》 上的题目，先确定有无指向父节点的指针？</description>
+      <description>树 二叉树的最近公共祖先  先看孩子是否有可能是公共祖先，最后看树根有没有可能是公共祖先。因为树根总是祖先。是用来兜底的。 root 是 p 的祖先，那么 p 是 root 的子系亲属或者孙子系亲属，即向下的亲属关系。  public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) { if (root != null) { TreeNode left = lowestCommonAncestor(root.left, p, q); if (left != null) { return left; } TreeNode right = lowestCommonAncestor(root.right, p, q); if (right != null) { return right; } if (isSubNode(root, p) &amp;amp;&amp;amp; isSubNode(root, q)) { return root; } } return null; } private boolean isSubNode(TreeNode root, TreeNode p) { if (root == null) { return false; } if (root.</description>
     </item>
     
     <item>
@@ -45,10 +40,7 @@ BST 中序遍历的下一个节点 这道题是 《剑指 Offer》 上的题目�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/string/</guid>
-      <description>字符串 最小覆盖子串 原题
-字符串解码 原题
-输入：s = &amp;quot;3[a2[c]]&amp;quot; 输出：&amp;quot;accaccacc&amp;quot; 解法：
-public class Solution { int ptr; public String decodeString(String s) { LinkedList&amp;lt;String&amp;gt; stk = new LinkedList&amp;lt;String&amp;gt;(); ptr = 0; while (ptr &amp;lt; s.length()) { char cur = s.charAt(ptr); if (Character.isDigit(cur)) { // 获取一个数字并进栈  String digits = getDigits(s); stk.addLast(digits); } else if (Character.isLetter(cur) || cur == &amp;#39;[&amp;#39;) { // 获取一个字母并进栈  stk.addLast(String.valueOf(s.charAt(ptr++))); } else { ++ptr; LinkedList&amp;lt;String&amp;gt; sub = new LinkedList&amp;lt;String&amp;gt;(); while (!</description>
+      <description>字符串 字符串相加  使用两个指针 index-- 即可  public String addStrings(String num1, String num2) { if (num1 == null) { return num2; } if (num2 == null) { return num1; } final StringBuilder sb = new StringBuilder(Math.max(num1.length(), num2.length()) + 1); int index1 = num1.length() - 1; int index2 = num2.length() - 1; int remainder = 0; while (index1 &amp;gt;= 0 &amp;amp;&amp;amp; index2 &amp;gt;= 0) { char a = num1.charAt(index1); char b = num2.</description>
     </item>
     
     <item>
@@ -57,9 +49,22 @@ public class Solution { int ptr; public String decodeString(String s) { LinkedLi
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/dp/</guid>
-      <description>动态规划 打家劫舍② 原题
-所有的房屋都 围成一圈 ，这意味着第一个房屋和最后一个房屋是紧挨着的。同时，相邻的房屋装有相互连通的防盗系统，如果两间相邻的房屋在同一晚上被小偷闯入，系统会自动报警 。给定一个代表每个房屋存放金额的非负整数数组，计算你 在不触动警报装置的情况下 ，能够偷窃到的最高金额。
-class Solution { public int rob(int[] nums) { if(nums.length == 0) return 0; if(nums.length == 1) return nums[0]; return Math.max(myRob(Arrays.copyOfRange(nums, 0, nums.length - 1)), myRob(Arrays.copyOfRange(nums, 1, nums.length))); } private int myRob(int[] nums) { int pre = 0, cur = 0, tmp; for(int num : nums) { tmp = cur; cur = Math.max(pre + num, cur); pre = tmp; } return cur; } } </description>
+      <description>动态规划 买卖股票的最佳时机  用一个变量记录一个历史最低价格 minprice，如果当前值比 minPrice 小，则更新 minPrice。即我们全程都在寻找一个历史最低值。 否则就考虑是否可以卖出：看当前值减去 minPrice 是否可以更新 maxProfit。  public int maxProfit(int prices[]) { int minprice = Integer.MAX_VALUE; int maxprofit = 0; for (int i = 0; i &amp;lt; prices.length; i++) { if (prices[i] &amp;lt; minprice) { minprice = prices[i]; } else if (prices[i] - minprice &amp;gt; maxprofit) { maxprofit = prices[i] - minprice; } } return maxprofit; } 最大子序和 找到一个具有最大和的连续子数组。
+ 看当前累加的 sum 对求最终的最大和是否有正向的增益效果。
+ 腾讯：返回子数组</description>
+    </item>
+    
+    <item>
+      <title>链表</title>
+      <link>https://kunzhao.org/docs/tutorial/algorithm/linkedlist/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/algorithm/linkedlist/</guid>
+      <description>链表 反转链表 头条：迭代、递归都要写出来。
+迭代版本：
+public ListNode reverseList(ListNode head) { ListNode newHead = new ListNode(); while (head != null) { // 5 -&amp;gt; 4 -&amp;gt; 3  //  ListNode tmp = head.next; head.next = newHead.next; newHead.next = head; head = tmp; } return newHead.next; } 递归版本。
+ 将链表想象为：head -&amp;gt; 其余部分，那么翻转 其余部分 如何翻转：p = reverseList(head.next)。其余部分 的 next 的节点需要指向 head，head 的 next 节点需要置为 null，以确保 head 变成了末尾节点。最后返回 p 节点。
+  在写的时候，有一次写成了 p.next = head，这里是不正确的。head.</description>
     </item>
     
   </channel>

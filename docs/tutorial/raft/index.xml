@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>raft on 赵坤的个人网站</title>
+    <link>https://kunzhao.org/docs/tutorial/raft/</link>
+    <description>Recent content in raft on 赵坤的个人网站</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language><atom:link href="https://kunzhao.org/docs/tutorial/raft/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>raft storage</title>
+      <link>https://kunzhao.org/docs/tutorial/raft/raft-storage/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/raft/raft-storage/</guid>
+      <description>raft storage 元信息、Log、Snapshot 在磁盘上的存储示例：
+元信息 RaftMetaStorage 负责存储当前的 Term、当前的投票情况：
+public interface RaftMetaStorage extends Lifecycle&amp;lt;RaftMetaStorageOptions&amp;gt;, Storage { boolean setTerm(final long term); long getTerm(); boolean setVotedFor(final PeerId peerId); PeerId getVotedFor(); boolean setTermAndVotedFor(final long term, final PeerId peerId); } Term 就是任期/学期的意思，比如这一学期选举班长投给了小 A，下一学期选班长投给了小 B，诸如此类的意思。Term 在时间概念上是单调递增的。
+LocalRaftMetaStorage 是 RaftMetaStorage 的默认实现，其启动的时候，从用户指定的 raft_meta 文件路径中 (例如 /tmp/server1/raft_meta/raft_meta) 去加载当前的 term 和 vote 信息。在 shutdown()、setTerm()、setVotedFor() 之后又会立即将当前这两个信息持久化到磁盘上。
+文件的格式是 protobuf 格式的，如下是其对应的 protobuf 文件的字段内容：
+message StablePBMeta { required int64 term = 1; required string votedfor = 2;};关于 save() 方法，其首先将内容写入到一个 raft_meta.</description>
+    </item>
+    
+    <item>
+      <title>raft select leader</title>
+      <link>https://kunzhao.org/docs/tutorial/raft/leader/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/raft/leader/</guid>
+      <description>raft select leader 有限状态机 底层基于高性能异步无锁处理框架 Disruptor。
+什么时候可以允许选举 (NodeImpl.java TODO)：
+ 节点的 priority 是 ElectionPriority.NotElected，则不允许选举，这是一种特殊状态的节点，这种节点永远都不会参与选举 Leader 的过程。 节点禁用了 priority 属性，即 priority &amp;lt;= ElectionPriority.Disabled 那么直接可以选举。  有新的日志上来：
+// 当前是二年级下半学期 // 现在收到了一个来自一年级上半学期的日志，自然需要将其忽略掉 if (request.getTerm() &amp;lt; this.currTerm) { return false; } // 收到了一个来自三年级上半学期的日志 if (requestTerm &amp;gt; this.currTerm) { } 收到投票 // 必须是 CANDIDATE 才能成为计数 if (this.state != State.STATE_CANDIDATE) { return; } // 必须是同一个 TERM if (term != this.currTerm) { return; } if (response.getTerm() &amp;gt; this.</description>
+    </item>
+    
+  </channel>
+</rss>

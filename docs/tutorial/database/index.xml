@@ -47,12 +47,10 @@ mysql&amp;gt; set session transaction isolation level read committed; 示例 mys
       <guid>https://kunzhao.org/docs/tutorial/database/mysql-crash-safe/</guid>
       <description>MySQL Crash Safe  MySQL 是如何保证数据不丢的？
  WAL 机制 只要 redo log 和 binlog 保证持久化到磁盘，就能确保 MySQL 异常重启后，数据可以恢复。
-binlog 的写入机制 其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。
+update 语句的执行流程 update T set c = c + 1 where ID = 2; binlog 的写入机制 MySQL Server 层自己的日志，称为 binlog (归档日志)，binlog 本身实现不了 crash safe 的能力 (不是两阶段提交，只是为了归档)，binlog 是逻辑日志，可以追加写。
+其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。
 系统给 binlog cache 分配了一片内存，每个线程一个，参数 binlog_cache_size 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。
-事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。
-每个线程有自己 binlog cache，但是共用同一份 binlog 文件。
- 图中的 write，指的就是指把日志写入到文件系统的 page cache，并没有把数据持久化到磁盘，所以速度比较快。 图中的 fsync，才是将数据持久化到磁盘的操作。一般情况下，我们认为 fsync 才占磁盘的 IOPS。  write 和 fsync 的时机，是由参数 sync_binlog 控制的：
- sync_binlog=0 的时候，表示每次提交事务都只 write，不 fsync； sync_binlog=1 的时候，表示每次提交事务都会执行 fsync； sync_binlog=N(N&amp;gt;1) 的时候，表示每次提交事务都 write，但累积 N 个事务后才 fsync。  redo log 写入机制 事务在执行过程中，生成的 redo log 是要先写到 redo log buffer 的。redo log 可能存在的三种状态：</description>
+事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。</description>
     </item>
     
     <item>
@@ -108,6 +106,16 @@ mysql&amp;gt; delete from t where a&amp;gt;=4 and t_modified&amp;lt;=&amp;#39;20
     </item>
     
     <item>
+      <title>MVCC</title>
+      <link>https://kunzhao.org/docs/tutorial/database/mvcc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/database/mvcc/</guid>
+      <description>MVCC  当事务写入一个对象的时候，数据库创建这个对象的一个新版本 当事务读取的时候，读取自事务开始后的该对象的最新版本  并发协议  Timestamp Ordering，每个事务关联一个时间戳，以检测顺序 Optimistic Concurrency Control Two-Phase Locking。Txns acquire appropriate lock on physical version before they can read/write a logical tuple .  Tuple 的格式：
+版本存储  Append-Only 存储：每一次更新，在表的空位置添加一个新版本的 Tuple。   Time-Travel 存储。每一次新增，将当前的版本拷贝到 Time Travel 表中。   增量存储。每次更新，只拷贝改变的字段到增量存储中。  MVCC CONFIGURATION EVALUATION 参考  CMU SCS 15-721 (Spring 2020) :: Multi-Version Concurrency Control CMU 15-445/645 Database Systems (Fall 2019) :: Multi-Version Concurrency Control  </description>
+    </item>
+    
+    <item>
       <title>MyBatis</title>
       <link>https://kunzhao.org/docs/tutorial/database/mybatis/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -142,12 +150,12 @@ EXPLAIN PLAN FOR SELECT * FROM emp WHERE deptno = 10 ORDER BY ename; SELECT plan
     </item>
     
     <item>
-      <title>ShardingSphere 3.X</title>
+      <title>ShardingSphere</title>
       <link>https://kunzhao.org/docs/tutorial/database/sharding-sphere/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/database/sharding-sphere/</guid>
-      <description>ShardingSphere 3.X 分片 分片键 用于分片的数据库字段，是将数据库(表)水平拆分的关键字段。例：将订单表中的订单主键的尾数取模分片，则订单主键为分片字段。 SQL中如果无分片字段，将执行全路由，性能较差。 除了对单分片字段的支持，ShardingSphere也支持根据多个字段进行分片。
+      <description>ShardingSphere 分片 分片键 用于分片的数据库字段，是将数据库(表)水平拆分的关键字段。例：将订单表中的订单主键的尾数取模分片，则订单主键为分片字段。 SQL中如果无分片字段，将执行全路由，性能较差。 除了对单分片字段的支持，ShardingSphere也支持根据多个字段进行分片。
 分片算法 通过分片算法将数据分片，支持通过=、BETWEEN和IN分片。分片算法需要应用方开发者自行实现，可实现的灵活度非常高。
  精确分片算法 PreciseShardingAlgorithm: 用于处理使用单一键作为分片键的 = 与 IN 进行分片的场景。 范围分片算法 RangeShardingAlgorithm: 用于处理使用单一键作为分片键的 BETWEEN AND 进行分片的场景。 复合分片算法 ComplexKeysShardingAlgorithm: 用于处理使用多键作为分片键进行分片的场景。 Hint 分片算法 HintShardingAlgorithm: 用于处理使用 Hint 行分片的场景。  分片策略 包含分片键和分片算法，由于分片算法的独立性，将其独立抽离。真正可用于分片操作的是分片键 + 分片算法，也就是分片策略。目前提供5种分片策略。
  标准分片策略 复合分片策略 行表达式分片策略: 使用 Groovy 表达式 Hint 分片策略 不分片策略   行表达式语法说明

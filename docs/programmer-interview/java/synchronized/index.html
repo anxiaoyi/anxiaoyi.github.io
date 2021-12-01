@@ -5,21 +5,24 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="并发 - synchronized"><meta property="og:title" content="并发 - synchronized" />
-<meta property="og:description" content="synchronized 锁的对象是谁 当你使用 synchronized 关键字的时候，JVM 底层使用 Monitor 锁来实现同步。而锁的对象可以分为：
+<meta property="og:description" content="synchronized 简介 Java Monitor 支持两种线程同步：
+ mutual exclusion：通过锁来支持 cooperation：通过 Object.wait() 和 Object.notify() 来支持。  锁的对象是谁 当你使用 synchronized 关键字的时候，JVM 底层使用 Monitor 锁来实现同步。而锁的对象可以分为：
  如果 synchronized 的是普通方法，那么锁是当前实例 如果 synchronized 的是静态方法，那么锁是当前类的 Class 如果 synchronized 的是同步块，那么锁是括号里面的对象  synchronized 同步块 底层基于 monitorenter 和 monitorexit 这一对指令实现的。
-public void foo(Object lock) { synchronized (lock) { lock.hashCode(); } } 上面的Java代码将编译为下面的字节码：
-public void foo(java.lang.Object); Code: 0: aload_1 1: dup 2: astore_2 3: monitorenter 4: aload_1 5: invokevirtual java/lang/Object.hashCode:()I 8: pop 9: aload_2 10: monitorexit 11: goto 19 14: astore_3 15: aload_2 16: monitorexit 17: aload_3 18: athrow 19: return Exception table: from to target type 4 11 14 any 14 17 14 any synchronized 方法 方法标记为 ACC_SYNCHRONIZED，同样需要进行 monitorenter 操作。" />
+public void foo(Object lock) { synchronized (lock) { lock.hashCode(); } } 上面的 Java 代码将编译为下面的字节码：
+public void foo(java.lang.Object); Code: 0: aload_1 1: dup 2: astore_2 3: monitorenter 4: aload_1 5: invokevirtual java/lang/Object." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/synchronized/" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/synchronized/" /><meta property="article:section" content="docs" />
+
+
 
 <title>并发 - synchronized | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -629,7 +632,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -657,6 +660,7 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#简介">简介</a></li>
     <li><a href="#锁的对象是谁">锁的对象是谁</a></li>
     <li><a href="#synchronized-同步块">synchronized 同步块</a></li>
     <li><a href="#synchronized-方法">synchronized 方法</a></li>
@@ -693,6 +697,12 @@ data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="synchronized">synchronized</h1>
+<h2 id="简介">简介</h2>
+<p>Java Monitor 支持两种线程同步：</p>
+<ul>
+<li><strong>mutual exclusion</strong>：通过<strong>锁</strong>来支持</li>
+<li><strong>cooperation</strong>：通过 <code>Object.wait()</code> 和 <code>Object.notify()</code> 来支持。</li>
+</ul>
 <h2 id="锁的对象是谁">锁的对象是谁</h2>
 <p>当你使用 <code>synchronized</code> 关键字的时候，JVM 底层使用 <strong>Monitor 锁</strong>来实现同步。而锁的对象可以分为：</p>
 <ul>
@@ -702,13 +712,13 @@ data-full-width-responsive="true"></ins>
 </ul>
 <h2 id="synchronized-同步块">synchronized 同步块</h2>
 <p>底层基于 <code>monitorenter</code> 和 <code>monitorexit</code> 这一对指令实现的。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>Object lock<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>Object lock<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>lock<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         lock<span style="color:#f92672">.</span><span style="color:#a6e22e">hashCode</span><span style="color:#f92672">();</span>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><p>上面的Java代码将编译为下面的字节码：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>java<span style="color:#f92672">.</span><span style="color:#a6e22e">lang</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Object</span><span style="color:#f92672">);</span>
+</code></pre></div><p>上面的 Java 代码将编译为下面的字节码：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>java<span style="color:#f92672">.</span><span style="color:#a6e22e">lang</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Object</span><span style="color:#f92672">);</span>
 Code:
     0<span style="color:#f92672">:</span> aload_1
     1<span style="color:#f92672">:</span> dup
@@ -732,11 +742,11 @@ Exception table<span style="color:#f92672">:</span>
         14    17    14   any
 </code></pre></div><h2 id="synchronized-方法">synchronized 方法</h2>
 <p>方法标记为 <code>ACC_SYNCHRONIZED</code>，同样需要进行 <code>monitorenter</code> 操作。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>Object lock<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>Object lock<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     lock<span style="color:#f92672">.</span><span style="color:#a6e22e">hashCode</span><span style="color:#f92672">();</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>上面的 Java 代码将编译为下面的字节码：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>java<span style="color:#f92672">.</span><span style="color:#a6e22e">lang</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Object</span><span style="color:#f92672">);</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">foo</span><span style="color:#f92672">(</span>java<span style="color:#f92672">.</span><span style="color:#a6e22e">lang</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Object</span><span style="color:#f92672">);</span>
     descriptor<span style="color:#f92672">:</span> <span style="color:#f92672">(</span>Ljava<span style="color:#f92672">/</span>lang<span style="color:#f92672">/</span>Object<span style="color:#f92672">;)</span>V
     flags<span style="color:#f92672">:</span> <span style="color:#f92672">(</span>0x0021<span style="color:#f92672">)</span> ACC_PUBLIC<span style="color:#f92672">,</span> ACC_SYNCHRONIZED
     Code<span style="color:#f92672">:</span>
@@ -747,7 +757,7 @@ Exception table<span style="color:#f92672">:</span>
         5<span style="color:#f92672">:</span> <span style="color:#66d9ef">return</span>
 </code></pre></div><h2 id="synchronized-底层实现">synchronized 底层实现</h2>
 <p>JVM 中的同步是基于进入和退出管程（Monitor）对象实现的。每个对象实例都会有一个 Monitor，Monitor 可以和对象一起创建、销毁。Monitor 是由 <code>ObjectMonitor</code> 实现，而 <code>ObjectMonitor</code> 是由 C++ 的 <code>ObjectMonitor.hpp</code> 文件实现，如下所示：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++">ObjectMonitor() {
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++">ObjectMonitor() {
    _header <span style="color:#f92672">=</span> NULL;
    _count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; <span style="color:#75715e">//记录个数
 </span><span style="color:#75715e"></span>   _waiters <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>,
@@ -768,6 +778,12 @@ Exception table<span style="color:#f92672">:</span>
 </code></pre></div><p>当多个线程同时访问一段同步代码时，多个线程会先被存放在 <code>ContentionList</code> 和 <code>_EntryList</code> 集合中，处于 block 状态的线程，都会被加入到该列表。接下来当线程获取到对象的 Monitor 时，Monitor 是依靠底层操作系统的 Mutex Lock 来实现互斥的，线程申请 Mutex 成功，则持有该 Mutex，其它线程将无法获取到该 Mutex，竞争失败的线程会再次进入 <code>ContentionList</code> 被挂起。</p>
 <p>如果线程调用 <code>wait()</code> 方法，就会释放当前持有的 Mutex，并且该线程会进入 <code>WaitSet</code> 集合中，等待下一次被唤醒。如果当前线程顺利执行完方法，也将释放 Mutex。</p>
 <p><img src="/images/docs/programmer-interview/java/synchronized/f78e6979c424cce677add97080811308.jpg" alt=""></p>
+<p>如下是 <a href="https://www.artima.com/insidejvm/ed2/threadsynch.html">Thread Synchronization</a> 介绍的：</p>
+<p><code>monitor region</code> 就是<strong>一段代码</strong>。</p>
+<p>新来的线程首先进入 <code>entry set</code> 队列等待，当当前占有 <code>monitor</code> 的线程退出后，这个新来的线程必须与其它在 <code>entry set</code> 队列中的线程一起竞争。当线程执行 <code>wait</code> 的时候，这个线程释放 <code>monitor</code>，然后进入 <code>wait set</code> 队列，除非位于 <code>monitor</code> 中的另外一个线程 <code>notify</code> 这个线程，否则这个线程将一直处于 <code>suspended</code> 状态。</p>
+<p>当位于 <code>monitor</code> 中的线程 <code>notify</code> 后，它将继续持有这个 <code>monitor</code>，除非它自己再调用 <code>wait</code> 或者它自己退出 <code>monitor region</code> 区域。当线程释放 <code>monitor</code> 之后，位于 <code>wait set</code> 中的线程将会恢复并且重新获取 <code>monitor</code>。如果线程退出 <code>monitor</code> 的时候，没有调用任何 <code>notify()</code>，那么只有位于 <code>entry set</code> 中的线程具有资格竞争 <code>monitor</code>，否则 <code>entry set</code> 和 <code>wait set</code> 中的线程一起竞争 <code>monitor</code>。</p>
+<p>在 JVM 中，<code>wait</code> 命令可以指定一个<strong>超时时间</strong>。当超时时间到了之后，这个线程可以自己从 <code>wait set</code> 中恢复过来。</p>
+<p><img src="/images/docs/programmer-interview/java/synchronized/java_monitor.png" alt=""></p>
 <h2 id="synzhronized-性能改进">synzhronized 性能改进</h2>
 <p>在 Java 6 之前，Monitor 的实现完全是依靠操作系统内部的<strong>互斥锁</strong>，因为需要进行用户态到内核态的切换，所以同步操作是一个无差别的<strong>重量级操作</strong>。</p>
 <p>现代的（Oracle）JDK 中，JVM 对此进行了非常大地改进，提供了三种不同的 Monitor 实现，也就是常说的三种不同的锁：<strong>偏斜锁（Biased Locking）</strong>、<strong>轻量级锁</strong>和<strong>重量级锁</strong>，大大改进了其性能。</p>
@@ -786,7 +802,7 @@ Exception table<span style="color:#f92672">:</span>
 <p>当 JVM 进入安全点（<a href="http://blog.ragozin.info/2012/10/safepoints-in-hotspot-jvm.html">SafePoint</a>）的时候，会检查是否有闲置的 Monitor，然后试图进行降级。HotSpot JVM 的 Stop-the-World 机制称为 safepoint，在此期间，所有线程（不含 JNI 线程）会被挂起。</p>
 <h2 id="可重入与公平性">可重入与公平性</h2>
 <p><code>synchronized</code> 是非公平锁，可以重入。<strong>可重入意味着获取锁的操作的粒度是线程，而非调用</strong>。如果不可重入，那么下面代码可能会发生死锁：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Widget</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Widget</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doSomething</span><span style="color:#f92672">()</span> <span style="color:#f92672">{}</span>
 
@@ -837,6 +853,7 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
+    <li><a href="#简介">简介</a></li>
     <li><a href="#锁的对象是谁">锁的对象是谁</a></li>
     <li><a href="#synchronized-同步块">synchronized 同步块</a></li>
     <li><a href="#synchronized-方法">synchronized 方法</a></li>

@@ -44,22 +44,38 @@ $ uptime 22:39:37 up 2:47, 1 user, load average: 1.44, 1.12, 0.79 含义：
     </item>
     
     <item>
-      <title>内存</title>
+      <title>内存管理</title>
       <link>https://kunzhao.org/docs/tutorial/unix-optimize/memory/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/unix-optimize/memory/</guid>
-      <description>内存  作者：赵坤
- 内存分配 首先给出 32 位系统虚拟内存空间分布图：
-在 C 语言中，内存分配采用 malloc() 函数进行分配。底层实现：
+      <description>内存 内存分配 虚拟内存空间的管理，每个进程看到的是独立的、互不干扰的虚拟地址空间。
+首先给出 32 位系统虚拟内存空间分布图。从程序的视角看，有 2^32 = 4G 的内存可以供自己使用。当然最顶部的空间是给内核使用的，下面的才是用户可以使用的。
+ 只读段，即 Text Segment，存放二进制可执行代码 数据段，即 Data Segment，存放静态常量 数据段上面其实还有 BSS Segment，存放未初始化的静态常量 内核代码也是 ELF 格式的，也有上述这 3 个段  在 C 语言中，内存分配采用 malloc() 函数进行分配。底层实现：
  申请的内存小于 128K，使用 brk() 函数完成，也就是从上图中的堆中分配的内存 申请的内存大于 128K，使用 mmap() 内存映射函数完成，也就是从上图中的文件映射中分配的内存  内存回收 应用程序应通过 free() 或 unmap() 来释放内存。
 当然，系统也会监管进程的内存，当发现系统内存不足时，会采取措施：
  使用 LRU 算法回收缓存 回收不常访问的内存，写到 Swap 区（位于硬盘上） 杀死进程  虚拟内存 分段机制 分段机制下的虚拟地址由两部分组成，段选择子和段内偏移量。段选择子就保存在咱们前面讲过的段寄存器里面。段选择子里面最重要的是段号，用作段表的索引。段表里面保存的是这个段的基地址、段的界限和特权等级等。虚拟地址中的段内偏移量应该位于 0 和段界限之间。如果段内偏移量是合法的，就将段基地址加上段内偏移量得到物理内存地址。
 分段对内存区域的映射以程序为单位，内存不足，换入换出到磁盘的是整个程序，粒度比较大，产生大量磁盘 IO，而根据程序的局部性原理，程序运行时，某个时间段，一般只是频繁用到很小的一部分数据。那么可以利用更小粒度的内存分割和映射方法，这就是分页。
 分页 (Paging) 对于物理内存，操作系统把它分成一块一块大小相同的页，这样更方便管理，例如有的内存页面长时间不用了，可以暂时写到硬盘上，称为换出。一旦需要的时候，再加载进来，叫做换入。这样可以扩大可用物理内存的大小，提高物理内存的利用率。
 这个换入和换出都是以页为单位的。页面的大小一般为 4KB。为了能够定位和访问每个页，需要有个页表，保存每个页的起始地址，再加上在页内的偏移量，组成线性地址，就能对于内存中的每个位置进行访问了。
-虚拟地址分为两部分，页号和页内偏移。页号作为页表的索引，页表包含物理页每页所在物理内存的基地址。这个基地址与页内偏移的组合就形成了物理内存地址。
-内存映射  用户态内存映射函数 mmap，包括用它来做匿名映射和文件映射。 用户态的页表结构，存储位置在 mm_struct 中。 在用户态访问没有映射的内存会引发缺页异常，分配物理页表、补齐页表。如果是匿名映射则分配物理内存；如果是 swap，则将 swap 文件读入；如果是文件映射，则将文件读入。  查看整个系统的内存 $ free total used free shared buff/cache available Mem: 6030036 2312004 266488 624252 3451544 2911700 Swap: 2097148 256 2096892 查看某个进程的内存 使用 top 或 ps：</description>
+虚拟地址分为两部分，页号和页内偏移。页号作为页表的索引，页表包含物理页每页所在物理内存的基地址。这个基地址与页内偏移的组合就形成了物理内存地址。</description>
+    </item>
+    
+    <item>
+      <title>Linux tail 命令源码解析</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-optimize/tail/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-optimize/tail/</guid>
+      <description>Linux tail 命令源码解析 基础用法 tail 命令是在 Linux 系统上经常使用的一个命令，其能快速查看文件尾部的内容。它的基本用法如下所示。
+(1) -n 查看末尾指定行数的内容，n 代表的是 number 的意思：
+$ tail -n 15 word-list.txt (2) -c 查看末尾指定字节数的内容：
+$ tail -c 93 list-2.txt (3) -f 实时打印日志。某个文件的末尾有新的追加行的时候，立即在控制台上显示出来，经常用这个命令查看某个文件的实时输出的日志，方便跟踪问题：
+tail -f nginx.log tail 还有一些其他用法，可以通过执行 man tail 来查看。
+读取倒数 n 行源码 tail 命令从文件尾部来显示文件内容，那么它是如何做到从尾部动态或者静态的去显示文件呢，它使用中有哪些需要注意的地方呢？接下来就带大家分析一下 tail 命令的源码。
+在 tail 源码顶部，即定义了一个常量，表示如果没有指定查看的长度 (tail abc.txt)，那么就默认显示这个文件后 10 行的内容：
+/* Number of items to tail. */ #define DEFAULT_N_LINES 10 首先是打开文件：
+fd = open (f-&amp;gt;name, O_RDONLY | O_BINARY); 然后调用 tail 函数，tail 函数内部会根据参数的不同，选择 tail_lines 还是 tail_bytes 来调用。再次我们选择 tail_lines 函数来解释。</description>
     </item>
     
     <item>
@@ -104,17 +120,28 @@ while((n = read(diskfd, buf, BUF_SIZE)) &amp;gt; 0) write(sockfd, buf , n); 那�
     </item>
     
     <item>
+      <title>性能优化命令</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-optimize/tools/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-optimize/tools/</guid>
+      <description>性能优化常用命令 CPU 负载    命令 解释     uptime 0.63, 0.83, 0.88   grep &#39;model name&#39; /proc/cpuinfo | wc -l 查看有几个CPU，以便对比uptime是否超过负载   mpstat -P ALL 5 监控所有CPU，后面数字5表示间隔5秒后输出一组数据   pidstat -u 5 1 间隔5秒后输出一组数据   stress --cpu 1 --timeout 600 模拟 CPU 密集型进程，pidstat的%usr升高   stress -i 1 --timeout 600 模拟 I/O 压力，即不停地执行 sync，pidstat的iowait升高   stress -c 8 --timeout 600 模拟大量进程，pidstat的%wait升高     平均负载 uptime 是指单位时间内，系统处于可运行状态和不可中断状态的平均进程数，也就是平均活跃进程数。通过 ps 命令可以看到进程的状态。</description>
+    </item>
+    
+    <item>
       <title>线程和进程</title>
       <link>https://kunzhao.org/docs/tutorial/unix-optimize/thread_process/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/unix-optimize/thread_process/</guid>
-      <description>线程和进程 线程 线程通信方式  POSIX 信号量 互斥锁 (互斥量)：独占方式访问关键代码段。 条件变量：某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程。  线程的数据 生命周期 另外一副 Java 线程的状态转换图：
+      <description>线程和进程 执行二进制文件 Linux 下二进制文件格式一般是 ELF(Executable and Linkable Format) 格式。
+执行二进制文件的过程，简而言之就是先 load_elf_binary 加载二进制文件，然后 start_thread 。
+其中 load_elf_binary 加载二进制文件中，很重要的一步就是建立内存映射：
+ 设置内存映射区 mmap_base 设置 vm_area_struct，栈底、栈顶 将 ELF 文件中的代码映射到内存 设置 vm_area_struct 将依赖的 so 文件映射到内存的内存映射区域  最后行程下面的内存映射图：
+线程 线程通信方式  POSIX 信号量 互斥锁 (互斥量)：独占方式访问关键代码段。 条件变量：某个共享数据达到某个值的时候，唤醒等待这个共享数据的线程。  线程的数据 生命周期 另外一副 Java 线程的状态转换图：
 另外一副更为详细的：
 何时可以响应中断  线程在运行态是不响应中断的。
-    状态 中断效果 描述     NEW 无    RUNNABLE 设置中断标志位 用户自己判断是否中断，以及如何处理   BLOCKED 设置中断标志位 用户自己判断是否中断，以及如何处理   WAITING 抛InterruptedException异常，并清空中断标志位    TIMED_WAITING 抛InterruptedException异常，并清空中断标志位    TERMINATED 无     自发性上下文切换 自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。sleep()、wait()、yield()、join()、park()、synchronized、lock。
-停止线程 (1) volatile 标志位
-// set this to true to stop the thread volatile boolean shutdown = false; .</description>
+    状态 中断效果 描述     NEW 无    RUNNABLE 设置中断标志位 用户自己判断是否中断，以及如何处理   BLOCKED 设置中断标志位 用户自己判断是否中断，以及如何处理   WAITING 抛InterruptedException异常，并清空中断标志位    TIMED_WAITING 抛InterruptedException异常，并清空中断标志位    TERMINATED 无     自发性上下文切换 自发性上下文切换指线程由 Java 程序调用导致切出，在多线程编程中，执行调用以下方法或关键字，常常就会引发自发性上下文切换。sleep()、wait()、yield()、join()、park()、synchronized、lock。</description>
     </item>
     
     <item>

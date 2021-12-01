@@ -14,16 +14,18 @@ MQAdminStartup.main(new String[] { &#34;queryMsgByKey&#34;, &#34;-n&#34;, &#34;l
 用户可以使用 queryMsgById 命令查询这条消息的详细信息:
 MQAdminStartup.main(new String[] { &#34;queryMsgById&#34;, &#34;-n&#34;, &#34;localhost:9876&#34;, &#34;-i&#34;, &#34;0A6C73D900002A9F0000000000004010&#34; }); (3) 根据唯一键查询消息 消息在发送成功之后，其返回的 SendResult 类中包含了这条消息的唯一 ID:" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-message-indexing-flow/" />
+<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-message-indexing-flow/" /><meta property="article:section" content="docs" />
+
+
 
 <title>RocketMQ 消息索引流程 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -457,7 +459,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -550,13 +552,13 @@ data-full-width-responsive="true"></ins>
 <p>对于 Producer 发送到 Broker 服务器的消息，RocketMQ 支持多种方式来方便地查询消息:</p>
 <h3 id="1-根据键查询消息">(1) 根据键查询消息</h3>
 <p>如下所示，在构建消息的时候，指定了这条消息的键为 “OrderID001”:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Message msg <span style="color:#f92672">=</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Message msg <span style="color:#f92672">=</span>
     <span style="color:#66d9ef">new</span> Message<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;TopicTest&#34;</span><span style="color:#f92672">,</span>
                 <span style="color:#e6db74">&#34;TagA&#34;</span><span style="color:#f92672">,</span>
                 <span style="color:#e6db74">&#34;OrderID001&#34;</span><span style="color:#f92672">,</span> <span style="color:#75715e">// Keys
 </span><span style="color:#75715e"></span>                <span style="color:#e6db74">&#34;Hello world&#34;</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBytes</span><span style="color:#f92672">(</span>RemotingHelper<span style="color:#f92672">.</span><span style="color:#a6e22e">DEFAULT_CHARSET</span><span style="color:#f92672">));</span>
 </code></pre></div><p>那么，当这条消息发送成功后，我们可以使用 <code>queryMsgByKey</code> 命令查询到这条消息的详细信息:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">MQAdminStartup<span style="color:#f92672">.</span><span style="color:#a6e22e">main</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> String<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">MQAdminStartup<span style="color:#f92672">.</span><span style="color:#a6e22e">main</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> String<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span>
         <span style="color:#e6db74">&#34;queryMsgByKey&#34;</span><span style="color:#f92672">,</span>
         <span style="color:#e6db74">&#34;-n&#34;</span><span style="color:#f92672">,</span>
         <span style="color:#e6db74">&#34;localhost:9876&#34;</span><span style="color:#f92672">,</span>
@@ -569,7 +571,7 @@ data-full-width-responsive="true"></ins>
 <p>消息在发送成功之后，其返回的 <code>SendResult</code> 类中包含了这条消息的唯一偏移量 ID (注意此处指的是 <code>offsetMsgId</code>):</p>
 <p><img src="/images/docs/rocketmq/rocketmq-message-indexing-flow/2018_04_03_11_19_23.png" alt="消息发送成功返回偏移量"></p>
 <p>用户可以使用 <code>queryMsgById</code> 命令查询这条消息的详细信息:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">MQAdminStartup<span style="color:#f92672">.</span><span style="color:#a6e22e">main</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> String<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">MQAdminStartup<span style="color:#f92672">.</span><span style="color:#a6e22e">main</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> String<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span>
         <span style="color:#e6db74">&#34;queryMsgById&#34;</span><span style="color:#f92672">,</span>
         <span style="color:#e6db74">&#34;-n&#34;</span><span style="color:#f92672">,</span>
         <span style="color:#e6db74">&#34;localhost:9876&#34;</span><span style="color:#f92672">,</span>
@@ -580,7 +582,7 @@ data-full-width-responsive="true"></ins>
 <p>消息在发送成功之后，其返回的 SendResult 类中包含了这条消息的<strong>唯一 ID</strong>:</p>
 <p><img src="/images/docs/rocketmq/rocketmq-message-indexing-flow/2018_04_03_11_19_47.png" alt="消息唯一 ID"></p>
 <p>用户可以使用 <code>queryMsgByUniqueKey</code> 命令查询这条消息的详细信息:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">MQAdminStartup<span style="color:#f92672">.</span><span style="color:#a6e22e">main</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> String<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">MQAdminStartup<span style="color:#f92672">.</span><span style="color:#a6e22e">main</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> String<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span>
         <span style="color:#e6db74">&#34;queryMsgByUniqueKey&#34;</span><span style="color:#f92672">,</span>
         <span style="color:#e6db74">&#34;-n&#34;</span><span style="color:#f92672">,</span>
         <span style="color:#e6db74">&#34;localhost:9876&#34;</span><span style="color:#f92672">,</span>
@@ -599,7 +601,7 @@ data-full-width-responsive="true"></ins>
                                     queueId=3],
             queueOffset=24]
 </code></pre><p>根据这些信息，使用 <code>queryMsgByOffset</code> 命令也可以查询到这条消息的详细信息:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">MQAdminStartup<span style="color:#f92672">.</span><span style="color:#a6e22e">main</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> String<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">MQAdminStartup<span style="color:#f92672">.</span><span style="color:#a6e22e">main</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> String<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span>
         <span style="color:#e6db74">&#34;queryMsgByOffset&#34;</span><span style="color:#f92672">,</span>
         <span style="color:#e6db74">&#34;-n&#34;</span><span style="color:#f92672">,</span>
         <span style="color:#e6db74">&#34;localhost:9876&#34;</span><span style="color:#f92672">,</span>
@@ -621,7 +623,7 @@ data-full-width-responsive="true"></ins>
 <li>消息文件 <code>CommitLog</code> 写偏移量</li>
 </ul>
 <p><img src="/images/docs/rocketmq/rocketmq-message-indexing-flow/msgid_generated_in_broker.png" alt="生成 ID"></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultAppendMessageCallback</span> <span style="color:#66d9ef">implements</span> AppendMessageCallback <span style="color:#f92672">{</span>
 
@@ -638,7 +640,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="2-使用-id-查询">(2) 使用 ID 查询</h3>
 <p>Admin 端查询的时候，首先对 <code>msgId</code> 进行解析，取出 Broker 服务器的 IP 、端口号和消息偏移量:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageDecoder</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageDecoder</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> MessageId <span style="color:#a6e22e">decodeMessageId</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String msgId<span style="color:#f92672">)</span>
         <span style="color:#66d9ef">throws</span> UnknownHostException <span style="color:#f92672">{</span>
@@ -651,7 +653,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>获取到<strong>偏移量</strong>之后，Admin 会对 Broker 服务器发送一个 <code>VIEW_MESSAGE_BY_ID</code> 的请求命令，Broker 服务器在收到请求后，会依据偏移量定位到 <code>CommitLog</code> 文件中的相应位置,然后取出消息，返回给 Admin 端:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMessageStore</span> <span style="color:#66d9ef">implements</span> MessageStore <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMessageStore</span> <span style="color:#66d9ef">implements</span> MessageStore <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> SelectMappedBufferResult <span style="color:#a6e22e">selectOneMessageByOffset</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> commitLogOffset<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -666,7 +668,7 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-message-indexing-flow/query_message_by_msg_offset_id.png" alt="根据偏移量定为消息"></p>
 <h2 id="三消息队列偏移量查询">三、消息队列偏移量查询</h2>
 <p>根据队列偏移量查询是最简单的一种查询方式，Admin 会启动一个 <code>PullConsumer</code> ，然后利用用户传递给 Admin 的队列 ID、队列偏移量等信息，从服务器拉取一条消息过来:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">QueryMsgByOffsetSubCommand</span> <span style="color:#66d9ef">implements</span> SubCommand <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">QueryMsgByOffsetSubCommand</span> <span style="color:#66d9ef">implements</span> SubCommand <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span>CommandLine commandLine<span style="color:#f92672">,</span> Options options<span style="color:#f92672">,</span> RPCHook rpcHook<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> SubCommandException <span style="color:#f92672">{</span>
@@ -685,7 +687,7 @@ data-full-width-responsive="true"></ins>
 <h2 id="四消息索引服务">四、消息索引服务</h2>
 <p>在继续讲解剩下两种查询方式之前，我们必须先介绍以下 Broker 端的消息索引服务。</p>
 <p>在之前提到过，每当一条消息发送过来之后，其会封装为一个 <code>DispatchRequest</code> 来下发给各个转发服务，而 <code>CommitLogDispatcherBuildIndex</code> 构建索引服务便是其中之一:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLogDispatcherBuildIndex</span> <span style="color:#66d9ef">implements</span> CommitLogDispatcher <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLogDispatcherBuildIndex</span> <span style="color:#66d9ef">implements</span> CommitLogDispatcher <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">dispatch</span><span style="color:#f92672">(</span>DispatchRequest request<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -726,7 +728,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/rocketmq/rocketmq-message-indexing-flow/put_key_example.png" alt="对消息索引流程"></p>
 <h3 id="3-查询消息">(3) 查询消息</h3>
 <p>当需要根据键来查询消息的时候，其会按照倒序回溯整个索引文件列表，对于每一个在时间上能够匹配用户传入的 <code>begin</code> 和 <code>end</code> 时间戳参数的索引文件，会一一进行消息查询：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IndexService</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IndexService</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> QueryOffsetResult <span style="color:#a6e22e">queryOffset</span><span style="color:#f92672">(</span>String topic<span style="color:#f92672">,</span> String key<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> maxNum<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> begin<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> end<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// 倒序
@@ -746,7 +748,7 @@ data-full-width-responsive="true"></ins>
 <li><strong>遍历索引槽</strong>: 沿着索引槽地址，依次取出下一个索引槽地址，即沿着链表遍历，直至遇见下一个索引槽地址为非法地址 0 停止</li>
 <li><strong>收集偏移量</strong>: 在遇到匹配的消息之后，会将相应的物理偏移量放到列表中，最后根据物理偏移量，从 <code>CommitLog</code> 文件中取出消息</li>
 </ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMessageStore</span> <span style="color:#66d9ef">implements</span> MessageStore <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMessageStore</span> <span style="color:#66d9ef">implements</span> MessageStore <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> QueryMessageResult <span style="color:#a6e22e">queryMessage</span><span style="color:#f92672">(</span>String topic<span style="color:#f92672">,</span> String key<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> maxNum<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> begin<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> end<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -764,7 +766,7 @@ data-full-width-responsive="true"></ins>
 <h2 id="五唯一键查询消息">五、唯一键查询消息</h2>
 <h3 id="1-构建键">(1) 构建键</h3>
 <p>消息的<strong>唯一键</strong>是在客户端发送消息前构建的:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQProducerImpl</span> <span style="color:#66d9ef">implements</span> MQProducerInner <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQProducerImpl</span> <span style="color:#66d9ef">implements</span> MQProducerInner <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">private</span> SendResult <span style="color:#a6e22e">sendKernelImpl</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> Message msg<span style="color:#f92672">,</span> <span style="color:#75715e">/** 其它参数 **/</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> XXXException <span style="color:#f92672">{</span>
         <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!(</span>msg <span style="color:#66d9ef">instanceof</span> MessageBatch<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
@@ -773,7 +775,7 @@ data-full-width-responsive="true"></ins>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>创建唯一 ID 的算法:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageClientIDSetter</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageClientIDSetter</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> String <span style="color:#a6e22e">createUniqID</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         StringBuilder sb <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StringBuilder<span style="color:#f92672">(</span>LEN <span style="color:#f92672">*</span> 2<span style="color:#f92672">);</span>
@@ -784,7 +786,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>唯一键是根据客户端的<strong>进程 ID</strong>、<strong>IP 地址</strong>、<strong>ClassLoader 哈希码</strong>、<strong>时间戳</strong>、<strong>计数器</strong>这几个值来生成的一个唯一的键，然后作为这条消息的附属属性发送到 Broker 服务器的:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageClientIDSetter</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageClientIDSetter</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setUniqID</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> Message msg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>msg<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span>MessageConst<span style="color:#f92672">.</span><span style="color:#a6e22e">PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX</span><span style="color:#f92672">)</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -795,7 +797,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="2-索引键">(2) 索引键</h3>
 <p>当服务器收到客户端发送过来的消息之后，索引服务便会取出客户端生成的 <code>uniqKey</code> 并为之建立索引，放入到索引文件中:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IndexService</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IndexService</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">buildIndex</span><span style="color:#f92672">(</span>DispatchRequest req<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// ...
@@ -808,7 +810,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="3-使用键查询">(3) 使用键查询</h3>
 <p>客户端在生成消息唯一键的时候，在 <code>ByteBuffer</code> 的第 11 位到第 14 位放置的是<strong>当前的时间与当月第一天</strong>的时间的毫秒差:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageClientIDSetter</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageClientIDSetter</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]</span> <span style="color:#a6e22e">createUniqIDBuffer</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">long</span> current <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
@@ -836,7 +838,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>我们知道<strong>消息索引</strong>服务的查询需要用户传入 <code>begin</code> 和 <code>end</code> 这连个时间值，以进行这段时间内的匹配。所以 RocketMQ 为了加速消息的查询，于是在 Admin 端对特定 ID 进行查询的时候，首先取出了这段<strong>时间差值</strong>，然后与当月时间进行相加得到 <code>begin</code> 时间值:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageClientIDSetter</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MessageClientIDSetter</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> Date <span style="color:#a6e22e">getNearlyTimeFromID</span><span style="color:#f92672">(</span>String msgID<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         ByteBuffer buf <span style="color:#f92672">=</span> ByteBuffer<span style="color:#f92672">.</span><span style="color:#a6e22e">allocate</span><span style="color:#f92672">(</span>8<span style="color:#f92672">);</span>
@@ -875,7 +877,7 @@ data-full-width-responsive="true"></ins>
 <h2 id="六键查询消息">六、键查询消息</h2>
 <h3 id="1-构建键-1">(1) 构建键</h3>
 <p>我们提到过，在发送消息的时候，可以填充一个 <code>keys</code> 的值，这个值将会作为消息的一个属性被发送到 Broker 服务器上:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Message</span> <span style="color:#66d9ef">implements</span> Serializable <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Message</span> <span style="color:#66d9ef">implements</span> Serializable <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setKeys</span><span style="color:#f92672">(</span>String keys<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">putProperty</span><span style="color:#f92672">(</span>MessageConst<span style="color:#f92672">.</span><span style="color:#a6e22e">PROPERTY_KEYS</span><span style="color:#f92672">,</span> keys<span style="color:#f92672">);</span>
@@ -884,7 +886,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="2-索引键-1">(2) 索引键</h3>
 <p>当服务器收到客户端发送过来的消息之后，索引服务便会取出这条消息的 <code>keys</code> 并将其用<strong>空格</strong>进行分割，分割后的每一个字符串都会作为一个单独的<strong>键</strong>，创建索引，放入到索引文件中:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IndexService</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IndexService</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">buildIndex</span><span style="color:#f92672">(</span>DispatchRequest req<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// ...
@@ -904,7 +906,7 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><p>由此我们也可以得知，<code>keys</code> 键的设置通过使用空格分割字符串，一条消息可以指定多个键。</p>
 <h3 id="3-使用键查询-1">(3) 使用键查询</h3>
 <p><code>keys</code> 键查询的方式也是通过将参数封装为 <code>QUERY_MESSAGE</code> 请求包中去请求服务器返回相应的信息。由于键本身不能和时间戳相关联，因此 <code>begin</code> 值设置的是 0，这是和第五节的不同之处:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">QueryMsgByKeySubCommand</span> <span style="color:#66d9ef">implements</span> SubCommand <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">QueryMsgByKeySubCommand</span> <span style="color:#66d9ef">implements</span> SubCommand <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">queryByKey</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> DefaultMQAdminExt admin<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> String key<span style="color:#f92672">)</span>
         <span style="color:#66d9ef">throws</span> MQClientException<span style="color:#f92672">,</span> InterruptedException <span style="color:#f92672">{</span>

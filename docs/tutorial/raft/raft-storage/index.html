@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="raft storage"><meta property="og:title" content="raft storage" />
+<meta property="og:description" content="raft storage 元信息、Log、Snapshot 在磁盘上的存储示例：
+元信息 RaftMetaStorage 负责存储当前的 Term、当前的投票情况：
+public interface RaftMetaStorage extends Lifecycle&lt;RaftMetaStorageOptions&gt;, Storage { boolean setTerm(final long term); long getTerm(); boolean setVotedFor(final PeerId peerId); PeerId getVotedFor(); boolean setTermAndVotedFor(final long term, final PeerId peerId); } Term 就是任期/学期的意思，比如这一学期选举班长投给了小 A，下一学期选班长投给了小 B，诸如此类的意思。Term 在时间概念上是单调递增的。
+LocalRaftMetaStorage 是 RaftMetaStorage 的默认实现，其启动的时候，从用户指定的 raft_meta 文件路径中 (例如 /tmp/server1/raft_meta/raft_meta) 去加载当前的 term 和 vote 信息。在 shutdown()、setTerm()、setVotedFor() 之后又会立即将当前这两个信息持久化到磁盘上。
+文件的格式是 protobuf 格式的，如下是其对应的 protobuf 文件的字段内容：
+message StablePBMeta { required int64 term = 1; required string votedfor = 2;};关于 save() 方法，其首先将内容写入到一个 raft_meta." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/raft/raft-storage/" /><meta property="article:section" content="docs" />
+
+
+
+<title>raft storage | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+
+
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/raft/raft-storage/"  class="active">
+      raft storage
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/raft/leader/" >
+      raft select leader
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/softskill/" >
+      箴言箴句
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/technique/" >
+      技术
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>raft storage</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#元信息">元信息</a></li>
+    <li><a href="#logentry-存储">LogEntry 存储</a>
+      <ul>
+        <li><a href="#logentry">LogEntry</a></li>
+        <li><a href="#logmanager">LogManager</a></li>
+      </ul>
+    </li>
+    <li><a href="#snapshot-存储">Snapshot 存储</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="raft-storage">raft storage</h1>
+<p>元信息、Log、Snapshot 在磁盘上的存储示例：</p>
+<p><img src="/images/docs/tutorial/raft/storage/Snipaste_2021-11-21_21-14-00.png" alt=""></p>
+<h2 id="元信息">元信息</h2>
+<p><code>RaftMetaStorage</code> 负责存储当前的 Term、当前的投票情况：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">RaftMetaStorage</span> <span style="color:#66d9ef">extends</span> Lifecycle<span style="color:#f92672">&lt;</span>RaftMetaStorageOptions<span style="color:#f92672">&gt;,</span> Storage <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">setTerm</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> term<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">getTerm</span><span style="color:#f92672">();</span>
+
+    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">setVotedFor</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> PeerId peerId<span style="color:#f92672">);</span>
+    PeerId <span style="color:#a6e22e">getVotedFor</span><span style="color:#f92672">();</span>
+
+    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">setTermAndVotedFor</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> term<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> PeerId peerId<span style="color:#f92672">);</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>Term</code> 就是<strong>任期/学期</strong>的意思，比如这一学期选举班长投给了小 A，下一学期选班长投给了小 B，诸如此类的意思。<code>Term</code> 在时间概念上是<strong>单调递增</strong>的。</p>
+<p><code>LocalRaftMetaStorage</code> 是 <code>RaftMetaStorage</code> 的默认实现，其启动的时候，从用户指定的 <code>raft_meta</code> 文件路径中 (例如 <code>/tmp/server1/raft_meta/raft_meta</code>) 去加载当前的 <code>term</code> 和 <code>vote</code> 信息。在 <code>shutdown()</code>、<code>setTerm()</code>、<code>setVotedFor()</code> 之后又会立即将当前这两个信息持久化到磁盘上。</p>
+<p>文件的格式是 <code>protobuf</code> 格式的，如下是其对应的 <code>protobuf</code> 文件的字段内容：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-protobuf" data-lang="protobuf"><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">StablePBMeta</span> {<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#66d9ef">required</span> <span style="color:#66d9ef">int64</span> term <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#66d9ef">required</span> <span style="color:#66d9ef">string</span> votedfor <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>};<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><p>关于 <code>save()</code> 方法，其首先将内容写入到一个 <code>raft_meta.tmp</code> 文件中，然后<strong>原子替换</strong> <code>raft_meta</code> 文件。原子替换是用的如下方式：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+    Files<span style="color:#f92672">.</span><span style="color:#a6e22e">move</span><span style="color:#f92672">(</span>sourcePath<span style="color:#f92672">,</span> targetPath<span style="color:#f92672">,</span> StandardCopyOption<span style="color:#f92672">.</span><span style="color:#a6e22e">ATOMIC_MOVE</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> IOException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    success <span style="color:#f92672">=</span> Files<span style="color:#f92672">.</span><span style="color:#a6e22e">move</span><span style="color:#f92672">(</span>sourcePath<span style="color:#f92672">,</span> targetPath<span style="color:#f92672">,</span> StandardCopyOption<span style="color:#f92672">.</span><span style="color:#a6e22e">REPLACE_EXISTING</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>内容组织的格式如下：</p>
+<pre><code>[ 类名的长度 | 类名 | 类的序列化的长度 | 类的序列化内容 ]
+</code></pre><p>上述类名在这里就是 <code>jraft.StablePBMeta</code>。</p>
+<p>用户可以配置 <code>save()</code> 的时候，是否调用 <code>fsync()</code> 函数。如果未开启 <code>sync</code> 的话，一旦断电，这部分内容有可能还没有持久化到磁盘上。但是如果开启 <code>sync</code> 的话，其性能又会有所影响：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>sync<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    Utils<span style="color:#f92672">.</span><span style="color:#a6e22e">fsync</span><span style="color:#f92672">(</span>file<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="logentry-存储">LogEntry 存储</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">LogStorage</span> <span style="color:#66d9ef">extends</span> Lifecycle<span style="color:#f92672">&lt;</span>LogStorageOptions<span style="color:#f92672">&gt;,</span> Storage <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">getFirstLogIndex</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">getLastLogIndex</span><span style="color:#f92672">();</span>
+
+    LogEntry <span style="color:#a6e22e">getEntry</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> index<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">appendEntry</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> LogEntry entry<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>Log</code> 存储默认采用的是 <a href="https://github.com/facebook/rocksdb/">RocksDB</a>，其底层使用 <code>LSM</code> 存储引擎存储数据，在 <a href="http://localhost:1313/docs/books/ddia/ddia-chapter3/">存储和读取</a> 中介绍到，只追加写的 Log 一般底层采用 LSM 数据结构来存储，以提高检索的速度。</p>
+<h3 id="logentry">LogEntry</h3>
+<p><code>LogEntry</code> 中关联的信息如下所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LogEntry</span> <span style="color:#66d9ef">implements</span> Checksum <span style="color:#f92672">{</span>
+    
+    <span style="color:#75715e">/** entry type */</span>
+    <span style="color:#66d9ef">private</span> EnumOutter<span style="color:#f92672">.</span><span style="color:#a6e22e">EntryType</span>   type<span style="color:#f92672">;</span>
+    <span style="color:#75715e">/** log id with index/term */</span>
+    <span style="color:#66d9ef">private</span> LogId                  id         <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> LogId<span style="color:#f92672">(</span>0<span style="color:#f92672">,</span> 0<span style="color:#f92672">);</span>
+    <span style="color:#75715e">/** log entry current peers */</span>
+    <span style="color:#66d9ef">private</span> List<span style="color:#f92672">&lt;</span>PeerId<span style="color:#f92672">&gt;</span>           peers<span style="color:#f92672">;</span>
+    <span style="color:#75715e">/** log entry old peers */</span>
+    <span style="color:#66d9ef">private</span> List<span style="color:#f92672">&lt;</span>PeerId<span style="color:#f92672">&gt;</span>           oldPeers<span style="color:#f92672">;</span>
+    <span style="color:#75715e">/** log entry current learners */</span>
+    <span style="color:#66d9ef">private</span> List<span style="color:#f92672">&lt;</span>PeerId<span style="color:#f92672">&gt;</span>           learners<span style="color:#f92672">;</span>
+    <span style="color:#75715e">/** log entry old learners */</span>
+    <span style="color:#66d9ef">private</span> List<span style="color:#f92672">&lt;</span>PeerId<span style="color:#f92672">&gt;</span>           oldLearners<span style="color:#f92672">;</span>
+    <span style="color:#75715e">/** entry data */</span>
+    <span style="color:#66d9ef">private</span> ByteBuffer             data       <span style="color:#f92672">=</span> EMPTY_DATA<span style="color:#f92672">;</span>
+    <span style="color:#75715e">/** checksum for log entry*/</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">long</span>                   checksum<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">}</span>
+
+<span style="color:#75715e">// Log ID
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LogId</span> <span style="color:#66d9ef">implements</span> Comparable<span style="color:#f92672">&lt;</span>LogId<span style="color:#f92672">&gt;,</span> Copiable<span style="color:#f92672">&lt;</span>LogId<span style="color:#f92672">&gt;,</span> Serializable<span style="color:#f92672">,</span> Checksum <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">long</span> index<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">long</span> term<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="logmanager">LogManager</h3>
+<h2 id="snapshot-存储">Snapshot 存储</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">SnapshotStorage</span> <span style="color:#66d9ef">extends</span> Lifecycle<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;,</span> Storage <span style="color:#f92672">{</span>
+
+    SnapshotWriter <span style="color:#a6e22e">create</span><span style="color:#f92672">();</span>
+    SnapshotReader <span style="color:#a6e22e">open</span><span style="color:#f92672">();</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>进行 <code>snapshot</code> 是在后台线程进行的：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// NodeImpl.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">handleSnapshotTimeout</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// do_snapshot in another thread to avoid blocking the timer thread.
+</span><span style="color:#75715e"></span>    Utils<span style="color:#f92672">.</span><span style="color:#a6e22e">runInThread</span><span style="color:#f92672">(()</span> <span style="color:#f92672">-&gt;</span> doSnapshot<span style="color:#f92672">(</span><span style="color:#66d9ef">null</span><span style="color:#f92672">));</span>
+<span style="color:#f92672">}</span>
+</code></pre></div>
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#元信息">元信息</a></li>
+    <li><a href="#logentry-存储">LogEntry 存储</a>
+      <ul>
+        <li><a href="#logentry">LogEntry</a></li>
+        <li><a href="#logmanager">LogManager</a></li>
+      </ul>
+    </li>
+    <li><a href="#snapshot-存储">Snapshot 存储</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

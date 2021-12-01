@@ -7,23 +7,23 @@
 <meta name="description" content="MySQL Crash Safe"><meta property="og:title" content="MySQL Crash Safe" />
 <meta property="og:description" content="MySQL Crash Safe  MySQL 是如何保证数据不丢的？
  WAL 机制 只要 redo log 和 binlog 保证持久化到磁盘，就能确保 MySQL 异常重启后，数据可以恢复。
-binlog 的写入机制 其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。
+update 语句的执行流程 update T set c = c &#43; 1 where ID = 2; binlog 的写入机制 MySQL Server 层自己的日志，称为 binlog (归档日志)，binlog 本身实现不了 crash safe 的能力 (不是两阶段提交，只是为了归档)，binlog 是逻辑日志，可以追加写。
+其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。
 系统给 binlog cache 分配了一片内存，每个线程一个，参数 binlog_cache_size 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。
-事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。
-每个线程有自己 binlog cache，但是共用同一份 binlog 文件。
- 图中的 write，指的就是指把日志写入到文件系统的 page cache，并没有把数据持久化到磁盘，所以速度比较快。 图中的 fsync，才是将数据持久化到磁盘的操作。一般情况下，我们认为 fsync 才占磁盘的 IOPS。  write 和 fsync 的时机，是由参数 sync_binlog 控制的：
- sync_binlog=0 的时候，表示每次提交事务都只 write，不 fsync； sync_binlog=1 的时候，表示每次提交事务都会执行 fsync； sync_binlog=N(N&gt;1) 的时候，表示每次提交事务都 write，但累积 N 个事务后才 fsync。  redo log 写入机制 事务在执行过程中，生成的 redo log 是要先写到 redo log buffer 的。redo log 可能存在的三种状态：" />
+事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-crash-safe/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-crash-safe/" /><meta property="article:section" content="docs" />
+
+
 
 <title>MySQL Crash Safe | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -139,6 +139,32 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/algorithm/" >
       算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
   </a>
 
 
@@ -667,6 +693,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/database/mvcc/" >
+      MVCC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/database/mybatis/" >
       MyBatis
   </a>
@@ -698,7 +734,7 @@ var _hmt = _hmt || [];
         <li>
 
   <a href="/docs/tutorial/database/sharding-sphere/" >
-      ShardingSphere 3.X
+      ShardingSphere
   </a>
 
 </li>
@@ -1045,7 +1081,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1074,6 +1110,7 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#wal-机制">WAL 机制</a></li>
+    <li><a href="#update-语句的执行流程">update 语句的执行流程</a></li>
     <li><a href="#binlog-的写入机制">binlog 的写入机制</a></li>
     <li><a href="#redo-log-写入机制">redo log 写入机制</a></li>
   </ul>
@@ -1102,7 +1139,11 @@ data-full-width-responsive="true"></ins>
 </blockquote>
 <h2 id="wal-机制">WAL 机制</h2>
 <p>只要 <strong>redo log</strong> 和 <strong>binlog</strong> 保证<strong>持久化到磁盘</strong>，就能确保 MySQL 异常重启后，数据可以恢复。</p>
+<h2 id="update-语句的执行流程">update 语句的执行流程</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">update</span> T <span style="color:#66d9ef">set</span> <span style="color:#66d9ef">c</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">c</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">where</span> ID <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;
+</code></pre></div><p><img src="/images/docs/tutorial/database/mysql-crash-safe/2e5bff4910ec189fe1ee6e2ecc7b4bbe.webp" alt=""></p>
 <h2 id="binlog-的写入机制">binlog 的写入机制</h2>
+<p>MySQL Server 层自己的日志，称为 binlog (归档日志)，<strong>binlog 本身实现不了 crash safe 的能力 (不是两阶段提交，只是为了归档)</strong>，binlog 是逻辑日志，可以<strong>追加写</strong>。</p>
 <p>其实，binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。</p>
 <p>系统给 binlog cache 分配了一片内存，每个线程一个，参数 <code>binlog_cache_size</code> 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。</p>
 <p>事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。</p>
@@ -1119,6 +1160,7 @@ data-full-width-responsive="true"></ins>
 <li><code>sync_binlog=N(N&gt;1)</code> 的时候，表示每次提交事务都 <code>write</code>，但累积 N 个事务后才 <code>fsync</code>。</li>
 </ul>
 <h2 id="redo-log-写入机制">redo log 写入机制</h2>
+<p>redo log 是 InnoDB 引擎的日志，其是<strong>物理日志</strong>，循环写。</p>
 <p>事务在执行过程中，生成的 redo log 是要先写到 redo log buffer 的。redo log 可能存在的三种状态：</p>
 <p><img src="/images/docs/tutorial/database/mysql-crash-safe/9d057f61d3962407f413deebc80526d4.png" alt=""></p>
 <p>为了控制 redo log 的写入策略，InnoDB 提供了 <code>innodb_flush_log_at_trx_commit</code> 参数，它有三种可能取值：</p>
@@ -1169,6 +1211,7 @@ data-full-width-responsive="true"></ins>
   <nav id="TableOfContents">
   <ul>
     <li><a href="#wal-机制">WAL 机制</a></li>
+    <li><a href="#update-语句的执行流程">update 语句的执行流程</a></li>
     <li><a href="#binlog-的写入机制">binlog 的写入机制</a></li>
     <li><a href="#redo-log-写入机制">redo log 写入机制</a></li>
   </ul>

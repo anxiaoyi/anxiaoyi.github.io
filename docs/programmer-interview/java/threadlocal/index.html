@@ -12,16 +12,18 @@
 new WeakHashMap&lt;ThreadLocal,T&gt;() 而事实上，在每个 Thread 内部也的确有这么一个 Map 指针：
 public class Thread implements Runnable { ThreadLocal.ThreadLocalMap threadLocals = null; } 虽然 ThreadLocalMap 并不是一个 WeakHashMap，但是它的设计类似 WeakHashMap，它的 Key 是由 Weak Reference 引用的。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/threadlocal/" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/threadlocal/" /><meta property="article:section" content="docs" />
+
+
 
 <title>并发 - ThreadLocal | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.04a53f033623e53a68db459286b910a62c5fa8dde58d8d74933c43cc61995fe2.js" integrity="sha256-BKU/AzYj5Tpo20WShrkQpixfqN3ljY10kzxDzGGZX&#43;I="></script>
+<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -631,7 +633,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -695,16 +697,16 @@ data-full-width-responsive="true"></ins>
 <li>那我们改为 <code> Collections.synchronizedMap(new WeakHashMap&lt;Thread, T&gt;())</code> 怎样？ 可以解决 GC 问题，但是多线程问题仍然没有解决。</li>
 </ul>
 <p>Java 实现的想法，没有用 <code>&lt;Thread, T&gt;</code> ，而是大概如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">new</span> WeakHashMap<span style="color:#f92672">&lt;</span>ThreadLocal<span style="color:#f92672">,</span>T<span style="color:#f92672">&gt;()</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">new</span> WeakHashMap<span style="color:#f92672">&lt;</span>ThreadLocal<span style="color:#f92672">,</span>T<span style="color:#f92672">&gt;()</span>
 </code></pre></div><p>而事实上，在每个 <code>Thread</code> 内部也的确有这么一个 <code>Map</code> 指针：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Thread</span> <span style="color:#66d9ef">implements</span> Runnable <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Thread</span> <span style="color:#66d9ef">implements</span> Runnable <span style="color:#f92672">{</span>
     
     ThreadLocal<span style="color:#f92672">.</span><span style="color:#a6e22e">ThreadLocalMap</span> threadLocals <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
 
 <span style="color:#f92672">}</span>
 </code></pre></div><p>虽然 <code>ThreadLocalMap</code> 并不是一个 <code>WeakHashMap</code>，但是它的设计类似 <code>WeakHashMap</code>，它的 Key 是由 Weak Reference 引用的。</p>
 <p>再看 <code>ThreadLocal.get()</code> 方法：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> T <span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> T <span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     Thread t <span style="color:#f92672">=</span> Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">();</span>
     ThreadLocalMap map <span style="color:#f92672">=</span> getMap<span style="color:#f92672">(</span>t<span style="color:#f92672">);</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>map <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -718,7 +720,7 @@ data-full-width-responsive="true"></ins>
     <span style="color:#66d9ef">return</span> setInitialValue<span style="color:#f92672">();</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p><code>ThreadLocal.setInitialValue()</code> 的实现：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> T <span style="color:#a6e22e">setInitialValue</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> T <span style="color:#a6e22e">setInitialValue</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     T value <span style="color:#f92672">=</span> initialValue<span style="color:#f92672">();</span>
     Thread t <span style="color:#f92672">=</span> Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">();</span>
     ThreadLocalMap map <span style="color:#f92672">=</span> getMap<span style="color:#f92672">(</span>t<span style="color:#f92672">);</span>
@@ -729,7 +731,7 @@ data-full-width-responsive="true"></ins>
     <span style="color:#66d9ef">return</span> value<span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>假设你定义了如下几个 <code>ThreadLocal</code>：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">ThreadLocal<span style="color:#f92672">&lt;</span>SimpleDateFormat<span style="color:#f92672">&gt;</span> threadLocalA <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ThreadLocal<span style="color:#f92672">&lt;&gt;();</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">ThreadLocal<span style="color:#f92672">&lt;</span>SimpleDateFormat<span style="color:#f92672">&gt;</span> threadLocalA <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ThreadLocal<span style="color:#f92672">&lt;&gt;();</span>
 ThreadLocal<span style="color:#f92672">&lt;</span>Random<span style="color:#f92672">&gt;</span> threadLocalB <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ThreadLocal<span style="color:#f92672">&lt;&gt;();</span>
 ThreadLocal<span style="color:#f92672">&lt;</span>Buffer<span style="color:#f92672">&gt;</span> threadLocalC <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ThreadLocal<span style="color:#f92672">&lt;&gt;();</span>
 </code></pre></div><p>那么 <code>Thread.currentThread()</code> 指向了一个 <code>ThreadLocalMap</code>，这个 <code>Map</code> 存储了 3 个 <code>ThreadLocal</code>：</p>
@@ -743,7 +745,7 @@ ThreadLocal<span style="color:#f92672">&lt;</span>Buffer<span style="color:#f926
 <h2 id="内存泄露">内存泄露</h2>
 <p><code>ThreadLocal</code> 已经被赋值为 <code>null</code> 了，但是由于 <code>Thread</code> 没有运行完，一直强引用着 <code>ThreadLocalMap</code>，那么这个 <code>Map</code> 无法被 GC，导致这个 <code>Map</code> 所引用的 <code>value</code> 无法被回收（<code>key</code> 是可以被回收的，因为 <code>key</code> 是弱引用），从而出现内存泄露。</p>
 <p><code>ThreadLocalMap</code> 中的<strong>每一项</strong>如下所示，即 <code>key</code> 是 <code>WeakReference</code>，而 <code>v</code> 也就是 <code>value</code> 是强引用：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Entry</span> <span style="color:#66d9ef">extends</span> WeakReference<span style="color:#f92672">&lt;</span>ThreadLocal<span style="color:#f92672">&lt;?&gt;&gt;</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Entry</span> <span style="color:#66d9ef">extends</span> WeakReference<span style="color:#f92672">&lt;</span>ThreadLocal<span style="color:#f92672">&lt;?&gt;&gt;</span> <span style="color:#f92672">{</span>
 
     <span style="color:#75715e">/** The value associated with this ThreadLocal. */</span>
     Object value<span style="color:#f92672">;</span>
@@ -756,7 +758,7 @@ ThreadLocal<span style="color:#f92672">&lt;</span>Buffer<span style="color:#f926
 <span style="color:#f92672">}</span>
 </code></pre></div><p>为什么 <code>value</code> 不也弄成弱引用？ 如果弄成弱引用，那么每次 GC 都有可能被清空，那么就无法自始至终地保存这一个 <code>value</code> 对象了，每次获取到的有可能都是一个全新的对象。</p>
 <p>推荐：每次使用完 <code>ThreadLocal</code>，都调用 <code>ThreadLocal.remove()</code> 方法清除数据。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">objectThreadLocal<span style="color:#f92672">.</span><span style="color:#a6e22e">set</span><span style="color:#f92672">(</span>userInfo<span style="color:#f92672">);</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">objectThreadLocal<span style="color:#f92672">.</span><span style="color:#a6e22e">set</span><span style="color:#f92672">(</span>userInfo<span style="color:#f92672">);</span>
 <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
     <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span><span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
@@ -764,7 +766,7 @@ ThreadLocal<span style="color:#f92672">&lt;</span>Buffer<span style="color:#f926
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="inheritablethreadlocal">InheritableThreadLocal</h2>
 <p>父线程传递 <code>value</code> 给子线程，当子线程创建的时候，子线程会收到从父线程继承来的所有的 thread-local 的变量。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">InheritableThreadLocal</span><span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">extends</span> ThreadLocal<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">InheritableThreadLocal</span><span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">extends</span> ThreadLocal<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
 <span style="color:#f92672">}</span>
 </code></pre></div>
 <ins class="adsbygoogle"
