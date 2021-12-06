@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.f05ac1428d580160cfd0c14763e6a9bf8f5cbc50610a1610f826f0033c6856ef.js" integrity="sha256-8FrBQo1YAWDP0MFHY&#43;apv49cvFBhChYQ&#43;CbwAzxoVu8="></script>
+<script defer src="/en.search.min.d855943406294b3828037a1ac91f970000e2df3fe538f710d7050da0ed846095.js" integrity="sha256-2FWUNAYpSzgoA3oayR&#43;XAADi3z/lOPcQ1wUNoO2EYJU="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -381,6 +381,14 @@ var _hmt = _hmt || [];
         <li><a href="#无同步">无同步</a></li>
       </ul>
     </li>
+    <li><a href="#false-sharing">False Sharing</a>
+      <ul>
+        <li><a href="#缓存行失效">缓存行失效</a></li>
+        <li><a href="#伪共享代码示例">伪共享代码示例</a></li>
+        <li><a href="#修复伪代码共享一">修复伪代码共享一</a></li>
+        <li><a href="#修复伪代码共享二">修复伪代码共享二</a></li>
+      </ul>
+    </li>
     <li><a href="#java-主内存与工作内存交互">Java 主内存与工作内存交互</a></li>
     <li><a href="#内置锁-synchronized">内置锁 Synchronized</a></li>
     <li><a href="#死锁">死锁</a></li>
@@ -449,6 +457,108 @@ var _hmt = _hmt || [];
 <h3 id="无同步">无同步</h3>
 <p>无同步 - 线程本地存储 (Thread Local Storage):</p>
 <p><img src="/images/posts/java-lock/threadlocalmap-entry.png" alt=""></p>
+<h2 id="false-sharing">False Sharing</h2>
+<blockquote>
+<p>本节参考 <a href="http://tutorials.jenkov.com/java-concurrency/false-sharing.html">False Sharing in Java</a></p>
+</blockquote>
+<ul>
+<li>（1）CPU具有<strong>多级缓存</strong>，越接近CPU的缓存越小也越快；</li>
+<li>（2）CPU缓存中的数据是以<strong>缓存行</strong>为单位处理的；When the CPU caches are reading data from lower level caches or main RAM (e.g. L1 from L2, L2 from L3 and L3 from main RAM), they don&rsquo;t just read a single byte at a time. That would be inefficient. Instead they read a cache line. A cache line typically consists of 64 bytes. Thus, the caches read 64 bytes at a time from lower level caches or main RAM.</li>
+<li>（3）CPU缓存行能带来免费加载数据的好处，所以<strong>处理数组性能</strong>非常高；</li>
+<li>（4）CPU缓存行也带来了弊端，多线程处理不相干的变量时会相互影响，也就是伪共享；</li>
+<li>（5）避免伪共享的主要思路就是让不相干的变量不要出现在同一个缓存行中；</li>
+<li>（6）一是每两个变量之间加七个 <code>long</code> 类型；</li>
+<li>（7）二是创建自己的 <code>long</code> 类型，而不是用原生的；</li>
+<li>（8）三是使用 java8 提供的注解；</li>
+</ul>
+<h3 id="缓存行失效">缓存行失效</h3>
+<p>当 CPU 更新某个变量的值，缓存行标记为脏。这个缓存行需要与其他 CPU 的这个缓存行进行同步，其他 CPU 的缓存行也需要更新。在缓存行被刷新之前，CPU 不允许访问缓存行。</p>
+<h3 id="伪共享代码示例">伪共享代码示例</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Counter</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> count1 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> count2 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FalseSharingExample</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+        Counter counter1 <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Counter<span style="color:#f92672">();</span>
+        Counter counter2 <span style="color:#f92672">=</span> counter1<span style="color:#f92672">;</span>
+
+        <span style="color:#66d9ef">long</span> iterations <span style="color:#f92672">=</span> 1_000_000_000<span style="color:#f92672">;</span>
+
+        Thread thread1 <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread<span style="color:#f92672">(()</span> <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">long</span> startTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+            <span style="color:#66d9ef">for</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> i<span style="color:#f92672">=</span>0<span style="color:#f92672">;</span> i<span style="color:#f92672">&lt;</span>iterations<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+                counter1<span style="color:#f92672">.</span><span style="color:#a6e22e">count1</span><span style="color:#f92672">++;</span>
+            <span style="color:#f92672">}</span>
+            <span style="color:#66d9ef">long</span> endTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+            System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;total time: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>endTime <span style="color:#f92672">-</span> startTime<span style="color:#f92672">));</span>
+        <span style="color:#f92672">});</span>
+        Thread thread2 <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread<span style="color:#f92672">(()</span> <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">long</span> startTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+            <span style="color:#66d9ef">for</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> i<span style="color:#f92672">=</span>0<span style="color:#f92672">;</span> i<span style="color:#f92672">&lt;</span>iterations<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+                counter2<span style="color:#f92672">.</span><span style="color:#a6e22e">count2</span><span style="color:#f92672">++;</span>
+            <span style="color:#f92672">}</span>
+            <span style="color:#66d9ef">long</span> endTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+            System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;total time: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>endTime <span style="color:#f92672">-</span> startTime<span style="color:#f92672">));</span>
+        <span style="color:#f92672">});</span>
+
+        thread1<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+        thread2<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="修复伪代码共享一">修复伪代码共享一</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FalseSharingExample</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+
+        Counter counter1 <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Counter<span style="color:#f92672">();</span>
+        Counter counter2 <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Counter<span style="color:#f92672">();</span>
+
+        <span style="color:#66d9ef">long</span> iterations <span style="color:#f92672">=</span> 1_000_000_000<span style="color:#f92672">;</span>
+
+        Thread thread1 <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread<span style="color:#f92672">(()</span> <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">long</span> startTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+            <span style="color:#66d9ef">for</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> i<span style="color:#f92672">=</span>0<span style="color:#f92672">;</span> i<span style="color:#f92672">&lt;</span>iterations<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+                counter1<span style="color:#f92672">.</span><span style="color:#a6e22e">count1</span><span style="color:#f92672">++;</span>
+            <span style="color:#f92672">}</span>
+            <span style="color:#66d9ef">long</span> endTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+            System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;total time: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>endTime <span style="color:#f92672">-</span> startTime<span style="color:#f92672">));</span>
+        <span style="color:#f92672">});</span>
+        Thread thread2 <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Thread<span style="color:#f92672">(()</span> <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">long</span> startTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+            <span style="color:#66d9ef">for</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> i<span style="color:#f92672">=</span>0<span style="color:#f92672">;</span> i<span style="color:#f92672">&lt;</span>iterations<span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+                counter2<span style="color:#f92672">.</span><span style="color:#a6e22e">count2</span><span style="color:#f92672">++;</span>
+            <span style="color:#f92672">}</span>
+            <span style="color:#66d9ef">long</span> endTime <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+            System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;total time: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>endTime <span style="color:#f92672">-</span> startTime<span style="color:#f92672">));</span>
+        <span style="color:#f92672">});</span>
+
+        thread1<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+        thread2<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="修复伪代码共享二">修复伪代码共享二</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Counter1</span> <span style="color:#f92672">{</span>
+
+    <span style="color:#a6e22e">@jdk.internal.vm.annotation.Contended</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> count1 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> count2 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>@Contended</code> 可以在类里面使用空的字节 pad fields ，所以这个字段肯定不会和其他字段位于同一个<strong>缓存行</strong>。这个也可以修饰在类上，这样所有字段都不在一个缓存行：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@jdk.internal.vm.annotation.Contended</span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Counter1</span> <span style="color:#f92672">{</span>
+    
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> count1 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> count2 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><p>默认情况下，<code>@Contended</code> 添加 128 字节的 pad。通过使用 JVM 参数 <code>-XX:ContendedPaddingWidth=64</code> 可以自定义 pad 的字节。</p>
 <h2 id="java-主内存与工作内存交互">Java 主内存与工作内存交互</h2>
 <p><img src="/images/posts/java-lock/main_memory_and_working_memory.png" alt=""></p>
 <p>从主内存读取变量到工作内存:</p>
@@ -869,6 +979,14 @@ UnLock(mutex);
         <li><a href="#互斥同步">互斥同步</a></li>
         <li><a href="#非阻塞同步">非阻塞同步</a></li>
         <li><a href="#无同步">无同步</a></li>
+      </ul>
+    </li>
+    <li><a href="#false-sharing">False Sharing</a>
+      <ul>
+        <li><a href="#缓存行失效">缓存行失效</a></li>
+        <li><a href="#伪共享代码示例">伪共享代码示例</a></li>
+        <li><a href="#修复伪代码共享一">修复伪代码共享一</a></li>
+        <li><a href="#修复伪代码共享二">修复伪代码共享二</a></li>
       </ul>
     </li>
     <li><a href="#java-主内存与工作内存交互">Java 主内存与工作内存交互</a></li>
