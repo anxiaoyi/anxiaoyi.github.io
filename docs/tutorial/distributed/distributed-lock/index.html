@@ -10,18 +10,16 @@ INSERT INTO database_lock(resource, description) VALUES (1, &#39;lock&#39;); 释
 DELETE FROM database_lock WHERE resource = 1; 缺点：
  这种锁没有失效时间，一旦释放锁的操作失败就会导致锁记录一直在数据库中，其它线程无法获得锁。这个缺陷也很好解决，比如可以做一个定时任务去定时清理。 这种锁的可靠性依赖于数据库。建议设置备库，避免单点，进一步提高可靠性。 这种锁是非阻塞的，因为插入数据失败之后会直接报错，想要获得锁就需要再次操作。如果需要阻塞式的，可以弄个for循环、while循环之类的，直至INSERT成功再返回。 这种锁也是非可重入的，因为同一个线程在没有释放锁之前无法再次获得锁，因为数据库中已经存在同一份记录了。想要实现可重入锁，可以在数据库中添加一些字段，比如获得锁的主机信息、线程信息等，那么在再次获得锁的时候可以先查询数据，如果当前的主机信息和线程信息等能被查到的话，可以直接把锁分配给它。  悲观锁 我们必须关闭 MySQL 数据库的自动提交属性，因为 MySQL 默认使用autocommit 模式，也就是说，当你执行一个更新操作后，MySQL 会立刻将结果进行提交。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/distributed-lock/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/distributed-lock/" />
 
 <title>分布式锁 🔒 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.d855943406294b3828037a1ac91f970000e2df3fe538f710d7050da0ed846095.js" integrity="sha256-2FWUNAYpSzgoA3oayR&#43;XAADi3z/lOPcQ1wUNoO2EYJU="></script>
+<script defer src="/en.search.min.445d3520f28f09015151f551c6990497f854d2fe515b552ed0a17bb5c6f8b1fd.js" integrity="sha256-RF01IPKPCQFRUfVRxpkEl/hU0v5RW1Uu0KF7tcb4sf0="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -659,6 +657,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/distributed/ddd/" >
+      DDD 领域驱动设计
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/distributed/business-high-availablity/" >
       业务高可用方案
   </a>
@@ -1149,7 +1157,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -1216,7 +1224,7 @@ data-full-width-responsive="true"></ins>
 </script><h1 id="分布式锁-">分布式锁 🔒</h1>
 <h2 id="mysql-分布式锁">MySQL 分布式锁</h2>
 <h3 id="表记录">表记录</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#f92672">`</span>database_lock<span style="color:#f92672">`</span> (
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#f92672">`</span>database_lock<span style="color:#f92672">`</span> (
 	<span style="color:#f92672">`</span>id<span style="color:#f92672">`</span> BIGINT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> AUTO_INCREMENT,
 	<span style="color:#f92672">`</span>resource<span style="color:#f92672">`</span> int <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">COMMENT</span> <span style="color:#e6db74">&#39;锁定的资源&#39;</span>,
 	<span style="color:#f92672">`</span>description<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">1024</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#66d9ef">COMMENT</span> <span style="color:#e6db74">&#39;描述&#39;</span>,
@@ -1224,9 +1232,9 @@ data-full-width-responsive="true"></ins>
 	<span style="color:#66d9ef">UNIQUE</span> <span style="color:#66d9ef">KEY</span> <span style="color:#f92672">`</span>uiq_idx_resource<span style="color:#f92672">`</span> (<span style="color:#f92672">`</span>resource<span style="color:#f92672">`</span>) 
 ) ENGINE<span style="color:#f92672">=</span>InnoDB <span style="color:#66d9ef">DEFAULT</span> CHARSET<span style="color:#f92672">=</span>utf8mb4 <span style="color:#66d9ef">COMMENT</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;数据库分布式锁表&#39;</span>;
 </code></pre></div><p>获取锁：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> database_lock(resource, description) <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;lock&#39;</span>);
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> database_lock(resource, description) <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;lock&#39;</span>);
 </code></pre></div><p>释放锁的时，可以删除这条数据：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">DELETE</span> <span style="color:#66d9ef">FROM</span> database_lock <span style="color:#66d9ef">WHERE</span> resource <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">DELETE</span> <span style="color:#66d9ef">FROM</span> database_lock <span style="color:#66d9ef">WHERE</span> resource <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
 </code></pre></div><p>缺点：</p>
 <ul>
 <li>这种锁没有<strong>失效时间</strong>，一旦释放锁的操作失败就会导致锁记录一直在数据库中，其它线程无法获得锁。这个缺陷也很好解决，比如可以做一个定时任务去定时清理。</li>
@@ -1236,11 +1244,11 @@ data-full-width-responsive="true"></ins>
 </ul>
 <h3 id="悲观锁">悲观锁</h3>
 <p>我们必须关闭 MySQL 数据库的自动提交属性，因为 MySQL 默认使用<code>autocommit</code> 模式，也就是说，当你执行一个更新操作后，MySQL 会立刻将结果进行提交。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">SET</span> AUTOCOMMIT <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">SET</span> AUTOCOMMIT <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
 </code></pre></div><p>获取锁：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> database_lock <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">FOR</span> <span style="color:#66d9ef">UPDATE</span>;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> database_lock <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">FOR</span> <span style="color:#66d9ef">UPDATE</span>;
 </code></pre></div><p>释放锁：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">COMMIT</span>;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">COMMIT</span>;
 </code></pre></div><blockquote>
 <p>MySQL InnoDB 引起在加锁的时候，只有明<strong>确地指定主键(或索引)<strong>的才会执行行锁 (只锁住被选取的数据)，否则 MySQL 将会执行</strong>表锁</strong>(将整个数据表单给锁住)。在<strong>悲观锁</strong>中，每一次行数据的访问都是<strong>独占</strong>的，只有当正在访问该行数据的请求事务提交以后，其他请求才能依次访问该数据，否则将阻塞等待锁的获取。</p>
 </blockquote>
@@ -1274,7 +1282,7 @@ goto 2
 </code></pre><p>首先，我们需要建立一个父节点，节点类型为持久节点（<code>PERSISTENT</code>） ，每当需要访问共享资源时，就会在父节点下建立相应的顺序子节点，节点类型为临时节点（<code>EPHEMERAL</code>），且标记为有序性（<code>SEQUENTIAL</code>），并且以临时节点名称 + 父节点名称 + 顺序号组成特定的名字。在建立子节点后，对父节点下面的所有以临时节点名称 name 开头的子节点进行排序，判断刚刚建立的子节点顺序号是否是最小的节点，如果是最小节点，则获得锁。如果不是最小节点，则阻塞等待锁，并且获得该节点的上一顺序节点，为其注册监听事件，等待节点对应的操作获得锁。当调用完共享资源后，删除该节点，关闭 zk，进而可以触发监听事件，释放该锁。</p>
 <p><img src="/images/docs/tutorial/distributed/distributed-lock/1c2df592672c78fd5d006cd23eb11f28.jpg" alt=""></p>
 <p>一般我们还可以直接引用 <code>Curator</code> 框架来实现 Zookeeper 分布式锁，代码如下：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">InterProcessMutex lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> InterProcessMutex<span style="color:#f92672">(</span>client<span style="color:#f92672">,</span> lockPath<span style="color:#f92672">);</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">InterProcessMutex lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> InterProcessMutex<span style="color:#f92672">(</span>client<span style="color:#f92672">,</span> lockPath<span style="color:#f92672">);</span>
 <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span> lock<span style="color:#f92672">.</span><span style="color:#a6e22e">acquire</span><span style="color:#f92672">(</span>maxWait<span style="color:#f92672">,</span> waitUnit<span style="color:#f92672">)</span> <span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// do some work inside of the critical section here

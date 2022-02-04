@@ -11,18 +11,16 @@
 Client 端 初始化 Bootstrap Client 端初始化 Bootstrap 并尝试连接 Server 端：
 // NettyTransportClient.java private Bootstrap initClientBootstrap() { Bootstrap b = new Bootstrap(); eventLoopGroup = new NioEventLoopGroup(); b.group(eventLoopGroup) .channel(NioSocketChannel.class) .option(ChannelOption.TCP_NODELAY, true) .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT) .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, ClusterClientConfigManager.getConnectTimeout()) .handler(new ChannelInitializer&lt;SocketChannel&gt;() { @Override public void initChannel(SocketChannel ch) throws Exception { clientHandler = new TokenClientHandler(currentState, disconnectCallback); ChannelPipeline pipeline = ch." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/sentinel/distributed-flow/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/sentinel/distributed-flow/" />
 
 <title>分布式限流实现原理 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.d855943406294b3828037a1ac91f970000e2df3fe538f710d7050da0ed846095.js" integrity="sha256-2FWUNAYpSzgoA3oayR&#43;XAADi3z/lOPcQ1wUNoO2EYJU="></script>
+<script defer src="/en.search.min.445d3520f28f09015151f551c6990497f854d2fe515b552ed0a17bb5c6f8b1fd.js" integrity="sha256-RF01IPKPCQFRUfVRxpkEl/hU0v5RW1Uu0KF7tcb4sf0="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1020,7 +1018,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -1098,7 +1096,7 @@ data-full-width-responsive="true"></ins>
 <h2 id="client-端">Client 端</h2>
 <h3 id="初始化-bootstrap">初始化 Bootstrap</h3>
 <p>Client 端初始化 <code>Bootstrap</code> 并尝试连接 Server 端：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// NettyTransportClient.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// NettyTransportClient.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> Bootstrap <span style="color:#a6e22e">initClientBootstrap</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     Bootstrap b <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Bootstrap<span style="color:#f92672">();</span>
     eventLoopGroup <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> NioEventLoopGroup<span style="color:#f92672">();</span>
@@ -1139,7 +1137,7 @@ b<span style="color:#f92672">.</span><span style="color:#a6e22e">connect</span><
 </ul>
 <pre><code>OFF -&gt; PENDING -&gt; STARTED
 STARTED -&gt; PENDING -&gt; OFF
-</code></pre><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> AtomicInteger currentState <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicInteger<span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">CLIENT_STATUS_OFF</span><span style="color:#f92672">);</span>
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> AtomicInteger currentState <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicInteger<span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">CLIENT_STATUS_OFF</span><span style="color:#f92672">);</span>
 
 <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">connect</span><span style="color:#f92672">(</span>Bootstrap b<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>currentState<span style="color:#f92672">.</span><span style="color:#a6e22e">compareAndSet</span><span style="color:#f92672">(</span>ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">CLIENT_STATUS_OFF</span><span style="color:#f92672">,</span> ClientConstants<span style="color:#f92672">.</span><span style="color:#a6e22e">CLIENT_STATUS_PENDING</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
@@ -1160,7 +1158,7 @@ STARTED -&gt; PENDING -&gt; OFF
     <span style="color:#75715e">// 停止连接
 </span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
 </code></pre></div><p><code>TokenClientHandler</code> 监听 Channel 状态，切换为 <code>STARTED</code> 或者 <code>OFF</code> 状态：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TokenClientHandler</span> <span style="color:#66d9ef">extends</span> ChannelInboundHandlerAdapter <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TokenClientHandler</span> <span style="color:#66d9ef">extends</span> ChannelInboundHandlerAdapter <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">channelActive</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
@@ -1178,7 +1176,7 @@ STARTED -&gt; PENDING -&gt; OFF
 </code></pre></div><ul>
 <li>断开连接的时候自动定时重连，连接的操作是放在另外一个线程池中单独执行的。同时结合 <code>shouldRetry</code> 的状态位，当手动确实是要 stop 的时候，那么就无需重试尝试连接了，确保只在连接突然断掉的状态下，才尝试连接。</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> AtomicBoolean shouldRetry <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicBoolean<span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> AtomicBoolean shouldRetry <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicBoolean<span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
 <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> ScheduledExecutorService SCHEDULER <span style="color:#f92672">=</span> Executors<span style="color:#f92672">.</span><span style="color:#a6e22e">newScheduledThreadPool</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span>
         <span style="color:#66d9ef">new</span> NamedThreadFactory<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;sentinel-cluster-transport-client-scheduler&#34;</span><span style="color:#f92672">));</span>
 
@@ -1201,7 +1199,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
 <li><code>Decoder</code>：从流中读取该消息的响应，并解析成合适的响应体结果。</li>
 </ul>
 <p>在 Client 启动的时候，会将这些消息的 Writer 和 Decoder 注册到 <code>RequestDataWriterRegistry</code> 和 <code>ResponseDataDecodeRegistry</code> 中心。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@InitOrder</span><span style="color:#f92672">(</span>0<span style="color:#f92672">)</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@InitOrder</span><span style="color:#f92672">(</span>0<span style="color:#f92672">)</span>
 <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultClusterClientInitFunc</span> <span style="color:#66d9ef">implements</span> InitFunc <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
@@ -1228,7 +1226,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>在 <code>NettyResponseDecoder</code> 中，其根据 <code>ClientEntityCodecProvider</code> 查找到了默认的 <code>Decoder</code> 实现类 (<code>DefaultResponseEntityDecoder</code>)，然后在其内部，根据不同的消息类型，从上述的 <code>ResponseDataDecodeRegistry</code> 注册中心中查找对应的 <code>EntityDecoder</code> 进行 <code>decode</code>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">NettyResponseDecoder</span> <span style="color:#66d9ef">extends</span> ByteToMessageDecoder <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">NettyResponseDecoder</span> <span style="color:#66d9ef">extends</span> ByteToMessageDecoder <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">decode</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">,</span> ByteBuf in<span style="color:#f92672">,</span> List<span style="color:#f92672">&lt;</span>Object<span style="color:#f92672">&gt;</span> out<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
@@ -1242,7 +1240,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
 | xid(4) | type(1) | status(1) | data... |
 +--------+---------+-----------+---------+
 </code></pre><p>当解析完之后，将数据等响应信息封装为 <code>ClusterResponse</code>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultResponseEntityDecoder</span> <span style="color:#66d9ef">implements</span> ResponseEntityDecoder<span style="color:#f92672">&lt;</span>ByteBuf<span style="color:#f92672">,</span> ClusterResponse<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultResponseEntityDecoder</span> <span style="color:#66d9ef">implements</span> ResponseEntityDecoder<span style="color:#f92672">&lt;</span>ByteBuf<span style="color:#f92672">,</span> ClusterResponse<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> ClusterResponse <span style="color:#a6e22e">decode</span><span style="color:#f92672">(</span>ByteBuf source<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -1266,7 +1264,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>同理，对于 <code>Writer</code> 的实现，也是类似的套路：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultRequestEntityWriter</span> <span style="color:#66d9ef">implements</span> RequestEntityWriter<span style="color:#f92672">&lt;</span>ClusterRequest<span style="color:#f92672">,</span> ByteBuf<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultRequestEntityWriter</span> <span style="color:#66d9ef">implements</span> RequestEntityWriter<span style="color:#f92672">&lt;</span>ClusterRequest<span style="color:#f92672">,</span> ByteBuf<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">writeTo</span><span style="color:#f92672">(</span>ClusterRequest request<span style="color:#f92672">,</span> ByteBuf target<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -1290,7 +1288,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
 +-------------------+--------------+----------------+---------------+------------------+
 </code></pre><h3 id="请求限流-token">请求限流 Token</h3>
 <p>Sentinel 客户端在执行限流算发啊的时候，会判断是否是分布式限流还是本地机器限流。如果某个限流规则是需要<strong>分布式限流</strong>，那么首先获取一个 <code>TokenService</code>，从这个 Service 上去请求 <code>TokenResult</code>，然后根据请求到的 <code>TokenResult</code> 决定是否进行限流。在这之间如果发生了比如未配置 <code>TokenService</code> 或者抛出了异常，则会降级为采用本地的限流策略来进行限流。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// FlowRuleChecker.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// FlowRuleChecker.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">canPassCheck</span><span style="color:#f92672">(</span><span style="color:#75715e">/*@NonNull*/</span> FlowRule rule<span style="color:#f92672">,</span> Context context<span style="color:#f92672">,</span> DefaultNode node<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> acquireCount<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#75715e">// 如果是集群中的某个节点
 </span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>rule<span style="color:#f92672">.</span><span style="color:#a6e22e">isClusterMode</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
@@ -1318,7 +1316,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
 </span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span> fallbackToLocalOrPass<span style="color:#f92672">(</span>rule<span style="color:#f92672">,</span> context<span style="color:#f92672">,</span> node<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>上述 <code>pickClusterService</code> 的实现如下：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> TokenService <span style="color:#a6e22e">pickClusterService</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> TokenService <span style="color:#a6e22e">pickClusterService</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ClusterStateManager<span style="color:#f92672">.</span><span style="color:#a6e22e">isClient</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">return</span> TokenClientProvider<span style="color:#f92672">.</span><span style="color:#a6e22e">getClient</span><span style="color:#f92672">();</span>
     <span style="color:#f92672">}</span>
@@ -1329,7 +1327,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
     <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>当以集群启动的时候，那么返回的就是 <code>TokenClientProvider.getClient()</code>。在这个 Client 内部，<code>requestToken</code> 方法封装的就是<strong>发送限流请求</strong>的参数，获取限流响应的过程：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DefaultClusterTokenClient.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DefaultClusterTokenClient.java
 </span><span style="color:#75715e"></span><span style="color:#a6e22e">@Override</span>
 <span style="color:#66d9ef">public</span> TokenResult <span style="color:#a6e22e">requestToken</span><span style="color:#f92672">(</span>Long flowId<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> acquireCount<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>notValidRequest<span style="color:#f92672">(</span>flowId<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
@@ -1348,7 +1346,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>接下来继续看，获取到的 <code>TokenResult</code>，有哪些结果：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// FlowRuleChecker.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// FlowRuleChecker.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">applyTokenResult</span><span style="color:#f92672">(</span><span style="color:#75715e">/*@NonNull*/</span> TokenResult result<span style="color:#f92672">,</span> FlowRule rule<span style="color:#f92672">,</span> Context context<span style="color:#f92672">,</span>
                                                         DefaultNode node<span style="color:#f92672">,</span>
                                                         <span style="color:#66d9ef">int</span> acquireCount<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -1376,7 +1374,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
 </code></pre></div><p>通过上述代码片段可知，只有 <code>TokenResult</code> 明确返回了 <code>OK</code> 或者 <code>SHOULD_WAIT</code> 的时候才会不进行限流；其他情况，比如规则不存在、请求不合法、需要阻塞等，一律执行限流策略。</p>
 <h2 id="server-端">Server 端</h2>
 <h3 id="初始化-netty">初始化 Netty</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// NettyTransportServer.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// NettyTransportServer.java
 </span><span style="color:#75715e"></span>
 <span style="color:#75715e">// 默认 2 * CPU 核数 个 Worker 线程
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> DEFAULT_EVENT_LOOP_THREADS <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span>
@@ -1418,7 +1416,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
     <span style="color:#f92672">});</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>Server 端的 Netty 启动，同样借助 <code>PENDING</code> 状态避免多次启动/停止 Server。另外 Server 端还建立了一个连接池：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConnectionPool</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConnectionPool</span> <span style="color:#f92672">{</span>
 
     <span style="color:#75715e">/**
 </span><span style="color:#75715e">     * Format: (&#34;ip:port&#34;, connection)
@@ -1427,7 +1425,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
 
 <span style="color:#f92672">}</span>
 </code></pre></div><p>在 <code>TokenServerHandler</code> 中，当有新的连接、或者有连接断掉、或者有新的消息发送过来的时候，都会相应的维护连接池中的连接：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TokenServerHandler</span> <span style="color:#66d9ef">extends</span> ChannelInboundHandlerAdapter <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TokenServerHandler</span> <span style="color:#66d9ef">extends</span> ChannelInboundHandlerAdapter <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">channelActive</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
@@ -1451,7 +1449,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
 <span style="color:#f92672">}</span>
 </code></pre></div><p>连接池中维护的连接，内部有一个定时器，可以定时地<strong>关闭</strong>空闲的连接。</p>
 <p>当 Netty Server 有限流请求过来地时候，其会根据类型找到合适的 <code>RequestProcessor</code>，然后让这个处理器去处理请求：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
 <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">channelRead</span><span style="color:#f92672">(</span>ChannelHandlerContext ctx<span style="color:#f92672">,</span> Object msg<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>msg <span style="color:#66d9ef">instanceof</span> ClusterRequest<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         ClusterRequest request <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>ClusterRequest<span style="color:#f92672">)</span>msg<span style="color:#f92672">;</span>
@@ -1464,10 +1462,10 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="tokenservice">TokenService</h3>
 <p>在 Processor 内部，会使用 <code>TokenService</code> 去判断是否需要限流。使用哪一个 <code>TokenService</code> 是根据 <code>TokenServiceProvider</code> 去决定的，其底层就是 SPI 机制。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// TokenServiceProvider.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// TokenServiceProvider.java
 </span><span style="color:#75715e"></span>SpiLoader<span style="color:#f92672">.</span><span style="color:#a6e22e">loadFirstInstanceOrDefault</span><span style="color:#f92672">(</span>TokenService<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">,</span> DefaultTokenService<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">);</span>
 </code></pre></div><p>在 <code>TokenService</code> 内部，其根据 <code>flowId</code> 找到对应的<strong>限流规则</strong>，然后再通过 <code>ClusterFlowChecker</code> 去获取集群的 Token：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DefaultTokenService.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DefaultTokenService.java
 </span><span style="color:#75715e"></span><span style="color:#a6e22e">@Override</span>
 <span style="color:#66d9ef">public</span> TokenResult <span style="color:#a6e22e">requestToken</span><span style="color:#f92672">(</span>Long ruleId<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> acquireCount<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#75715e">// The rule should be valid.
@@ -1479,7 +1477,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
     <span style="color:#66d9ef">return</span> ClusterFlowChecker<span style="color:#f92672">.</span><span style="color:#a6e22e">acquireClusterToken</span><span style="color:#f92672">(</span>rule<span style="color:#f92672">,</span> acquireCount<span style="color:#f92672">,</span> prioritized<span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p><code>ClusterFlowRuleManager</code> 内部通过使用一个 <code>ConcurrentHashMap</code> 维护了 <code>&lt;flowId, clusterRule&gt;</code> 的映射，而这个映射是用户通过 <code>loadRules</code> 方法手动将限流规则加载到内存中的。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ClusterFlowRuleManager.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ClusterFlowRuleManager.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">loadRules</span><span style="color:#f92672">(</span>String namespace<span style="color:#f92672">,</span> List<span style="color:#f92672">&lt;</span>FlowRule<span style="color:#f92672">&gt;</span> rules<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     NamespaceFlowProperty<span style="color:#f92672">&lt;</span>FlowRule<span style="color:#f92672">&gt;</span> property <span style="color:#f92672">=</span> PROPERTY_MAP<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>namespace<span style="color:#f92672">);</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>property <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -1487,7 +1485,7 @@ SCHEDULER<span style="color:#f92672">.</span><span style="color:#a6e22e">schedul
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>其中 <code>ClusterFlowChecker</code> 的核心算法如下，就是看当前可用的资源是否超过了最大的资源数量：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ClusterFlowChecker.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ClusterFlowChecker.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">static</span> TokenResult <span style="color:#a6e22e">acquireClusterToken</span><span style="color:#f92672">(</span><span style="color:#75715e">/*@Valid*/</span> FlowRule rule<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> acquireCount<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> prioritized<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     Long id <span style="color:#f92672">=</span> rule<span style="color:#f92672">.</span><span style="color:#a6e22e">getClusterConfig</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getFlowId</span><span style="color:#f92672">();</span>
     ClusterMetric metric <span style="color:#f92672">=</span> ClusterMetricStatistics<span style="color:#f92672">.</span><span style="color:#a6e22e">getMetric</span><span style="color:#f92672">(</span>id<span style="color:#f92672">);</span>

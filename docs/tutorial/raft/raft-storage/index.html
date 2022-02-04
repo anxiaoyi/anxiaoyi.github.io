@@ -12,18 +12,16 @@ LocalRaftMetaStorage 是 RaftMetaStorage 的默认实现，其启动的时候，
 文件的格式是 protobuf 格式的，如下是其对应的 protobuf 文件的字段内容：
 message StablePBMeta { required int64 term = 1; required string votedfor = 2;};关于 save() 方法，其首先将内容写入到一个 raft_meta." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/raft/raft-storage/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/raft/raft-storage/" />
 
 <title>raft storage | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.d855943406294b3828037a1ac91f970000e2df3fe538f710d7050da0ed846095.js" integrity="sha256-2FWUNAYpSzgoA3oayR&#43;XAADi3z/lOPcQ1wUNoO2EYJU="></script>
+<script defer src="/en.search.min.445d3520f28f09015151f551c6990497f854d2fe515b552ed0a17bb5c6f8b1fd.js" integrity="sha256-RF01IPKPCQFRUfVRxpkEl/hU0v5RW1Uu0KF7tcb4sf0="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -981,7 +979,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -1042,7 +1040,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/raft/storage/Snipaste_2021-11-21_21-14-00.png" alt=""></p>
 <h2 id="元信息">元信息</h2>
 <p><code>RaftMetaStorage</code> 负责存储当前的 Term、当前的投票情况：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">RaftMetaStorage</span> <span style="color:#66d9ef">extends</span> Lifecycle<span style="color:#f92672">&lt;</span>RaftMetaStorageOptions<span style="color:#f92672">&gt;,</span> Storage <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">RaftMetaStorage</span> <span style="color:#66d9ef">extends</span> Lifecycle<span style="color:#f92672">&lt;</span>RaftMetaStorageOptions<span style="color:#f92672">&gt;,</span> Storage <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">setTerm</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> term<span style="color:#f92672">);</span>
     <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">getTerm</span><span style="color:#f92672">();</span>
@@ -1056,12 +1054,12 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><p><code>Term</code> 就是<strong>任期/学期</strong>的意思，比如这一学期选举班长投给了小 A，下一学期选班长投给了小 B，诸如此类的意思。<code>Term</code> 在时间概念上是<strong>单调递增</strong>的。</p>
 <p><code>LocalRaftMetaStorage</code> 是 <code>RaftMetaStorage</code> 的默认实现，其启动的时候，从用户指定的 <code>raft_meta</code> 文件路径中 (例如 <code>/tmp/server1/raft_meta/raft_meta</code>) 去加载当前的 <code>term</code> 和 <code>vote</code> 信息。在 <code>shutdown()</code>、<code>setTerm()</code>、<code>setVotedFor()</code> 之后又会立即将当前这两个信息持久化到磁盘上。</p>
 <p>文件的格式是 <code>protobuf</code> 格式的，如下是其对应的 <code>protobuf</code> 文件的字段内容：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-protobuf" data-lang="protobuf"><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">StablePBMeta</span> {<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-protobuf" data-lang="protobuf"><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">StablePBMeta</span> {<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#66d9ef">required</span> <span style="color:#66d9ef">int64</span> term <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#66d9ef">required</span> <span style="color:#66d9ef">string</span> votedfor <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span>};<span style="color:#960050;background-color:#1e0010">
 </span></code></pre></div><p>关于 <code>save()</code> 方法，其首先将内容写入到一个 <code>raft_meta.tmp</code> 文件中，然后<strong>原子替换</strong> <code>raft_meta</code> 文件。原子替换是用的如下方式：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
     Files<span style="color:#f92672">.</span><span style="color:#a6e22e">move</span><span style="color:#f92672">(</span>sourcePath<span style="color:#f92672">,</span> targetPath<span style="color:#f92672">,</span> StandardCopyOption<span style="color:#f92672">.</span><span style="color:#a6e22e">ATOMIC_MOVE</span><span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> IOException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     success <span style="color:#f92672">=</span> Files<span style="color:#f92672">.</span><span style="color:#a6e22e">move</span><span style="color:#f92672">(</span>sourcePath<span style="color:#f92672">,</span> targetPath<span style="color:#f92672">,</span> StandardCopyOption<span style="color:#f92672">.</span><span style="color:#a6e22e">REPLACE_EXISTING</span><span style="color:#f92672">);</span>
@@ -1070,11 +1068,11 @@ data-full-width-responsive="true"></ins>
 <pre><code>[ 类名的长度 | 类名 | 类的序列化的长度 | 类的序列化内容 ]
 </code></pre><p>上述类名在这里就是 <code>jraft.StablePBMeta</code>。</p>
 <p>用户可以配置 <code>save()</code> 的时候，是否调用 <code>fsync()</code> 函数。如果未开启 <code>sync</code> 的话，一旦断电，这部分内容有可能还没有持久化到磁盘上。但是如果开启 <code>sync</code> 的话，其性能又会有所影响：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>sync<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>sync<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     Utils<span style="color:#f92672">.</span><span style="color:#a6e22e">fsync</span><span style="color:#f92672">(</span>file<span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="logentry-存储">LogEntry 存储</h2>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">LogStorage</span> <span style="color:#66d9ef">extends</span> Lifecycle<span style="color:#f92672">&lt;</span>LogStorageOptions<span style="color:#f92672">&gt;,</span> Storage <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">LogStorage</span> <span style="color:#66d9ef">extends</span> Lifecycle<span style="color:#f92672">&lt;</span>LogStorageOptions<span style="color:#f92672">&gt;,</span> Storage <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">getFirstLogIndex</span><span style="color:#f92672">();</span>
     <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">getLastLogIndex</span><span style="color:#f92672">();</span>
 
@@ -1084,7 +1082,7 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><p><code>Log</code> 存储默认采用的是 <a href="https://github.com/facebook/rocksdb/">RocksDB</a>，其底层使用 <code>LSM</code> 存储引擎存储数据，在 <a href="http://localhost:1313/docs/books/ddia/ddia-chapter3/">存储和读取</a> 中介绍到，只追加写的 Log 一般底层采用 LSM 数据结构来存储，以提高检索的速度。</p>
 <h3 id="logentry">LogEntry</h3>
 <p><code>LogEntry</code> 中关联的信息如下所示：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LogEntry</span> <span style="color:#66d9ef">implements</span> Checksum <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LogEntry</span> <span style="color:#66d9ef">implements</span> Checksum <span style="color:#f92672">{</span>
     
     <span style="color:#75715e">/** entry type */</span>
     <span style="color:#66d9ef">private</span> EnumOutter<span style="color:#f92672">.</span><span style="color:#a6e22e">EntryType</span>   type<span style="color:#f92672">;</span>
@@ -1114,14 +1112,14 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="logmanager">LogManager</h3>
 <h2 id="snapshot-存储">Snapshot 存储</h2>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">SnapshotStorage</span> <span style="color:#66d9ef">extends</span> Lifecycle<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;,</span> Storage <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">SnapshotStorage</span> <span style="color:#66d9ef">extends</span> Lifecycle<span style="color:#f92672">&lt;</span>Void<span style="color:#f92672">&gt;,</span> Storage <span style="color:#f92672">{</span>
 
     SnapshotWriter <span style="color:#a6e22e">create</span><span style="color:#f92672">();</span>
     SnapshotReader <span style="color:#a6e22e">open</span><span style="color:#f92672">();</span>
 
 <span style="color:#f92672">}</span>
 </code></pre></div><p>进行 <code>snapshot</code> 是在后台线程进行的：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// NodeImpl.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// NodeImpl.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">handleSnapshotTimeout</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>    <span style="color:#75715e">// do_snapshot in another thread to avoid blocking the timer thread.

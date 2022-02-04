@@ -11,18 +11,16 @@
 public class Consumer { public static void main(String[] args) throws InterruptedException, MQClientException { /* * 订阅一个或者多个话题 */ consumer.subscribe(&#34;TopicTest&#34;, &#34;*&#34;); } } 当消费者客户端启动以后，其会每隔 30 秒从命名服务器查询一次用户订阅的所有话题路由信息:
 public class MQClientInstance { private void startScheduledTask() { this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() { @Override public void run() { // 从命名服务器拉取话题信息  MQClientInstance.this.updateTopicRouteInfoFromNameServer(); } }, 10, this.clientConfig.getPollNameServerInterval(), TimeUnit.MILLISECONDS); } } 我们由 RocketMQ 消息发送流程 这篇文章知道 RocketMQ 在发送消息的时候，每条消息会以轮循的方式均衡地分发的不同 Broker 的不同队列中去。由此，消费者客户端从服务器命名服务器获取下来的便是话题的所有消息队列:" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-message-receive-flow/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-message-receive-flow/" />
 
 <title>RocketMQ 消息接受流程 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.d855943406294b3828037a1ac91f970000e2df3fe538f710d7050da0ed846095.js" integrity="sha256-2FWUNAYpSzgoA3oayR&#43;XAADi3z/lOPcQ1wUNoO2EYJU="></script>
+<script defer src="/en.search.min.445d3520f28f09015151f551c6990497f854d2fe515b552ed0a17bb5c6f8b1fd.js" integrity="sha256-RF01IPKPCQFRUfVRxpkEl/hU0v5RW1Uu0KF7tcb4sf0="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -456,7 +454,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -532,7 +530,7 @@ data-full-width-responsive="true"></ins>
 <p>本篇讲述 RocketMQ 消息接受流程</p>
 <h2 id="一消费者注册">一、消费者注册</h2>
 <p><strong>生产者</strong>负责往服务器 Broker 发送消息，消费者则从 Broker 获取消息。消费者获取消息采用的是<strong>订阅者模式</strong>，即消费者客户端可以任意订阅一个或者多个话题来消费消息:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Consumer</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Consumer</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> InterruptedException<span style="color:#f92672">,</span> MQClientException <span style="color:#f92672">{</span>
         <span style="color:#75715e">/*
@@ -542,7 +540,7 @@ data-full-width-responsive="true"></ins>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>当消费者客户端启动以后，其会每隔 30 秒从命名服务器查询一次<strong>用户订阅的所有话题路由信息</strong>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MQClientInstance</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MQClientInstance</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">startScheduledTask</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduledExecutorService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduleAtFixedRate</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Runnable<span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
@@ -558,7 +556,7 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><p>我们由 <a href="/docs/rocketmq/rocketmq-send-message-flow/">RocketMQ 消息发送流程</a> 这篇文章知道 RocketMQ 在发送消息的时候，每条消息会以轮循的方式均衡地分发的不同 Broker 的不同队列中去。由此，消费者客户端从服务器命名服务器获取下来的便是话题的所有消息队列:</p>
 <p><img src="/images/docs/rocketmq/rocketmq-message-receive-flow/topic_all_message_queue.png" alt="所有话题队列"></p>
 <p>在获取话题路由信息的时候，客户端还会将话题路由信息中的<strong>所有 Broker 地址</strong>保存到本地:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MQClientInstance</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MQClientInstance</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">updateTopicRouteInfoFromNameServer</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">,</span>
                                                       <span style="color:#66d9ef">boolean</span> isDefault<span style="color:#f92672">,</span>
@@ -582,7 +580,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>当消费者客户端获取到了 Broker 地址列表之后，其便会每隔 30 秒给服务器发送一条<strong>心跳数据包</strong>，告知所有 Broker 服务器这台消费者客户端的存在。在每次发送心跳包的同时，其数据包内还会捎带这个客户端消息订阅的一些组信息，比如用户订阅了哪几个话题等，与此相对应，每台 Broker 服务器会在内存中维护一份当前所有的<strong>消费者客户端列表信息</strong>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumerManager</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumerManager</span> <span style="color:#f92672">{</span>
  
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> ConcurrentMap<span style="color:#f92672">&lt;</span>String<span style="color:#75715e">/* Group */</span><span style="color:#f92672">,</span> ConsumerGroupInfo<span style="color:#f92672">&gt;</span> consumerTable <span style="color:#f92672">=</span>
         <span style="color:#66d9ef">new</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> ConsumerGroupInfo<span style="color:#f92672">&gt;(</span>1024<span style="color:#f92672">);</span>
@@ -637,7 +635,7 @@ data-full-width-responsive="true"></ins>
 </ul>
 <p><img src="/images/docs/rocketmq/rocketmq-message-receive-flow/allocate_message_queue_consistent_hash.png" alt="一致性哈希"></p>
 <p>消息队列的负载均衡是由一个不停运行的<strong>均衡服务</strong>来定时执行的:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RebalanceService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RebalanceService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
     <span style="color:#75715e">// 默认 20 秒一次
 </span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">long</span> waitInterval <span style="color:#f92672">=</span>
         Long<span style="color:#f92672">.</span><span style="color:#a6e22e">parseLong</span><span style="color:#f92672">(</span>System<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;rocketmq.client.rebalance.waitInterval&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;20000&#34;</span><span style="color:#f92672">));</span>
@@ -653,7 +651,7 @@ data-full-width-responsive="true"></ins>
 
 <span style="color:#f92672">}</span>
 </code></pre></div><p>接着往下看，会知道在广播模式下，当前这台消费者消费和话题相关的所有消息队列，而集群模式会先按照某种分配策略来进行消息队列的分配，得到的结果就是当前这台消费者需要消费的消息队列:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RebalanceImpl</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RebalanceImpl</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">rebalanceByTopic</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> isOrder<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">switch</span> <span style="color:#f92672">(</span>messageModel<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -688,7 +686,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="三broker-消费队列文件">三、Broker 消费队列文件</h2>
 <p>现在我们再来看 Broker 服务器端。首先我们应该知道，消息往 Broker 存储就是在向 <code>CommitLog</code> 消息文件中写入数据的一个过程。在 Broker 启动过程中，其会启动一个叫做 <code>ReputMessageService</code> 的服务，这个服务每隔 1 秒会检查一下这个 <code>CommitLog</code> 是否有新的数据写入。<code>ReputMessageService</code> 自身维护了一个偏移量 <code>reputFromOffset</code>，用以对比和 <code>CommitLog</code> 文件中的消息总偏移量的差距。当这两个偏移量不同的时候，就代表有新的消息到来了:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReputMessageService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReputMessageService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> reputFromOffset <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
 
@@ -711,7 +709,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>在有新的消息到来之后，<code>doReput()</code> 函数会取出新到来的所有消息，每一条消息都会封装为一个 <code>DispatchRequest</code> 请求，进而将这条请求分发给不同的请求消费者，我们在这篇文章中只会关注利用消息创建消费队列的服务 <code>CommitLogDispatcherBuildConsumeQueue</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReputMessageService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReputMessageService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#75715e">// ... 部分代码有删减
 </span><span style="color:#75715e"></span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doReput</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
@@ -741,7 +739,7 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><p><code>CommitLogDispatcherBuildConsumeQueue</code> 服务会根据这条请求按照不同的队列 ID 创建不同的消费队列文件，并在内存中维护一份消费队列列表。然后将 <code>DispatchRequest</code> 请求中这条消息的消息偏移量、消息大小以及消息在发送时候附带的标签的 Hash 值写入到相应的消费队列文件中去。</p>
 <p>消费队列文件的创建与<a href="/docs/rocketmq/rocketmq-message-store-flow/#%E4%BA%8C%E6%96%87%E4%BB%B6%E5%88%9B%E5%BB%BA">消息存储 CommitLog 文件的创建过程</a>是一致的，只是路径不同，这里不再赘述。</p>
 <p>寻找消费队列的代码如下:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMessageStore</span> <span style="color:#66d9ef">implements</span> MessageStore <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMessageStore</span> <span style="color:#66d9ef">implements</span> MessageStore <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> ConcurrentMap<span style="color:#f92672">&lt;</span>String<span style="color:#75715e">/* topic */</span><span style="color:#f92672">,</span> ConcurrentMap<span style="color:#f92672">&lt;</span>Integer<span style="color:#75715e">/* queueId */</span><span style="color:#f92672">,</span> ConsumeQueue<span style="color:#f92672">&gt;&gt;</span> consumeQueueTable<span style="color:#f92672">;</span>
     
@@ -752,7 +750,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>向消费队列文件中存储数据的代码如下:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeQueue</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeQueue</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">putMessagePositionInfo</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> offset<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> size<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> tagsCode<span style="color:#f92672">,</span>
                                            <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> cqOffset<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -777,7 +775,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>以上阐述了消费队列创建并存储消息的一个过程，但是消费队列文件中的消息是需要持久化到磁盘中去的。持久化的过程是通过后台服务 <code>FlushConsumeQueueService</code> 来定时持久化的:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FlushConsumeQueueService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FlushConsumeQueueService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doFlush</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> retryTimes<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// ...
@@ -805,14 +803,14 @@ data-full-width-responsive="true"></ins>
 <p>下面分别讲述两种模式下偏移量是如何获取和更新的:</p>
 <h3 id="1-集群模式">(1) 集群模式</h3>
 <p>在集群模式下，消费者客户端在内存中维护了一个 <code>offsetTable</code> 表:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RemoteBrokerOffsetStore</span> <span style="color:#66d9ef">implements</span> OffsetStore <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RemoteBrokerOffsetStore</span> <span style="color:#66d9ef">implements</span> OffsetStore <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> ConcurrentMap<span style="color:#f92672">&lt;</span>MessageQueue<span style="color:#f92672">,</span> AtomicLong<span style="color:#f92672">&gt;</span> offsetTable <span style="color:#f92672">=</span>
         <span style="color:#66d9ef">new</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>MessageQueue<span style="color:#f92672">,</span> AtomicLong<span style="color:#f92672">&gt;();</span>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>同样在 Broker 服务器端也维护了一个偏移量表:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumerOffsetManager</span> <span style="color:#66d9ef">extends</span> ConfigManager <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumerOffsetManager</span> <span style="color:#66d9ef">extends</span> ConfigManager <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> ConcurrentMap<span style="color:#f92672">&lt;</span>String<span style="color:#75715e">/* topic@group */</span><span style="color:#f92672">,</span> ConcurrentMap<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">,</span> Long<span style="color:#f92672">&gt;&gt;</span> offsetTable <span style="color:#f92672">=</span>
         <span style="color:#66d9ef">new</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> ConcurrentMap<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">,</span> Long<span style="color:#f92672">&gt;&gt;(</span>512<span style="color:#f92672">);</span>
@@ -821,7 +819,7 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><p>在消费者客户端，<code>RebalanceService</code> 服务会定时地 (默认 20 秒) 从 Broker 服务器获取当前客户端所需要消费的消息队列，并与当前消费者客户端的消费队列进行对比，看是否有变化。对于每个消费队列，会从 Broker 服务器查询这个队列当前的消费偏移量。然后根据这几个消费队列，创建对应的拉取请求 <code>PullRequest</code> 准备从 Broker 服务器拉取消息，如下图所示:</p>
 <p><img src="/images/docs/rocketmq/rocketmq-message-receive-flow/create_pull_request_from_messagequeue.png" alt="定时创建请求拉取"></p>
 <p>当从 Broker 服务器拉取下来消息以后，只有当用户成功消费的时候，才会更新本地的偏移量表。本地的偏移量表再通过定时服务每隔 5 秒同步到 Broker 服务器端:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MQClientInstance</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MQClientInstance</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">startScheduledTask</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
 
@@ -836,7 +834,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>而维护在 Broker 服务器端的偏移量表也会每隔 5 秒钟序列化到磁盘中:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BrokerController</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BrokerController</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">initialize</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> CloneNotSupportedException <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduledExecutorService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">scheduleAtFixedRate</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Runnable<span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
@@ -854,7 +852,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/rocketmq/rocketmq-message-receive-flow/consume_queue_offset_update.png" alt="消费队列偏移量"></p>
 <h3 id="2-广播模式">(2) 广播模式</h3>
 <p>对于广播模式而言，每个消费队列的偏移量肯定不能存储在 Broker 服务器端，因为多个消费者对于同一个队列的消费可能不一致，偏移量会互相覆盖掉。因此，在广播模式下，每个客户端的消费偏移量是存储在本地的，然后每隔 5 秒将内存中的 <code>offsetTable</code> 持久化到磁盘中。当首次从服务器获取可消费队列的时候，偏移量不像集群模式下是从 Broker 服务器读取的，而是直接从本地文件中读取的:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LocalFileOffsetStore</span> <span style="color:#66d9ef">implements</span> OffsetStore <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LocalFileOffsetStore</span> <span style="color:#66d9ef">implements</span> OffsetStore <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">readOffset</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> MessageQueue mq<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> ReadOffsetType type<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -873,7 +871,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-message-receive-flow/create_pull_request_from_messagequeue_broadcasting.png" alt="广播模式偏移量"></p>
 <p>当消息消费成功后，偏移量的更新也是持久化到本地，而非更新到 Broker 服务器中。这里提一下，在广播模式下，消息队列的偏移量默认放在用户目录下的 <code>.rocketmq_offsets</code> 目录下:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LocalFileOffsetStore</span> <span style="color:#66d9ef">implements</span> OffsetStore <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LocalFileOffsetStore</span> <span style="color:#66d9ef">implements</span> OffsetStore <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">persistAll</span><span style="color:#f92672">(</span>Set<span style="color:#f92672">&lt;</span>MessageQueue<span style="color:#f92672">&gt;</span> mqs<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -890,7 +888,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/rocketmq/rocketmq-message-receive-flow/consume_queue_offset_update_broadcasting.png" alt="广播模式偏移量更新流程"></p>
 <h2 id="五拉取消息">五、拉取消息</h2>
 <p>在客户端运行着一个专门用来拉取消息的后台服务 <code>PullMessageService</code>，其接受每个队列创建 <code>PullRequest</code> 拉取消息请求，然后拉取消息:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PullMessageService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PullMessageService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
@@ -904,7 +902,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>每一个 <code>PullRequest</code> 都关联着一个 <code>MessageQueue</code> 和一个 <code>ProcessQueue</code>，在 <code>ProcessQueue</code> 的内部还维护了一个用来等待用户消费的消息树，如下代码所示:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PullRequest</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PullRequest</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> MessageQueue messageQueue<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">private</span> ProcessQueue processQueue<span style="color:#f92672">;</span>
@@ -917,7 +915,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>当真正尝试拉取消息之前，其会检查当前请求的内部缓存的消息数量、消息大小、消息阈值跨度是否超过了某个阈值，如果超过某个阈值，则推迟 50 毫秒重新执行这个请求:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQPushConsumerImpl</span> <span style="color:#66d9ef">implements</span> MQConsumerInner <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQPushConsumerImpl</span> <span style="color:#66d9ef">implements</span> MQConsumerInner <span style="color:#f92672">{</span>
     
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">pullMessage</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> PullRequest pullRequest<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// ...
@@ -951,7 +949,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>当执行完一些必要的检查之后，客户端会将用户指定的过滤信息以及一些其它必要消费字段封装到请求信息体中，然后才开始从 Broker 服务器拉取这个请求从当前偏移量开始的消息，默认一次性最多拉取 32 条，服务器返回的响应会告诉客户端这个队列下次开始拉取时的偏移量。客户端每次都会注册一个 <code>PullCallback</code> 回调，用以接受服务器返回的响应信息，根据响应信息的不同状态信息，然后修正这个请求的偏移量，并进行下次请求:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">pullMessage</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> PullRequest pullRequest<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">pullMessage</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> PullRequest pullRequest<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     PullCallback pullCallback <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> PullCallback<span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
             <span style="color:#a6e22e">@Override</span>
             <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">onSuccess</span><span style="color:#f92672">(</span>PullResult pullResult<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -989,9 +987,9 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>上述是客户端拉取消息时的一些机制，现在再说一下 Broker 服务器端与此相对应的逻辑。</p>
 <p>服务器在收到客户端的请求之后，会根据话题和队列 ID 定位到对应的<strong>消费队列</strong>。然后根据这条请求传入的 offset 消费队列偏移量，定位到对应的<strong>消费队列文件</strong>。偏移量指定的是消费队列文件的消费下限，而最大上限是由如下算法来进行约束的:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> maxFilterMessageCount <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>16000<span style="color:#f92672">,</span> maxMsgNums <span style="color:#f92672">*</span> ConsumeQueue<span style="color:#f92672">.</span><span style="color:#a6e22e">CQ_STORE_UNIT_SIZE</span><span style="color:#f92672">);</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> maxFilterMessageCount <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>16000<span style="color:#f92672">,</span> maxMsgNums <span style="color:#f92672">*</span> ConsumeQueue<span style="color:#f92672">.</span><span style="color:#a6e22e">CQ_STORE_UNIT_SIZE</span><span style="color:#f92672">);</span>
 </code></pre></div><p>有了上限和下限，客户端便会开始从消费队列文件中取出每个消息的<strong>偏移量和消息大小</strong>，然后再根据这两个值去 <code>CommitLog</code> 文件中寻找相应的完整的消息，并添加到最后的消息队列中，精简过的代码如下所示：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMessageStore</span> <span style="color:#66d9ef">implements</span> MessageStore <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMessageStore</span> <span style="color:#66d9ef">implements</span> MessageStore <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> GetMessageResult <span style="color:#a6e22e">getMessage</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String group<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> queueId<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> offset<span style="color:#f92672">,</span>
                                        <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> maxMsgNums<span style="color:#f92672">,</span>
@@ -1039,7 +1037,7 @@ data-full-width-responsive="true"></ins>
 <p>下面我们分别看这两种消费模式是如何实现的。</p>
 <h3 id="1-并发消费">(1) 并发消费</h3>
 <p>当用户注册消息回调类的时候，如果注册的是 <code>MessageListenerConcurrently</code> 回调类，那么就认为用户不关心消息的顺序问题。我们在上文提到过每个 <code>PullRequest</code> 都关联了一个处理队列 <code>ProcessQueue</code>，而每个处理队列又都关联了一颗消息树 <code>msgTreeMap</code>。当客户端拉取到新的消息以后，其先将消息放入到这个请求所关联的处理队列的消息树中，然后提交一个消息消费请求，用以回调用户端的代码消费消息:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQPushConsumerImpl</span> <span style="color:#66d9ef">implements</span> MQConsumerInner <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQPushConsumerImpl</span> <span style="color:#66d9ef">implements</span> MQConsumerInner <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">pullMessage</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> PullRequest pullRequest<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         PullCallback pullCallback <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> PullCallback<span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
@@ -1071,7 +1069,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>当提交一个消息消费请求后，对于<strong>并发消费</strong>，其实现如下:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeMessageConcurrentlyService</span> <span style="color:#66d9ef">implements</span> ConsumeMessageService <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeMessageConcurrentlyService</span> <span style="color:#66d9ef">implements</span> ConsumeMessageService <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeRequest</span> <span style="color:#66d9ef">implements</span> Runnable <span style="color:#f92672">{</span>
 
@@ -1086,7 +1084,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>我们可以看到 <code>msgs</code> 是直接从服务器端拿到的最新消息，直接喂给了客户端进行消费，并未做任何有序处理。当消费成功后，会从消息树中将这些消息再给删除掉:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeMessageConcurrentlyService</span> <span style="color:#66d9ef">implements</span> ConsumeMessageService <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeMessageConcurrentlyService</span> <span style="color:#66d9ef">implements</span> ConsumeMessageService <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">processConsumeResult</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> ConsumeConcurrentlyStatus status<span style="color:#f92672">,</span> <span style="color:#75715e">/** 其它参数 **/</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// 从消息树中删除消息
@@ -1101,14 +1099,14 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-message-receive-flow/consume_message_service.png" alt="并发消费"></p>
 <h3 id="2-有序消费">(2) 有序消费</h3>
 <p>RocketMQ 的有序消费主要依靠<strong>两把锁</strong>，一把是维护在 Broker 端，一把维护在消费者客户端。Broker 端有一个 <code>RebalanceLockManager</code> 服务，其内部维护了一个 <code>mqLockTable</code> 消息队列锁表:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RebalanceLockManager</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RebalanceLockManager</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> ConcurrentMap<span style="color:#f92672">&lt;</span>String<span style="color:#75715e">/* group */</span><span style="color:#f92672">,</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>MessageQueue<span style="color:#f92672">,</span> LockEntry<span style="color:#f92672">&gt;&gt;</span> mqLockTable <span style="color:#f92672">=</span>
         <span style="color:#66d9ef">new</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>MessageQueue<span style="color:#f92672">,</span> LockEntry<span style="color:#f92672">&gt;&gt;(</span>1024<span style="color:#f92672">);</span>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>在有序消费的时候，Broker 需要确保任何一个队列在任何时候都只有一个客户端在消费它，都在被一个客户端所锁定。当客户端在本地根据消息队列构建 <code>PullRequest</code> 之前，会与 Broker 沟通尝试锁定这个队列，另外当进行有序消费的时候，客户端也会周期性地 (默认是 20 秒) 锁定所有当前需要消费的消息队列:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeMessageOrderlyService</span> <span style="color:#66d9ef">implements</span> ConsumeMessageService <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeMessageOrderlyService</span> <span style="color:#66d9ef">implements</span> ConsumeMessageService <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">start</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>MessageModel<span style="color:#f92672">.</span><span style="color:#a6e22e">CLUSTERING</span><span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>ConsumeMessageOrderlyService<span style="color:#f92672">.</span><span style="color:#a6e22e">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMQPushConsumerImpl</span><span style="color:#f92672">.</span><span style="color:#a6e22e">messageModel</span><span style="color:#f92672">()))</span> <span style="color:#f92672">{</span>
@@ -1125,7 +1123,7 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><p>由上述这段代码也能看出，只在集群模式下才会周期性地锁定 Broker 端的消息队列，因此在<strong>广播模式下是不支持进行有序消费的</strong>。</p>
 <p>而在 Broker 这端，每个客户端所锁定的消息队列对应的锁项 <code>LogEntry</code> 有一个上次锁定时的时间戳，当超过锁的超时时间 (默认是 60 秒) 后，也会判定这个客户端已经不再持有这把锁，以让其他客户端能够有序消费这个队列。</p>
 <p>在前面我们说到过 <code>RebalanceService</code> 均衡服务会定时地依据不同消费者数量分配消费队列。我们假设 Consumer-1 消费者客户端一开始需要消费 3 个消费队列，这个时候又加入了 Consumer-2 消费者客户端，并且分配到了 MessageQueue-2 消费队列。当 Consumer-1 内部的均衡服务检测到当前消费队列需要移除 MessageQueue-2 队列，这个时候，会首先解除 Broker 端的锁，确保新加入的 Consumer-2 消费者客户端能够成功锁住这个队列，以进行有序消费。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RebalanceImpl</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RebalanceImpl</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">updateProcessQueueTableInRebalance</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">,</span>
                                                        <span style="color:#66d9ef">final</span> Set<span style="color:#f92672">&lt;</span>MessageQueue<span style="color:#f92672">&gt;</span> mqSet<span style="color:#f92672">,</span>
@@ -1151,7 +1149,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-message-receive-flow/remove_unnessary_message_queue.png" alt="有序消费加锁"></p>
 <p>消费者客户端每一次拉取消息请求，如果有发现新的消息，那么都会将这些消息封装为 <code>ConsumeRequest</code> 来喂给消费线程池，以待消费。如果消息特别多，这样一个队列可能有多个消费请求正在等待客户端消费，用户可能会先消费偏移量大的消息，后消费偏移量小的消息。所以消费同一队列的时候，需要一把锁以消费请求顺序化:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeMessageOrderlyService</span> <span style="color:#66d9ef">implements</span> ConsumeMessageService <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeMessageOrderlyService</span> <span style="color:#66d9ef">implements</span> ConsumeMessageService <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeRequest</span> <span style="color:#66d9ef">implements</span> Runnable <span style="color:#f92672">{</span>
         <span style="color:#a6e22e">@Override</span>
@@ -1166,7 +1164,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-message-receive-flow/message_order_consume.png" alt="有序消费锁"></p>
 <p>RocketMQ 的消息树是用 <code>TreeMap</code> 实现的，其内部基于消息偏移量维护了消息的有序性。每次消费请求都会从<strong>消息树中拿取</strong>偏移量最小的几条消息 (默认为 1 条)给用户，以此来达到有序消费的目的:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeMessageOrderlyService</span> <span style="color:#66d9ef">implements</span> ConsumeMessageService <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeMessageOrderlyService</span> <span style="color:#66d9ef">implements</span> ConsumeMessageService <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConsumeRequest</span> <span style="color:#66d9ef">implements</span> Runnable <span style="color:#f92672">{</span>
         <span style="color:#a6e22e">@Override</span>

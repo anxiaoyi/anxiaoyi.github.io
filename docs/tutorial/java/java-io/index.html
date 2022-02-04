@@ -8,18 +8,16 @@
 <meta property="og:description" content="Java IO BIO ServerSocket 示例 { ExecutorService executor = Excutors.newFixedThreadPollExecutor(100);//线程池  ServerSocket serverSocket = new ServerSocket(); serverSocket.bind(8088); while(!Thread.currentThread.isInturrupted()){//主线程死循环等待新连接到来  Socket socket = serverSocket.accept(); executor.submit(new ConnectIOnHandler(socket));//为新的连接创建新的线程 } class ConnectIOnHandler extends Thread{ private Socket socket; public ConnectIOnHandler(Socket socket){ this.socket = socket; } public void run(){ while(!Thread.currentThread.isInturrupted()&amp;&amp;!socket.isClosed()){死循环处理读写事件 String someThing = socket.read()....//读取数据  if(someThing!=null){ ......//处理数据  socket.write()....//写数据  } } } } 这个模型最本质的问题在于，严重依赖于线程。但线程是很”贵”的资源，主要表现在：
    线程的创建和销毁成本很高，在Linux这样的操作系统中，线程本质上就是一个进程。创建和销毁都是重量级的系统函数。    线程本身占用较大内存，像Java的线程栈，一般至少分配512K～1M的空间，如果系统中的线程数过千，恐怕整个JVM的内存都会被吃掉一半。    线程的切换成本是很高的。操作系统发生线程切换的时候，需要保留线程的上下文，然后执行系统调用。如果线程数过高，可能执行线程切换的时间甚至会大于线程执行的时间，这时候带来的表现往往是系统load偏高、CPU sy使用率特别高（超过20%以上)，导致系统几乎陷入不可用的状态。    容易造成锯齿状的系统负载。因为系统负载是用活动线程数或CPU核心数，一旦线程数量高但外部网络环境不是很稳定，就很容易造成大量请求的结果同时返回，激活大量阻塞线程从而使系统负载压力过大。    同步调用示例 服务端响应之前，IO 会阻塞在：java." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/java-io/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/java-io/" />
 
 <title>Java IO | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.d855943406294b3828037a1ac91f970000e2df3fe538f710d7050da0ed846095.js" integrity="sha256-2FWUNAYpSzgoA3oayR&#43;XAADi3z/lOPcQ1wUNoO2EYJU="></script>
+<script defer src="/en.search.min.445d3520f28f09015151f551c6990497f854d2fe515b552ed0a17bb5c6f8b1fd.js" integrity="sha256-RF01IPKPCQFRUfVRxpkEl/hU0v5RW1Uu0KF7tcb4sf0="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -585,8 +583,28 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/java/btrace/" >
+      BTrace
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/java/java-collection/" >
       Java 集合类
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/concurrency/" >
+      多线程并发示例
   </a>
 
 </li>
@@ -1037,7 +1055,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -1112,7 +1130,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/java/java-io/Snipaste_2021-02-06_22-11-17.png" alt=""></p>
 <h2 id="bio">BIO</h2>
 <h3 id="serversocket-示例">ServerSocket 示例</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#f92672">{</span>
  ExecutorService executor <span style="color:#f92672">=</span> Excutors<span style="color:#f92672">.</span><span style="color:#a6e22e">newFixedThreadPollExecutor</span><span style="color:#f92672">(</span>100<span style="color:#f92672">);</span><span style="color:#75715e">//线程池
 </span><span style="color:#75715e"></span>
  ServerSocket serverSocket <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ServerSocket<span style="color:#f92672">();</span>
@@ -1202,7 +1220,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/java/java-io/399d715ed2f687e22ec9ca2a65bd88c2.jpg" alt=""></p>
 <p>你肯定会在想，为什么 Java 需要通过一个临时的非堆内存来复制数据呢？如果单纯使用 Java 堆内存进行数据拷贝，当拷贝的数据量比较大的情况下，Java 堆的 GC 压力会比较大，而使用非堆内存可以减低 GC 的压力。</p>
 <p>DirectBuffer 则是直接将步骤简化为数据直接保存到非堆内存，从而减少了一次数据拷贝。以下是 JDK 源码中 IOUtil.java 类中的 write 方法：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>src <span style="color:#66d9ef">instanceof</span> DirectBuffer<span style="color:#f92672">)</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>src <span style="color:#66d9ef">instanceof</span> DirectBuffer<span style="color:#f92672">)</span>
     <span style="color:#66d9ef">return</span> writeFromNativeBuffer<span style="color:#f92672">(</span>fd<span style="color:#f92672">,</span> src<span style="color:#f92672">,</span> position<span style="color:#f92672">,</span> nd<span style="color:#f92672">);</span>
 
 <span style="color:#75715e">// Substitute a native buffer
@@ -1245,10 +1263,10 @@ ByteBuffer bb <span style="color:#f92672">=</span> Util<span style="color:#f9267
 <h3 id="channels">Channels</h3>
 <p><img src="/images/docs/tutorial/java/java-io/Snipaste_2021-02-06_10-51-14.png" alt=""></p>
 <p>打开 <code>SocketChannel</code>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">SocketChannel ch <span style="color:#f92672">=</span> SocketChannel<span style="color:#f92672">.</span><span style="color:#a6e22e">open</span><span style="color:#f92672">();</span>  
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">SocketChannel ch <span style="color:#f92672">=</span> SocketChannel<span style="color:#f92672">.</span><span style="color:#a6e22e">open</span><span style="color:#f92672">();</span>  
 ch<span style="color:#f92672">.</span><span style="color:#a6e22e">connect</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> InetSocketAddress<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;somehost&#34;</span><span style="color:#f92672">,</span> someport<span style="color:#f92672">));</span>  
 </code></pre></div><p>Server 监听在某个端口上：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">ServerSocketChannel ch <span style="color:#f92672">=</span> ServerSocketChannel<span style="color:#f92672">.</span><span style="color:#a6e22e">open</span><span style="color:#f92672">();</span>  
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">ServerSocketChannel ch <span style="color:#f92672">=</span> ServerSocketChannel<span style="color:#f92672">.</span><span style="color:#a6e22e">open</span><span style="color:#f92672">();</span>  
 ch<span style="color:#f92672">.</span><span style="color:#a6e22e">socket</span><span style="color:#f92672">().</span><span style="color:#a6e22e">bind</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> InetSocketAddress <span style="color:#f92672">(</span>somelocalport<span style="color:#f92672">));</span>  
 </code></pre></div><p>最开始，在应用程序调用操作系统 I/O 接口时，是由 CPU 完成分配，这种方式最大的问题是“发生大量 I/O 请求时，非常消耗 CPU“；之后，操作系统引入了 DMA（直接存储器存储），内核空间与磁盘之间的存取完全由 DMA 负责，但这种方式依然需要向 CPU 申请权限，且需要借助 DMA 总线来完成数据的复制操作，如果 DMA 总线过多，就会造成总线冲突。</p>
 <p>通道的出现解决了以上问题，<code>Channel</code> 有自己的处理器，<strong>可以完成内核空间和磁盘之间的 I/O 操作</strong>。在 NIO 中，我们读取和写入数据都要通过 <code>Channel</code>，由于 <code>Channel</code> 是双向的，所以读、写可以同时进行。</p>
@@ -1266,7 +1284,7 @@ ch<span style="color:#f92672">.</span><span style="color:#a6e22e">socket</span><
 <p>我们首先需要注册当这几个事件到来的时候所对应的处理器。然后在合适的时机告诉事件选择器：我对这个事件感兴趣。对于写操作，就是写不出去的时候对写事件感兴趣；对于读操作，就是完成连接和系统没有办法承载新读入的数据的时；对于<code>accept</code>，一般是服务器刚启动的时候；而对于<code>connect</code>，一般是<code>connect</code>失败需要重连或者直接异步调用<code>connect</code>的时候。</p>
 <p>其次，用一个死循环选择就绪的事件，会执行系统调用（Linux 2.6之前是<code>select</code>、<code>poll</code>，2.6之后是<code>epoll</code>，Windows是<code>IOCP</code>），还会阻塞的等待新事件的到来。新事件到来的时候，会在<code>selector</code>上注册标记位，标示可读、可写或者有连接到来。</p>
 <p>注意，<code>select</code>是阻塞的，无论是通过操作系统的通知（<code>epoll</code>）还是不停的轮询(<code>select</code>，<code>poll</code>)，这个函数是阻塞的。所以你可以放心大胆地在一个<code>while(true)</code>里面调用这个函数而不用担心CPU空转。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">ChannelHandler</span><span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">ChannelHandler</span><span style="color:#f92672">{</span>
     <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">channelReadable</span><span style="color:#f92672">(</span>Channel channel<span style="color:#f92672">);</span>
     <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">channelWritable</span><span style="color:#f92672">(</span>Channel channel<span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
@@ -1326,10 +1344,10 @@ ch<span style="color:#f92672">.</span><span style="color:#a6e22e">socket</span><
 <p>每一个IO操作，均可以封装为独立的<code>CompletableFuture</code>，从而避免回调地狱。</p>
 <h3 id="select">select</h3>
 <p>select() 函数：它的用途是，在超时时间内，监听用户感兴趣的文件描述符上的可读可写和异常事件的发生。Linux 操作系统的内核将所有外部设备都看做一个文件来操作，对一个文件的读写操作会调用内核提供的系统命令，返回一个文件描述符（fd）。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">int</span> select(<span style="color:#66d9ef">int</span> maxfdp1,fd_set <span style="color:#f92672">*</span>readset,fd_set <span style="color:#f92672">*</span>writeset,fd_set <span style="color:#f92672">*</span>exceptset,<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">struct</span> timeval <span style="color:#f92672">*</span>timeout)
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">int</span> select(<span style="color:#66d9ef">int</span> maxfdp1,fd_set <span style="color:#f92672">*</span>readset,fd_set <span style="color:#f92672">*</span>writeset,fd_set <span style="color:#f92672">*</span>exceptset,<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">struct</span> timeval <span style="color:#f92672">*</span>timeout)
 </code></pre></div><p>select() 函数监视的文件描述符分 3 类，分别是 writefds（写文件描述符）、readfds（读文件描述符）以及 exceptfds（异常事件文件描述符）。</p>
 <p>调用后 <code>select()</code> 函数会阻塞，直到有描述符就绪或者超时，函数返回。当 select 函数返回后，可以通过函数 <code>FD_ISSET</code> 遍历 fdset，来找到就绪的描述符。<code>fd_set</code> 可以理解为一个集合，这个集合中存放的是文件描述符，可通过以下四个宏进行设置：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">FD_ZERO</span>(fd_set <span style="color:#f92672">*</span>fdset);           <span style="color:#75715e">//清空集合
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">FD_ZERO</span>(fd_set <span style="color:#f92672">*</span>fdset);           <span style="color:#75715e">//清空集合
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">FD_SET</span>(<span style="color:#66d9ef">int</span> fd, fd_set <span style="color:#f92672">*</span>fdset);   <span style="color:#75715e">//将一个给定的文件描述符加入集合之中
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">FD_CLR</span>(<span style="color:#66d9ef">int</span> fd, fd_set <span style="color:#f92672">*</span>fdset);   <span style="color:#75715e">//将一个给定的文件描述符从集合中删除
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">FD_ISSET</span>(<span style="color:#66d9ef">int</span> fd, fd_set <span style="color:#f92672">*</span>fdset);   <span style="color:#75715e">// 检查集合中指定的文件描述符是否可以读写 
@@ -1355,7 +1373,7 @@ ch<span style="color:#f92672">.</span><span style="color:#a6e22e">socket</span><
 <p><code>epoll</code> 原理：</p>
 </blockquote>
 <p>epoll 由 <code>epoll_create</code> 、<code>epoll_ctl</code> 和 <code>epoll_wait</code> 这三个底层函数支持，使用的时候用 <code>epoll_create</code> 创建对象，参数 site 是保证内核保证能正确处理的最大句柄数。<code>epoll_ctl</code> 可以添加/移除 socket。<code>epoll_wait</code> 在给定的 timeout 时间内，如果有事件发生，那么就返回变化的文件句柄。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">// 参数size是内核保证能够正确处理的最大句柄数，多于这个最大数时内核可不保证效果。
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">// 参数size是内核保证能够正确处理的最大句柄数，多于这个最大数时内核可不保证效果。
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">epoll_create</span>(<span style="color:#66d9ef">int</span> size);  
 <span style="color:#75715e">// 将刚建立的socket加入到epoll中让其监控，或者把 epoll正在监控的某个socket句柄移出epoll，不再监控它等等(也就是将I/O流放到内核)。
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">epoll_ctl</span>(<span style="color:#66d9ef">int</span> epfd, <span style="color:#66d9ef">int</span> op, <span style="color:#66d9ef">int</span> fd, <span style="color:#66d9ef">struct</span> epoll_event <span style="color:#f92672">*</span>event);  
@@ -1368,7 +1386,7 @@ ch<span style="color:#f92672">.</span><span style="color:#a6e22e">socket</span><
 <blockquote>
 <p><code>epoll</code> 使用流程：</p>
 </blockquote>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">int</span> epoll_fd <span style="color:#f92672">=</span> epoll_create(<span style="color:#ae81ff">0</span>);
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">int</span> epoll_fd <span style="color:#f92672">=</span> epoll_create(<span style="color:#ae81ff">0</span>);
 epoll_ctl(epoll_fd, EPOLL_CTL_ADD, <span style="color:#ae81ff">0</span>, <span style="color:#f92672">&amp;</span>event);
 <span style="color:#66d9ef">while</span>(running) 
     event_count <span style="color:#f92672">=</span> epoll_wait(epoll_fd, events, MAX_EVENTS, <span style="color:#ae81ff">30000</span>);

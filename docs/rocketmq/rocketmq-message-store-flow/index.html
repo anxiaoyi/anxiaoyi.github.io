@@ -14,18 +14,16 @@
 当有新的消息到来的时候，其会默认选择列表中的最后一个文件来进行消息的保存:
 public class MappedFileQueue { public MappedFile getLastMappedFile() { MappedFile mappedFileLast = null; while (!this.mappedFiles.isEmpty()) { try { mappedFileLast = this.mappedFiles.get(this.mappedFiles.size() - 1); break; } catch (IndexOutOfBoundsException e) { //continue;  } catch (Exception e) { log." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-message-store-flow/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-message-store-flow/" />
 
 <title>RocketMQ 消息存储流程 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.d855943406294b3828037a1ac91f970000e2df3fe538f710d7050da0ed846095.js" integrity="sha256-2FWUNAYpSzgoA3oayR&#43;XAADi3z/lOPcQ1wUNoO2EYJU="></script>
+<script defer src="/en.search.min.445d3520f28f09015151f551c6990497f854d2fe515b552ed0a17bb5c6f8b1fd.js" integrity="sha256-RF01IPKPCQFRUfVRxpkEl/hU0v5RW1Uu0KF7tcb4sf0="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -459,7 +457,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -542,7 +540,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/rocketmq/rocketmq-message-store-flow/mappedFiles_list.png" alt="消息文件列表"></p>
 <p>当有新的消息到来的时候，其会默认选择列表中的最后一个文件来进行消息的保存:</p>
 <p><img src="/images/docs/rocketmq/rocketmq-message-store-flow/last_mapped_file.png" alt="最后一个消息文件"></p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFileQueue</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFileQueue</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> MappedFile <span style="color:#a6e22e">getLastMappedFile</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         MappedFile mappedFileLast <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
@@ -565,7 +563,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>当然如果这个 Broker 之前从未接受过消息的话，那么这个列表肯定是空的。这样一旦有新的消息需要存储的时候，其就得需要立即创建一个 <code>MappedFile</code> 文件来存储消息。</p>
 <p>RocketMQ 提供了一个专门用来实例化 <code>MappedFile</code> 文件的服务类 <code>AllocateMappedFileService</code>。在内存中，也同时维护了一张请求表 <code>requestTable</code> 和一个优先级请求队列 <code>requestQueue</code> 。当需要创建文件的时候，Broker 会创建一个 <code>AllocateRequest</code> 对象，其包含了文件的路径、大小等信息。然后先将其放入 <code>requestTable</code> 表中，再将其放入优先级请求队列 <code>requestQueue</code> 中:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AllocateMappedFileService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AllocateMappedFileService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> MappedFile <span style="color:#a6e22e">putRequestAndReturnMappedFile</span><span style="color:#f92672">(</span>String nextFilePath<span style="color:#f92672">,</span>
                                                     String nextNextFilePath<span style="color:#f92672">,</span>
@@ -584,7 +582,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>服务类会<strong>一直</strong>等待优先级队列是否有新的请求到来，如果有，便会从队列中取出请求，然后创建对应的 <code>MappedFile</code>，并将请求表 requestTable 中 <code>AllocateRequest</code> 对象的字段 <code>mappedFile</code> 设置上值。最后将 <code>AllocateRequest</code> 对象上的 <code>CountDownLatch</code> 的计数器减 1 ，以标明此分配申请的 <code>MappedFile</code> 已经创建完毕了:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AllocateMappedFileService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AllocateMappedFileService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// 一直运行
@@ -615,7 +613,7 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><p>其上述整体流程如下所示:</p>
 <p><img src="/images/docs/rocketmq/rocketmq-message-store-flow/AllocateMappedFileService.png" alt="创建文件过程"></p>
 <p>等待 <code>MappedFile</code> 创建完毕之后，其便会从请求表 <code>requestTable</code> 中取出并删除表中记录:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AllocateMappedFileService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AllocateMappedFileService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> MappedFile <span style="color:#a6e22e">putRequestAndReturnMappedFile</span><span style="color:#f92672">(</span>String nextFilePath<span style="color:#f92672">,</span>
                                                     String nextNextFilePath<span style="color:#f92672">,</span>
@@ -637,7 +635,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>然后再将其放到列表中去:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFileQueue</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFileQueue</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> MappedFile <span style="color:#a6e22e">getLastMappedFile</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> startOffset<span style="color:#f92672">,</span> <span style="color:#66d9ef">boolean</span> needCreate<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         MappedFile mappedFile <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
@@ -665,7 +663,7 @@ data-full-width-responsive="true"></ins>
 <p>至此，<code>MappedFile</code> 已经创建完毕，也即可以进行下一步的操作了。</p>
 <h2 id="三文件初始化">三、文件初始化</h2>
 <p>在 <code>MappedFile</code> 的构造函数中，其使用了 <code>FileChannel</code> 类提供的 map 函数来将磁盘上的这个文件映射到进程地址空间中。然后当通过 <code>MappedByteBuffer</code> 来读入或者写入文件的时候，磁盘上也会有相应的改动。采用这种方式，通常比传统的基于文件 IO 流的方式读取效率高。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFile</span> <span style="color:#66d9ef">extends</span> ReferenceResource <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFile</span> <span style="color:#66d9ef">extends</span> ReferenceResource <span style="color:#f92672">{</span>
     
     <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">MappedFile</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String fileName<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> fileSize<span style="color:#f92672">)</span>
         <span style="color:#66d9ef">throws</span> IOException <span style="color:#f92672">{</span>
@@ -686,7 +684,7 @@ data-full-width-responsive="true"></ins>
 <p>验证的基本想法是通过一一读取列表中的每一个文件，然后再一一读取每个文件中的每个消息，在读取的过程中，其会更新整体的消息写入的偏移量，如下图中的红色箭头 (我们假设最终读取的消息的总偏移量为 905):</p>
 <p><img src="/images/docs/rocketmq/rocketmq-message-store-flow/mappedfile_recover.png" alt="恢复文件"></p>
 <p>当确定消息整体的偏移量之后，Broker 便会确定每一个单独的 <code>MappedFile</code> 文件的<strong>各自的偏移量</strong>，每一个文件的偏移量是通过<strong>取余</strong>算法确定的:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFileQueue</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFileQueue</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">truncateDirtyFiles</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> offset<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
 
@@ -710,7 +708,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-message-store-flow/update_mappedfile_position.png" alt="更新文件位置"></p>
 <p>在确定每个消息文件各自的写入位置的同时，其还会删除<strong>起始偏移量</strong>大于当前总偏移量的消息文件，这些文件可以视作脏文件，或者也可以说这些文件里面一条消息也没有。这也是上述文件 <code>1073741824</code> 被打上红叉的原因:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">truncateDirtyFiles</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> offset<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">truncateDirtyFiles</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> offset<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     List<span style="color:#f92672">&lt;</span>MappedFile<span style="color:#f92672">&gt;</span> willRemoveFiles <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ArrayList<span style="color:#f92672">&lt;</span>MappedFile<span style="color:#f92672">&gt;();</span>
 
     <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>MappedFile file <span style="color:#f92672">:</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">mappedFiles</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -733,14 +731,14 @@ data-full-width-responsive="true"></ins>
 <p>一旦我们获取到 <code>MappedFile</code> 文件之后，我们便可以往这个文件里面写入消息了。写入消息可能会遇见如下两种情况，一种是这条消息可以完全追加到这个文件中，另外一种是这条消息完全不能或者只有一小部分只能存放到这个文件中，其余的需要放到新的文件中。我们对于这两种情况分别讨论:</p>
 <h3 id="1-文件可以完全存储消息">(1) 文件可以完全存储消息</h3>
 <p><code>MappedFile</code> 类维护了一个用以标识当前写位置的指针 <code>wrotePosition</code>，以及一个用来映射文件到进程地址空间的 <code>mappedByteBuffer</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFile</span> <span style="color:#66d9ef">extends</span> ReferenceResource <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFile</span> <span style="color:#66d9ef">extends</span> ReferenceResource <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">final</span> AtomicInteger wrotePosition <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicInteger<span style="color:#f92672">(</span>0<span style="color:#f92672">);</span>
     <span style="color:#66d9ef">private</span> MappedByteBuffer mappedByteBuffer<span style="color:#f92672">;</span>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>由这两个数据结构我们可以看出来，单个文件的消息写入过程其实是非常简单的。首先获取到这个文件的写入位置，然后将消息内容追加到 <code>byteBuffer</code> 中，然后再更新写入位置。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFile</span> <span style="color:#66d9ef">extends</span> ReferenceResource <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFile</span> <span style="color:#66d9ef">extends</span> ReferenceResource <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> AppendMessageResult <span style="color:#a6e22e">appendMessagesInner</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> MessageExt messageExt<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> AppendMessageCallback cb<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// ...
@@ -772,7 +770,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/rocketmq/rocketmq-message-store-flow/message_in_one_mappedfile.png" alt="消息文件的位置指针"></p>
 <h3 id="2-文件不可以完全存储消息">(2) 文件不可以完全存储消息</h3>
 <p>在写入消息之前，如果判断出文件已经满了的情况下，其会直接尝试创建一个新的 <code>MappedFile</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> PutMessageResult <span style="color:#a6e22e">putMessage</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> MessageExtBrokerInner msg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
 
@@ -800,7 +798,7 @@ data-full-width-responsive="true"></ins>
 </ul>
 <p>当这个文件有能力容纳这条消息体的情况下，其便会存储 <code>MESSAGE_MAGIC_CODE</code> 值；当这个文件没有能力容纳这条消息体的情况下，其便会存储 <code>BLANK_MAGIC_CODE</code> 值。所以这个 <code>MAGICCODE</code> 是用来界定这是空消息还是一条正常的消息。</p>
 <p>当判定这个文件不足以容纳整个消息的时候，其将消息体长度设置为这个文件剩余的最大空间长度，将 <code>MAGICCODE</code> 设定为这是一个空消息文件 (需要去下一个文件去读)。由此我们可以看出消息体长度 和 <code>MAGICCODE</code> 是判别一条消息格式的最基本要求，这也是 <code>END_FILE_MIN_BLANK_LENGTH</code> 的值为 8 的原因:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// CommitLog.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// CommitLog.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultAppendMessageCallback</span> <span style="color:#66d9ef">implements</span> AppendMessageCallback <span style="color:#f92672">{</span>
 
     <span style="color:#75715e">// File at the end of the minimum fixed length empty
@@ -839,7 +837,7 @@ data-full-width-responsive="true"></ins>
 <p>当消息体追加到 <code>MappedFile</code> 以后，这条消息实际上还只是存储在内存中，因此还需要将内存中的内容刷到磁盘上才算真正的存储下来，才能确保消息不丢失。一般而言，刷盘有两种策略: 异步刷盘和同步刷盘。</p>
 <h3 id="1-异步刷盘">(1) 异步刷盘</h3>
 <p>当配置为异步刷盘策略的时候，Broker 会运行一个服务 <code>FlushRealTimeService</code> 用来刷新缓冲区的消息内容到磁盘，这个服务使用一个独立的线程来做刷盘这件事情，默认情况下每隔 500ms 来检查一次是否需要刷盘:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FlushRealTimeService</span> <span style="color:#66d9ef">extends</span> FlushCommitLogService <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FlushRealTimeService</span> <span style="color:#66d9ef">extends</span> FlushCommitLogService <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
 
@@ -862,7 +860,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>在追加消息完毕之后，通过<strong>唤醒</strong>这个服务立即检查以下是否需要刷盘:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">handleDiskFlush</span><span style="color:#f92672">(</span>AppendMessageResult result<span style="color:#f92672">,</span>
                                 PutMessageResult putMessageResult<span style="color:#f92672">,</span>
@@ -887,7 +885,7 @@ data-full-width-responsive="true"></ins>
 <p>当配置为同步刷盘策略的时候，Broker 运行一个叫做 <code>GroupCommitService</code> 服务。在这个服务内部维护了一个<strong>写请求</strong>队列和一个<strong>读请求</strong>队列，其中这两个队列每隔 10ms 就交换一下“身份”，这么做的目的其实也是为了<strong>读写分离</strong>:</p>
 <p><img src="/images/docs/rocketmq/rocketmq-message-store-flow/swap_list.png" alt="读队列和写队列交换"></p>
 <p>在这个服务内部，每隔 10ms 就会检查读请求队列是否不为空，如果不为空，则会将读队列中的所有请求执行刷盘，并清空读请求队列:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">GroupCommitService</span> <span style="color:#66d9ef">extends</span> FlushCommitLogService <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">GroupCommitService</span> <span style="color:#66d9ef">extends</span> FlushCommitLogService <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doCommit</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// 检查所有读队列中的请求
@@ -902,7 +900,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>在追加消息完毕之后，通过创建一个请求刷盘的对象，然后通过 <code>putRequest()</code> 方法放入写请求队列中，这个时候会立即唤醒这个服务，写队列和读队列的角色会进行交换，交换角色之后，读请求队列就不为空，继而可以执行所有刷盘请求了。而在这期间，Broker 会一直阻塞等待最多 5 秒钟，在这期间如果完不成刷盘请求的话，那么视作刷盘超时:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">handleDiskFlush</span><span style="color:#f92672">(</span>AppendMessageResult result<span style="color:#f92672">,</span>
                                 PutMessageResult putMessageResult<span style="color:#f92672">,</span>
@@ -935,7 +933,7 @@ data-full-width-responsive="true"></ins>
 <h2 id="七消息刷盘理念">七、消息刷盘理念</h2>
 <p>我们在这里已经知道消息刷盘有同步刷盘和异步刷盘策略，对应的是 <code>GroupCommitService</code> 和 <code>FlushRealTimeService</code> 这两种不同的服务。</p>
 <p>这两种服务都有定时请求刷盘的机制，但是机制背后最终调用的刷盘方式全部都集中在 <code>flush</code> 这个方法上:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFileQueue</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFileQueue</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">flush</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> flushLeastPages<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// ...
@@ -947,7 +945,7 @@ data-full-width-responsive="true"></ins>
 <p>操作系统为了能够使多个进程同时使用内存，又保证各个进程访问内存互相独立，于是为每个进程引入了<strong>地址空间</strong>的概念，地址空间上的地址叫做<strong>虚拟地址</strong>，而程序想要运行必须放到<strong>物理地址</strong>上运行才可以。地址空间为进程<strong>营造出了一种假象</strong>：”整台计算机只有我一个程序在运行，这台计算机内存很大”。一个地址空间内包含着这个进程所需要的全部状态信息。通常一个进程的地址空间会按照逻辑分成好多<strong>段</strong>，比如<strong>代码段、堆段、栈段</strong>等。为了进一步有效利用内存，每一段又细分成了不同的<strong>页 (page)</strong>。与此相对应，计算机的物理内存被切成了<strong>页帧 (page frame)</strong>，文件被分成了<strong>块 (block)</strong>。既然程序实际运行的时候还是得依赖物理内存的地址，那么就需要将虚拟地址转换为物理地址，这个映射关系是由**页表 (page table)**来完成的。</p>
 <p>另外在操作系统中，还有一层<strong>磁盘缓存 (disk cache)<strong>的概念，它主要是用来减少对磁盘的 I/O 操作。磁盘缓存是以页为单位的，内容就是磁盘上的物理块，所以又称之为</strong>页缓存 (page cache)</strong>。当进程发起一个读操作 （比如，进程发起一个 read() 系统调用），它首先会检查需要的数据是否在页缓存中。如果在，则放弃访问磁盘，而直接从页缓存中读取。如果数据没在缓存中，那么内核必须调度块 I/O 操作从磁盘去读取数据，然后将读来的数据放入页缓存中。系统并不一定要将整个文件都缓存，它可以只存储一个文件的一页或者几页。</p>
 <p>如图所示，当调用 <code>FileChannel.map()</code> 方法的时候，会将这个文件<strong>映射</strong>进用户空间的地址空间中，注意，建立映射不会拷贝任何数据。我们前面提到过 Broker 启动的时候会有一个消息文件加载的过程，当第一次开始读取数据的时候:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 首次读取数据
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 首次读取数据
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> totalSize <span style="color:#f92672">=</span> byteBuffer<span style="color:#f92672">.</span><span style="color:#a6e22e">getInt</span><span style="color:#f92672">();</span>
 </code></pre></div><p>这个时候，操作系统通过查询页表，会发现文件的这部分数据还不在内存中。于是就会触发一个缺页异常 (page faults)，这个时候操作系统会开始从磁盘读取这一页数据，然后先放入到页缓存中，然后再放入内存中。在第一次读取文件的时候，操作系统会读入所请求的页面，并读入紧随其后的少数几个页面（<strong>不少于一个页面，通常是三个页面</strong>），这时的预读称为<strong>同步预读</strong> (如下图所示，红色部分是需要读取的页面，蓝色的那三个框是操作系统预先读取的):</p>
 <p><img src="/images/docs/rocketmq/rocketmq-message-store-flow/linux_filecache_readahead.png" alt="同步预读"></p>
@@ -969,7 +967,7 @@ data-full-width-responsive="true"></ins>
 <p>其次，对于异步刷盘来讲，Broker 执行了更为严格的刷盘限制策略，当在某个时间点尝试执行刷盘之后，在接下来 10 秒内，如果想要继续刷盘，那么脏页面数量必须不小于 4 页，如下图所示:</p>
 <p><img src="/images/docs/rocketmq/rocketmq-message-store-flow/FlushRealTimeService_flush_condition.png" alt="刷盘条件"></p>
 <p>下面是执行刷盘前最后检查的刷盘条件：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFile</span> <span style="color:#66d9ef">extends</span> ReferenceResource <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MappedFile</span> <span style="color:#66d9ef">extends</span> ReferenceResource <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isAbleToFlush</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> flushLeastPages<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">int</span> flush <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">flushedPosition</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">();</span>

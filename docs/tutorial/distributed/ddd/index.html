@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="DDD 领域驱动设计"><meta property="og:title" content="DDD 领域驱动设计" />
+<meta property="og:description" content="DDD 领域驱动设计 携程领域驱动设计实践  参考自携程技术公众号 《后微服务时代，领域驱动设计在携程国际火车票的实践》
+ MVC 这种软件架构中模型层只关注数据，控制层只关注行为，随着迭代的不断演化，业务逻辑越来越复杂，便会导致整个控制层的代码量越来越多，而模型层和视图层的变更却很少，最终导致整个控制层变得十分臃肿，从而失去了分层的意义。
+失血模型 失血模型是指领域对象里只有 get 和 set 方法的 POJO，所有业务逻辑都不包含在内而是放在控制层中，该模型对象的缺点就是不够面向对象，对象只是数据的载体，几乎只做传输介质之用，它是没有生命、没有行为的。
+与失血模型相对应的就是充血模型，充血模型就是会包含此领域相关的业务逻辑等，同时也可以包含持久化操作，它的优点对象自洽程度很高，表达能力很强，可复用性很高，更加符合面向对象的思想。
+业务逻辑逐渐复杂后，采用失血模型会导致业务逻辑状态散落在大量的方法中，使得代码的意图渐渐不够明确，代码的复用性下降。
+架构设计 DDD 有多种分层架构模式，包括四层架构模式、五层架构模式、六层架构模式等，其核心均是定义一层领域层对领域对象及其关系进行建模，从传统的 MVC 三层架构中将领域抽出，本文采用的是一种改进的分层架构模型：六边形架构，其结构如下所示：
+通过 DDD 思想进行建模，并采用 DDD 的六边形架构，重构后的服务结构如下：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/ddd/" />
+
+<title>DDD 领域驱动设计 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+
+
+<script defer src="/en.search.min.445d3520f28f09015151f551c6990497f854d2fe515b552ed0a17bb5c6f8b1fd.js" integrity="sha256-RF01IPKPCQFRUfVRxpkEl/hU0v5RW1Uu0KF7tcb4sf0="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/it-govern/" >
+      服务治理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-measurement/" >
+      服务度量
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-control/" >
+      服务管控
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/apm/" >
+      APM 及调用链跟踪
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/deep-govern/" >
+      体系的深度治理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/transaction/" >
+      分布式事务解决方案汇总
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/raft/" >
+      Raft
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/multi-replica-consistency/" >
+      副本一致性算法
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/storage-high-availablity/" >
+      存储高可用方案
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/ddd/"  class="active">
+      DDD 领域驱动设计
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/business-high-availablity/" >
+      业务高可用方案
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/high-concurrency/" >
+      高并发设计方案
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/distributed-lock/" >
+      分布式锁 🔒
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/distributed-id/" >
+      分布式 ID 设计
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/design-weibo/" >
+      设计微博系统
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/troubleshoot/" >
+      排查问题
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/hystrix/" >
+      Hystrix
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/architecture-cases/" >
+      架构案例参考
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/design-youtube/" >
+      设计 Youtube
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/design-tinyurl/" >
+      设计 tinyURL
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/softskill/" >
+      箴言箴句
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/technique/" >
+      技术
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>DDD 领域驱动设计</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#携程领域驱动设计实践">携程领域驱动设计实践</a>
+      <ul>
+        <li><a href="#失血模型">失血模型</a></li>
+        <li><a href="#架构设计">架构设计</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="ddd-领域驱动设计">DDD 领域驱动设计</h1>
+<h2 id="携程领域驱动设计实践">携程领域驱动设计实践</h2>
+<blockquote>
+<p>参考自携程技术<a href="https://docs.c-ctrip.com/files/6/ctriptech/1gw291200099iy5uyCC5B.pdf">公众号</a> 《后微服务时代，领域驱动设计在携程国际火车票的实践》</p>
+</blockquote>
+<p>MVC 这种软件架构中模型层只关注数据，控制层只关注行为，随着迭代的不断演化，业务逻辑越来越复杂，便会导致整个控制层的代码量越来越多，而模型层和视图层的变更却很少，最终导致<strong>整个控制层变得十分臃肿</strong>，从而失去了分层的意义。</p>
+<h3 id="失血模型">失血模型</h3>
+<p>失血模型是指领域对象里只有 <code>get</code> 和 <code>set</code> 方法的 POJO，所有业务逻辑都不包含在内而是放在控制层中，该模型对象的缺点就是不够面向对象，<strong>对象只是数据的载体</strong>，几乎只做传输介质之用，它是没有生命、没有行为的。</p>
+<p>与失血模型相对应的就是充血模型，充血模型就是会<strong>包含此领域相关的业务逻辑</strong>等，同时也<strong>可以包含持久化</strong>操作，它的优点对象自洽程度很高，表达能力很强，可复用性很高，更加符合面向对象的思想。</p>
+<p>业务逻辑逐渐复杂后，采用失血模型会导致业务逻辑状态散落在大量的方法中，使得代码的意图渐渐不够明确，代码的复用性下降。</p>
+<h3 id="架构设计">架构设计</h3>
+<p>DDD 有多种分层架构模式，包括四层架构模式、五层架构模式、六层架构模式等，其核心均是定义一层领域层对领域对象及其关系进行建模，从传统的 MVC 三层架构中将领域抽出，本文采用的是一种改进的分层架构模型：<strong>六边形架构</strong>，其结构如下所示：</p>
+<p><img src="/images/docs/tutorial/distributed/ddd/2022-02-04_11-24.png" alt=""></p>
+<p>通过 DDD 思想进行建模，并采用 DDD 的六边形架构，<strong>重构后的服务结构</strong>如下：</p>
+<p><img src="/images/docs/tutorial/distributed/ddd/2022-02-04_11-28.png" alt=""></p>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#携程领域驱动设计实践">携程领域驱动设计实践</a>
+      <ul>
+        <li><a href="#失血模型">失血模型</a></li>
+        <li><a href="#架构设计">架构设计</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

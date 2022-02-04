@@ -38,18 +38,16 @@ ACID一致性的思想是关于数据的某些陈述（不变量）必须始终�
 大多数数据库同时由多个客户端访问。如果他们在读写数据库的不同部分，这是没有问题的，但是如果他们访问相同的数据库记录，你可能会遇到并发问题（竞争条件）。
 假设您有两个客户端同时递增存储在数据库中的计数器。每个客户端需要读取当前值，添加1，然后将新值写回（假设数据库中没有内置任何增量操作）。在图7-1中，计数器应该从42增加到44，因为发生了两个增量，但实际上由于竞争条件，它只增加到43。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/books/ddia/ddia-chapter7/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/books/ddia/ddia-chapter7/" />
 
 <title>设计数据密集型应用程序 - 事务 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.d855943406294b3828037a1ac91f970000e2df3fe538f710d7050da0ed846095.js" integrity="sha256-2FWUNAYpSzgoA3oayR&#43;XAADi3z/lOPcQ1wUNoO2EYJU="></script>
+<script defer src="/en.search.min.445d3520f28f09015151f551c6990497f854d2fe515b552ed0a17bb5c6f8b1fd.js" integrity="sha256-RF01IPKPCQFRUfVRxpkEl/hU0v5RW1Uu0KF7tcb4sf0="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -605,7 +603,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -753,7 +751,7 @@ data-full-width-responsive="true"></ins>
 <li><strong>隔离性</strong>：事务之间不应该相互干扰。例如，如果一个事务进行了多次写入，那么<strong>另一个事务应该看到这些写入的全部或全部</strong>，而不是某个子集。</li>
 </ul>
 <p>这些定义假定您希望一次修改多个对象（行、文档、记录）。如果多个数据需要保持同步，则通常需要这样的多对象事务。图7-2显示了一个电子邮件示例应用程序。到显示用户的未读邮件数，您可以查询如下内容：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">FROM</span> emails <span style="color:#66d9ef">WHERE</span> recipient_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#66d9ef">AND</span> unread_flag <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">FROM</span> emails <span style="color:#66d9ef">WHERE</span> recipient_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#66d9ef">AND</span> unread_flag <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>
 </code></pre></div><p>但是，如果有许多电子邮件，您可能会发现此查询太慢，并决定将未读邮件的数量存储在单独的字段中（一种非规范化）。现在，每当有新消息传入时，您也必须增加未读计数器，并且每当消息被标记为已读时，您还必须删除未读计数器。</p>
 <p>在图7-2中，用户2经历了一个异常：邮箱列表显示一个未读消息，但计数器显示零个未读消息，因为计数器尚未递增发生了。隔离可以通过确保用户2同时看到插入的电子邮件和更新的计数器，或者两者都看不到来防止这个问题，但没有不一致的中间点。</p>
 <p><img src="/images/docs/books/ddia/Snipaste_2020-11-28_22-58-57.png" alt=""></p>
@@ -892,14 +890,14 @@ data-full-width-responsive="true"></ins>
 <p>因为这是一个如此普遍的问题，各种各样的解决方案都被开发出来了。</p>
 <p>（1）原子写入操作</p>
 <p>许多数据库提供原子更新操作，这就不需要在应用程序代码中实现 read-modify-write cycle。如果你的代码可以用这些操作来表达，它们通常是最好的解决方案。例如，以下指令在大多数关系数据库中是并发安全的：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">UPDATE</span> counters <span style="color:#66d9ef">SET</span> value <span style="color:#f92672">=</span> value <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">WHERE</span> <span style="color:#66d9ef">key</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;foo&#39;</span>;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">UPDATE</span> counters <span style="color:#66d9ef">SET</span> value <span style="color:#f92672">=</span> value <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">WHERE</span> <span style="color:#66d9ef">key</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;foo&#39;</span>;
 </code></pre></div><p>类似地，MongoDB等文档数据库支持对JSON文档的一部分进行原子本地修改，Redis为修改数据结构（如优先级队列）提供了原子操作。并不是所有的写操作都可以很容易地用原子操作来表达例如，wiki页面的更新涉及到任意的文本编辑，但是在可以使用原子操作的情况下，它们通常是最好的选择。</p>
 <p>原子操作通常是通过在对象被读取时对其进行<strong>独占锁</strong>来实现的，这样在应用更新之前没有其他事务可以读取它。这种技术有时被称为光标稳定性[36，37]。另一个选择是简单地强制在单个线程上执行所有原子操作。</p>
 <p>不幸的是，对象关系映射框架很容易意外地编写执行不安全的 read-modify-write cycle 的代码，而不是使用数据库提供的原子操作[38]。如果你知道你在做什么，这不是问题，但它可能是一个微妙的错误来源，很难通过测试找到。</p>
 <p>（2）显式锁定</p>
 <p>如果数据库的内置原子操作没有提供必要的功能，另一个防止更新丢失的选项是<strong>应用程序显式锁定</strong>要更新的对象。然后，应用程序可以执行read-modify-write cycle，如果任何其他事务试图并发读取同一个对象，它将被迫等待，直到第一个 read-modify-write 循环完成。</p>
 <p>例如，考虑一个多人游戏，其中几个玩家可以同时移动同一个图形。在这种情况下，原子操作可能还不够，因为应用程序还需要确保玩家的移动遵守游戏规则，这涉及到一些逻辑，而这些逻辑是您无法合理实现的数据库查询。相反，你可以使用一个锁来防止两个玩家同时移动同一个棋子，如例7-1所示。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">BEGIN</span> <span style="color:#66d9ef">TRANSACTION</span>;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">BEGIN</span> <span style="color:#66d9ef">TRANSACTION</span>;
 
 <span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> figures
 	<span style="color:#66d9ef">WHERE</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;robot&#39;</span> <span style="color:#66d9ef">AND</span> game_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">222</span>
@@ -921,7 +919,7 @@ data-full-width-responsive="true"></ins>
 <p>（4）compare-and-set</p>
 <p>在不提供事务的数据库中，有时会发现一个原子 compare-and-set 操作（前面在230页的“单对象写入”中提到过）。此操作的目的是为了避免更新丢失，方法是只允许在值自上次读取后没有更改的情况下进行更新。如果当前值与以前读取的值不匹配，则更新无效，必须重试读-改-写循环。</p>
 <p>例如，为了防止两个用户同时更新同一个wiki页面，您可以尝试类似的操作，仅当用户开始编辑页面后该页面的内容没有更改时才会进行更新：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- This may or may not be safe, depending on the database implementation
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- This may or may not be safe, depending on the database implementation
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">UPDATE</span> wiki_pages <span style="color:#66d9ef">SET</span> content <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;new content&#39;</span>
 	<span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1234</span> <span style="color:#66d9ef">AND</span> content <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;old content&#39;</span>;
 </code></pre></div><p>如果内容已更改且不再与“旧内容”匹配，则此更新将无效，因此您需要检查更新是否生效，必要时重试。但是，如果数据库允许 <code>WHERE</code> 子句从旧快照中读取，则此语句可能无法阻止丢失的更新，因为即使正在发生另一个并发写入，该条件也可能为真。在依赖某个数据库之前，请检查它的 compare-and-set 操作是否安全的。</p>
@@ -948,7 +946,7 @@ data-full-width-responsive="true"></ins>
 <li>某些数据库允许您配置约束，然后由数据库强制执行（例如，唯一性、外键约束或对特定值的限制）。但是，为了指定至少一个医生必须随叫随到，您需要一个涉及多个对象的约束。大多数数据库都没有对此类约束的内置支持，但是您可以使用触发器或物化视图来实现它们，具体取决于数据库[42]。</li>
 <li>如果不能使用可序列化的隔离级别，在这种情况下，第二个最佳选择可能是<strong>显式锁定事务所依赖的行</strong>。在doctors示例中，您可以编写如下内容：</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">BEGIN</span> <span style="color:#66d9ef">TRANSACTION</span>;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">BEGIN</span> <span style="color:#66d9ef">TRANSACTION</span>;
 
 <span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> doctors
 	<span style="color:#66d9ef">WHERE</span> on_call <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span>
@@ -967,7 +965,7 @@ data-full-width-responsive="true"></ins>
 <p>写歪斜一开始看起来像是一个深奥的问题，但是一旦你意识到它，你可能会注意到它可能发生的更多情况。这里还有一些例子：</p>
 <p>－　会议室预订系统</p>
 <p>假设您要强制执行同一会议室不能同时有两个预订[43]。如果有人想预约，你先检查是否有任何冲突的预订（例如，同一房间的预订时间范围重叠），如果没有找到，则创建会议（请参见例7-2）：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">BEGIN</span> <span style="color:#66d9ef">TRANSACTION</span>;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">BEGIN</span> <span style="color:#66d9ef">TRANSACTION</span>;
 
 <span style="color:#75715e">-- Check for any existing bookings that overlap with the period of noon-1pm
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">FROM</span> bookings
@@ -1094,7 +1092,7 @@ data-full-width-responsive="true"></ins>
 <p>在前面对锁的描述中，我们忽略了一个微妙但重要的细节。在第250页的“导致写入倾斜的幻影”中，我们讨论了幻影的问题，也就是说，一个事务改变了另一个事务的搜索查询结果。具有可序列化隔离的数据库必须防止幻影。</p>
 <p>在会议室预订示例中，这意味着如果一个事务在特定时间窗口内搜索房间的现有预订（请参见例7-2），不允许另一个事务同时插入或更新同一房间和时间范围的另一个预订。（可以同时插入其他房间的预订，或在不影响拟定预订的不同时间插入同一房间的预订。）</p>
 <p>我们如何实现这一点？从概念上讲，我们需要一个<strong>谓词锁</strong>[3]。它类似于前面描述的共享/独占锁，但它不属于特定对象（例如，表中的一行），而是<strong>属于与某些搜索条件匹配的所有对象</strong>，例如：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> bookings
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> bookings
 	<span style="color:#66d9ef">WHERE</span> room_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">123</span> <span style="color:#66d9ef">AND</span>
 	end_time <span style="color:#f92672">&gt;</span> <span style="color:#e6db74">&#39;2018-01-01 12:00&#39;</span> <span style="color:#66d9ef">AND</span>
 	start_time <span style="color:#f92672">&lt;</span> <span style="color:#e6db74">&#39;2018-01-01 13:00&#39;</span>;

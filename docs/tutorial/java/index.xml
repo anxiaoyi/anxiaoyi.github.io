@@ -98,6 +98,19 @@ char 能存储中文字符吗 在 Java 中，char 类型占 2 个字节，而且
     </item>
     
     <item>
+      <title>BTrace</title>
+      <link>https://kunzhao.org/docs/tutorial/java/btrace/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/java/btrace/</guid>
+      <description>BTrace  背景：程序出问题，线上机器 DEBUG 端口没有开，那段代码没有打印日志，重启会破坏现场，Review 又看不出来代码哪里有问题。
+ java.lang.instrument.Instrumentation Instrumentation 可以让我们动态替换字节码：
+ redifineClasses: 重新定义 class，自己提供字节码文件替换掉已经存在的 class 文件 retransformClasses: 修改 class，在已经存在的字节码文件上修改后再替换之  BTrace 架构  BTrace 脚本：利用 BTrace 提供的注解，方便我们开发脚本。 Compiler：将 BTrace 脚本编译成 BTrace class 文件。 Client：将 class 文件发送到 Agent。 Agent：基于 Java 的 Attach Api，Agent 可以动态附着到一个运行的 JVM 上，然后开启一个 BTrace Server，接受 client 发过来的 BTrace 脚本；解析脚本，然后根据规则找到修改的类，修改字节码后，调用 Java 的 Instrument 的 reTransform 接口，完成对对象行为的修改并使之生效。  BTrace 工作流程如下：
+BTrace 借助 Instruments 实现 class 的替换。Instruments 存在诸多限制，BTrace 也不例外：
+ 不允许创建对象 不允许创建数组 不允许抛异常 不允许 catch 异常 不允许随意调用其他对象或者类的方法，只允许调用 com.</description>
+    </item>
+    
+    <item>
       <title>Java 集合类</title>
       <link>https://kunzhao.org/docs/tutorial/java/java-collection/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -110,6 +123,18 @@ char 能存储中文字符吗 在 Java 中，char 类型占 2 个字节，而且
 数组长度为什么必须是 2 的指数幂 减少哈希冲突，均匀分布元素。
 1）通过将 Key 的 hash 值与 length-1 进行 &amp;amp; 运算，实现了当前 Key 的定位，2 的幂次方可以减少冲突（碰撞）的次数，提高 HashMap 查询效率；
 2）如果 length 为 2 的次幂，则 length-1 转化为二进制必定是 11111…… 的形式，在于 h 的二进制与操作效率会非常的快，而且空间不浪费；如果 length 不是 2 的次幂，比如 length 为 15，则 length-1 为 14，对应的二进制为 1110，在于 h 与操作，最后一位都为 0，而 0001，0011，0101，1001，1011，0111，1101 这几个位置永远都不能存放元素了，空间浪费相当大，更糟的是这种情况中，数组可以使用的位置比数组长度小了很多，这意味着进一步增加了碰撞的几率，减慢了查询的效率！这样就会造成空间的浪费。</description>
+    </item>
+    
+    <item>
+      <title>多线程并发示例</title>
+      <link>https://kunzhao.org/docs/tutorial/java/concurrency/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/java/concurrency/</guid>
+      <description>多线程并发 模拟避免死锁的哲学家进餐问题  来自 《Cracking Coding Interview 6th Programming》
+ 筷子：
+class Chopstick { private Lock lock; public Chopstick() { lock = new ReentrantLock(); } public void pickUp() { lock.lock(); } public void putDown() { lock.unlock(); } } 哲学家：
+class Philosopher extends Thread { private int bites = 10; private Chopstick left, right; public Philosopher(Chopstick left, Chopstick right) { this.left = left; this.right = right; } public void eat() { pickUp(); chew(); putDown(); } public void pickUp() { left.</description>
     </item>
     
   </channel>

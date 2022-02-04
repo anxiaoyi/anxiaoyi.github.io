@@ -16,18 +16,16 @@ JMM 通过控制主内存与每个线程的本地内存之间的交互，来为 
 JMM 定义了 8 种操作都是原子的，不可再分的。
  lock(锁定)：作用于主内存中的变量，它把一个变量标识为一个线程独占的状态； unlock(解锁):作用于主内存中的变量，它把一个处于锁定状态的变量释放出来，释放后的变量才可以被其他线程锁定 read（读取）：作用于主内存的变量，它把一个变量的值从主内存传输到线程的工作内存中，以便后面的load动作使用； load（载入）：作用于工作内存中的变量，它把read操作从主内存中得到的变量值放入工作内存中的变量副本 use（使用）：作用于工作内存中的变量，它把工作内存中一个变量的值传递给执行引擎，每当虚拟机遇到一个需要使用到变量的值的字节码指令时将会执行这个操作； assign（赋值）：作用于工作内存中的变量，它把一个从执行引擎接收到的值赋给工作内存的变量，每当虚拟机遇到一个给变量赋值的字节码指令时执行这个操作； store（存储）：作用于工作内存的变量，它把工作内存中一个变量的值传送给主内存中以便随后的write操作使用； write（操作）：作用于主内存的变量，它把store操作从工作内存中得到的变量的值放入主内存的变量中。  上面一共有八条原子操作，其中六条可以满足基本数据类型的访问读写具备原子性，还剩下lock和unlock两条原子操作。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/juc/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/juc/" />
 
 <title>JUC 并发包 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.d855943406294b3828037a1ac91f970000e2df3fe538f710d7050da0ed846095.js" integrity="sha256-2FWUNAYpSzgoA3oayR&#43;XAADi3z/lOPcQ1wUNoO2EYJU="></script>
+<script defer src="/en.search.min.445d3520f28f09015151f551c6990497f854d2fe515b552ed0a17bb5c6f8b1fd.js" integrity="sha256-RF01IPKPCQFRUfVRxpkEl/hU0v5RW1Uu0KF7tcb4sf0="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -593,8 +591,28 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/java/btrace/" >
+      BTrace
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/java/java-collection/" >
       Java 集合类
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/concurrency/" >
+      多线程并发示例
   </a>
 
 </li>
@@ -1045,7 +1063,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -1229,7 +1247,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <p><strong>CLH</strong>：Craig、Landin and Hagersten 队列，是单向链表，AQS中的队列是CLH变体的虚拟双向队列（FIFO），AQS是通过将每条请求共享资源的线程封装成一个节点来实现锁的分配。</p>
 <p><img src="/images/docs/tutorial/java/juc/fifo-clh.png" alt=""></p>
 <p>AQS 维护了一个 <code>volatile int state</code>（代表共享资源）和一个 <strong>FIFO 线程等待队列</strong>（多线程争用资源被阻塞时会进入此队列）。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">/**
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">/**
 </span><span style="color:#75715e"> * The synchronization state.
 </span><span style="color:#75715e"> */</span>
 <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">int</span> state<span style="color:#f92672">;</span>
@@ -1253,7 +1271,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 </ul>
 <h3 id="node">Node</h3>
 <p>Node 结点是对<strong>每一个等待获取资源的线程的封装</strong>，其包含了需要同步的线程本身及其等待状态，如是否被阻塞、是否等待唤醒、是否已经被取消等。变量 <code>waitStatus</code> 则表示当前 Node 结点的等待状态。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Node</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Node</span> <span style="color:#f92672">{</span>
     
     <span style="color:#75715e">/** waitStatus value to indicate thread has cancelled */</span>
     <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> CANCELLED <span style="color:#f92672">=</span>  1<span style="color:#f92672">;</span>
@@ -1269,13 +1287,13 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="独占模式获取资源">独占模式获取资源</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquire</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquire</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>tryAcquire<span style="color:#f92672">(</span>arg<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;&amp;</span>
         acquireQueued<span style="color:#f92672">(</span>addWaiter<span style="color:#f92672">(</span>Node<span style="color:#f92672">.</span><span style="color:#a6e22e">EXCLUSIVE</span><span style="color:#f92672">),</span> arg<span style="color:#f92672">))</span>
         selfInterrupt<span style="color:#f92672">();</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p><code>tryAcquire</code> 尝试获取资源，如果成功直接返回，这是<strong>非公平锁</strong>，因为 CLH 队列中可能还有别的线程正在等待。<code>addWaiter</code> 将该线程使用 CAS 的方式放入到队列的尾部，标记为独占模式。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> Node <span style="color:#a6e22e">addWaiter</span><span style="color:#f92672">(</span>Node mode<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> Node <span style="color:#a6e22e">addWaiter</span><span style="color:#f92672">(</span>Node mode<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     Node node <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Node<span style="color:#f92672">(</span>Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">(),</span> mode<span style="color:#f92672">);</span>
     enq<span style="color:#f92672">(</span>node<span style="color:#f92672">);</span>
     <span style="color:#66d9ef">return</span> node<span style="color:#f92672">;</span>
@@ -1297,7 +1315,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p><code>acquireQueued</code> 使得线程在等待队列中一直查看，自己的前节点是否是 <code>head</code>，如果是 <code>head</code> 了，那么就可以<strong>尝试获取资源</strong>了。如果没有到 <code>head</code>，那么就去调用 <code>LockSupport.park(this)</code> 进行休息，进入休息后的线程，只有通过 <code>unpark</code> 或者 <code>interrupt</code> 才可以唤醒这个线程。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">acquireQueued</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> Node node<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">acquireQueued</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> Node node<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">boolean</span> failed <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
     <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">boolean</span> interrupted <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
@@ -1319,7 +1337,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p><code>shouldParkAfterFailedAcquire</code> 函数内部会帮助这个线程去检查状态，比如万一前节点已经放弃了，那么需要看前节点的再前节点的状态才可以：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">shouldParkAfterFailedAcquire</span><span style="color:#f92672">(</span>Node pred<span style="color:#f92672">,</span> Node node<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">shouldParkAfterFailedAcquire</span><span style="color:#f92672">(</span>Node pred<span style="color:#f92672">,</span> Node node<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">int</span> ws <span style="color:#f92672">=</span> pred<span style="color:#f92672">.</span><span style="color:#a6e22e">waitStatus</span><span style="color:#f92672">;</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ws <span style="color:#f92672">==</span> Node<span style="color:#f92672">.</span><span style="color:#a6e22e">SIGNAL</span><span style="color:#f92672">)</span>
         <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
@@ -1335,7 +1353,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <span style="color:#f92672">}</span>
 </code></pre></div><p>最后的 <code>selfInterrupt</code> 是为了<strong>补偿中断</strong>，线程在获取中断前，不响应中断，如果发现线程被中断了，即 <code>acquireQueued</code> 返回了 <code>true</code>，那么则需要主动补偿中断。</p>
 <h3 id="独占模式释放资源">独占模式释放资源</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">release</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">release</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>tryRelease<span style="color:#f92672">(</span>arg<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
         Node h <span style="color:#f92672">=</span> head<span style="color:#f92672">;</span>
         <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>h <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> h<span style="color:#f92672">.</span><span style="color:#a6e22e">waitStatus</span> <span style="color:#f92672">!=</span> 0<span style="color:#f92672">)</span>
@@ -1362,12 +1380,12 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <span style="color:#f92672">}</span>
 </code></pre></div><p><code>unparkSuccessor</code> 函数的作用就是找到等待队列中最前边的 <code>waitStatus &lt;=0</code> 的线程，来 <code>unpark</code> 唤醒它。</p>
 <h3 id="共享模式获取资源">共享模式获取资源</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquireShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquireShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>tryAcquireShared<span style="color:#f92672">(</span>arg<span style="color:#f92672">)</span> <span style="color:#f92672">&lt;</span> 0<span style="color:#f92672">)</span>
         doAcquireShared<span style="color:#f92672">(</span>arg<span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p><code>doAcquireShared</code> 方法用于将 <code>SHARED</code> 状态的 Node，添加到队列的尾部去 <code>park</code>，直到其它线程 <code>unpark</code> 或者 <code>interrupt</code> 唤醒自己的时候才返回。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doAcquireShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doAcquireShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">final</span> Node node <span style="color:#f92672">=</span> addWaiter<span style="color:#f92672">(</span>Node<span style="color:#f92672">.</span><span style="color:#a6e22e">SHARED</span><span style="color:#f92672">);</span>
     <span style="color:#66d9ef">boolean</span> failed <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
     <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
@@ -1395,7 +1413,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>当这个线程获取指定个数的资源成功后，如果有剩余资源 (<code>propagate &gt; 0</code>)，继续唤醒下一个后继的 <code>SHARED</code> 线程：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setHeadAndPropagate</span><span style="color:#f92672">(</span>Node node<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> propagate<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setHeadAndPropagate</span><span style="color:#f92672">(</span>Node node<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> propagate<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     Node h <span style="color:#f92672">=</span> head<span style="color:#f92672">;</span> <span style="color:#75715e">// Record old head for check below
 </span><span style="color:#75715e"></span>    setHead<span style="color:#f92672">(</span>node<span style="color:#f92672">);</span>
 
@@ -1407,7 +1425,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="共享模式释放资源">共享模式释放资源</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">releaseShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">releaseShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>tryReleaseShared<span style="color:#f92672">(</span>arg<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
         doReleaseShared<span style="color:#f92672">();</span>
         <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
@@ -1415,7 +1433,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
     <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p><code>doReleaseShared</code> 的内容：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doReleaseShared</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doReleaseShared</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">for</span> <span style="color:#f92672">(;;)</span> <span style="color:#f92672">{</span>
         Node h <span style="color:#f92672">=</span> head<span style="color:#f92672">;</span>
         <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>h <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> h <span style="color:#f92672">!=</span> tail<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -1439,7 +1457,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <div class="book-columns flex flex-wrap">
   
   <div class="flex-even markdown-inner">
-    <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquireSharedInterruptibly</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span>
+    <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquireSharedInterruptibly</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span>
         <span style="color:#66d9ef">throws</span> InterruptedException <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">interrupted</span><span style="color:#f92672">())</span>
         <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> InterruptedException<span style="color:#f92672">();</span>
@@ -1450,7 +1468,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
   </div>
   
   <div class="flex-even markdown-inner">
-    <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquireShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">acquireShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>tryAcquireShared<span style="color:#f92672">(</span>arg<span style="color:#f92672">)</span> <span style="color:#f92672">&lt;</span> 0<span style="color:#f92672">)</span>
         doAcquireShared<span style="color:#f92672">(</span>arg<span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
@@ -1463,7 +1481,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <div class="book-columns flex flex-wrap">
   
   <div class="flex-even markdown-inner">
-    <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doAcquireSharedInterruptibly</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span>
+    <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doAcquireSharedInterruptibly</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span>
     <span style="color:#66d9ef">throws</span> InterruptedException <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">final</span> Node node <span style="color:#f92672">=</span> addWaiter<span style="color:#f92672">(</span>Node<span style="color:#f92672">.</span><span style="color:#a6e22e">SHARED</span><span style="color:#f92672">);</span>
     <span style="color:#66d9ef">boolean</span> failed <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
@@ -1492,7 +1510,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
   </div>
   
   <div class="flex-even markdown-inner">
-    <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doAcquireShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doAcquireShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> arg<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">final</span> Node node <span style="color:#f92672">=</span> addWaiter<span style="color:#f92672">(</span>Node<span style="color:#f92672">.</span><span style="color:#a6e22e">SHARED</span><span style="color:#f92672">);</span>
     <span style="color:#66d9ef">boolean</span> failed <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
     <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
@@ -1528,7 +1546,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <h2 id="semaphore">Semaphore</h2>
 <p>使用 AQS 同步状态来保存信号量的当前计数。<code>tryRelease</code> 会增加计数，<code>acquireShared</code> 会减少计数。</p>
 <h3 id="构造器">构造器</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">Semaphore</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> permits<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">Semaphore</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> permits<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     sync <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> NonfairSync<span style="color:#f92672">(</span>permits<span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
 
@@ -1537,7 +1555,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="用法示例">用法示例</h3>
 <p>使用信号量控制对于 item 池的访问：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Pool</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Pool</span> <span style="color:#f92672">{</span>
    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> MAX_AVAILABLE <span style="color:#f92672">=</span> 100<span style="color:#f92672">;</span>
    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> Semaphore available <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Semaphore<span style="color:#f92672">(</span>MAX_AVAILABLE<span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
     
@@ -1580,7 +1598,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
    <span style="color:#f92672">}</span>
  <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="公平信号量">公平信号量</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FairSync</span> <span style="color:#66d9ef">extends</span> Sync <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FairSync</span> <span style="color:#66d9ef">extends</span> Sync <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">tryAcquireShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> acquires<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">for</span> <span style="color:#f92672">(;;)</span> <span style="color:#f92672">{</span>
@@ -1597,7 +1615,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <span style="color:#f92672">}</span>
 </code></pre></div><p>公平锁的实现，重点在于如果 <code>hasQueuedPredecessors()</code> 那么直接返回 <code>-1</code>，即获取失败。即如果队列中有正在等待的线程，则直接将当前线程加入到等待队列中 <code>park</code>。</p>
 <h3 id="非公平信号量">非公平信号量</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">nonfairTryAcquireShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> acquires<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">nonfairTryAcquireShared</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> acquires<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">for</span> <span style="color:#f92672">(;;)</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">int</span> available <span style="color:#f92672">=</span> getState<span style="color:#f92672">();</span>
         <span style="color:#66d9ef">int</span> remaining <span style="color:#f92672">=</span> available <span style="color:#f92672">-</span> acquires<span style="color:#f92672">;</span>
@@ -1611,12 +1629,12 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <p><strong>锁是服务于共享资源</strong>的；而 <code>semaphore</code> 是服务于<strong>多个线程间的执行的逻辑顺序</strong>的。</p>
 <h2 id="countdownlatch">CountDownLatch</h2>
 <h3 id="构造器-1">构造器</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">CountDownLatch</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> count<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">CountDownLatch</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> count<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">sync</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Sync<span style="color:#f92672">(</span>count<span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="用法示例一">用法示例一</h3>
 <p>发出<strong>开始信号</strong>之后，所有的 Worker 才能开始干活：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Driver</span> <span style="color:#f92672">{</span> <span style="color:#75715e">// ...
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Driver</span> <span style="color:#f92672">{</span> <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>   <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> InterruptedException <span style="color:#f92672">{</span>
      CountDownLatch startSignal <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> CountDownLatch<span style="color:#f92672">(</span>1<span style="color:#f92672">);</span>
      CountDownLatch doneSignal <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> CountDownLatch<span style="color:#f92672">(</span>N<span style="color:#f92672">);</span>
@@ -1650,7 +1668,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
  <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="用法示例二">用法示例二</h3>
 <p>将问题分解为 N 部分，然后主线程等待每一部分都完成，再汇总工作。如果线程需要经常 count down 的话，那么可以使用 <code>CyclicBarrier</code>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Driver2</span> <span style="color:#f92672">{</span> <span style="color:#75715e">// ...
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Driver2</span> <span style="color:#f92672">{</span> <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>   <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> InterruptedException <span style="color:#f92672">{</span>
      CountDownLatch doneSignal <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> CountDownLatch<span style="color:#f92672">(</span>N<span style="color:#f92672">);</span>
      Executor e <span style="color:#f92672">=</span> <span style="color:#f92672">...</span>
@@ -1680,7 +1698,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
  <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="同步器的实现">同步器的实现</h3>
 <p>只有非公平版本：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Sync</span> <span style="color:#66d9ef">extends</span> AbstractQueuedSynchronizer <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Sync</span> <span style="color:#66d9ef">extends</span> AbstractQueuedSynchronizer <span style="color:#f92672">{</span>
 
     Sync<span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> count<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         setState<span style="color:#f92672">(</span>count<span style="color:#f92672">);</span>
@@ -1708,7 +1726,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="cyclicbarrier">CyclicBarrier</h2>
 <h3 id="构造器-2">构造器</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">CyclicBarrier</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> parties<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">CyclicBarrier</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> parties<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">this</span><span style="color:#f92672">(</span>parties<span style="color:#f92672">,</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
 
@@ -1718,7 +1736,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
     <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">barrierCommand</span> <span style="color:#f92672">=</span> barrierAction<span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="用法示例-1">用法示例</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Solver</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Solver</span> <span style="color:#f92672">{</span>
    <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> N<span style="color:#f92672">;</span>
    <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">float</span><span style="color:#f92672">[][]</span> data<span style="color:#f92672">;</span>
    <span style="color:#66d9ef">final</span> CyclicBarrier barrier<span style="color:#f92672">;</span>
@@ -1766,7 +1784,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <p>条件变量，就是用来替代 <code>wait</code>、<code>notify</code>、<code>notifyAll</code> 等操作的。锁保证了操作的原子性。</p>
 <p><img src="/images/docs/tutorial/java/juc/lock-condition.png" alt=""></p>
 <h3 id="生产者消费者">生产者消费者</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BoundedBuffer</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BoundedBuffer</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">final</span> Lock lock <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ReentrantLock<span style="color:#f92672">();</span>
     <span style="color:#66d9ef">final</span> Condition notFull  <span style="color:#f92672">=</span> lock<span style="color:#f92672">.</span><span style="color:#a6e22e">newCondition</span><span style="color:#f92672">();</span> 
     <span style="color:#66d9ef">final</span> Condition notEmpty <span style="color:#f92672">=</span> lock<span style="color:#f92672">.</span><span style="color:#a6e22e">newCondition</span><span style="color:#f92672">();</span> 
@@ -1805,7 +1823,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="reentrantlock">ReentrantLock</h2>
 <h3 id="获取锁">获取锁</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">nonfairTryAcquire</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> acquires<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">nonfairTryAcquire</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> acquires<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">final</span> Thread current <span style="color:#f92672">=</span> Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">();</span>
     <span style="color:#66d9ef">int</span> c <span style="color:#f92672">=</span> getState<span style="color:#f92672">();</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>c <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -1824,7 +1842,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
     <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="释放锁">释放锁</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">tryRelease</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> releases<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">tryRelease</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> releases<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">int</span> c <span style="color:#f92672">=</span> getState<span style="color:#f92672">()</span> <span style="color:#f92672">-</span> releases<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">()</span> <span style="color:#f92672">!=</span> getExclusiveOwnerThread<span style="color:#f92672">())</span>
         <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> IllegalMonitorStateException<span style="color:#f92672">();</span>
@@ -1838,7 +1856,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="可重入性">可重入性</h3>
 <p>首先在 AQS 中有一个放置当前<strong>独占线程</strong>的变量：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> Thread exclusiveOwnerThread<span style="color:#f92672">;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">transient</span> Thread exclusiveOwnerThread<span style="color:#f92672">;</span>
 
 <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setExclusiveOwnerThread</span><span style="color:#f92672">(</span>Thread thread<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     exclusiveOwnerThread <span style="color:#f92672">=</span> thread<span style="color:#f92672">;</span>
@@ -1848,7 +1866,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
     <span style="color:#66d9ef">return</span> exclusiveOwnerThread<span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>这样的话，那么可以直接根据 <code>Thread.currentThread() == getExclusiveOwnerThread()</code> 来判断是否可以重入：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">nonfairTryAcquire</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> acquires<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">nonfairTryAcquire</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> acquires<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">final</span> Thread current <span style="color:#f92672">=</span> Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">();</span>
     <span style="color:#66d9ef">int</span> c <span style="color:#f92672">=</span> getState<span style="color:#f92672">();</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>c <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -1872,7 +1890,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <h2 id="reentrantreadwritelock">ReentrantReadWriteLock</h2>
 <h3 id="构造器-3">构造器</h3>
 <p>内部持有<strong>两把锁</strong>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">ReentrantReadWriteLock</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">ReentrantReadWriteLock</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">this</span><span style="color:#f92672">(</span><span style="color:#66d9ef">false</span><span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
 
@@ -1883,7 +1901,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="atomicinteger">AtomicInteger</h2>
 <h3 id="递增实现">递增实现</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> Unsafe unsafe <span style="color:#f92672">=</span> Unsafe<span style="color:#f92672">.</span><span style="color:#a6e22e">getUnsafe</span><span style="color:#f92672">();</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> Unsafe unsafe <span style="color:#f92672">=</span> Unsafe<span style="color:#f92672">.</span><span style="color:#a6e22e">getUnsafe</span><span style="color:#f92672">();</span>
 <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> valueOffset<span style="color:#f92672">;</span>
 
 <span style="color:#66d9ef">static</span> <span style="color:#f92672">{</span>
@@ -1897,7 +1915,7 @@ volatile：为了性能优化，编译器和处理器会进行指令重排序；
     <span style="color:#66d9ef">return</span> unsafe<span style="color:#f92672">.</span><span style="color:#a6e22e">getAndAddInt</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">,</span> valueOffset<span style="color:#f92672">,</span> 1<span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>在 <code>unsafe</code> 的 <code>getAndAddInt</code> 内部：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">getAndAddInt</span><span style="color:#f92672">(</span>Object var1<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> var2<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> var4<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">getAndAddInt</span><span style="color:#f92672">(</span>Object var1<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> var2<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> var4<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">int</span> var5<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">do</span> <span style="color:#f92672">{</span>
         var5 <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getIntVolatile</span><span style="color:#f92672">(</span>var1<span style="color:#f92672">,</span> var2<span style="color:#f92672">);</span>

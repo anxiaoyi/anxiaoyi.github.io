@@ -12,18 +12,16 @@ private static final String ACL_ACCESS_KEY = &#34;RocketMQ&#34;; private static 
 DefaultMQProducer producer = new DefaultMQProducer(&#34;ProducerGroupName&#34;, getAclRPCHook()); 接受消息的时候也需要指定具有同样 ACCESS_KEY 和 SECRET_KEY 的 RPCHook：
 DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(&#34;please_rename_unique_group_name_6&#34;, getAclRPCHook()); Producer 指定 RPCHook 从示例代码中，我们可以看出可以为 Producer 指定一个 RPCHook，随后此 RPCHook 会被注册进来：" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-acl/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-acl/" />
 
 <title>RocketMQ ACL 权限控制 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.d855943406294b3828037a1ac91f970000e2df3fe538f710d7050da0ed846095.js" integrity="sha256-2FWUNAYpSzgoA3oayR&#43;XAADi3z/lOPcQ1wUNoO2EYJU="></script>
+<script defer src="/en.search.min.445d3520f28f09015151f551c6990497f854d2fe515b552ed0a17bb5c6f8b1fd.js" integrity="sha256-RF01IPKPCQFRUfVRxpkEl/hU0v5RW1Uu0KF7tcb4sf0="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -457,7 +455,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -528,25 +526,25 @@ data-full-width-responsive="true"></ins>
 <p>RocketMQ 从 4.4.0 版本引入了 ACL 权限控制功能。<strong>可以给话题指定权限，只有拥有权限的消费者才可以进行消费</strong>。其余 ACL 特性请查看<a href="https://github.com/apache/rocketmq/blob/develop/docs/cn/acl/user_guide.md">权限控制</a>。</p>
 <h2 id="如何使用">如何使用</h2>
 <p>首先定义一个 <code>RPCHook</code>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> String ACL_ACCESS_KEY <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;RocketMQ&#34;</span><span style="color:#f92672">;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> String ACL_ACCESS_KEY <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;RocketMQ&#34;</span><span style="color:#f92672">;</span>
 <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> String ACL_SECRET_KEY <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;1234567&#34;</span><span style="color:#f92672">;</span>
 
 <span style="color:#66d9ef">static</span> RPCHook <span style="color:#a6e22e">getAclRPCHook</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> AclClientRPCHook<span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> SessionCredentials<span style="color:#f92672">(</span>ACL_ACCESS_KEY<span style="color:#f92672">,</span>ACL_SECRET_KEY<span style="color:#f92672">));</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>然后发送消息的时候指定 <code>RPCHook</code>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">DefaultMQProducer producer <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> DefaultMQProducer<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;ProducerGroupName&#34;</span><span style="color:#f92672">,</span> getAclRPCHook<span style="color:#f92672">());</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">DefaultMQProducer producer <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> DefaultMQProducer<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;ProducerGroupName&#34;</span><span style="color:#f92672">,</span> getAclRPCHook<span style="color:#f92672">());</span>
 </code></pre></div><p>接受消息的时候也需要指定具有同样 <code>ACCESS_KEY</code> 和 <code>SECRET_KEY</code> 的 <code>RPCHook</code>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">DefaultMQPullConsumer consumer <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> DefaultMQPullConsumer<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;please_rename_unique_group_name_6&#34;</span><span style="color:#f92672">,</span> getAclRPCHook<span style="color:#f92672">());</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">DefaultMQPullConsumer consumer <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> DefaultMQPullConsumer<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;please_rename_unique_group_name_6&#34;</span><span style="color:#f92672">,</span> getAclRPCHook<span style="color:#f92672">());</span>
 </code></pre></div><h2 id="producer-指定-rpchook">Producer 指定 RPCHook</h2>
 <p>从示例代码中，我们可以看出可以为 Producer 指定一个 RPCHook，随后此 <code>RPCHook</code> 会被注册进来：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// org.apache.rocketmq.client.impl.MQClientAPIImpl.class
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// org.apache.rocketmq.client.impl.MQClientAPIImpl.class
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">remotingClient</span><span style="color:#f92672">.</span><span style="color:#a6e22e">registerRPCHook</span><span style="color:#f92672">(</span>rpcHook<span style="color:#f92672">);</span>
 </code></pre></div><p>注册的实质就是将其放入了 <code>rpcHooks</code> 列表中：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// org.apache.rocketmq.remoting.netty.NettyRemotingAbstract.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// org.apache.rocketmq.remoting.netty.NettyRemotingAbstract.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">protected</span> List<span style="color:#f92672">&lt;</span>RPCHook<span style="color:#f92672">&gt;</span> rpcHooks <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ArrayList<span style="color:#f92672">&lt;</span>RPCHook<span style="color:#f92672">&gt;();</span>
 </code></pre></div><p>在 Producer 端调用底层 API 发送命令的前后，调用 <code>RPCHook</code> 上面的 <code>doBeforeRequest</code> 和 <code>doAfterRequest</code> 方法，便于在发送命令的前后<strong>拦截</strong>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
 <span style="color:#66d9ef">public</span> RemotingCommand <span style="color:#a6e22e">invokeSync</span><span style="color:#f92672">(</span>String addr<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> RemotingCommand request<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> timeoutMillis<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     doBeforeRpcHooks<span style="color:#f92672">(</span>addr<span style="color:#f92672">,</span> request<span style="color:#f92672">);</span>
     <span style="color:#75715e">// ...
@@ -570,7 +568,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="aclclientrpchook">AclClientRPCHook</h2>
 <p>下面来看 <code>AclClientRPCHook</code> 在发送命令的前后做了什么事情：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
 <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doBeforeRequest</span><span style="color:#f92672">(</span>String remoteAddr<span style="color:#f92672">,</span> RemotingCommand request<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]</span> total <span style="color:#f92672">=</span> AclUtils<span style="color:#f92672">.</span><span style="color:#a6e22e">combineRequestContent</span><span style="color:#f92672">(</span>request<span style="color:#f92672">,</span>
         parseRequestContent<span style="color:#f92672">(</span>request<span style="color:#f92672">,</span> sessionCredentials<span style="color:#f92672">.</span><span style="color:#a6e22e">getAccessKey</span><span style="color:#f92672">(),</span> sessionCredentials<span style="color:#f92672">.</span><span style="color:#a6e22e">getSecurityToken</span><span style="color:#f92672">()));</span>
@@ -590,18 +588,18 @@ data-full-width-responsive="true"></ins>
 </span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
 </code></pre></div><h3 id="生成签名">生成签名</h3>
 <p><code>parseRequestContent</code> 方法内部将 <code>request</code> 的<strong>自定义头部</strong>上面的所有字段的 <code>name</code> 和 <code>value</code> 放入到了一个 <code>SortedMap</code> 中，同时将 <code>ACCESS_KEY</code> 和 <code>SECURITY_TOKEN</code> (如果有)也放入了进去：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">map<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>ACCESS_KEY<span style="color:#f92672">,</span> ak<span style="color:#f92672">);</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">map<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>ACCESS_KEY<span style="color:#f92672">,</span> ak<span style="color:#f92672">);</span>
 <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>securityToken <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     map<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>SECURITY_TOKEN<span style="color:#f92672">,</span> securityToken<span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>当然获取类上面的所有字段是通过反射实现的，为了提高性能，也是使用了 <code>Map</code> 进行了缓存。缓存的只是 <code>Field</code> 字段，而非 <code>value</code>。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>Class<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">extends</span> CommandCustomHeader<span style="color:#f92672">&gt;,</span> Field<span style="color:#f92672">[]&gt;</span> fieldCache <span style="color:#f92672">=</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>Class<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">extends</span> CommandCustomHeader<span style="color:#f92672">&gt;,</span> Field<span style="color:#f92672">[]&gt;</span> fieldCache <span style="color:#f92672">=</span>
         <span style="color:#66d9ef">new</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>Class<span style="color:#f92672">&lt;?</span> <span style="color:#66d9ef">extends</span> CommandCustomHeader<span style="color:#f92672">&gt;,</span> Field<span style="color:#f92672">[]&gt;();</span>
 </code></pre></div><p>之所以获取到所有字段的值，是为了计算签名。计算签名的方法如下：</p>
 <ul>
 <li>首先将上述所有字段的值拼接城字符串，然后获取字节数组，再与请求本身的 <code>body</code> 的字节数组拼接在一起，获取到最终的 <code>byte[]</code> 数组。</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// AclUtils.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// AclUtils.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]</span> <span style="color:#a6e22e">combineRequestContent</span><span style="color:#f92672">(</span>RemotingCommand request<span style="color:#f92672">,</span> SortedMap<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> String<span style="color:#f92672">&gt;</span> fieldsMap<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     StringBuilder sb <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StringBuilder<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">);</span>
     <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>Map<span style="color:#f92672">.</span><span style="color:#a6e22e">Entry</span><span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> String<span style="color:#f92672">&gt;</span> entry <span style="color:#f92672">:</span> fieldsMap<span style="color:#f92672">.</span><span style="color:#a6e22e">entrySet</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
@@ -615,11 +613,11 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><ul>
 <li>然后通过 <code>calSignature</code> 方法计算签名，在内部默认采用 <code>SigningAlgorithm.HmacSHA1</code> 算法获取到签名后的 <code>byte[]</code> 数组，再通过 <code>Base64.encodeBase64</code> 将其转为字符串，返回最终的签名。</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// AclClientRPCHook.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// AclClientRPCHook.java
 </span><span style="color:#75715e"></span>String signature <span style="color:#f92672">=</span> AclUtils<span style="color:#f92672">.</span><span style="color:#a6e22e">calSignature</span><span style="color:#f92672">(</span>total<span style="color:#f92672">,</span> sessionCredentials<span style="color:#f92672">.</span><span style="color:#a6e22e">getSecretKey</span><span style="color:#f92672">());</span>
 </code></pre></div><h3 id="添加扩展字段">添加扩展字段</h3>
 <p>生成签名以后，将签名、<code>ACCESS_KEY</code>、<code>SECURITY_TOKEN</code> (如果有) 添加到<strong>请求</strong>的扩展字段中。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtField</span><span style="color:#f92672">(</span>SIGNATURE<span style="color:#f92672">,</span> signature<span style="color:#f92672">);</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtField</span><span style="color:#f92672">(</span>SIGNATURE<span style="color:#f92672">,</span> signature<span style="color:#f92672">);</span>
 request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtField</span><span style="color:#f92672">(</span>ACCESS_KEY<span style="color:#f92672">,</span> sessionCredentials<span style="color:#f92672">.</span><span style="color:#a6e22e">getAccessKey</span><span style="color:#f92672">());</span>
 
 <span style="color:#75715e">// The SecurityToken value is unneccessary,user can choose this one.
@@ -629,12 +627,12 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
 </code></pre></div><h2 id="broker-权限验证">Broker 权限验证</h2>
 <h3 id="初始化-accessvalidator">初始化 AccessValidator</h3>
 <p>Broker 在初始化 ACL 的时候会判断用户是否启用了 ACL：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// BrokerController.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// BrokerController.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">brokerConfig</span><span style="color:#f92672">.</span><span style="color:#a6e22e">isAclEnable</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>如果用户开启了 ACL，那么会从 <code>META-INF</code> 路径下去加载所有实现了 <code>AccessValidator</code> 接口的实现类：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ServiceProvider.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ServiceProvider.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> String ACL_VALIDATOR_ID <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;META-INF/service/org.apache.rocketmq.acl.AccessValidator&#34;</span><span style="color:#f92672">;</span>
 
 <span style="color:#75715e">// BrokerController.java
@@ -643,7 +641,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
     <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>如果有 <code>AccessValidator</code> 的实现，那么会注册到 Server 端的 <code>rpcHooks</code> 列表中：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>AccessValidator accessValidator<span style="color:#f92672">:</span> accessValidators<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>AccessValidator accessValidator<span style="color:#f92672">:</span> accessValidators<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">final</span> AccessValidator validator <span style="color:#f92672">=</span> accessValidator<span style="color:#f92672">;</span>
     accessValidatorMap<span style="color:#f92672">.</span><span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>validator<span style="color:#f92672">.</span><span style="color:#a6e22e">getClass</span><span style="color:#f92672">(),</span>validator<span style="color:#f92672">);</span>
     <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">registerServerRPCHook</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> RPCHook<span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
@@ -664,7 +662,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
 </code></pre><p>接下来就介绍 <code>PlainAccessValidator</code> 内部是如何进行权限校验的。</p>
 <h3 id="生成-accessresource">生成 AccessResource</h3>
 <p>Broker 端收到<strong>请求</strong>后，会将请求解析为 <code>AccessResource</code>。解析的过程就是将 <code>RemotingCommand</code> 中附带的 IP 地址、<code>ACCESS_KEY</code>、签名、<code>SECRET_TOKEN</code> 等添加到 <code>PlainAccessResource</code> 中。并根据不同的命令，给资源添加上<strong>不同的访问权限</strong>。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@Override</span>
 <span style="color:#66d9ef">public</span> AccessResource <span style="color:#a6e22e">parse</span><span style="color:#f92672">(</span>RemotingCommand request<span style="color:#f92672">,</span> String remoteAddr<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     PlainAccessResource accessResource <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> PlainAccessResource<span style="color:#f92672">();</span>
 
@@ -690,7 +688,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
 </span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>其中 RocketMQ 的 Topic 资源访问权限控制定义主要如下所示，分为以下四种：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Permission</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Permission</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">byte</span> DENY <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">byte</span> ANY <span style="color:#f92672">=</span> 1 <span style="color:#f92672">&lt;&lt;</span> 1<span style="color:#f92672">;</span>
@@ -710,7 +708,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
 <ul>
 <li>（1）检查是否命中全局 IP 白名单；如果是，则认为校验通过；否则走 2；</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PlainPermissionManager.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PlainPermissionManager.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>RemoteAddressStrategy remoteAddressStrategy <span style="color:#f92672">:</span> globalWhiteRemoteAddressStrategy<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>remoteAddressStrategy<span style="color:#f92672">.</span><span style="color:#a6e22e">match</span><span style="color:#f92672">(</span>plainAccessResource<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
@@ -719,7 +717,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
 </code></pre></div><ul>
 <li>（2）检查是否命中<strong>用户 IP 白名单</strong>；如果是，则认为校验通过；否则走 3；</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PlainPermissionManager.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PlainPermissionManager.java
 </span><span style="color:#75715e"></span>PlainAccessResource ownedAccess <span style="color:#f92672">=</span> plainAccessResourceMap<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>plainAccessResource<span style="color:#f92672">.</span><span style="color:#a6e22e">getAccessKey</span><span style="color:#f92672">());</span>
 <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ownedAccess<span style="color:#f92672">.</span><span style="color:#a6e22e">getRemoteAddressStrategy</span><span style="color:#f92672">().</span><span style="color:#a6e22e">match</span><span style="color:#f92672">(</span>plainAccessResource<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
@@ -727,7 +725,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
 </code></pre></div><ul>
 <li>（3）校验<strong>签名</strong>，校验不通过，抛出异常；校验通过，则走 4；</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PlainPermissionManager.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PlainPermissionManager.java
 </span><span style="color:#75715e"></span>String signature <span style="color:#f92672">=</span> AclUtils<span style="color:#f92672">.</span><span style="color:#a6e22e">calSignature</span><span style="color:#f92672">(</span>plainAccessResource<span style="color:#f92672">.</span><span style="color:#a6e22e">getContent</span><span style="color:#f92672">(),</span> ownedAccess<span style="color:#f92672">.</span><span style="color:#a6e22e">getSecretKey</span><span style="color:#f92672">());</span>
 <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>signature<span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span>plainAccessResource<span style="color:#f92672">.</span><span style="color:#a6e22e">getSignature</span><span style="color:#f92672">()))</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> AclException<span style="color:#f92672">(</span>String<span style="color:#f92672">.</span><span style="color:#a6e22e">format</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Check signature failed for accessKey=%s&#34;</span><span style="color:#f92672">,</span> plainAccessResource<span style="color:#f92672">.</span><span style="color:#a6e22e">getAccessKey</span><span style="color:#f92672">()));</span>
@@ -735,7 +733,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
 </code></pre></div><ul>
 <li>（4）对用户请求所需的权限 和 用户所拥有的权限进行校验；不通过，抛出异常；</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 如果是 Admin 那么直接通过
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 如果是 Admin 那么直接通过
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ownedPermMap <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> ownedAccess<span style="color:#f92672">.</span><span style="color:#a6e22e">isAdmin</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
     <span style="color:#75715e">// If the ownedPermMap is null and it is an admin user, then return
 </span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span>
@@ -755,7 +753,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
 <ul>
 <li>（1）特殊的请求例如 <code>UPDATE_AND_CREATE_TOPIC</code> 等，只能由 admin 账户进行操作；</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PlainPermissionManager.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PlainPermissionManager.java
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>Permission<span style="color:#f92672">.</span><span style="color:#a6e22e">needAdminPerm</span><span style="color:#f92672">(</span>needCheckedAccess<span style="color:#f92672">.</span><span style="color:#a6e22e">getRequestCode</span><span style="color:#f92672">())</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">!</span>ownedAccess<span style="color:#f92672">.</span><span style="color:#a6e22e">isAdmin</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> AclException<span style="color:#f92672">(</span>String<span style="color:#f92672">.</span><span style="color:#a6e22e">format</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Need admin permission for request code=%d, but accessKey=%s is not&#34;</span><span style="color:#f92672">,</span> needCheckedAccess<span style="color:#f92672">.</span><span style="color:#a6e22e">getRequestCode</span><span style="color:#f92672">(),</span> ownedAccess<span style="color:#f92672">.</span><span style="color:#a6e22e">getAccessKey</span><span style="color:#f92672">()));</span>
 <span style="color:#f92672">}</span>
@@ -764,7 +762,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
 </ul>
 <h3 id="acl-权限管理器">ACL 权限管理器</h3>
 <p>上述校验规则的 <code>validate</code> 方法是放在权限管理器 <code>PlainPermissionManager</code> 上面的，在新建该类<strong>实例</strong>的时候，其内部会首先加载 YML 格式的权限配置文件，然后在监听这个文件的变化，做到运行时动态的更新权限。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> String DEFAULT_PLAIN_ACL_FILE <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/conf/plain_acl.yml&#34;</span><span style="color:#f92672">;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> String DEFAULT_PLAIN_ACL_FILE <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/conf/plain_acl.yml&#34;</span><span style="color:#f92672">;</span>
 <span style="color:#66d9ef">private</span> String fileName <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">getProperty</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;rocketmq.acl.plain.file&#34;</span><span style="color:#f92672">,</span> DEFAULT_PLAIN_ACL_FILE<span style="color:#f92672">);</span>
 
 <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">load</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
@@ -772,7 +770,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
     <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
 </code></pre></div><p>RocketMQ 在 <code>distribution/conf</code> 目录下，给出了一个默认的权限配置文件 <code>plain_acl.yml</code>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">globalWhiteRemoteAddresses</span>:
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#f92672">globalWhiteRemoteAddresses</span>:
 - <span style="color:#ae81ff">10.10.103</span><span style="color:#ae81ff">.*</span>
 - <span style="color:#ae81ff">192.168.0</span><span style="color:#ae81ff">.*</span>
 
@@ -799,7 +797,7 @@ request<span style="color:#f92672">.</span><span style="color:#a6e22e">addExtFie
   <span style="color:#75715e"># if it is admin, it could access all resources</span>
   <span style="color:#f92672">admin</span>: <span style="color:#66d9ef">true</span>
 </code></pre></div><p>对于此文件的<strong>监听</strong>，是通过 <code>FileWatchService</code> 进行的：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">FileWatchService fileWatchService <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> FileWatchService<span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> String<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span>watchFilePath<span style="color:#f92672">},</span> <span style="color:#66d9ef">new</span> FileWatchService<span style="color:#f92672">.</span><span style="color:#a6e22e">Listener</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">FileWatchService fileWatchService <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> FileWatchService<span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> String<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span>watchFilePath<span style="color:#f92672">},</span> <span style="color:#66d9ef">new</span> FileWatchService<span style="color:#f92672">.</span><span style="color:#a6e22e">Listener</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">onChanged</span><span style="color:#f92672">(</span>String path<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         log<span style="color:#f92672">.</span><span style="color:#a6e22e">info</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;The plain acl yml changed, reload the context&#34;</span><span style="color:#f92672">);</span>
