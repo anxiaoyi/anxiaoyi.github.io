@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="异步化"><meta property="og:title" content="异步化" />
+<meta property="og:description" content="异步化 携程异步化改造 当前结构 Tirp.com 消息推送平台也是基于同步&#43;阻塞 IO 的 servlet 模型架构。当客户端发起网络请求的时候，请求首先会由 Tomcat 容器的 Acceptor 线程进行处理，将 Channel 放到待处理请求队列然后通过 Poller 线程进行 IO 多路复用的监听，当 Poller 监听到 Channel 的可读事件后，请求体将会从缓冲区被读入内存，然后交由 Tomcat 容器的 Worker 线程池进行消费。由于需要使用阻塞 IO 调用下游的第三方发送接口，所以 Worker 线程池需要启动大量的线程进行并发操作。
+Trip.com 消息推送平台使用 AWS 的 SES 服务进行邮件发送，在发送 Email 时将会调用 AWS 的同步 SDK:
+// 底层基于 Apache HttpClient 的 BIO 调用 SendEmailResult sendEmail(SendEmailRequest sendEmailRequest); 存在问题 而随着业务量上涨带来上游消息负载增加，原有的阻塞 IO 模型在高并发下，会有大量线程处于阻塞状态，导致应用需要囤积大量的线程以应对峰值压力。过多的线程将会造成大量的内存占用和频繁线程上下文切换的开销，所以原有的 servlet 线程模型具有 CPU 利用率低、内存占用大、对异常请求不具备弹性等缺点。该平台在压力峰值时需要部署大量机器，它主要具有以下性能上的问题：
+ 线程上下文切换开销  一次请求的 IO 时间平均在 1200ms，最高能达到 50000ms，而计算时间只有 1~2ms，根据最佳线程公式理论上 1C 需要 600~2500 个线程。囤积如此多的线程将会造成大量的上下文切换开销和上 GB 的内存占用。但若是使用少量的线程，将可能由于线程数量的限制，导致请求量过高时拿不到处理线程，最终请求超时，不具备低延迟等特性。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/async/" />
+
+<title>异步化 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+
+
+<script defer src="/en.search.min.3ca8b225182094327479e1b309cdc92719f0c2e3706bb9c15531561c1d4d9eda.js" integrity="sha256-PKiyJRgglDJ0eeGzCc3JJxnwwuNwa7nBVTFWHB1Nnto="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/it-govern/" >
+      服务治理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-measurement/" >
+      服务度量
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/service-control/" >
+      服务管控
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/apm/" >
+      APM 及调用链跟踪
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/deep-govern/" >
+      体系的深度治理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/transaction/" >
+      分布式事务解决方案汇总
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/raft/" >
+      Raft
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/multi-replica-consistency/" >
+      副本一致性算法
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/storage-high-availablity/" >
+      存储高可用方案
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/ddd/" >
+      DDD 领域驱动设计
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/business-high-availablity/" >
+      业务高可用方案
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/high-concurrency/" >
+      高并发设计方案
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/distributed-lock/" >
+      分布式锁 🔒
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/distributed-id/" >
+      分布式 ID 设计
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/design-weibo/" >
+      设计微博系统
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/troubleshoot/" >
+      排查问题
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/hystrix/" >
+      Hystrix
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/async/"  class="active">
+      异步化
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/architecture-cases/" >
+      架构案例参考
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/design-youtube/" >
+      设计 Youtube
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/design-tinyurl/" >
+      设计 tinyURL
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/softskill/" >
+      箴言箴句
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/technique/" >
+      技术
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>异步化</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#携程异步化改造">携程异步化改造</a>
+      <ul>
+        <li><a href="#当前结构">当前结构</a></li>
+        <li><a href="#存在问题">存在问题</a></li>
+        <li><a href="#reactive">Reactive</a></li>
+        <li><a href="#结果">结果</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="异步化">异步化</h1>
+<h2 id="携程异步化改造">携程异步化改造</h2>
+<h3 id="当前结构">当前结构</h3>
+<p>Tirp.com 消息推送平台也是基于同步+阻塞 IO 的 servlet 模型架构。当客户端发起网络请求的时候，请求首先会由 Tomcat 容器的 Acceptor 线程进行处理，将 Channel 放到待处理请求队列然后通过 Poller 线程进行 IO 多路复用的监听，当 Poller 监听到 Channel 的可读事件后，请求体将会从缓冲区被读入内存，然后交由 Tomcat 容器的 Worker 线程池进行消费。由于需要<strong>使用阻塞 IO 调用下游的第三方发送接口</strong>，所以 Worker 线程池需要启动大量的线程进行并发操作。</p>
+<p>Trip.com 消息推送平台使用 AWS 的 SES 服务进行邮件发送，在发送 Email 时将会调用 AWS 的同步 SDK:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 底层基于 Apache HttpClient 的 BIO 调用
+</span><span style="color:#75715e"></span>SendEmailResult <span style="color:#a6e22e">sendEmail</span><span style="color:#f92672">(</span>SendEmailRequest sendEmailRequest<span style="color:#f92672">);</span>
+</code></pre></div><h3 id="存在问题">存在问题</h3>
+<p>而随着业务量上涨带来上游消息负载增加，原有的阻塞 IO 模型在高并发下，会有大量线程处于阻塞状态，导致应用需要囤积大量的线程以应对峰值压力。过多的线程将会造成大量的内存占用和频繁线程上下文切换的开销，所以原有的 servlet 线程模型具有 CPU 利用率低、内存占用大、对异常请求不具备弹性等缺点。该平台在压力峰值时需要部署大量机器，它主要具有以下性能上的问题：</p>
+<ul>
+<li>线程上下文切换开销</li>
+</ul>
+<p>一次请求的 IO 时间平均在 1200ms，最高能达到 50000ms，而计算时间只有 1~2ms，根据<strong>最佳线程公式</strong>理论上 1C 需要 600~2500 个线程。囤积如此多的线程将会造成<strong>大量的上下文切换开销</strong>和上 GB 的内存占用。但若是使用少量的线程，将可能由于线程数量的限制，导致<strong>请求量过高时拿不到处理线程</strong>，最终请求超时，不具备低延迟等特性。</p>
+<ul>
+<li>部署成本高</li>
+</ul>
+<p>若是采用主流的 2C4G 容器配置，理论上将需要 1000+ 的线程用于处理请求，这将占用大概 1GB 的内存空间。同时若并发请求数&gt;线程数时，需要采用水平扩容增加服务的吞吐量，所以服务需要按照峰值并发进行预估部署，造成空闲时间大量资源的浪费。</p>
+<ul>
+<li>超时风险</li>
+</ul>
+<p>一次 IO 最高能达到 50s，当有异常请求导致响应时间突增时，因为会阻塞线程，导致<strong>线程池中的线程大部分都被阻塞</strong>，从而无法响应新的请求。在这种情况下，少量的异常请求将会导致上游大量的超时报错，因此服务不具有弹性。</p>
+<h3 id="reactive">Reactive</h3>
+<p>Reactive 构建的程序代表的是<strong>异步非阻塞、函数式编程、事件驱动</strong>的思想。</p>
+<p>反应式系统的瓶颈不在于线程模型，在不同的工作负载下，使用 EventLoop 线程模型将<strong>始终提供 CPU 资源允许的计算能力</strong>，当达到计算能力瓶颈时可以横向拓展 CPU 计算资源。反应式系统通过 EventLoop+NIO 模型，<strong>避免线程的上下文开销</strong>，同时也<strong>避免线程池资源的大小成为系统的瓶颈</strong>。</p>
+<h3 id="结果">结果</h3>
+<p>通过与原应用的压力测试结果对比，我们发现使用 EventLoop+NIO 的新应用，在相同硬件资源下，<strong>QPS 能够提升 2~3 倍</strong>，<strong>RT 缩短近 50%</strong>，同时在内存占用上也得到了一定的优化。</p>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#携程异步化改造">携程异步化改造</a>
+      <ul>
+        <li><a href="#当前结构">当前结构</a></li>
+        <li><a href="#存在问题">存在问题</a></li>
+        <li><a href="#reactive">Reactive</a></li>
+        <li><a href="#结果">结果</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

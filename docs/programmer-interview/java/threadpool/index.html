@@ -21,7 +21,7 @@ if (workerCountOf(c) &lt; corePoolSize) { if (addWorker(command, true)) return; 
 <link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.445d3520f28f09015151f551c6990497f854d2fe515b552ed0a17bb5c6f8b1fd.js" integrity="sha256-RF01IPKPCQFRUfVRxpkEl/hU0v5RW1Uu0KF7tcb4sf0="></script>
+<script defer src="/en.search.min.3ca8b225182094327479e1b309cdc92719f0c2e3706bb9c15531561c1d4d9eda.js" integrity="sha256-PKiyJRgglDJ0eeGzCc3JJxnwwuNwa7nBVTFWHB1Nnto="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -666,6 +666,7 @@ var _hmt = _hmt || [];
         <li><a href="#用法">用法</a></li>
         <li><a href="#构造器参数">构造器参数</a></li>
         <li><a href="#execute-方法运行原理"><code>execute()</code> 方法运行原理</a></li>
+        <li><a href="#维护状态">维护状态</a></li>
         <li><a href="#抛出异常">抛出异常</a></li>
       </ul>
     </li>
@@ -688,6 +689,12 @@ var _hmt = _hmt || [];
         <li><a href="#executors-创建线程弊端">Executors 创建线程弊端</a></li>
         <li><a href="#linkedblockingqueue">LinkedBlockingQueue</a></li>
         <li><a href="#synchronousqueue">SynchronousQueue</a></li>
+      </ul>
+    </li>
+    <li><a href="#美团线程池">美团线程池</a>
+      <ul>
+        <li><a href="#线上问题">线上问题</a></li>
+        <li><a href="#动态配置">动态配置</a></li>
       </ul>
     </li>
   </ul>
@@ -780,10 +787,30 @@ data-full-width-responsive="true"></ins>
 <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>wc <span style="color:#f92672">&gt;=</span> CAPACITY <span style="color:#f92672">||</span>
     wc <span style="color:#f92672">&gt;=</span> <span style="color:#f92672">(</span>core <span style="color:#f92672">?</span> corePoolSize <span style="color:#f92672">:</span> maximumPoolSize<span style="color:#f92672">))</span>
     <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
-</code></pre></div><p>（4）如果创建新线程将使当前运行的线程超出 <code>maximumPoolSize</code>，任务将被拒绝，并调用 <code>RejectedExecutionHandler.rejectedExecution()</code> 方法。</p>
+</code></pre></div><p>（4）如果创建新线程将使当前运行的线程超出 <code>maximumPoolSize</code>，并且线程池内的<strong>阻塞队列已满</strong>，任务将被拒绝，并调用 <code>RejectedExecutionHandler.rejectedExecution()</code> 方法。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">reject</span><span style="color:#f92672">(</span>Runnable command<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     handler<span style="color:#f92672">.</span><span style="color:#a6e22e">rejectedExecution</span><span style="color:#f92672">(</span>command<span style="color:#f92672">,</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">);</span>
 <span style="color:#f92672">}</span>
+</code></pre></div><p>图：</p>
+<p><img src="/images/docs/programmer-interview/java/threadpool/2022-02-07_20-50.png" alt=""></p>
+<h3 id="维护状态">维护状态</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> AtomicInteger ctl <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicInteger<span style="color:#f92672">(</span>ctlOf<span style="color:#f92672">(</span>RUNNING<span style="color:#f92672">,</span> 0<span style="color:#f92672">));</span>
+</code></pre></div><p><code>ctl</code> 这个 <code>AtomicInteger</code> 类型，是对线程池的运行状态和线程池中有效线程的数量进行控制的一个字段，它同时包含两部分的信息：线程池的运行状态 (<code>runState</code>) 和线程池内有效线程的数量 (<code>workerCount</code>)，高 3 位保存 <code>runState</code>，低 29 位保存 <code>workerCount</code>，两个变量之间互不干扰。用一个变量去存储两个值，可避免在做相关决策时，出现不一致的情况，不必为了维护两者的一致，而占用锁资源。</p>
+<p>关于内部封装的获取生命周期状态、获取线程池线程数量的计算方法如以下代码所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> COUNT_BITS <span style="color:#f92672">=</span> Integer<span style="color:#f92672">.</span><span style="color:#a6e22e">SIZE</span> <span style="color:#f92672">-</span> 3<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> CAPACITY   <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>1 <span style="color:#f92672">&lt;&lt;</span> COUNT_BITS<span style="color:#f92672">)</span> <span style="color:#f92672">-</span> 1<span style="color:#f92672">;</span>
+
+<span style="color:#75715e">// Packing and unpacking ctl
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">runStateOf</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> c<span style="color:#f92672">)</span>     <span style="color:#f92672">{</span> <span style="color:#66d9ef">return</span> c <span style="color:#f92672">&amp;</span> <span style="color:#f92672">~</span>CAPACITY<span style="color:#f92672">;</span> <span style="color:#f92672">}</span>
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">workerCountOf</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> c<span style="color:#f92672">)</span>  <span style="color:#f92672">{</span> <span style="color:#66d9ef">return</span> c <span style="color:#f92672">&amp;</span> CAPACITY<span style="color:#f92672">;</span> <span style="color:#f92672">}</span>
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">ctlOf</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> rs<span style="color:#f92672">,</span> <span style="color:#66d9ef">int</span> wc<span style="color:#f92672">)</span> <span style="color:#f92672">{</span> <span style="color:#66d9ef">return</span> rs <span style="color:#f92672">|</span> wc<span style="color:#f92672">;</span> <span style="color:#f92672">}</span>
+</code></pre></div><p><code>ThreadPoolExecutor</code> 的运行状态有 5 种，分别为：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// runState is stored in the high-order bits
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> RUNNING    <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>1 <span style="color:#f92672">&lt;&lt;</span> COUNT_BITS<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> SHUTDOWN   <span style="color:#f92672">=</span>  0 <span style="color:#f92672">&lt;&lt;</span> COUNT_BITS<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> STOP       <span style="color:#f92672">=</span>  1 <span style="color:#f92672">&lt;&lt;</span> COUNT_BITS<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> TIDYING    <span style="color:#f92672">=</span>  2 <span style="color:#f92672">&lt;&lt;</span> COUNT_BITS<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> TERMINATED <span style="color:#f92672">=</span>  3 <span style="color:#f92672">&lt;&lt;</span> COUNT_BITS<span style="color:#f92672">;</span>
 </code></pre></div><h3 id="抛出异常">抛出异常</h3>
 <blockquote>
 <p>Java 线程池执行的任务抛出异常但是看不到日志是因为什么？</p>
@@ -933,6 +960,18 @@ data-full-width-responsive="true"></ins>
                                     <span style="color:#66d9ef">new</span> SynchronousQueue<span style="color:#f92672">&lt;</span>Runnable<span style="color:#f92672">&gt;());</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>核心线程设置为<code>0</code>，最大线程池设置<code>Integer.MAX_VALUE</code>，存活时间<code>60s</code>，阻塞队列使用<code>SynchronousQueue</code>，默认非公平模式，可缓冲线程池通过<strong>复用空闲线程</strong>提高效率。这里最大线程数设置为<code>Integer.MAX_VALUE</code>，可能会创建非常多的线程，甚至导致<code>OOM</code>。</p>
+<h2 id="美团线程池">美团线程池</h2>
+<h3 id="线上问题">线上问题</h3>
+<ul>
+<li>服务展示接口内部逻辑使用线程池做并行计算，由于没有预估好调用的流量，导致<strong>最大核心数设置偏小</strong>，大量抛出 <code>RejectedExecutionException</code>，触发接口降级条件</li>
+<li>服务处理请求内部逻辑使用线程池做资源隔离，由于队列设置过长，最大线程数设置失效，导致请求数量增加时，<strong>大量任务堆积在队列中</strong>，任务执行时间过长，最终导致下游服务的大量调用超时失败。</li>
+</ul>
+<h3 id="动态配置">动态配置</h3>
+<p>将线程池的参数从代码中<strong>迁移到分布式配置中心</strong>上，实现线程池参数可动态配置和即时生效。</p>
+<ul>
+<li>增加线程监控：运行时状态实时查看</li>
+<li>负载告警</li>
+</ul>
 
 <ins class="adsbygoogle"
 style="display:block"
@@ -975,6 +1014,7 @@ data-full-width-responsive="true"></ins>
         <li><a href="#用法">用法</a></li>
         <li><a href="#构造器参数">构造器参数</a></li>
         <li><a href="#execute-方法运行原理"><code>execute()</code> 方法运行原理</a></li>
+        <li><a href="#维护状态">维护状态</a></li>
         <li><a href="#抛出异常">抛出异常</a></li>
       </ul>
     </li>
@@ -997,6 +1037,12 @@ data-full-width-responsive="true"></ins>
         <li><a href="#executors-创建线程弊端">Executors 创建线程弊端</a></li>
         <li><a href="#linkedblockingqueue">LinkedBlockingQueue</a></li>
         <li><a href="#synchronousqueue">SynchronousQueue</a></li>
+      </ul>
+    </li>
+    <li><a href="#美团线程池">美团线程池</a>
+      <ul>
+        <li><a href="#线上问题">线上问题</a></li>
+        <li><a href="#动态配置">动态配置</a></li>
       </ul>
     </li>
   </ul>

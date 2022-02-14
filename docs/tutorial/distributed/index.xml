@@ -259,6 +259,18 @@ jdump 命令需要很长时间，线上无法服务，应该先摘掉机器，�
     </item>
     
     <item>
+      <title>异步化</title>
+      <link>https://kunzhao.org/docs/tutorial/distributed/async/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/distributed/async/</guid>
+      <description>异步化 携程异步化改造 当前结构 Tirp.com 消息推送平台也是基于同步+阻塞 IO 的 servlet 模型架构。当客户端发起网络请求的时候，请求首先会由 Tomcat 容器的 Acceptor 线程进行处理，将 Channel 放到待处理请求队列然后通过 Poller 线程进行 IO 多路复用的监听，当 Poller 监听到 Channel 的可读事件后，请求体将会从缓冲区被读入内存，然后交由 Tomcat 容器的 Worker 线程池进行消费。由于需要使用阻塞 IO 调用下游的第三方发送接口，所以 Worker 线程池需要启动大量的线程进行并发操作。
+Trip.com 消息推送平台使用 AWS 的 SES 服务进行邮件发送，在发送 Email 时将会调用 AWS 的同步 SDK:
+// 底层基于 Apache HttpClient 的 BIO 调用 SendEmailResult sendEmail(SendEmailRequest sendEmailRequest); 存在问题 而随着业务量上涨带来上游消息负载增加，原有的阻塞 IO 模型在高并发下，会有大量线程处于阻塞状态，导致应用需要囤积大量的线程以应对峰值压力。过多的线程将会造成大量的内存占用和频繁线程上下文切换的开销，所以原有的 servlet 线程模型具有 CPU 利用率低、内存占用大、对异常请求不具备弹性等缺点。该平台在压力峰值时需要部署大量机器，它主要具有以下性能上的问题：
+ 线程上下文切换开销  一次请求的 IO 时间平均在 1200ms，最高能达到 50000ms，而计算时间只有 1~2ms，根据最佳线程公式理论上 1C 需要 600~2500 个线程。囤积如此多的线程将会造成大量的上下文切换开销和上 GB 的内存占用。但若是使用少量的线程，将可能由于线程数量的限制，导致请求量过高时拿不到处理线程，最终请求超时，不具备低延迟等特性。</description>
+    </item>
+    
+    <item>
       <title>架构案例参考</title>
       <link>https://kunzhao.org/docs/tutorial/distributed/architecture-cases/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

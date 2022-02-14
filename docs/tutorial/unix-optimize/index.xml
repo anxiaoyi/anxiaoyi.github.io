@@ -145,6 +145,20 @@ while((n = read(diskfd, buf, BUF_SIZE)) &amp;gt; 0) write(sockfd, buf , n); 那�
     </item>
     
     <item>
+      <title>CPU</title>
+      <link>https://kunzhao.org/docs/tutorial/unix-optimize/cpu/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/unix-optimize/cpu/</guid>
+      <description>CPU 美团相同配置的容器性能有差异 美团们不断收到业务反馈，同样配置的容器性能存在不小的差异，主要表现为部分容器请求延迟很高，经过我们测试和深入分析发现：这些容器存在跨 Numa Node 访问 CPU，在我们将容器的 CPU 使用限制在同一个 Numa Node 后问题消失。所以，对于一些延迟敏感型的业务，我们要保证应用性能表现的一致性和稳定性，需要做到在调度侧感知 Numa Node 的使用情况。
+NUMA SMP（Symmetric multiprocessing），即对称多处理器。有一个显著的缺点，就是总线会成为瓶颈，因为数据都要走它。
+NUMA（Non-uniform memory access），非一致内存访问。在这种模式下，内存不是一整块。每个 CPU 都有自己的本地内存，CPU 访问本地内存不用过总线，因而速度要快很多，每个 CPU 和内存在一起，称为一个 NUMA 节点。但是，在本地内存不足的情况下，每个 CPU 都可以去另外的 NUMA 节点申请内存，这个时候访问延时就会比较长。
+这样，内存被分成了多个节点，每个节点再被分成一个一个的页面。由于页需要全局唯一定位，页还是需要有全局唯一的页号的。但是由于物理内存不是连起来的了，页号也就不再连续了。于是内存模型就变成了非连续内存模型，管理起来就复杂一些。
+美团数据库业务独占 CPU 我们以 MySQL 平台为例，数据库业务对于稳定性、性能和可靠性要求非常高，业务自己又主要以物理机为主，所以成本压力非常大。
+针对 CPU 资源分配，采用独占 CPU 集合的方式，避免 Pod 之间发生争抢。</description>
+    </item>
+    
+    <item>
       <title>Linux 性能分析</title>
       <link>https://kunzhao.org/docs/tutorial/unix-optimize/analyze/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
