@@ -7,8 +7,8 @@
 <meta name="description" content="MySQL 高可用"><meta property="og:title" content="MySQL 高可用" />
 <meta property="og:description" content="MySQL 高可用 主备 M/S 结构 update 语句在节点 A 执行，然后同步到节点 B 的完整流程图:
 备库 B 跟主库 A 之间维持了一个长连接。主库 A 内部有一个线程，专门用于服务备库 B 的这个长连接。
-binlog 格式  statement：记录 SQL 语句，容易导致主备不一致 row：记录了真实删除行的主键 id，缺点占用空间 mixed: MySQL 自己判断是否会引起主备不一致  如下是可能引起主备不一致的语句示例：
-mysql&gt; delete from t where a&gt;=4 and t_modified&lt;=&#39;2018-11-10&#39; limit 1; mysql&gt; insert into t values(10,10, now()); 主备双 M 结构 生产上多用的是互为主备的结构：这样在切换的时候就不用再修改主备关系。
+binlog 格式  statement：记录 SQL 语句，容易导致主备不一致 row：记录了真实删除行的主键 id，缺点占用空间。现在越来越多场景要求使用 row，便于恢复数据。 mixed: MySQL 自己判断是否会引起主备不一致  如下是可能引起主备不一致的语句示例：
+-- 很可能主库和备库走的索引不一样，导致删除的数据不一致 mysql&gt; delete from t where a&gt;=4 and t_modified&lt;=&#39;2018-11-10&#39; limit 1; mysql&gt; insert into t values(10,10, now()); 主备双 M 结构 生产上多用的是互为主备的结构：这样在切换的时候就不用再修改主备关系。
 双 M 结构有一个问题需要解决。业务逻辑在节点 A 上更新了一条语句，然后再把生成的 binlog 发给节点 B，节点 B 执行完这条更新语句后也会生成 binlog。如果节点 A 同时是节点 B 的备库，相当于又把节点 B 新生成的 binlog 拿过来执行了一次，然后节点 A 和 B 间，会不断地循环执行这个更新语句，也就是循环复制了。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-high-availablity/" />
@@ -20,7 +20,7 @@ mysql&gt; delete from t where a&gt;=4 and t_modified&lt;=&#39;2018-11-10&#39; li
 <link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.38852997086bec92501dbb454e27cd5aa4c6b906a23c80a51572a09eb3562155.js" integrity="sha256-OIUplwhr7JJQHbtFTifNWqTGuQaiPIClFXKgnrNWIVU="></script>
+<script defer src="/en.search.min.1c804c493a1e03da8fadc30892edeb11825959553a93144b8b8ce5b2c9465a11.js" integrity="sha256-HIBMSToeA9qPrcMIku3rEYJZWVU6kxRLi4zlsslGWhE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1154,12 +1154,13 @@ data-full-width-responsive="true"></ins>
 <p>备库 B 跟主库 A 之间维持了一个长连接。主库 A 内部有一个线程，专门用于服务备库 B 的这个长连接。</p>
 <h2 id="binlog-格式">binlog 格式</h2>
 <ul>
-<li>statement：记录 SQL 语句，容易导致主备不一致</li>
-<li>row：记录了真实删除行的主键 <code>id</code>，缺点占用空间</li>
-<li>mixed: MySQL 自己判断是否会引起主备不一致</li>
+<li><code>statement</code>：记录 SQL 语句，容易导致主备不一致</li>
+<li><code>row</code>：记录了真实删除行的主键 <code>id</code>，缺点占用空间。现在越来越多场景要求使用 <code>row</code>，便于<strong>恢复数据</strong>。</li>
+<li><code>mixed</code>: MySQL 自己判断是否会引起主备不一致</li>
 </ul>
-<p>如下是可能引起主备不一致的语句示例：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">delete</span> <span style="color:#66d9ef">from</span> t <span style="color:#66d9ef">where</span> a<span style="color:#f92672">&gt;=</span><span style="color:#ae81ff">4</span> <span style="color:#66d9ef">and</span> t_modified<span style="color:#f92672">&lt;=</span><span style="color:#e6db74">&#39;2018-11-10&#39;</span> <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">1</span>;
+<p>如下是可能引起<strong>主备不一致</strong>的语句示例：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 很可能主库和备库走的索引不一样，导致删除的数据不一致
+</span><span style="color:#75715e"></span>mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">delete</span> <span style="color:#66d9ef">from</span> t <span style="color:#66d9ef">where</span> a<span style="color:#f92672">&gt;=</span><span style="color:#ae81ff">4</span> <span style="color:#66d9ef">and</span> t_modified<span style="color:#f92672">&lt;=</span><span style="color:#e6db74">&#39;2018-11-10&#39;</span> <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">1</span>;
 mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">insert</span> <span style="color:#66d9ef">into</span> t <span style="color:#66d9ef">values</span>(<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">10</span>, now());
 </code></pre></div><h2 id="主备双-m-结构">主备双 M 结构</h2>
 <p>生产上多用的是互为主备的结构：这样在切换的时候就不用再修改主备关系。</p>

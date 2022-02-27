@@ -91,8 +91,8 @@ row_id 如果你创建的 InnoDB 表没有指定主键，那么 InnoDB 会给你
       <guid>https://kunzhao.org/docs/tutorial/database/mysql-high-availablity/</guid>
       <description>MySQL 高可用 主备 M/S 结构 update 语句在节点 A 执行，然后同步到节点 B 的完整流程图:
 备库 B 跟主库 A 之间维持了一个长连接。主库 A 内部有一个线程，专门用于服务备库 B 的这个长连接。
-binlog 格式  statement：记录 SQL 语句，容易导致主备不一致 row：记录了真实删除行的主键 id，缺点占用空间 mixed: MySQL 自己判断是否会引起主备不一致  如下是可能引起主备不一致的语句示例：
-mysql&amp;gt; delete from t where a&amp;gt;=4 and t_modified&amp;lt;=&amp;#39;2018-11-10&amp;#39; limit 1; mysql&amp;gt; insert into t values(10,10, now()); 主备双 M 结构 生产上多用的是互为主备的结构：这样在切换的时候就不用再修改主备关系。
+binlog 格式  statement：记录 SQL 语句，容易导致主备不一致 row：记录了真实删除行的主键 id，缺点占用空间。现在越来越多场景要求使用 row，便于恢复数据。 mixed: MySQL 自己判断是否会引起主备不一致  如下是可能引起主备不一致的语句示例：
+-- 很可能主库和备库走的索引不一样，导致删除的数据不一致 mysql&amp;gt; delete from t where a&amp;gt;=4 and t_modified&amp;lt;=&amp;#39;2018-11-10&amp;#39; limit 1; mysql&amp;gt; insert into t values(10,10, now()); 主备双 M 结构 生产上多用的是互为主备的结构：这样在切换的时候就不用再修改主备关系。
 双 M 结构有一个问题需要解决。业务逻辑在节点 A 上更新了一条语句，然后再把生成的 binlog 发给节点 B，节点 B 执行完这条更新语句后也会生成 binlog。如果节点 A 同时是节点 B 的备库，相当于又把节点 B 新生成的 binlog 拿过来执行了一次，然后节点 A 和 B 间，会不断地循环执行这个更新语句，也就是循环复制了。</description>
     </item>
     
