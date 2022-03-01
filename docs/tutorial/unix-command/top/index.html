@@ -12,7 +12,7 @@
  第一行展示的是：时间、电脑运行多久了、多少人登录着电脑、过去 1、5、15 分钟电脑的平均负载。 第二行展示的是，任务的总数量，以及各个状态的任务数量。 第三行展示的是 CPU 的一些信息。  CPU 信息的每一列的含义：
  us：用户态 CPU 占用处理器的总时间 sy：内核态 CPU 占用处理器的总时间 ni：使用手动设置的 nice 值执行进程所花费的时间。 id：CPU空闲时间的数量。 wa：CPU等待I/O完成所花费的时间。 hi：维护硬件中断所花费的时间。 si：维护软件中断所花费的时间。 st：由于运行虚拟机而损失的时间（“窃取时间”）。  第四行显示物理内存的总量（以kibibytes为单位），以及空闲、使用、缓冲或缓存的内存量。 第五行显示交换内存的总量（也以kibibytes为单位），以及空闲、使用和可用的内存量。后者包括预期可以从缓存中恢复的内存。
  蓝色区域的，进程列表中的各个列的信息如下：
- PID：进程ID。 USER：进程的所有者。 PR：流程优先级。 NI：这个过程很有价值。 VIRT：进程使用的虚拟内存量。VIRT = SWAP &#43; RES。 RES：进程使用的常驻内存量。RES = CODE &#43; DATA SHR：进程使用的共享内存量。 S： 进程的状态。（有关此字段可以采用的值，请参见下面的列表）。 %CPU：自上次更新以来进程使用的CPU时间的份额。按下 P 键，可以按照CPU 使用量从高到低对进程排序。 %MEM：使用的物理内存份额。按下 M 键，可以按照内存使用量从高到低对进程排序。 TIME&#43;：任务使用的总CPU时间（以百分之一秒为单位）。 COMMAND：命令名或命令行（名称&#43;选项）。  top 里面描述进程内存使用量的数据来源于 /proc/$pid/statm 这个文件。" />
+ PID：进程ID。 USER：进程的所有者。 PR：流程优先级。 NI：这个过程很有价值。 VIRT：进程使用的虚拟内存量。VIRT = SWAP &#43; RES。VIRT 内存等于 JVM 的 -Xmx -Xms 申请的内存 &#43; 其他内存 RES：进程使用的常驻内存量。RES = CODE &#43; DATA SHR：进程使用的共享内存量。 S： 进程的状态。（有关此字段可以采用的值，请参见下面的列表）。 %CPU：自上次更新以来进程使用的CPU时间的份额。按下 P 键，可以按照CPU 使用量从高到低对进程排序。 %MEM：使用的物理内存份额。按下 M 键，可以按照内存使用量从高到低对进程排序。 TIME&#43;：任务使用的总CPU时间（以百分之一秒为单位）。 COMMAND：命令名或命令行（名称&#43;选项）。  top 里面描述进程内存使用量的数据来源于 /proc/$pid/statm 这个文件。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-command/top/" />
 
@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.1c804c493a1e03da8fadc30892edeb11825959553a93144b8b8ce5b2c9465a11.js" integrity="sha256-HIBMSToeA9qPrcMIku3rEYJZWVU6kxRLi4zlsslGWhE="></script>
+<script defer src="/en.search.min.820a36cbc6a0de747958a147b734e3ccaca8c88177a2786c62ddf203c78e9536.js" integrity="sha256-ggo2y8ag3nR5WKFHtzTjzKyoyIF3onhsYt3yA8eOlTY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1110,6 +1110,7 @@ var _hmt = _hmt || [];
   <nav id="TableOfContents">
   <ul>
     <li><a href="#基础展示">基础展示</a></li>
+    <li><a href="#深入解释">深入解释</a></li>
     <li><a href="#滚动区域">滚动区域</a></li>
     <li><a href="#更改数字单位">更改数字单位</a></li>
     <li><a href="#更改统计区域的显示">更改统计区域的显示</a></li>
@@ -1176,7 +1177,7 @@ data-full-width-responsive="true"></ins>
 <li><code>USER</code>：进程的所有者。</li>
 <li><code>PR</code>：流程优先级。</li>
 <li><code>NI</code>：这个过程很有价值。</li>
-<li><code>VIRT</code>：进程使用的<strong>虚拟内存</strong>量。<code>VIRT = SWAP + RES</code>。</li>
+<li><code>VIRT</code>：进程使用的<strong>虚拟内存</strong>量。<code>VIRT = SWAP + RES</code>。<code>VIRT</code> 内存等于 JVM 的 <code>-Xmx -Xms</code> 申请的内存 + 其他内存</li>
 <li><code>RES</code>：进程使用的<strong>常驻内存</strong>量。<code>RES = CODE + DATA</code></li>
 <li><code>SHR</code>：进程使用的<strong>共享内存</strong>量。</li>
 <li><code>S</code>： 进程的状态。（有关此字段可以采用的值，请参见下面的列表）。</li>
@@ -1192,9 +1193,56 @@ data-full-width-responsive="true"></ins>
 <li><code>R</code>： 跑步</li>
 <li><code>S</code>： 睡觉</li>
 <li><code>T</code>： 跟踪（停止）</li>
-<li><code>Z</code>： 僵尸</li>
+<li><code>Z</code>： 僵尸`</li>
 </ul>
 <p>按 <code>Q</code> 退出 <code>top</code> 命令。</p>
+<h2 id="深入解释">深入解释</h2>
+<ul>
+<li><code>char * p = new char [1024 * 1024 * 512]</code> 这行代码底层应该是调用 <strong><code>malloc()</code></strong> 函数，会让 <code>VIRT</code> 升为 <code>524MB</code>，<code>RES</code> 升为 <code>1116</code>。或者可以理解为没有造成 <code>RES</code> 内存的增加。</li>
+<li><code>memset(p, 0, 1024 * 1024 * 10)</code> 这行代码会让 <code>RES</code> 内存增长 <code>10MB</code> 空间，变为 <code>11MB</code></li>
+<li><code>memset(p, 0, 1024 * 1024 * 50)</code> 这行代码会让 <code>RES</code> 内存增长 <code>50MB</code> 空间，变为 <code>51MB</code></li>
+</ul>
+<blockquote>
+<p><code>memset</code>: Fills a buffer with a repeated byte</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>C 函数</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>malloc</code></td>
+<td>分配指定字节</td>
+</tr>
+<tr>
+<td><code>free</code></td>
+<td>释放指定的内存给 OS</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><strong>内存 4 个象限</strong>：</p>
+<pre><code>                                     Private | Shared
+                                 1           |          2
+            Anonymous  . stack               |
+                       . malloc()            |
+                       . brk()/sbrk()        | . POSIX shm*
+                       . mmap(PRIVATE, ANON) | . mmap(SHARED, ANON)
+                      -----------------------+----------------------
+                       . mmap(PRIVATE, fd)   | . mmap(SHARED, fd)
+          File-backed  . pgms/shared libs    |
+                                 3           |          4
+
+</code></pre><ul>
+<li><strong>RES</strong>: 4 个象限实际使用物理内存的</li>
+<li><strong>SHR</strong>: RES 的子集 (除了 1，包含 2 和 4，一些 3)</li>
+<li><strong>SWAP</strong>: 除了第 4 象限的任何象限</li>
+<li><strong>USED</strong>: RES + SWAP</li>
+<li><strong>VIRT</strong>: 4 个象限</li>
+</ul>
 <h2 id="滚动区域">滚动区域</h2>
 <p>您可以按向上或向下箭头、Home、End和Page Up或Down键上下移动并访问所有进程。</p>
 <h2 id="更改数字单位">更改数字单位</h2>
@@ -1287,6 +1335,7 @@ data-full-width-responsive="true"></ins>
   <nav id="TableOfContents">
   <ul>
     <li><a href="#基础展示">基础展示</a></li>
+    <li><a href="#深入解释">深入解释</a></li>
     <li><a href="#滚动区域">滚动区域</a></li>
     <li><a href="#更改数字单位">更改数字单位</a></li>
     <li><a href="#更改统计区域的显示">更改统计区域的显示</a></li>

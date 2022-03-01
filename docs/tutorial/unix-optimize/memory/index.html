@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.1c804c493a1e03da8fadc30892edeb11825959553a93144b8b8ce5b2c9465a11.js" integrity="sha256-HIBMSToeA9qPrcMIku3rEYJZWVU6kxRLi4zlsslGWhE="></script>
+<script defer src="/en.search.min.820a36cbc6a0de747958a147b734e3ccaca8c88177a2786c62ddf203c78e9536.js" integrity="sha256-ggo2y8ag3nR5WKFHtzTjzKyoyIF3onhsYt3yA8eOlTY="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1123,6 +1123,7 @@ var _hmt = _hmt || [];
     <li><a href="#查看整个系统的内存">查看整个系统的内存</a></li>
     <li><a href="#查看某个进程的内存">查看某个进程的内存</a></li>
     <li><a href="#buffer-vs-cache">Buffer vs Cache</a></li>
+    <li><a href="#查看进程的-buffercache">查看进程的 Buffer/Cache</a></li>
     <li><a href="#内存回收机制">内存回收机制</a></li>
     <li><a href="#内存泄露">内存泄露</a></li>
     <li><a href="#参考">参考</a></li>
@@ -1212,7 +1213,22 @@ PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
 <li><code>buff</code> 即 Buffer，缓存<strong>磁盘数据</strong>，是对原始磁盘块的缓存，内核可以将分散写改为集中写。</li>
 <li><code>cache</code> 缓存从<strong>磁盘读取的数据</strong>，缓存的是磁盘<strong>读取文件的页缓存</strong>。</li>
 </ul>
-<h2 id="内存回收机制">内存回收机制</h2>
+<p>在服务内存够用的情况下，Linux 内核为了加快对文件的读写效率会将文件放入之 buffer/cache 中以保证<strong>读写效率</strong>，但其实，尽管当你的应用程序对文件的读写运行结束后，buffer/cache 也不会自动释放该部分内存，而是作为缓冲进行保留，等到你的服务进程在下一次进行相同文件的读写时就可以直接使用，省去了各种重新进行内存初始化的操作。当服务器在<strong>内存压力较大</strong>的情况下时，则将会自动进行内存的回收，作为 free 空间分给其它进程使用。</p>
+<p>手动进行 buffer/cache 回收：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 将内存中数据强制先刷新到磁盘中</span>
+sync;
+ 
+<span style="color:#75715e"># 清理Buffer缓存区域</span>
+echo <span style="color:#ae81ff">3</span> &gt; /proc/sys/vm/drop_caches 表示清除pagecache和slab分配器中的缓存对象
+echo <span style="color:#ae81ff">1</span> &gt; /proc/sys/vm/drop_caches 表示清除pagecache。
+echo <span style="color:#ae81ff">2</span> &gt; /proc/sys/vm/drop_caches 表示清除回收slab分配器中的对象（包括目录项缓存和inode缓存）。slab分配器是内核中管理内存的一种机制，其中很多缓存数据实现都是用的pagecache。
+</code></pre></div><h2 id="查看进程的-buffercache">查看进程的 Buffer/Cache</h2>
+<p>首先得下载安装 <code>hcache</code>，然后：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 全局显示10个最大的被缓存文件</span>
+hcache --top <span style="color:#ae81ff">10</span>
+<span style="color:#75715e"># 查看指定进程ID所使用的buffer/cache 的使用情况</span>
+hcache -pid &lt;pid&gt;
+</code></pre></div><h2 id="内存回收机制">内存回收机制</h2>
 <p>系统可以回收的内存：</p>
 <ul>
 <li>文件页（Buffer、Cache、文件映射页）</li>
@@ -1223,7 +1239,7 @@ PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
 <li>调用 <code>fsync()</code> 写入脏页到磁盘</li>
 <li>内核线程定期 <code>pdflush</code> 刷新这些脏页到磁盘</li>
 </ul>
-<p>而匿名页虽无法直接回收，但是通过 Swap 机制可以将不常用的内存写到磁盘中，然后释放内存，给其他程序用。</p>
+<p>而<strong>匿名页</strong>虽无法直接回收，但是通过 Swap 机制可以将不常用的内存写到磁盘中，然后释放内存，给其他程序用。</p>
 <p>通过调节 <code>/proc/sys/vm/swappiness</code> 值（0 - 100）可以控制回收匿名页的优先级，值越大，越优先回收匿名页。</p>
 <h2 id="内存泄露">内存泄露</h2>
 <p>介绍一个专门用来检测内存泄漏的工具，<code>memleak</code>。<code>memleak</code> 可以跟踪系统或指定进程的内存分配、释放请求，然后定期输出一个未释放内存和相应调用栈的汇总情况（默认 5 秒）。当然，<code>memleak</code> 是 <code>bcc</code> 软件包中的一个工具。</p>
@@ -1278,6 +1294,7 @@ data-full-width-responsive="true"></ins>
     <li><a href="#查看整个系统的内存">查看整个系统的内存</a></li>
     <li><a href="#查看某个进程的内存">查看某个进程的内存</a></li>
     <li><a href="#buffer-vs-cache">Buffer vs Cache</a></li>
+    <li><a href="#查看进程的-buffercache">查看进程的 Buffer/Cache</a></li>
     <li><a href="#内存回收机制">内存回收机制</a></li>
     <li><a href="#内存泄露">内存泄露</a></li>
     <li><a href="#参考">参考</a></li>
