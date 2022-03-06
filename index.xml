@@ -1421,6 +1421,19 @@ Note: switching to &#39;467dd6520&#39;. You are in &#39;detached HEAD&#39; state
     </item>
     
     <item>
+      <title>Hotspot GC 源码分析</title>
+      <link>https://kunzhao.org/docs/tutorial/java/gc-analyze/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/java/gc-analyze/</guid>
+      <description>Hotspot GC 源码分析  JDK 版本 openjdk version &amp;ldquo;19-internal&amp;rdquo; 2022-09-20
+ 内存管理 JVM 对于各块内存的管理，主要由以下函数控制：
+malloc/free allocation.hpp 定义了分配堆和释放堆的函数：
+char* AllocateHeap(size_t size, MEMFLAGS flags, const NativeCallStack&amp;amp; stack, AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM); char* AllocateHeap(size_t size, MEMFLAGS flags, AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM); char* ReallocateHeap(char *old, size_t size, MEMFLAGS flag, AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM); void FreeHeap(void* p); 在 allocation.cpp 的具体实现中：
+// allocate using malloc; will fail if no memory available char* AllocateHeap(size_t size, MEMFLAGS flags, const NativeCallStack&amp;amp; stack, AllocFailType alloc_failmode /* = AllocFailStrategy::EXIT_OOM*/) { char* p = (char*) os::malloc(size, flags, stack); if (p == NULL &amp;amp;&amp;amp; alloc_failmode == AllocFailStrategy::EXIT_OOM) { vm_exit_out_of_memory(size, OOM_MALLOC_ERROR, &amp;#34;AllocateHeap&amp;#34;); } return p; } void FreeHeap(void* p) { os::free(p); } 在 os.</description>
+    </item>
+    
+    <item>
       <title>HTTPS</title>
       <link>https://kunzhao.org/docs/tutorial/network/https/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1691,6 +1704,17 @@ CDN 可缓存的内容  静态资源：图片、CSS、JS、HTML 文件、流媒�
 下面示例几个基础用法：
 保存当前工作进度 git stash 显示进度列表 git stash list stash 就是一个栈数据结构管理的，你可以保存多次工作进度，并且恢复的时候也可以选择恢复哪个。
 恢复进度 # 恢复最新保存的工作进度，并将工作进度从 stash 列表中清除 git stash pop # 恢复某个指定的 stash (git stash list 可以看到) git stash pop [&amp;lt;stash&amp;gt;] 命令 git stash apply [&amp;lt;stash&amp;gt;] 同 git stash pop，只是不会从 stash 列表中删除恢复的进度。</description>
+    </item>
+    
+    <item>
+      <title>Hotspot G1 GC 源码分析</title>
+      <link>https://kunzhao.org/docs/tutorial/java/g1-gc-analyze/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://kunzhao.org/docs/tutorial/java/g1-gc-analyze/</guid>
+      <description>Hotspot G1 GC 源码分析  JDK 版本 openjdk version &amp;ldquo;19-internal&amp;rdquo; 2022-09-20
+ Heap Region 类型 每个 Region 都关联了 Tag：
+class HeapRegionType { private: typedef enum { FreeTag = 0, YoungMask = 2, EdenTag = YoungMask, SurvTag = YoungMask + 1, HumongousMask = 4, PinnedMask = 8, StartsHumongousTag = HumongousMask | PinnedMask, ContinuesHumongousTag = HumongousMask | PinnedMask + 1, OldMask = 16, OldTag = OldMask, ArchiveMask = 32, OpenArchiveTag = ArchiveMask | PinnedMask, ClosedArchiveTag = ArchiveMask | PinnedMask + 1 } Tag; volatile Tag _tag; } 年轻代 G1NewSizePercent 默认值是 5，即年轻代初始默认占用堆的 5% 的大小的空间，G1MaxNewSizePercent 默认值是 60，即年轻代最大默认占用堆的 60% 的大小的空间。</description>
     </item>
     
     <item>

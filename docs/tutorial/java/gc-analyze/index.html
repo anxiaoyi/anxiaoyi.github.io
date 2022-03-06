@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Hotspot GC 源码分析"><meta property="og:title" content="Hotspot GC 源码分析" />
+<meta property="og:description" content="Hotspot GC 源码分析  JDK 版本 openjdk version &ldquo;19-internal&rdquo; 2022-09-20
+ 内存管理 JVM 对于各块内存的管理，主要由以下函数控制：
+malloc/free allocation.hpp 定义了分配堆和释放堆的函数：
+char* AllocateHeap(size_t size, MEMFLAGS flags, const NativeCallStack&amp; stack, AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM); char* AllocateHeap(size_t size, MEMFLAGS flags, AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM); char* ReallocateHeap(char *old, size_t size, MEMFLAGS flag, AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM); void FreeHeap(void* p); 在 allocation.cpp 的具体实现中：
+// allocate using malloc; will fail if no memory available char* AllocateHeap(size_t size, MEMFLAGS flags, const NativeCallStack&amp; stack, AllocFailType alloc_failmode /* = AllocFailStrategy::EXIT_OOM*/) { char* p = (char*) os::malloc(size, flags, stack); if (p == NULL &amp;&amp; alloc_failmode == AllocFailStrategy::EXIT_OOM) { vm_exit_out_of_memory(size, OOM_MALLOC_ERROR, &#34;AllocateHeap&#34;); } return p; } void FreeHeap(void* p) { os::free(p); } 在 os." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/java/gc-analyze/" />
+
+<title>Hotspot GC 源码分析 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+
+
+<script defer src="/en.search.min.657ffb103dfb174792f387494682f111c1f96c2113cdcfee8420b51c4e96151b.js" integrity="sha256-ZX/7ED37F0eS84dJRoLxEcH5bCETzc/uhCC1HE6WFRs="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/stream/" >
+      Stream 编程
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/date-time/" >
+      Java Date 和 Time
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/classloader/" >
+      Java 类加载
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/juc/" >
+      JUC 并发包
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/gc-analyze/"  class="active">
+      Hotspot GC 源码分析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/java-io/" >
+      Java IO
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/jvm/" >
+      JVM
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/jvmbox/" >
+      JVM BOX
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/g1-gc-analyze/" >
+      Hotspot G1 GC 源码分析
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/basic/" >
+      Java 基础
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/btrace/" >
+      BTrace
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/java-collection/" >
+      Java 集合类
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/java/concurrency/" >
+      多线程并发示例
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/softskill/" >
+      箴言箴句
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/technique/" >
+      技术
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Hotspot GC 源码分析</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#内存管理">内存管理</a>
+      <ul>
+        <li><a href="#mallocfree">malloc/free</a></li>
+        <li><a href="#commit_memory">commit_memory</a></li>
+        <li><a href="#uncommit_memory">uncommit_memory</a></li>
+        <li><a href="#reserve_memory">reserve_memory</a></li>
+        <li><a href="#release_memory">release_memory</a></li>
+      </ul>
+    </li>
+    <li><a href="#内存管理类">内存管理类</a>
+      <ul>
+        <li><a href="#jvm-参数">JVM 参数</a></li>
+        <li><a href="#virtualspace">VirtualSpace</a></li>
+        <li><a href="#memorypool">MemoryPool</a></li>
+        <li><a href="#cheapobj">CHeapObj</a></li>
+        <li><a href="#thread">Thread</a></li>
+      </ul>
+    </li>
+    <li><a href="#gc-类">GC 类</a>
+      <ul>
+        <li><a href="#serial">serial</a></li>
+        <li><a href="#parallel">parallel</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="hotspot-gc-源码分析">Hotspot GC 源码分析</h1>
+<blockquote>
+<p>JDK 版本 openjdk version &ldquo;19-internal&rdquo; 2022-09-20</p>
+</blockquote>
+<h2 id="内存管理">内存管理</h2>
+<p>JVM 对于各块内存的管理，主要由以下函数控制：</p>
+<h3 id="mallocfree">malloc/free</h3>
+<p><code>allocation.hpp</code> 定义了<strong>分配堆</strong>和<strong>释放堆</strong>的函数：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> <span style="color:#a6e22e">AllocateHeap</span>(size_t size, MEMFLAGS flags, <span style="color:#66d9ef">const</span> NativeCallStack<span style="color:#f92672">&amp;</span> stack, AllocFailType alloc_failmode <span style="color:#f92672">=</span> AllocFailStrategy<span style="color:#f92672">::</span>EXIT_OOM);
+<span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> <span style="color:#a6e22e">AllocateHeap</span>(size_t size, MEMFLAGS flags, AllocFailType alloc_failmode <span style="color:#f92672">=</span> AllocFailStrategy<span style="color:#f92672">::</span>EXIT_OOM);
+<span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> <span style="color:#a6e22e">ReallocateHeap</span>(<span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>old, size_t size, MEMFLAGS flag, AllocFailType alloc_failmode <span style="color:#f92672">=</span> AllocFailStrategy<span style="color:#f92672">::</span>EXIT_OOM);
+
+<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">FreeHeap</span>(<span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> p);
+</code></pre></div><p>在 <code>allocation.cpp</code> 的具体实现中：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// allocate using malloc; will fail if no memory available
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> <span style="color:#a6e22e">AllocateHeap</span>(size_t size,
+                   MEMFLAGS flags,
+                   <span style="color:#66d9ef">const</span> NativeCallStack<span style="color:#f92672">&amp;</span> stack,
+                   AllocFailType alloc_failmode <span style="color:#75715e">/* = AllocFailStrategy::EXIT_OOM*/</span>) {
+  <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> p <span style="color:#f92672">=</span> (<span style="color:#66d9ef">char</span><span style="color:#f92672">*</span>) os<span style="color:#f92672">::</span>malloc(size, flags, stack);
+  <span style="color:#66d9ef">if</span> (p <span style="color:#f92672">==</span> NULL <span style="color:#f92672">&amp;&amp;</span> alloc_failmode <span style="color:#f92672">==</span> AllocFailStrategy<span style="color:#f92672">::</span>EXIT_OOM) {
+    vm_exit_out_of_memory(size, OOM_MALLOC_ERROR, <span style="color:#e6db74">&#34;AllocateHeap&#34;</span>);
+  }
+  <span style="color:#66d9ef">return</span> p;
+}
+
+<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">FreeHeap</span>(<span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> p) {
+  os<span style="color:#f92672">::</span>free(p);
+}
+</code></pre></div><p>在 <code>os.cpp</code> 中的实现：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> os<span style="color:#f92672">::</span>malloc(size_t size, MEMFLAGS memflags, <span style="color:#66d9ef">const</span> NativeCallStack<span style="color:#f92672">&amp;</span> stack) {
+
+  <span style="color:#75715e">// Special handling for NMT preinit phase before arguments are parsed
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> rc <span style="color:#f92672">=</span> NULL;
+  <span style="color:#66d9ef">if</span> (NMTPreInit<span style="color:#f92672">::</span>handle_malloc(<span style="color:#f92672">&amp;</span>rc, size)) {
+    <span style="color:#66d9ef">return</span> rc;
+  }
+
+  DEBUG_ONLY(check_crash_protection());
+
+  <span style="color:#75715e">// On malloc(0), implementators of malloc(3) have the choice to return either
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// NULL or a unique non-NULL pointer. To unify libc behavior across our platforms
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// we chose the latter.
+</span><span style="color:#75715e"></span>  size <span style="color:#f92672">=</span> MAX2((size_t)<span style="color:#ae81ff">1</span>, size);
+
+  <span style="color:#75715e">// For the test flag -XX:MallocMaxTestWords
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (has_reached_max_malloc_test_peak(size)) {
+    <span style="color:#66d9ef">return</span> NULL;
+  }
+
+  <span style="color:#66d9ef">const</span> size_t outer_size <span style="color:#f92672">=</span> size <span style="color:#f92672">+</span> MemTracker<span style="color:#f92672">::</span>overhead_per_malloc();
+
+  <span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> outer_ptr <span style="color:#f92672">=</span> <span style="color:#f92672">::</span>malloc(outer_size);
+  <span style="color:#66d9ef">if</span> (outer_ptr <span style="color:#f92672">==</span> NULL) {
+    <span style="color:#66d9ef">return</span> NULL;
+  }
+
+  <span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> inner_ptr <span style="color:#f92672">=</span> MemTracker<span style="color:#f92672">::</span>record_malloc((address)outer_ptr, size, memflags, stack);
+
+  DEBUG_ONLY(<span style="color:#f92672">::</span>memset(inner_ptr, uninitBlockPad, size);)
+  DEBUG_ONLY(break_if_ptr_caught(inner_ptr);)
+
+  <span style="color:#66d9ef">return</span> inner_ptr;
+}
+
+<span style="color:#66d9ef">void</span>  os<span style="color:#f92672">::</span>free(<span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>memblock) {
+
+  <span style="color:#75715e">// Special handling for NMT preinit phase before arguments are parsed
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">if</span> (NMTPreInit<span style="color:#f92672">::</span>handle_free(memblock)) {
+    <span style="color:#66d9ef">return</span>;
+  }
+
+  <span style="color:#66d9ef">if</span> (memblock <span style="color:#f92672">==</span> NULL) {
+    <span style="color:#66d9ef">return</span>;
+  }
+
+  DEBUG_ONLY(break_if_ptr_caught(memblock);)
+
+  <span style="color:#75715e">// If NMT is enabled, this checks for heap overwrites, then de-accounts the old block.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> <span style="color:#66d9ef">const</span> old_outer_ptr <span style="color:#f92672">=</span> MemTracker<span style="color:#f92672">::</span>record_free(memblock);
+
+  <span style="color:#f92672">::</span>free(old_outer_ptr);
+}
+</code></pre></div><h3 id="commit_memory">commit_memory</h3>
+<p>此函数在 <code>os_linux.cpp</code> 中的实现：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// NOTE: Linux kernel does not really reserve the pages for us.
+</span><span style="color:#75715e">//       All it does is to check if there are enough free pages
+</span><span style="color:#75715e">//       left at the time of mmap(). This could be a potential
+</span><span style="color:#75715e">//       problem.
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> os<span style="color:#f92672">::</span>Linux<span style="color:#f92672">::</span>commit_memory_impl(<span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> addr, size_t size, <span style="color:#66d9ef">bool</span> exec) {
+  <span style="color:#66d9ef">int</span> prot <span style="color:#f92672">=</span> exec <span style="color:#f92672">?</span> PROT_READ<span style="color:#f92672">|</span>PROT_WRITE<span style="color:#f92672">|</span>PROT_EXEC : PROT_READ<span style="color:#f92672">|</span>PROT_WRITE;
+  uintptr_t res <span style="color:#f92672">=</span> (uintptr_t) <span style="color:#f92672">::</span>mmap(addr, size, prot,
+                                     MAP_PRIVATE<span style="color:#f92672">|</span>MAP_FIXED<span style="color:#f92672">|</span>MAP_ANONYMOUS, <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>);
+  <span style="color:#66d9ef">if</span> (res <span style="color:#f92672">!=</span> (uintptr_t) MAP_FAILED) {
+    <span style="color:#66d9ef">if</span> (UseNUMAInterleaving) {
+      numa_make_global(addr, size);
+    }
+    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+  }
+
+  <span style="color:#66d9ef">int</span> err <span style="color:#f92672">=</span> errno;  <span style="color:#75715e">// save errno from mmap() call above
+</span><span style="color:#75715e"></span>
+  <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>recoverable_mmap_error(err)) {
+    warn_fail_commit_memory(addr, size, exec, err);
+    vm_exit_out_of_memory(size, OOM_MMAP_ERROR, <span style="color:#e6db74">&#34;committing reserved memory.&#34;</span>);
+  }
+
+  <span style="color:#66d9ef">return</span> err;
+}
+
+<span style="color:#66d9ef">bool</span> os<span style="color:#f92672">::</span>pd_commit_memory(<span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> addr, size_t size, <span style="color:#66d9ef">bool</span> exec) {
+  <span style="color:#66d9ef">return</span> os<span style="color:#f92672">::</span>Linux<span style="color:#f92672">::</span>commit_memory_impl(addr, size, exec) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>;
+}
+</code></pre></div><h3 id="uncommit_memory">uncommit_memory</h3>
+<p>此函数在 <code>os_linux.cpp</code> 中的实现：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">bool</span> os<span style="color:#f92672">::</span>pd_uncommit_memory(<span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> addr, size_t size, <span style="color:#66d9ef">bool</span> exec) {
+  uintptr_t res <span style="color:#f92672">=</span> (uintptr_t) <span style="color:#f92672">::</span>mmap(addr, size, PROT_NONE,
+                                     MAP_PRIVATE<span style="color:#f92672">|</span>MAP_FIXED<span style="color:#f92672">|</span>MAP_NORESERVE<span style="color:#f92672">|</span>MAP_ANONYMOUS, <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>);
+  <span style="color:#66d9ef">return</span> res  <span style="color:#f92672">!=</span> (uintptr_t) MAP_FAILED;
+}
+</code></pre></div><h3 id="reserve_memory">reserve_memory</h3>
+<p>此函数在 <code>os_linux.cpp</code> 中的实现：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> os<span style="color:#f92672">::</span>pd_reserve_memory(size_t bytes, <span style="color:#66d9ef">bool</span> exec) {
+  <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">anon_mmap</span>(NULL, bytes);
+}
+
+<span style="color:#75715e">// &#39;requested_addr&#39; is only treated as a hint, the return value may or
+</span><span style="color:#75715e">// may not start from the requested address. Unlike Linux mmap(), this
+</span><span style="color:#75715e">// function returns NULL to indicate failure.
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> <span style="color:#a6e22e">anon_mmap</span>(<span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> requested_addr, size_t bytes) {
+  <span style="color:#75715e">// MAP_FIXED is intentionally left out, to leave existing mappings intact.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span> flags <span style="color:#f92672">=</span> MAP_PRIVATE <span style="color:#f92672">|</span> MAP_NORESERVE <span style="color:#f92672">|</span> MAP_ANONYMOUS;
+
+  <span style="color:#75715e">// Map reserved/uncommitted pages PROT_NONE so we fail early if we
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// touch an uncommitted page. Otherwise, the read/write might
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// succeed if we have enough swap space to back the physical page.
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> addr <span style="color:#f92672">=</span> (<span style="color:#66d9ef">char</span><span style="color:#f92672">*</span>)<span style="color:#f92672">::</span>mmap(requested_addr, bytes, PROT_NONE, flags, <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>);
+
+  <span style="color:#66d9ef">return</span> addr <span style="color:#f92672">==</span> MAP_FAILED <span style="color:#f92672">?</span> NULL <span style="color:#f92672">:</span> addr;
+}
+</code></pre></div><h3 id="release_memory">release_memory</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">bool</span> os<span style="color:#f92672">::</span>pd_release_memory(<span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> addr, size_t size) {
+  <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">anon_munmap</span>(addr, size);
+}
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">anon_munmap</span>(<span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span> addr, size_t size) {
+  <span style="color:#66d9ef">return</span> <span style="color:#f92672">::</span>munmap(addr, size) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>;
+}
+</code></pre></div><h2 id="内存管理类">内存管理类</h2>
+<h3 id="jvm-参数">JVM 参数</h3>
+<p>JVM 参数的默认值定义在 <code>gc_globals.hpp</code> 文件中。</p>
+<h3 id="virtualspace">VirtualSpace</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">void</span> VirtualSpace<span style="color:#f92672">::</span>shrink_by(size_t size) {
+  os<span style="color:#f92672">::</span>uncommit_memory(aligned_upper_new_high, upper_needs, _executable);
+}
+</code></pre></div><h3 id="memorypool">MemoryPool</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// memoryPool.hpp
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MemoryPool</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">public</span> CHeapObj<span style="color:#f92672">&lt;</span>mtInternal<span style="color:#f92672">&gt;</span> {
+  <span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
+    <span style="color:#66d9ef">enum</span> <span style="color:#a6e22e">PoolType</span> {
+      Heap    <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>,
+      NonHeap <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
+    };
+
+  <span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
+    <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span>      _name;
+    PoolType         _type;
+    size_t           _initial_size;
+    size_t           _max_size;
+    <span style="color:#66d9ef">bool</span>             _available_for_allocation; <span style="color:#75715e">// Default is true
+</span><span style="color:#75715e"></span>}
+</code></pre></div><h3 id="cheapobj">CHeapObj</h3>
+<p><code>CHeapObj</code> 表示分配在 C-heap 上的对象，这类对象通过 <code>free</code>/<code>malloc</code> 函数管理内存，<code>NMT</code> 追踪内存使用：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">template</span> <span style="color:#f92672">&lt;</span>MEMFLAGS F<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CHeapObj</span> ALLOCATION_SUPER_CLASS_SPEC {
+    <span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
+        ALWAYSINLINE <span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> <span style="color:#66d9ef">operator</span> <span style="color:#66d9ef">new</span>(size_t size) <span style="color:#66d9ef">throw</span>() {
+            <span style="color:#66d9ef">return</span> (<span style="color:#66d9ef">void</span><span style="color:#f92672">*</span>)AllocateHeap(size, F);
+        }
+        ALWAYSINLINE <span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> <span style="color:#66d9ef">operator</span> <span style="color:#66d9ef">new</span>[](size_t size) <span style="color:#66d9ef">throw</span>() {
+            <span style="color:#66d9ef">return</span> (<span style="color:#66d9ef">void</span><span style="color:#f92672">*</span>)AllocateHeap(size, F);
+        }
+
+        <span style="color:#66d9ef">void</span>  <span style="color:#66d9ef">operator</span> <span style="color:#a6e22e">delete</span>(<span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> p)     { FreeHeap(p); }
+        <span style="color:#66d9ef">void</span>  <span style="color:#66d9ef">operator</span> <span style="color:#66d9ef">delete</span> [] (<span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> p) { FreeHeap(p); }
+};
+</code></pre></div><h3 id="thread">Thread</h3>
+<p>Thread 的内存是通过 <code>malloc</code> 和 <code>free</code> 函数来管理的：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// thread.cpp
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">// ======= Thread ========
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> Thread<span style="color:#f92672">::</span>allocate(size_t size, <span style="color:#66d9ef">bool</span> throw_excpt, MEMFLAGS flags) {
+  <span style="color:#66d9ef">return</span> throw_excpt <span style="color:#f92672">?</span> AllocateHeap(size, flags, CURRENT_PC)
+                       <span style="color:#f92672">:</span> AllocateHeap(size, flags, CURRENT_PC, AllocFailStrategy<span style="color:#f92672">::</span>RETURN_NULL);
+}
+
+<span style="color:#66d9ef">void</span> Thread<span style="color:#f92672">::</span><span style="color:#66d9ef">operator</span> <span style="color:#66d9ef">delete</span>(<span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> p) {
+  FreeHeap(p);
+}
+</code></pre></div><h2 id="gc-类">GC 类</h2>
+<h3 id="serial">serial</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SerialHeap</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">public</span> GenCollectedHeap {
+<span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
+  MemoryPool<span style="color:#f92672">*</span> _eden_pool;
+  MemoryPool<span style="color:#f92672">*</span> _survivor_pool;
+  MemoryPool<span style="color:#f92672">*</span> _old_pool;
+}
+</code></pre></div><h3 id="parallel">parallel</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ParallelScavengeHeap</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">public</span> CollectedHeap {
+ <span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
+  <span style="color:#66d9ef">static</span> PSYoungGen<span style="color:#f92672">*</span> _young_gen;
+  <span style="color:#66d9ef">static</span> PSOldGen<span style="color:#f92672">*</span>   _old_gen;
+
+  MemoryPool<span style="color:#f92672">*</span> _eden_pool;
+  MemoryPool<span style="color:#f92672">*</span> _survivor_pool;
+  MemoryPool<span style="color:#f92672">*</span> _old_pool;
+}
+</code></pre></div>
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#内存管理">内存管理</a>
+      <ul>
+        <li><a href="#mallocfree">malloc/free</a></li>
+        <li><a href="#commit_memory">commit_memory</a></li>
+        <li><a href="#uncommit_memory">uncommit_memory</a></li>
+        <li><a href="#reserve_memory">reserve_memory</a></li>
+        <li><a href="#release_memory">release_memory</a></li>
+      </ul>
+    </li>
+    <li><a href="#内存管理类">内存管理类</a>
+      <ul>
+        <li><a href="#jvm-参数">JVM 参数</a></li>
+        <li><a href="#virtualspace">VirtualSpace</a></li>
+        <li><a href="#memorypool">MemoryPool</a></li>
+        <li><a href="#cheapobj">CHeapObj</a></li>
+        <li><a href="#thread">Thread</a></li>
+      </ul>
+    </li>
+    <li><a href="#gc-类">GC 类</a>
+      <ul>
+        <li><a href="#serial">serial</a></li>
+        <li><a href="#parallel">parallel</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
