@@ -20,16 +20,18 @@ collection = {A: 5, B:2, C:2, D:1}那么，最高的权重是 5：
 限流 漏桶算法 算法类似于餐厅排号就餐，整个餐厅所能容纳的顾客数量是有限的，有出才能有进。
 Semaphore sem = new Semaphore(30); if (sem." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/service-control/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/service-control/" /><meta property="article:section" content="docs" />
+
+
 
 <title>服务管控 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.657ffb103dfb174792f387494682f111c1f96c2113cdcfee8420b51c4e96151b.js" integrity="sha256-ZX/7ED37F0eS84dJRoLxEcH5bCETzc/uhCC1HE6WFRs="></script>
+<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1177,7 +1179,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1253,17 +1255,17 @@ data-full-width-responsive="true"></ins>
 <pre><code>collection = {A: 5, B:2, C:2, D:1}
 </code></pre><p>(1) 策略1</p>
 <p>{A,A,A,A,A,B,B,C,C,D}</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">random<span style="color:#f92672">.</span><span style="color:#a6e22e">nextInt</span><span style="color:#f92672">(</span>10<span style="color:#f92672">)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">random<span style="color:#f92672">.</span><span style="color:#a6e22e">nextInt</span><span style="color:#f92672">(</span>10<span style="color:#f92672">)</span>
 </code></pre></div><p>缺点就是这个 collection 集合可能会比较大，内存占用大</p>
 <p>(2) 策略2</p>
 <p>权重换算成长度，先算出总长度，然后再计算出一个偏移量</p>
 <p><img src="/images/docs/tutorial/distributed/service-control/offset_weight.jpg" alt=""></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">totalWeight <span style="color:#f92672">=</span> sum<span style="color:#f92672">(</span>collection<span style="color:#f92672">)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">totalWeight <span style="color:#f92672">=</span> sum<span style="color:#f92672">(</span>collection<span style="color:#f92672">)</span>
 offset <span style="color:#f92672">=</span> random<span style="color:#f92672">.</span><span style="color:#a6e22e">nextInt</span><span style="color:#f92672">(</span>totalWeight<span style="color:#f92672">)</span>
 </code></pre></div><p>缺点就是选取的时候，需要遍历集合，复杂度 O(n)</p>
 <h3 id="轮询策略">轮询策略</h3>
 <p>如果各个节点权重一致：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#f92672">[</span>total_request_count <span style="color:#f92672">+</span> 1<span style="color:#f92672">]</span> <span style="color:#f92672">%</span> node_count
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#f92672">[</span>total_request_count <span style="color:#f92672">+</span> 1<span style="color:#f92672">]</span> <span style="color:#f92672">%</span> node_count
 </code></pre></div><p>如果权重不同，</p>
 <pre><code>collection = {A: 5, B:2, C:2, D:1}
 </code></pre><p>那么，最高的权重是 5：</p>
@@ -1275,7 +1277,7 @@ offset <span style="color:#f92672">=</span> random<span style="color:#f92672">.<
 <h2 id="限流">限流</h2>
 <h3 id="漏桶算法">漏桶算法</h3>
 <p>算法类似于餐厅排号就餐，整个餐厅所能容纳的顾客数量是有限的，有出才能有进。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Semaphore sem <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Semaphore<span style="color:#f92672">(</span>30<span style="color:#f92672">);</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Semaphore sem <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Semaphore<span style="color:#f92672">(</span>30<span style="color:#f92672">);</span>
 
 <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>sem<span style="color:#f92672">.</span><span style="color:#a6e22e">getQueueLength</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">return</span><span style="color:#f92672">;</span> <span style="color:#75715e">// 有排队，直接拒绝服务

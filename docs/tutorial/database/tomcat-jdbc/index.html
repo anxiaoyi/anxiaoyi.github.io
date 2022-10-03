@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Tomcat JDBC 连接池"><meta property="og:title" content="Tomcat JDBC 连接池" />
+<meta property="og:description" content="Tomcat JDBC 连接池 连接池的创建 (1) 创建池
+// ConnectionPool.java protected void init(PoolConfiguration properties) throws SQLException { busy = new LinkedBlockingQueue&lt;&gt;(); if (properties.isFairQueue()) { idle = new FairBlockingQueue&lt;&gt;(); //idle = new MultiLockFairBlockingQueue&lt;PooledConnection&gt;();  //idle = new LinkedTransferQueue&lt;PooledConnection&gt;();  //idle = new ArrayBlockingQueue&lt;PooledConnection&gt;(properties.getMaxActive(),false);  } else { idle = new LinkedBlockingQueue&lt;&gt;(); } } (2) 构建拦截链：
+// ConnectionPool.java protected Connection setupConnection(PooledConnection con) throws SQLException { JdbcInterceptor handler = new ProxyConnection(this,con,getPoolProperties().isUseEquals()); // 创建自定义的拦截链  // setup statement proxy  if (getPoolProperties()." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/tomcat-jdbc/" /><meta property="article:section" content="docs" />
+
+
+
+<title>Tomcat JDBC 连接池 | 赵坤的个人网站</title>
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+
+
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+
+
+<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  if (location.hostname === "localhost" || 
+    location.hostname === "127.0.0.1") {
+    return;
+  }
+
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?d04ff9e23cec6cb39ebbee1b4883e269";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+<script data-ad-client="ca-pub-8950855178079071" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+  
+</head>
+
+<body>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/"><span>赵坤的个人网站</span>
+  </a>
+</h2>
+
+
+
+
+
+
+
+
+  
+
+  
+  
+
+
+
+
+
+ 
+  
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/" >
+      💡 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/front-end-optimization-guide/" >
+      前端优化指南
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/algorithm/" >
+      算法
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/raft/" >
+      raft
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-command/" >
+      UNIX 常用命令大全
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/unix-optimize/" >
+      UNIX 性能优化
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/vue3/" >
+      Vue.js 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/git/" >
+      Git 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/network/" >
+      网络协议
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/awk/" >
+      AWK 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/devops/" >
+      DevOps
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/sentinel/" >
+      阿里巴巴 Sentinel
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/zipkin/" >
+      Zipkin 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/eureka/" >
+      Netflix Eureka 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed-storage/" >
+      分布式存储
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/maven/" >
+      Maven 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/java/" >
+      Java 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/spring/" >
+      Spring 教程
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/distributed/" >
+      分布式系统与架构设计
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/softskill/" >
+      箴言箴句
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/database/" >
+      数据库
+  </a>
+
+
+    
+
+    
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-query/" >
+      MySQL 查询
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/transaction-internal/" >
+      MySQL 事务实现原理
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-crash-safe/" >
+      MySQL Crash Safe
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-index/" >
+      MySQL 索引
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/auto-increment-id/" >
+      MySQL 自增键
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-high-availablity/" >
+      MySQL 高可用
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mysql-ops/" >
+      MySQL 优化与运维
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mvcc/" >
+      MVCC
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/mybatis/" >
+      MyBatis
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/tomcat-jdbc/"  class="active">
+      Tomcat JDBC 连接池
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/druid/" >
+      Druid 设计
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/oracle/" >
+      Oracle
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/database/sharding-sphere/" >
+      ShardingSphere
+  </a>
+
+</li>
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/redis/" >
+      Redis
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/bigdata/" >
+      大数据场景
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tutorial/technique/" >
+      技术
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/programmer-interview/" >
+      👍 程序员面试题
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/rocketmq/" >
+      RocketMQ 源码分析
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/books/" >
+      书籍
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/javascript/" >
+      JavaScript 专栏
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/it-zone/" >
+      IT 圈
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/hire/" >
+      招聘
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/cloud-plus-bbs/" >
+      云&#43;社区技术沙龙
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+      
+        
+
+  <li >
+    
+      
+
+  <a href="/docs/tools/" >
+      实用工具
+  </a>
+
+
+    
+
+    
+
+
+
+
+
+
+  </li>
+
+
+      
+    
+  </ul>
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+<ul>
+  
+  <li>
+    <a href="/posts/" >
+        博客
+      </a>
+  </li>
+  
+</ul>
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Tomcat JDBC 连接池</strong>
+
+  <label for="toc-control">
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#连接池的创建">连接池的创建</a></li>
+    <li><a href="#连接的回收">连接的回收</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+<article class="markdown">
+  
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script><h1 id="tomcat-jdbc-连接池">Tomcat JDBC 连接池</h1>
+<h2 id="连接池的创建">连接池的创建</h2>
+<p>(1) 创建<strong>池</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ConnectionPool.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">init</span><span style="color:#f92672">(</span>PoolConfiguration properties<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> SQLException <span style="color:#f92672">{</span>
+    busy <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> LinkedBlockingQueue<span style="color:#f92672">&lt;&gt;();</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">isFairQueue</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        idle <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> FairBlockingQueue<span style="color:#f92672">&lt;&gt;();</span>
+        <span style="color:#75715e">//idle = new MultiLockFairBlockingQueue&lt;PooledConnection&gt;();
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">//idle = new LinkedTransferQueue&lt;PooledConnection&gt;();
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">//idle = new ArrayBlockingQueue&lt;PooledConnection&gt;(properties.getMaxActive(),false);
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        idle <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> LinkedBlockingQueue<span style="color:#f92672">&lt;&gt;();</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>(2) 构建<strong>拦截链</strong>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ConnectionPool.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">protected</span> Connection <span style="color:#a6e22e">setupConnection</span><span style="color:#f92672">(</span>PooledConnection con<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> SQLException <span style="color:#f92672">{</span>
+    JdbcInterceptor handler <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ProxyConnection<span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">,</span>con<span style="color:#f92672">,</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">isUseEquals</span><span style="color:#f92672">());</span>
+
+    <span style="color:#75715e">// 创建自定义的拦截链
+</span><span style="color:#75715e"></span>
+    <span style="color:#75715e">// setup statement proxy
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getUseStatementFacade</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        handler <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StatementFacade<span style="color:#f92672">(</span>handler<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getUseDisposableConnectionFacade</span><span style="color:#f92672">()</span> <span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        connection <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>Connection<span style="color:#f92672">)</span>proxyClassConstructor<span style="color:#f92672">.</span><span style="color:#a6e22e">newInstance</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Object<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span> <span style="color:#66d9ef">new</span> DisposableConnectionFacade<span style="color:#f92672">(</span>handler<span style="color:#f92672">)</span> <span style="color:#f92672">});</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">return</span> connection<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>上述构造出的拦截链的图如下所示：</p>
+<pre><code>代理类 -&gt; DisposableConnectionFacade -&gt; StatementFacade -&gt; ProxyConnection
+</code></pre><p>当应用主动调用 <code>connection.close()</code> 的时候，<code>DisposableConnectionFacade</code> 类会首先拦截该方法，并将内部的指向 <code>StatementFacade</code> 的 <code>next</code> 指针置为 <code>null</code>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DisposableConnectionFacade.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> Object <span style="color:#a6e22e">invoke</span><span style="color:#f92672">(</span>Object proxy<span style="color:#f92672">,</span> Method method<span style="color:#f92672">,</span> Object<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Throwable <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>compare<span style="color:#f92672">(</span>CLOSE_VAL<span style="color:#f92672">,</span> method<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        setNext<span style="color:#f92672">(</span><span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>后续应用如果再错误地使用该条连接执行增删改查的时候，因为 <code>next</code> 指针为空，所以会抛出 <code>NullPointerException</code> 异常，该异常被 <code>DisposableConnectionFacade</code> 捕获，并会重新抛出异常 <strong>PooledConnection has already been closed.</strong>。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DisposableConnectionFacade.java
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">@Override</span>
+<span style="color:#66d9ef">public</span> Object <span style="color:#a6e22e">invoke</span><span style="color:#f92672">(</span>Object proxy<span style="color:#f92672">,</span> Method method<span style="color:#f92672">,</span> Object<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span>
+        <span style="color:#66d9ef">throws</span> Throwable <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">super</span><span style="color:#f92672">.</span><span style="color:#a6e22e">invoke</span><span style="color:#f92672">(</span>proxy<span style="color:#f92672">,</span> method<span style="color:#f92672">,</span> args<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>NullPointerException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>getNext<span style="color:#f92672">()</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> SQLException<span style="color:#f92672">(</span>
+                    <span style="color:#e6db74">&#34;PooledConnection has already been closed.&#34;</span><span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+
+        <span style="color:#66d9ef">throw</span> e<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span> 
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="连接的回收">连接的回收</h2>
+<p>通过 <code>PoolCleaner</code> 来主动回收资源：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ConnectionPool.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">initializePoolCleaner</span><span style="color:#f92672">(</span>PoolConfiguration properties<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">//if the evictor thread is supposed to run, start it now
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">isPoolSweeperEnabled</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        poolCleaner <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> PoolCleaner<span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">,</span> properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getTimeBetweenEvictionRunsMillis</span><span style="color:#f92672">());</span>
+        poolCleaner<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span> <span style="color:#75715e">//end if
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+</code></pre></div><p>那么什么情况下会创建资源回收器呢：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PoolProperties.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isPoolSweeperEnabled</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">boolean</span> timer <span style="color:#f92672">=</span> getTimeBetweenEvictionRunsMillis<span style="color:#f92672">()&gt;</span>0<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">boolean</span> result <span style="color:#f92672">=</span> timer <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">(</span>isRemoveAbandoned<span style="color:#f92672">()</span> <span style="color:#f92672">&amp;&amp;</span> getRemoveAbandonedTimeout<span style="color:#f92672">()&gt;</span>0<span style="color:#f92672">);</span>
+    result <span style="color:#f92672">=</span> result <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>timer <span style="color:#f92672">&amp;&amp;</span> getSuspectTimeout<span style="color:#f92672">()&gt;</span>0<span style="color:#f92672">);</span>
+    result <span style="color:#f92672">=</span> result <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>timer <span style="color:#f92672">&amp;&amp;</span> isTestWhileIdle<span style="color:#f92672">()</span> <span style="color:#f92672">&amp;&amp;</span> getValidationQuery<span style="color:#f92672">()!=</span><span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
+    result <span style="color:#f92672">=</span> result <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>timer <span style="color:#f92672">&amp;&amp;</span> getMinEvictableIdleTimeMillis<span style="color:#f92672">()&gt;</span>0<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">return</span> result<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>资源回收器做哪些事情：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PoolCleaner.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">isRemoveAbandoned</span><span style="color:#f92672">()</span>
+        <span style="color:#f92672">||</span> pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getSuspectTimeout</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span>
+    pool<span style="color:#f92672">.</span><span style="color:#a6e22e">checkAbandoned</span><span style="color:#f92672">();</span>
+
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getMinIdle</span><span style="color:#f92672">()</span> <span style="color:#f92672">&lt;</span> pool<span style="color:#f92672">.</span><span style="color:#a6e22e">idle</span><span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">())</span>
+    pool<span style="color:#f92672">.</span><span style="color:#a6e22e">checkIdle</span><span style="color:#f92672">();</span>
+
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">isTestWhileIdle</span><span style="color:#f92672">())</span>
+    pool<span style="color:#f92672">.</span><span style="color:#a6e22e">testAllIdle</span><span style="color:#f92672">();</span>
+</code></pre></div><p>(1) 检查 Abandoned 连接</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Iterator<span style="color:#f92672">&lt;</span>PooledConnection<span style="color:#f92672">&gt;</span> locked <span style="color:#f92672">=</span> busy<span style="color:#f92672">.</span><span style="color:#a6e22e">iterator</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>locked<span style="color:#f92672">.</span><span style="color:#a6e22e">hasNext</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    PooledConnection con <span style="color:#f92672">=</span> locked<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">boolean</span> setToNull <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+        con<span style="color:#f92672">.</span><span style="color:#a6e22e">lock</span><span style="color:#f92672">();</span>
+
+        <span style="color:#75715e">//the con has been returned to the pool or released
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">//ignore it
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>idle<span style="color:#f92672">.</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span>con<span style="color:#f92672">)</span> <span style="color:#f92672">||</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">isReleased</span><span style="color:#f92672">())</span>
+            <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+
+        <span style="color:#66d9ef">long</span> time <span style="color:#f92672">=</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">getTimestamp</span><span style="color:#f92672">();</span>
+        <span style="color:#66d9ef">long</span> now <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>shouldAbandon<span style="color:#f92672">()</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">(</span>now <span style="color:#f92672">-</span> time<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">getAbandonTimeout</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            busy<span style="color:#f92672">.</span><span style="color:#a6e22e">remove</span><span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+            abandon<span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span> <span style="color:#75715e">//end if
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
+        con<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><code>abandon(con)</code> 内部就是 <code>release(con)</code>。</p>
+
+<ins class="adsbygoogle"
+style="display:block"
+data-ad-client="ca-pub-8950855178079071"
+data-ad-slot="6142361626"
+data-ad-format="auto"
+data-full-width-responsive="true"></ins>
+</article>
+ 
+
+      <footer class="book-footer">
+        
+  <div class="flex justify-between">
+
+
+
+
+
+</div>
+
+ 
+        
+  
+  <div class="book-comments">  </div>
+  
+ 
+      </footer>
+      
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#连接池的创建">连接池的创建</a></li>
+    <li><a href="#连接的回收">连接的回收</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+</body>
+
+
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

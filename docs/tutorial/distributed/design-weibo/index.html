@@ -16,16 +16,18 @@
 SELECT COUNT(*) FROM table_relation WHERE followee_user = `user_a`; 查看 user_a 关注了多少人：
 SELECT COUNT(*) FROM table_relation WHERE follower_user = `user_a`;  (2) 不过随着用户增长，比如达到1亿，那么平均一对用户关系可能就会有100条关系，那么将会扩展到百亿级别。所以必须水平拆分。用户表好选取拆分的键，就是 user_id。不过关系表，根据 follower_user_id 拆分，那么查询这个人关注了多少人好查询，但是查询某个人有多少粉丝，就需要去所有分片上查询汇总了，相反按照 followee_user_id 拆分，那么这个人查询关注了多少人，就不好查询了。也就是总有一半的场景查询效率低下。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/design-weibo/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/design-weibo/" /><meta property="article:section" content="docs" />
+
+
 
 <title>设计微博系统 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.657ffb103dfb174792f387494682f111c1f96c2113cdcfee8420b51c4e96151b.js" integrity="sha256-ZX/7ED37F0eS84dJRoLxEcH5bCETzc/uhCC1HE6WFRs="></script>
+<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1173,7 +1175,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1249,14 +1251,14 @@ data-full-width-responsive="true"></ins>
 </code></pre><p><strong>用户关系表</strong>，表示，<code>follower_user</code> 关注了 <code>followee_user</code>：</p>
 <p>| id | follower_user_id | followee_user_id |</p>
 <p>查看 <code>user_a</code> 粉丝多少人：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">FROM</span> table_relation <span style="color:#66d9ef">WHERE</span> followee_user <span style="color:#f92672">=</span> <span style="color:#f92672">`</span>user_a<span style="color:#f92672">`</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">FROM</span> table_relation <span style="color:#66d9ef">WHERE</span> followee_user <span style="color:#f92672">=</span> <span style="color:#f92672">`</span>user_a<span style="color:#f92672">`</span>;
 </code></pre></div><p>查看 <code>user_a</code> 关注了多少人：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">FROM</span> table_relation <span style="color:#66d9ef">WHERE</span> follower_user <span style="color:#f92672">=</span> <span style="color:#f92672">`</span>user_a<span style="color:#f92672">`</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">FROM</span> table_relation <span style="color:#66d9ef">WHERE</span> follower_user <span style="color:#f92672">=</span> <span style="color:#f92672">`</span>user_a<span style="color:#f92672">`</span>;
 </code></pre></div><hr>
 <p><strong>(2)</strong> 不过随着用户增长，比如达到1亿，那么平均一对用户关系可能就会有100条关系，那么将会扩展到百亿级别。所以必须水平拆分。用户表好选取拆分的键，就是 <code>user_id</code>。不过关系表，根据 <code>follower_user_id</code> 拆分，那么查询这个人关注了多少人好查询，但是查询某个人有多少粉丝，就需要去所有分片上查询汇总了，相反按照 <code>followee_user_id</code> 拆分，那么这个人查询关注了多少人，就不好查询了。也就是<strong>总有一半的场景查询效率低下</strong>。</p>
 <p>为了应对上面困难，我们可以垂直拆分，<strong>一个关系表拆分为 <code>follower</code> 和 <code>followee</code> 两张表</strong>，然后再对这两张表进行水平拆分，问题就迎刃而解了。</p>
 <p>不过这样带来的问题是，如果新增了<strong>关注关系</strong>，需要使用事务来保证两张表都插入成功，比如 B 关注了 C：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 计算 B, C 的分片索引
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 计算 B, C 的分片索引
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">START</span> <span style="color:#66d9ef">TRANSACTION</span>;
 <span style="color:#75715e">-- table_follower 按照 followerId 拆分即可
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> table_follower(userId, followerId) <span style="color:#66d9ef">VALUES</span> (<span style="color:#e6db74">&#39;B&#39;</span>, <span style="color:#e6db74">&#39;C&#39;</span>);
@@ -1273,11 +1275,11 @@ data-full-width-responsive="true"></ins>
 <h3 id="帖子的存储">帖子的存储</h3>
 <p><img src="/images/docs/tutorial/distributed/design-weibo/2021-04-11_14-12.png" alt=""></p>
 <p>一级索引 <code>postId</code>，二级索引：<code>userId + posttime</code>，那么按照时间查询帖子列表，将会存在<strong>严重回表</strong>：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> POST <span style="color:#66d9ef">WHERE</span> userId <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> posttime <span style="color:#66d9ef">BETWEEN</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> <span style="color:#f92672">?</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> POST <span style="color:#66d9ef">WHERE</span> userId <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> posttime <span style="color:#66d9ef">BETWEEN</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> <span style="color:#f92672">?</span>
 </code></pre></div><p>那么可以将 <code>userId</code> 和 <code>posttime</code> 冗余进 <code>postId</code> 中，去掉二级索引，减少回表：</p>
 <p><img src="/images/docs/tutorial/distributed/design-weibo/2021-04-11_14-17.png" alt=""></p>
 <p><code>postId</code> 首 6 位为 <code>userId</code>，每一位是 <code>0~9/A~Z</code> 这 36 个字符中的某一个，6 位可以表示 21 亿不同的用户。后续时间戳可以精确到秒。单个用户每秒发的帖子不超过 <code>seq</code> 表达的最大值。其中 <code>timeCompress</code> 可以设计为：帖子发布的时间 - SNS 系统首次发布的时间的中间间隔，进行 36 进制编码。那么查询的 SQL 变成了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> post <span style="color:#66d9ef">WHERE</span> postId <span style="color:#66d9ef">BETWEEN</span> postId1 <span style="color:#66d9ef">AND</span> postId2;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> post <span style="color:#66d9ef">WHERE</span> postId <span style="color:#66d9ef">BETWEEN</span> postId1 <span style="color:#66d9ef">AND</span> postId2;
 <span style="color:#75715e">-- 或者
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> post <span style="color:#66d9ef">WHERE</span> postId <span style="color:#66d9ef">like</span> <span style="color:#e6db74">&#39;13A68%&#39;</span>;
 </code></pre></div><p><strong>DB 中相同前缀的数据相邻存放</strong>，因此就可以用上 DB 的 range scan。</p>
@@ -1294,14 +1296,14 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/distributed/design-weibo/2021-04-11_23-38.png" alt=""></p>
 <p>其中 <code>postId</code> 的格式由原来的 <code>posterId + time + seq</code> 改为 <strong><code>postId' = time + posterId + seq</code></strong>，我们更加<strong>侧重于查询</strong>。主键：<code>userId + postId'</code>。</p>
 <p>查询 <code>timeline</code> 的 SQL：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> postId <span style="color:#66d9ef">FROM</span> timeline <span style="color:#66d9ef">WHERE</span> userId <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> postId <span style="color:#66d9ef">BETWEEN</span> <span style="color:#e6db74">&#39;time1%&#39;</span> <span style="color:#66d9ef">AND</span> <span style="color:#e6db74">&#39;time2%&#39;</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> postId <span style="color:#66d9ef">FROM</span> timeline <span style="color:#66d9ef">WHERE</span> userId <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> postId <span style="color:#66d9ef">BETWEEN</span> <span style="color:#e6db74">&#39;time1%&#39;</span> <span style="color:#66d9ef">AND</span> <span style="color:#e6db74">&#39;time2%&#39;</span>;
 </code></pre></div><p>利用<strong>前缀进行范围查找</strong>。</p>
 <p>(2) <code>pull</code> 模式</p>
 <p>传统的 <code>pull</code> 模式，每次刷新查询所有分片的做法效率比较低，每个用户的平均 500 个关注用户，分布在全部的 100 个(假设) DB 分片上，那么每次需要 100 次 DB 查询。而 <code>push</code> 模式，如果热点用户德华，那么帖子复制到所有的关注者的 <code>timeline</code> 中也未免太多。此处给出一种 <code>pull/push</code> 结合的方案：</p>
 <p><img src="/images/docs/tutorial/distributed/design-weibo/2021-04-11_23-48.png" alt=""></p>
 <p>某个用户发布了一个帖子，只同步到 100 个分片的某个表上，假设这张表叫做 <code>post_rep</code>，那么至少要包含三个字段，<code>posterId</code>、<code>postId</code>、<code>postTime</code>。如果数据库按照 <code>timeline</code> 所属用户进行分片，那么这个用户关注的所有用户的帖子全部落在同一个 DB 分片上，那么每次刷新 <code>timeline</code> 的时候，只需要一次 DB 查询。</p>
 <p>不过这条 SQL 变得复杂了：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> post_rep <span style="color:#66d9ef">WHERE</span> posterId <span style="color:#66d9ef">IN</span> (...<span style="color:#960050;background-color:#1e0010">平均</span> <span style="color:#ae81ff">500</span> <span style="color:#960050;background-color:#1e0010">个</span> ID) <span style="color:#66d9ef">and</span> postTime <span style="color:#66d9ef">BETWEEN</span> ... <span style="color:#66d9ef">AND</span> ...;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> post_rep <span style="color:#66d9ef">WHERE</span> posterId <span style="color:#66d9ef">IN</span> (...<span style="color:#960050;background-color:#1e0010">平均</span> <span style="color:#ae81ff">500</span> <span style="color:#960050;background-color:#1e0010">个</span> ID) <span style="color:#66d9ef">and</span> postTime <span style="color:#66d9ef">BETWEEN</span> ... <span style="color:#66d9ef">AND</span> ...;
 </code></pre></div><h2 id="参考">参考</h2>
 <ul>
 <li><a href="https://book.douban.com/subject/27602483/">《深入分布式缓存》</a></li>

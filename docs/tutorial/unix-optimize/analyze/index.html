@@ -10,16 +10,18 @@ $ strace -p 12280 strace: Process 12280 attached select(0, NULL, NULL, NULL, {tv
 # -C 选项表示输出新内容时不清空屏幕  $ ./filetop -C filetop 只给出了文件名称，却没有文件路径，还得继续找啊。我再介绍一个好用的工具，opensnoop 。它同属于 bcc 软件包，可以动态跟踪内核中的 open 系统调用。这样，我们就可以找出这些 txt 文件的路径。
 $ opensnoop 12280 python 6 0 /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/650." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/analyze/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/unix-optimize/analyze/" /><meta property="article:section" content="docs" />
+
+
 
 <title>Linux 性能分析 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.657ffb103dfb174792f387494682f111c1f96c2113cdcfee8420b51c4e96151b.js" integrity="sha256-ZX/7ED37F0eS84dJRoLxEcH5bCETzc/uhCC1HE6WFRs="></script>
+<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1077,7 +1079,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1146,23 +1148,23 @@ data-full-width-responsive="true"></ins>
 <h2 id="工具">工具</h2>
 <h3 id="strace">strace</h3>
 <p><code>strace</code> 可以分析<strong>系统调用</strong>情况：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ strace -p <span style="color:#ae81ff">12280</span> 
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ strace -p <span style="color:#ae81ff">12280</span> 
 strace: Process <span style="color:#ae81ff">12280</span> attached 
 <span style="color:#66d9ef">select</span><span style="color:#f92672">(</span>0, NULL, NULL, NULL, <span style="color:#f92672">{</span>tv_sec<span style="color:#f92672">=</span>0, tv_usec<span style="color:#f92672">=</span>567708<span style="color:#f92672">})</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">(</span>Timeout<span style="color:#f92672">)</span> 
 stat<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;/usr/local/lib/python3.7/importlib/_bootstrap.py&#34;</span>, <span style="color:#f92672">{</span>st_mode<span style="color:#f92672">=</span>S_IFREG|0644, st_size<span style="color:#f92672">=</span>39278, ...<span style="color:#f92672">})</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> 
 stat<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;/usr/local/lib/python3.7/importlib/_bootstrap.py&#34;</span>, <span style="color:#f92672">{</span>st_mode<span style="color:#f92672">=</span>S_IFREG|0644, st_size<span style="color:#f92672">=</span>39278, ...<span style="color:#f92672">})</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> 
 </code></pre></div><h3 id="filetop">filetop</h3>
 <p><code>filetop</code> 它是 bcc 软件包的一部分，基于 Linux 内核的 eBPF（extended Berkeley Packet Filters）机制，主要<strong>跟踪内核中文件的读写情况</strong>，并输出线程 ID（TID）、读写大小、读写类型以及文件名称。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash"><span style="color:#75715e"># -C 选项表示输出新内容时不清空屏幕 </span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash"><span style="color:#75715e"># -C 选项表示输出新内容时不清空屏幕 </span>
 $ ./filetop -C
 </code></pre></div><p><code>filetop</code> 只给出了文件名称，却没有文件路径，还得继续找啊。我再介绍一个好用的工具，<code>opensnoop</code> 。它同属于 bcc 软件包，可以<strong>动态跟踪内核中的 <code>open</code> 系统调用</strong>。这样，我们就可以找出这些 txt 文件的路径。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ opensnoop 
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ opensnoop 
 <span style="color:#ae81ff">12280</span>  python              <span style="color:#ae81ff">6</span>   <span style="color:#ae81ff">0</span> /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/650.txt 
 <span style="color:#ae81ff">12280</span>  python              <span style="color:#ae81ff">6</span>   <span style="color:#ae81ff">0</span> /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/651.txt 
 <span style="color:#ae81ff">12280</span>  python              <span style="color:#ae81ff">6</span>   <span style="color:#ae81ff">0</span> /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/652.txt 
 </code></pre></div><h3 id="lsof">lsof</h3>
 <p><code>lsof</code> 专门用来<strong>查看进程打开文件列表</strong>，不过，这里的“文件”不只有普通文件，还包括了目录、块设备、动态库、网络套接字等。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ lsof -p <span style="color:#ae81ff">18940</span> 
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">$ lsof -p <span style="color:#ae81ff">18940</span> 
 COMMAND   PID USER   FD   TYPE DEVICE  SIZE/OFF    NODE NAME 
 python  <span style="color:#ae81ff">18940</span> root  cwd    DIR   0,50      <span style="color:#ae81ff">4096</span> <span style="color:#ae81ff">1549389</span> / 
 python  <span style="color:#ae81ff">18940</span> root  rtd    DIR   0,50      <span style="color:#ae81ff">4096</span> <span style="color:#ae81ff">1549389</span> / 
@@ -1171,7 +1173,7 @@ python  <span style="color:#ae81ff">18940</span> root    2u   CHR  136,0       0
 python  <span style="color:#ae81ff">18940</span> root    3w   REG    8,1 <span style="color:#ae81ff">117944320</span>     <span style="color:#ae81ff">303</span> /tmp/logtest.txt 
 </code></pre></div><h3 id="perf">perf</h3>
 <p><code>perf</code> 可以<strong>对指定的进程或者事件进行采样</strong>，并且还可以用调用栈的形式，输出整个调用链上的汇总信息。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash"><span style="color:#75715e"># 采样30s后退出</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash"><span style="color:#75715e"># 采样30s后退出</span>
 $ perf record -a -g -p <span style="color:#ae81ff">18490</span> -- sleep <span style="color:#ae81ff">30</span>
 </code></pre></div><p>在上述命令结束后，继续执行 <code>perf report</code> 命令，你就可以得到 <code>perf</code> 的<strong>汇总报告</strong>。</p>
 

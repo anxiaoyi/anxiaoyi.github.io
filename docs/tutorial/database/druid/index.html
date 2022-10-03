@@ -10,16 +10,18 @@
 int notFullTimeoutRetryCnt = 0; for (;;) { DruidPooledConnection poolableConnection; try { poolableConnection = getConnectionInternal(maxWaitMillis); } catch (GetConnectionTimeoutException ex) { if (notFullTimeoutRetryCnt &lt;= this.notFullTimeoutRetryCount &amp;&amp; !isFull()) { notFullTimeoutRetryCnt&#43;&#43;; if (LOG.isWarnEnabled()) { LOG.warn(&#34;get connection timeout retry : &#34; &#43; notFullTimeoutRetryCnt); } continue; } throw ex; } } getConnectionInternal 内部获取连接的主要代码：
  第一步：加锁  try { lock.lockInterruptibly(); } catch (InterruptedException e) { connectErrorCountUpdater." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/druid/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/druid/" /><meta property="article:section" content="docs" />
+
+
 
 <title>Druid 设计 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.657ffb103dfb174792f387494682f111c1f96c2113cdcfee8420b51c4e96151b.js" integrity="sha256-ZX/7ED37F0eS84dJRoLxEcH5bCETzc/uhCC1HE6WFRs="></script>
+<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -709,6 +711,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/database/tomcat-jdbc/" >
+      Tomcat JDBC 连接池
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/database/druid/"  class="active">
       Druid 设计
   </a>
@@ -1077,7 +1089,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1131,7 +1143,7 @@ data-full-width-responsive="true"></ins>
 <h2 id="连接池">连接池</h2>
 <p>阿里巴巴 Druid 的连接池是如何实现的？</p>
 <p>从连接池获取连接 (分析 <code>DruidDataSource.java</code>)，外层 <code>for</code> 无限循环，尝试调用 <code>getConnectionInternal</code> 获取可用连接，如果超时那么就会<strong>重试</strong>：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">int</span> notFullTimeoutRetryCnt <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">int</span> notFullTimeoutRetryCnt <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
 <span style="color:#66d9ef">for</span> <span style="color:#f92672">(;;)</span> <span style="color:#f92672">{</span>
     DruidPooledConnection poolableConnection<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
@@ -1151,7 +1163,7 @@ data-full-width-responsive="true"></ins>
 <ul>
 <li>第一步：<strong>加锁</strong></li>
 </ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
     lock<span style="color:#f92672">.</span><span style="color:#a6e22e">lockInterruptibly</span><span style="color:#f92672">();</span>
 <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>InterruptedException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     connectErrorCountUpdater<span style="color:#f92672">.</span><span style="color:#a6e22e">incrementAndGet</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">);</span>
@@ -1161,7 +1173,7 @@ data-full-width-responsive="true"></ins>
 <li>第二步：<strong>是否直接新建一个连接</strong></li>
 </ul>
 <p><strong>活跃连接未达到最大活跃连接</strong>，当前无正在创建的连接：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>createScheduler <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>createScheduler <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span>
         <span style="color:#f92672">&amp;&amp;</span> poolingCount <span style="color:#f92672">==</span> 0
         <span style="color:#f92672">&amp;&amp;</span> activeCount <span style="color:#f92672">&lt;</span> maxActive
         <span style="color:#f92672">&amp;&amp;</span> creatingCountUpdater<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">)</span> <span style="color:#f92672">==</span> 0
@@ -1173,7 +1185,7 @@ data-full-width-responsive="true"></ins>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>直接创建连接的代码如下，创建一个连接 <code>activeCount</code> 就加 1，创建成功后会把最外层的 <code>for</code> 循环 <code>break</code> 掉：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">boolean</span> createDirect <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;;)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">boolean</span> createDirect <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;;)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>createDirect<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         createStartNanosUpdater<span style="color:#f92672">.</span><span style="color:#a6e22e">set</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">,</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">nanoTime</span><span style="color:#f92672">());</span>
         <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>creatingCountUpdater<span style="color:#f92672">.</span><span style="color:#a6e22e">compareAndSet</span><span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">,</span> 0<span style="color:#f92672">,</span> 1<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
@@ -1212,19 +1224,19 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><ul>
 <li>第三步：<code>connections</code> 作为连接池，获取 <code>connections</code> 的最后一个连接。</li>
 </ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">volatile</span> DruidConnectionHolder<span style="color:#f92672">[]</span> connections<span style="color:#f92672">;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">volatile</span> DruidConnectionHolder<span style="color:#f92672">[]</span> connections<span style="color:#f92672">;</span>
 </code></pre></div><p><code>pollLast</code> 方法体整个是包裹在一个 <code>for</code> 循环里：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> DruidConnectionHolder <span style="color:#a6e22e">pollLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> nanos<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> InterruptedException<span style="color:#f92672">,</span> SQLException <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> DruidConnectionHolder <span style="color:#a6e22e">pollLast</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> nanos<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> InterruptedException<span style="color:#f92672">,</span> SQLException <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">for</span> <span style="color:#f92672">(;;)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>在方法体内部，如果 <code>poolingCount</code> 为 0，说明当前可用连接为 <strong>0</strong>，那么就创建线程：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>poolingCount <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>poolingCount <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     emptySignal<span style="color:#f92672">();</span> <span style="color:#75715e">// send signal to CreateThread create connection
 </span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
 </code></pre></div><p><code>emptySignal()</code> 的方法体如下：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> ScheduledExecutorService                 createScheduler<span style="color:#f92672">;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> ScheduledExecutorService                 createScheduler<span style="color:#f92672">;</span>
 <span style="color:#66d9ef">protected</span> Condition                                empty<span style="color:#f92672">;</span>
 
 <span style="color:#75715e">// 信号量
@@ -1245,7 +1257,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#75715e">// 异步创建连接
 </span><span style="color:#75715e"></span>submitCreateTask<span style="color:#f92672">(</span><span style="color:#66d9ef">false</span><span style="color:#f92672">);</span>
 </code></pre></div><p>随后在 <code>pollLast()</code> 方法的下半部分的主要逻辑是：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 不为空的条件，如果不满足
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 不为空的条件，如果不满足
 </span><span style="color:#75715e">// 那么最多等待 estimate 纳秒
 </span><span style="color:#75715e"></span>notEmpty<span style="color:#f92672">.</span><span style="color:#a6e22e">awaitNanos</span><span style="color:#f92672">(</span>estimate<span style="color:#f92672">);</span>
 
@@ -1254,7 +1266,7 @@ connections<span style="color:#f92672">[</span>poolingCount<span style="color:#f
 
 <span style="color:#66d9ef">return</span> last<span style="color:#f92672">;</span>
 </code></pre></div><p>当上面的创建线程池的任务内部逻辑创建一个连接成功后，会 <code>put</code> 一个连接：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>DruidConnectionHolder holder<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> createTaskId<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">put</span><span style="color:#f92672">(</span>DruidConnectionHolder holder<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> createTaskId<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
         connections<span style="color:#f92672">[</span>poolingCount<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> holder<span style="color:#f92672">;</span>
         <span style="color:#75715e">// 当前不为空了，发送信号给等待队列的第一个线程
@@ -1265,7 +1277,7 @@ connections<span style="color:#f92672">[</span>poolingCount<span style="color:#f
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="atomicxxfieldupdater">AtomicXXFieldUpdater</h2>
 <p>我们在上面代码可以看到很多地方更新某个类里面的 <code>int</code> 或者 <code>long</code> 变量都是使用的 <code>AtomicXXFieldUpdater</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">static</span> AtomicIntegerFieldUpdater<span style="color:#f92672">&lt;</span>DruidAbstractDataSource<span style="color:#f92672">&gt;</span> directCreateCountUpdater     <span style="color:#f92672">=</span> AtomicIntegerFieldUpdater<span style="color:#f92672">.</span><span style="color:#a6e22e">newUpdater</span><span style="color:#f92672">(</span>DruidAbstractDataSource<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;directCreateCount&#34;</span><span style="color:#f92672">);</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">static</span> AtomicIntegerFieldUpdater<span style="color:#f92672">&lt;</span>DruidAbstractDataSource<span style="color:#f92672">&gt;</span> directCreateCountUpdater     <span style="color:#f92672">=</span> AtomicIntegerFieldUpdater<span style="color:#f92672">.</span><span style="color:#a6e22e">newUpdater</span><span style="color:#f92672">(</span>DruidAbstractDataSource<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;directCreateCount&#34;</span><span style="color:#f92672">);</span>
 <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">static</span> AtomicLongFieldUpdater<span style="color:#f92672">&lt;</span>DruidAbstractDataSource<span style="color:#f92672">&gt;</span>    createCountUpdater           <span style="color:#f92672">=</span> AtomicLongFieldUpdater<span style="color:#f92672">.</span><span style="color:#a6e22e">newUpdater</span><span style="color:#f92672">(</span>DruidAbstractDataSource<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;createCount&#34;</span><span style="color:#f92672">);</span>
 </code></pre></div><p>那么为什么不采用 <code>AtomicInteger</code> 之类的类来控制并发操作呢？首先它的使用有一些约束：</p>
 <ul>

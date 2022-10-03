@@ -11,16 +11,18 @@ Redis 为事务提供了一个 discard 指令，用于丢弃事务缓存队列�
 &gt; get books (nil) &gt; multi OK &gt; incr books QUEUED &gt; incr books QUEUED &gt; discard OK &gt; get books (nil) 我们可以看到 discard 之后，队列中的所有指令都没执行，就好像 multi 和 discard 中间的所有指令从未发生过一样。
 不满足原子性 事务的原子性是指要么事务全部成功，要么全部失败，那么 Redis 事务执行是原子性的么？" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/redis-transaction/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/redis-transaction/" /><meta property="article:section" content="docs" />
+
+
 
 <title>Redis 事务 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.657ffb103dfb174792f387494682f111c1f96c2113cdcfee8420b51c4e96151b.js" integrity="sha256-ZX/7ED37F0eS84dJRoLxEcH5bCETzc/uhCC1HE6WFRs="></script>
+<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1108,7 +1110,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1226,7 +1228,7 @@ QUEUED
 <p>所以，<strong>不管Redis采用什么持久化模式，事务的持久性属性是得不到保证</strong>的。</p>
 <h2 id="使用管道优化">使用管道优化</h2>
 <p>上面的 Redis 事务在发送每个指令到事务缓存队列时都要经过一次网络读写，当一个事务内部的指令较多时，需要的网络 IO 时间也会线性增长。所以通常 Redis 的客户端在执行事务时都会结合 <code>pipeline</code> 一起使用，这样可以将多次 IO 操作压缩为单次 IO 操作。比如我们在使用 Python 的 Redis 客户端时执行事务时是要强制使用 <code>pipeline</code> 的。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">pipe <span style="color:#f92672">=</span> redis<span style="color:#f92672">.</span>pipeline(transaction<span style="color:#f92672">=</span>true)
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">pipe <span style="color:#f92672">=</span> redis<span style="color:#f92672">.</span>pipeline(transaction<span style="color:#f92672">=</span>true)
 pipe<span style="color:#f92672">.</span>multi()
 pipe<span style="color:#f92672">.</span>incr(<span style="color:#e6db74">&#34;books&#34;</span>)
 pipe<span style="color:#f92672">.</span>incr(<span style="color:#e6db74">&#34;books&#34;</span>)

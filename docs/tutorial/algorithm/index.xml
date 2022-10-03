@@ -22,7 +22,14 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/array/</guid>
-      <description>数组 无序数组第 K 大的数字  partition 算法每次返回的都是 pivot 所在的索引 partition 算法实现的思路，i 指向的是小于 pivot 的数列的最后一个值的索引。j 在前面探路，如果遇见小于等于 pivot 的值 arr[j]，说明这个值应该放在前半段，那么它应该前半段的谁交换呢？答案就是这个 arr[j] 应该添加到 i 的下一个位置。也就是需要 swap(++i, j)。 最后 swap(++i, high)，将 pivot 放到中间。  小小小小小大大大大小...pivot i j public int findKthLargest(int[] nums, int k) { k = nums.length - k; // 1 2 3 4 5 6  // ↑(第 2 大)  // ↑(partition = 2 的时候，实际上指向的是这里)  int lo = 0; int hi = nums.</description>
+      <description>数组 单调栈  参考: LeetCode
+ 单调栈 = 单调 + 栈，因此其同时满足两个特性: 单调性、栈的特点。
+ 单调性: 单调栈里面所存放的数据是有序的(单调递增或递减)。 栈: 后进先出。  因其满足单调性和每个数字只会入栈一次，所以可以在时间复杂度 O(n) 的情况下解决一些问题。
+LeetCode 739. 每日温度 题意
+给定每天的温度，求对于每一天需要等几天才可以等到更暖和的一天。如果该天之后不存在 更暖和的天气，则记为 0。 输出一个一维数组，表示每天需要等待的天数。
+示例
+输入: temperatures = [73,74,75,71,69,72,76,73] 输出: [1,1,4,2,1,1,0,0] 代码
+class Solution { public int[] dailyTemperatures(int[] T) { int[] ans = new int[T.length]; Deque&amp;lt;Integer&amp;gt; s = new LinkedList&amp;lt;Integer&amp;gt;(); for (int i = 0; i &amp;lt; T.length; i++) { while (!s.isEmpty() &amp;amp;&amp;amp; T[i] &amp;gt; T[s.</description>
     </item>
     
     <item>
@@ -31,7 +38,13 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/tree/</guid>
-      <description>树 二叉树的最近公共祖先  先看孩子是否有可能是公共祖先，最后看树根有没有可能是公共祖先。因为树根总是祖先。是用来兜底的。 root 是 p 的祖先，那么 p 是 root 的子系亲属或者孙子系亲属，即向下的亲属关系。  public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) { if (root != null) { TreeNode left = lowestCommonAncestor(root.left, p, q); if (left != null) { return left; } TreeNode right = lowestCommonAncestor(root.right, p, q); if (right != null) { return right; } if (isSubNode(root, p) &amp;amp;&amp;amp; isSubNode(root, q)) { return root; } } return null; } private boolean isSubNode(TreeNode root, TreeNode p) { if (root == null) { return false; } if (root.</description>
+      <description>树 字典树/前缀树 所谓的字典树其实就是一颗多叉树，通常来说，就是每一个节点存一个字符（或者数字等），通过这个节点存的值，指向子节点。
+字典树和哈希表通常都可以用来进行字符串的比较，它们的复杂度差距并不明显，在不同的场景下可能都可以使用，也可能另一个效率更高。
+通常，涉及到普通的字符串匹配，就可以用哈希表，而涉及前后缀，提前给定非常多的字符串等题，就可以考虑使用字典树了。
+回文对 给一独特的单词列表, 在给定列表中查找所有不同的索引 (i, j) 对, 使得两个单词的串联即 words[i] + words[j] 是回文串。
+输入: [&amp;quot;abcd&amp;quot;, &amp;quot;dcba&amp;quot;, &amp;quot;lls&amp;quot;, &amp;quot;s&amp;quot;, &amp;quot;sssll&amp;quot;] 输出: [[0, 1], [1, 0], [3, 2], [2, 4]] 解释: 回文串为 `[&amp;quot;dcbaabcd&amp;quot;, &amp;quot;abcddcba&amp;quot;, &amp;quot;slls&amp;quot;, &amp;quot;llssssll&amp;quot;]` 题解：
+对于每一个单词:
+ 如果单词的左侧是回文，右侧的 reverse() 也在 Trie 树/哈希表里面，说明可以构成回文对 (见下文图示) 如果单词的右侧是回文，左侧的 reverse() 也在 Trie 树/哈希表里面，说明可以构成回文对  二叉树的最近公共祖先  先看孩子是否有可能是公共祖先，最后看树根有没有可能是公共祖先。因为树根总是祖先。是用来兜底的。 root 是 p 的祖先，那么 p 是 root 的子系亲属或者孙子系亲属，即向下的亲属关系。  public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) { if (root !</description>
     </item>
     
     <item>
@@ -49,9 +62,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/algorithm/dp/</guid>
-      <description>动态规划 买卖股票的最佳时机  用一个变量记录一个历史最低价格 minprice，如果当前值比 minPrice 小，则更新 minPrice。即我们全程都在寻找一个历史最低值。 否则就考虑是否可以卖出：看当前值减去 minPrice 是否可以更新 maxProfit。  public int maxProfit(int prices[]) { int minprice = Integer.MAX_VALUE; int maxprofit = 0; for (int i = 0; i &amp;lt; prices.length; i++) { if (prices[i] &amp;lt; minprice) { minprice = prices[i]; } else if (prices[i] - minprice &amp;gt; maxprofit) { maxprofit = prices[i] - minprice; } } return maxprofit; } 最大子序和 找到一个具有最大和的连续子数组。
- 看当前累加的 sum 对求最终的最大和是否有正向的增益效果。
- 腾讯：返回子数组</description>
+      <description>动态规划  leetcode动态规划题目总结  买卖股票的最佳时机  用一个变量记录一个历史最低价格 minprice，如果当前值比 minPrice 小，则更新 minPrice。即我们全程都在寻找一个历史最低值。 否则就考虑是否可以卖出：看当前值减去 minPrice 是否可以更新 maxProfit。  public int maxProfit(int prices[]) { int minprice = Integer.MAX_VALUE; int maxprofit = 0; for (int i = 0; i &amp;lt; prices.length; i++) { if (prices[i] &amp;lt; minprice) { minprice = prices[i]; } else if (prices[i] - minprice &amp;gt; maxprofit) { maxprofit = prices[i] - minprice; } } return maxprofit; } 最大子序和 找到一个具有最大和的连续子数组。
+ 看当前累加的 sum 对求最终的最大和是否有正向的增益效果。</description>
     </item>
     
     <item>

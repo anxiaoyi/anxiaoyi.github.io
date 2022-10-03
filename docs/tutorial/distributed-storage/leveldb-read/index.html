@@ -8,16 +8,18 @@
 <meta property="og:description" content="leveldb 源码分析与实现: 读取 读文件的过程 首先查看 memtable，其次查看 immutable memtable，最后尝试从 versions_-&gt;current() 中获取。
 // First look in the memtable, then in the immutable memtable (if any). LookupKey lkey(key, snapshot); if (mem-&gt;Get(lkey, value, &amp;s)) { // Done } else if (imm != nullptr &amp;&amp; imm-&gt;Get(lkey, value, &amp;s)) { // Done } else { s = current-&gt;Get(options, lkey, value, &amp;stats); have_stat_update = true; } MemTable // memtable.cc bool MemTable::Get(const LookupKey&amp; key, std::string* value, Status* s) { // 取出和这个 key 关联的 tag  const uint64_t tag = DecodeFixed64(key_ptr &#43; key_length - 8); switch (static_cast&lt;ValueType&gt;(tag &amp; 0xff)) { // 有值  case kTypeValue: { Slice v = GetLengthPrefixedSlice(key_ptr &#43; key_length); value-&gt;assign(v." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed-storage/leveldb-read/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed-storage/leveldb-read/" /><meta property="article:section" content="docs" />
+
+
 
 <title>leveldb 源码分析与实现 - 读取 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.657ffb103dfb174792f387494682f111c1f96c2113cdcfee8420b51c4e96151b.js" integrity="sha256-ZX/7ED37F0eS84dJRoLxEcH5bCETzc/uhCC1HE6WFRs="></script>
+<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -985,7 +987,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1047,7 +1049,7 @@ data-full-width-responsive="true"></ins>
 </script><h1 id="leveldb-源码分析与实现-读取">leveldb 源码分析与实现: 读取</h1>
 <h2 id="读文件的过程">读文件的过程</h2>
 <p>首先查看 <code>memtable</code>，其次查看 <code>immutable memtable</code>，最后尝试从 <code>versions_-&gt;current()</code> 中获取。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// First look in the memtable, then in the immutable memtable (if any).
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// First look in the memtable, then in the immutable memtable (if any).
 </span><span style="color:#75715e"></span>LookupKey <span style="color:#a6e22e">lkey</span>(key, snapshot);
 <span style="color:#66d9ef">if</span> (mem<span style="color:#f92672">-&gt;</span>Get(lkey, value, <span style="color:#f92672">&amp;</span>s)) {
   <span style="color:#75715e">// Done
@@ -1059,7 +1061,7 @@ data-full-width-responsive="true"></ins>
 }
 </code></pre></div><p><img src="/images/docs/tutorial/distributed-storage/leveldb/read-process.png" alt=""></p>
 <h2 id="memtable">MemTable</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// memtable.cc
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// memtable.cc
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">bool</span> MemTable<span style="color:#f92672">::</span>Get(<span style="color:#66d9ef">const</span> LookupKey<span style="color:#f92672">&amp;</span> key, std<span style="color:#f92672">::</span>string<span style="color:#f92672">*</span> value, Status<span style="color:#f92672">*</span> s) {
   <span style="color:#75715e">// 取出和这个 key 关联的 tag
 </span><span style="color:#75715e"></span>  <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">uint64_t</span> tag <span style="color:#f92672">=</span> DecodeFixed64(key_ptr <span style="color:#f92672">+</span> key_length <span style="color:#f92672">-</span> <span style="color:#ae81ff">8</span>);
@@ -1079,7 +1081,7 @@ data-full-width-responsive="true"></ins>
 }
 </code></pre></div><h2 id="immutable-memtable">Immutable MemTable</h2>
 <p><code>imm</code> 代表的是 <strong>Immutable MemTable</strong>，意味着只能从这个 <strong>MemTable</strong> 中读取值，而不能写入值。在写入值之前，leveldb 会在适当时机，将 <code>mem_</code> 转为 <code>imm_</code>。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// ...
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>imm_ <span style="color:#f92672">=</span> mem_;
 has_imm_.store(true, std<span style="color:#f92672">::</span>memory_order_release);
 mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> MemTable(internal_comparator_);
@@ -1087,19 +1089,19 @@ mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span>
 </span></code></pre></div><h2 id="从当前-version-查找">从当前 Version 查找</h2>
 <h3 id="重要结构体">重要结构体</h3>
 <p><code>FileMetaData</code> 是一个结构体:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">// version_edit.h
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#75715e">// version_edit.h
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">struct</span> FileMetaData {
   FileMetaData() <span style="color:#f92672">:</span> refs(<span style="color:#ae81ff">0</span>), allowed_seeks(<span style="color:#ae81ff">1</span> <span style="color:#f92672">&lt;&lt;</span> <span style="color:#ae81ff">30</span>), file_size(<span style="color:#ae81ff">0</span>) {}
 
   <span style="color:#66d9ef">int</span> refs;
   <span style="color:#66d9ef">int</span> allowed_seeks;  <span style="color:#75715e">// Seeks allowed until compaction
-</span><span style="color:#75715e"></span>  uint64_t number;
-  uint64_t file_size;    <span style="color:#75715e">// File size in bytes
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">uint64_t</span> number;
+  <span style="color:#66d9ef">uint64_t</span> file_size;    <span style="color:#75715e">// File size in bytes
 </span><span style="color:#75715e"></span>  InternalKey smallest;  <span style="color:#75715e">// Smallest internal key served by table
 </span><span style="color:#75715e"></span>  InternalKey largest;   <span style="color:#75715e">// Largest internal key served by table
 </span><span style="color:#75715e"></span>};
 </code></pre></div><p><code>Rep</code> 是定义在 <code>table.cc</code> 文件中的结构体:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">struct</span> Table<span style="color:#f92672">::</span>Rep {
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">struct</span> Table<span style="color:#f92672">::</span>Rep {
   <span style="color:#f92672">~</span>Rep() {
     delete filter;
     delete[] filter_data;
@@ -1109,7 +1111,7 @@ mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span>
   Options options;
   Status status;
   RandomAccessFile<span style="color:#f92672">*</span> file;
-  uint64_t cache_id;
+  <span style="color:#66d9ef">uint64_t</span> cache_id;
   FilterBlockReader<span style="color:#f92672">*</span> filter;
   <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> filter_data;
 
@@ -1117,7 +1119,7 @@ mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span>
 </span><span style="color:#75715e"></span>  Block<span style="color:#f92672">*</span> index_block;
 };
 </code></pre></div><h3 id="查找的过程">查找的过程</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// version_set.cc
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// version_set.cc
 </span><span style="color:#75715e"></span>Status Version<span style="color:#f92672">::</span>Get(<span style="color:#66d9ef">const</span> ReadOptions<span style="color:#f92672">&amp;</span> options, <span style="color:#66d9ef">const</span> LookupKey<span style="color:#f92672">&amp;</span> k,
                     std<span style="color:#f92672">::</span>string<span style="color:#f92672">*</span> value, GetStats<span style="color:#f92672">*</span> stats) {
   <span style="color:#75715e">// ...
@@ -1125,7 +1127,7 @@ mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span>
   <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>}
 </code></pre></div><p><code>ForEachOverlapping</code> 从 <code>level-0</code> 一直向更深的 <code>level</code> 进行搜索:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// version_set.cc
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// version_set.cc
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> Version<span style="color:#f92672">::</span>ForEachOverlapping(Slice user_key, Slice internal_key, <span style="color:#66d9ef">void</span><span style="color:#f92672">*</span> arg,
                                  <span style="color:#66d9ef">bool</span> (<span style="color:#f92672">*</span>func)(<span style="color:#66d9ef">void</span><span style="color:#f92672">*</span>, <span style="color:#66d9ef">int</span>, FileMetaData<span style="color:#f92672">*</span>)) {
   
@@ -1140,11 +1142,11 @@ mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span>
 </span><span style="color:#75715e"></span>  }
 }
 </code></pre></div><p>从此处可以得知，<strong>每一层的文件列表</strong>都存储在 <code>files_</code> 数组中:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// version_set.h
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// version_set.h
 </span><span style="color:#75715e">// List of files per level
 </span><span style="color:#75715e"></span>std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>FileMetaData<span style="color:#f92672">*&gt;</span> files_[config<span style="color:#f92672">::</span>kNumLevels];
 </code></pre></div><h3 id="internalkey-比较器">InternalKey 比较器</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// dbformat.h
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// dbformat.h
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">InternalKeyComparator</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">public</span> Comparator {
  <span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
   <span style="color:#66d9ef">const</span> Comparator<span style="color:#f92672">*</span> user_comparator_;
@@ -1157,7 +1159,7 @@ mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span>
 <span style="color:#75715e">// options.cc
 </span><span style="color:#75715e"></span>Options<span style="color:#f92672">::</span>Options() <span style="color:#f92672">:</span> comparator(BytewiseComparator()), env(Env<span style="color:#f92672">::</span>Default()) {}
 </code></pre></div><p>InternalKey 比较器默认采用的是 leveldb 提供的 <code>BytewiseComparatorImpl</code> 比较器，其比较算法如下:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// comparator.cc
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// comparator.cc
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">Compare</span>(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> a, <span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> b) <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">override</span> {
   <span style="color:#66d9ef">return</span> a.compare(b);
 }
@@ -1179,7 +1181,7 @@ mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span>
 </blockquote>
 <h3 id="filemetadata-的构建过程">FileMetaData 的构建过程</h3>
 <p>我们在上述代码中已经看到，每一个文件是用 <code>FileMetaData</code> 来表示的，而这个数据结构中有几个最关键的字段 <code>number</code>、<code>smallest</code>、<code>largest</code>，如下就是它们各自的赋值过程:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// db_impl.cc
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#75715e">// db_impl.cc
 </span><span style="color:#75715e"></span>Status DBImpl<span style="color:#f92672">::</span>WriteLevel0Table(MemTable<span style="color:#f92672">*</span> mem, VersionEdit<span style="color:#f92672">*</span> edit,
                                 Version<span style="color:#f92672">*</span> base) {
   FileMetaData meta;
@@ -1207,7 +1209,7 @@ mem_ <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span>
   }
 }
 </code></pre></div><p>其中 <code>InternalKey</code> 的 <code>DecodeFrom</code> 方法的定义如下所示:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">InternalKey</span> {
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">InternalKey</span> {
  <span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
   std<span style="color:#f92672">::</span>string rep_;
 

@@ -10,16 +10,18 @@
 静态数据 怎样对静态数据做缓存呢？
  第一，你应该把静态数据缓存到离用户最近的地方。 第二，静态化改造就是要直接缓存 HTTP 连接。静态化改造是直接缓存 HTTP 连接而不是仅仅缓存数据，如下图所示，Web 代理服务器根据请求 URL，直接取出对应的 HTTP 响应头和响应体然后直接返回，这个响应过程简单得连 HTTP 协议都不用重新组装，甚至连 HTTP 请求头也不需要解析。   第三，让谁来缓存静态数据也很重要。  动静分离的改造  URL 唯一化。 分离浏览者相关的因素。 分离时间因素。 异步化地域因素。 去掉 Cookie。  动态内容的处理通常有两种方案：ESI（Edge Side Includes）方案和 CSI（Client Side Include）方案。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/design-seckilling/" />
+<meta property="og:url" content="https://kunzhao.org/docs/programmer-interview/java/design-seckilling/" /><meta property="article:section" content="docs" />
+
+
 
 <title>秒杀系统设计 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.657ffb103dfb174792f387494682f111c1f96c2113cdcfee8420b51c4e96151b.js" integrity="sha256-ZX/7ED37F0eS84dJRoLxEcH5bCETzc/uhCC1HE6WFRs="></script>
+<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -629,7 +631,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -815,7 +817,7 @@ data-full-width-responsive="true"></ins>
 <p>由于 MySQL 存储数据的特点，同一数据在数据库里肯定是一行存储（MySQL），因此会有<strong>大量线程来竞争 InnoDB 行锁</strong>，而并发度越高时等待线程会越多，TPS（Transaction Per Second，即每秒处理的消息数）会下降，响应时间（RT）会上升，数据库的吞吐量就会严重受影响。</p>
 <p>单个热点商品会影响整个数据库的性能， 导致 0.01% 的商品影响 99.99% 的商品的售卖，这是我们不愿意看到的情况。一个解决思路是遵循前面介绍的原则进行隔离，把<strong>热点商品放到单独的热点库</strong>中。另外一个就是应用层做排队、<strong>数据库层做排队</strong> (阿里的数据库团队开发了针对这种 MySQL 的 <code>InnoDB</code> 层上的补丁程序（patch），可以在数据库层上对单行记录做到并发排队)。</p>
 <h3 id="乐观锁扣减">乐观锁扣减</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">testStock</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">testStock</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     <span style="color:#75715e">// 判断重试次数是否满了
 </span><span style="color:#75715e"></span>    SELECT stock<span style="color:#f92672">,</span> version FROM item WEHRE item_id <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>商品存在<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -832,14 +834,14 @@ data-full-width-responsive="true"></ins>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="实际库存--扣减库存">实际库存 &gt;= 扣减库存</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">UPDATE ITEM SET stock <span style="color:#f92672">=</span> stock <span style="color:#f92672">-</span> 1 WHERE item_id <span style="color:#f92672">=</span> 1 AND stock <span style="color:#f92672">&gt;=</span> 1<span style="color:#f92672">;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">UPDATE ITEM SET stock <span style="color:#f92672">=</span> stock <span style="color:#f92672">-</span> 1 WHERE item_id <span style="color:#f92672">=</span> 1 AND stock <span style="color:#f92672">&gt;=</span> 1<span style="color:#f92672">;</span>
 </code></pre></div><blockquote>
 <p>上述两种方案，并发大的话扛不住，查询队列中<strong>等待拿锁</strong>的线程：</p>
 </blockquote>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> information_schema.INNODB_TRX <span style="color:#66d9ef">WHERE</span> trx_state <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;LOCK_WAIT&#39;</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> information_schema.INNODB_TRX <span style="color:#66d9ef">WHERE</span> trx_state <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;LOCK_WAIT&#39;</span>;
 </code></pre></div><h3 id="redis-扣减">Redis 扣减</h3>
 <p>并发较大，Redis 扣减库存一定会超卖，可以引入<strong>分布式锁</strong>来解决，分布式锁不应该成为系统瓶颈：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">tryLock<span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> waitTime<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> leaseTime<span style="color:#f92672">,</span> TimeUnit unit<span style="color:#f92672">)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">tryLock<span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> waitTime<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> leaseTime<span style="color:#f92672">,</span> TimeUnit unit<span style="color:#f92672">)</span>
 </code></pre></div><p>变化后的实时库存通过<strong>消息队列</strong>写入到数据库中。</p>
 <h2 id="兜底方案">兜底方案</h2>
 <h3 id="降级">降级</h3>

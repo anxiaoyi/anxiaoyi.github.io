@@ -10,16 +10,18 @@
 单线程如何处理并发客户端? 多路复用
 为什么选择单线程?  It’s not very frequent that CPU becomes your bottleneck with Redis, as usually Redis is either memory or network bound. For instance, using pipelining Redis running on an average Linux system can deliver even 1 million requests per second, so if your application mainly uses O(N) or O(log(N)) commands, it is hardly going to use too much CPU." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/io-pattern/" />
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/io-pattern/" /><meta property="article:section" content="docs" />
+
+
 
 <title>Redis 线程 I/O 模型 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
+<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
 
 
-<script defer src="/en.search.min.657ffb103dfb174792f387494682f111c1f96c2113cdcfee8420b51c4e96151b.js" integrity="sha256-ZX/7ED37F0eS84dJRoLxEcH5bCETzc/uhCC1HE6WFRs="></script>
+<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1107,7 +1109,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
 
 
  
@@ -1214,7 +1216,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/redis/io-pattern/Snipaste_2021-01-03_13-47-52.png" alt=""></p>
 <p>事件轮询 API 就是用来解决这个问题的，最简单的事件轮询 API 是<code>select</code>函数，它是操作系统提供给用户程序的 API。输入是读写描述符列表<code>read_fds</code> &amp; <code>write_fds</code>，输出是与之对应的可读可写事件。同时还提供了一个<code>timeout</code>参数，如果没有任何事件到来，那么就最多等待<code>timeout</code>时间，线程处于阻塞状态。一旦期间有任何事件到来，就可以立即返回。时间过了之后还是没有任何事件到来，也会立即返回。拿到事件后，线程就可以继续挨个处理相应的事件。处理完了继续过来轮询。于是线程就进入了一个死循环，我们把这个死循环称为事件循环，一个循环为一个周期。</p>
 <p>每个客户端套接字<code>socket</code>都有对应的读写文件描述符。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">read_events, write_events <span style="color:#f92672">=</span> select(read_fds, write_fds, timeout)
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">read_events, write_events <span style="color:#f92672">=</span> select(read_fds, write_fds, timeout)
 <span style="color:#66d9ef">for</span> event <span style="color:#f92672">in</span> read_events:
     handle_read(event<span style="color:#f92672">.</span>fd)
 <span style="color:#66d9ef">for</span> event <span style="color:#f92672">in</span> write_events:
