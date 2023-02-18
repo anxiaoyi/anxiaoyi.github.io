@@ -14,18 +14,16 @@ Message msg = new Message( &#34;Test&#34;, &#34;Hello World&#34;.getBytes() ); �
 DefaultMQProducer producer = new DefaultMQProducer(); producer.start(); 现在我们所启动的服务如下所示:
 四、Name 服务器的均等性 注意我们上述开启的是单个服务，也即一个 Broker 和一个 Name 服务器，但是实际上使用消息队列的时候，我们可能需要搭建的是一个集群，如下所示:" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-send-message-flow/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-send-message-flow/" />
 
 <title>RocketMQ 消息发送流程 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -459,7 +457,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -532,11 +530,11 @@ data-full-width-responsive="true"></ins>
 <ul>
 <li>启动 Name 服务器:</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sh bin/mqnamesrv
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sh bin/mqnamesrv
 </code></pre></div><ul>
 <li>启动 Broker 服务器:</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sh bin/mqbroker -n localhost:9876
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sh bin/mqbroker -n localhost:9876
 </code></pre></div><p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/nameserver_broker_startup.png" alt="启动服务器"></p>
 <h2 id="二构建消息体">二、构建消息体</h2>
 <p>一条消息体最少需要指定两个值:</p>
@@ -545,10 +543,10 @@ data-full-width-responsive="true"></ins>
 <li>消息内容</li>
 </ul>
 <p>如下就是创建了一条话题为 “Test”，消息体为 “Hello World” 的消息:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Message msg <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Message<span style="color:#f92672">(</span> <span style="color:#e6db74">&#34;Test&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Hello World&#34;</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBytes</span><span style="color:#f92672">()</span> <span style="color:#f92672">);</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Message msg <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Message<span style="color:#f92672">(</span> <span style="color:#e6db74">&#34;Test&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Hello World&#34;</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getBytes</span><span style="color:#f92672">()</span> <span style="color:#f92672">);</span>
 </code></pre></div><h2 id="三启动-producer-准备发送消息">三、启动 Producer 准备发送消息</h2>
 <p>如果我们想要发送消息呢，我们还需要再启动一个 DefaultProducer (生产者) 类来发消息:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">DefaultMQProducer producer <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> DefaultMQProducer<span style="color:#f92672">();</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">DefaultMQProducer producer <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> DefaultMQProducer<span style="color:#f92672">();</span>
 producer<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
 </code></pre></div><p>现在我们所启动的服务如下所示:</p>
 <p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/nameserver_broker_client_startup.png" alt="启动客户端"></p>
@@ -564,7 +562,7 @@ producer<span style="color:#f92672">.</span><span style="color:#a6e22e">start</s
 <p>由于 Name 服务器每台机器存储的数据都是一致的。因此我们客户端任意选择一台服务器进行沟通即可。</p>
 <p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/client_random_pickup_nameserver.png" alt="选择 Name 服务器"></p>
 <p>其中客户端一开始选择 Name 服务器的源码如下所示:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">NettyRemotingClient</span> <span style="color:#66d9ef">extends</span> NettyRemotingAbstract <span style="color:#66d9ef">implements</span> RemotingClient <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">NettyRemotingClient</span> <span style="color:#66d9ef">extends</span> NettyRemotingAbstract <span style="color:#66d9ef">implements</span> RemotingClient <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> AtomicInteger namesrvIndex <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> AtomicInteger<span style="color:#f92672">(</span>initValueIndex<span style="color:#f92672">());</span>
 
@@ -598,7 +596,7 @@ producer<span style="color:#f92672">.</span><span style="color:#a6e22e">start</s
 <p>当客户端发送消息的时候，其首先会尝试寻找话题路由信息。即这条消息应该被发送到哪个地方去。</p>
 <p>客户端在内存中维护了一份和话题相关的路由信息表 <code>topicPublishInfoTable</code>，当发送消息的时候，会首先尝试从此表中获取信息。如果此表不存在这条话题的话，那么便会从 Name 服务器获取路由消息。</p>
 <p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/get_test_topic_route_info.png" alt="获取话题路由信息"></p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQProducerImpl</span> <span style="color:#66d9ef">implements</span> MQProducerInner <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DefaultMQProducerImpl</span> <span style="color:#66d9ef">implements</span> MQProducerInner <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> TopicPublishInfo <span style="color:#a6e22e">tryToFindTopicPublishInfo</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         TopicPublishInfo topicPublishInfo <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">topicPublishInfoTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>topic<span style="color:#f92672">);</span>
@@ -623,7 +621,7 @@ producer<span style="color:#f92672">.</span><span style="color:#a6e22e">start</s
 <p>服务器返回的话题路由信息包括以下内容:</p>
 <p><img src="/images/docs/rocketmq/rocketmq-send-message-flow/topic_route_data.png" alt="路由信息内容"></p>
 <p>“broker-1”、”broker-2” 分别为两个 Broker 服务器的名称，相同名称下可以有主从 Broker，因此每个 Broker 又都有 brokerId 。默认情况下，BrokerId 如果为 <code>MixAll.MASTER_ID</code> （值为 0） 的话，那么认为这个 Broker 为 MASTER 主机，其余的位于相同名称下的 Broker 为这台 MASTER 主机的 SLAVE 主机。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MQClientInstance</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MQClientInstance</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> String <span style="color:#a6e22e">findBrokerAddressInPublish</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String brokerName<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         HashMap<span style="color:#f92672">&lt;</span>Long<span style="color:#75715e">/* brokerId */</span><span style="color:#f92672">,</span> String<span style="color:#75715e">/* address */</span><span style="color:#f92672">&gt;</span> map <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">brokerAddrTable</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>brokerName<span style="color:#f92672">);</span>
@@ -636,7 +634,7 @@ producer<span style="color:#f92672">.</span><span style="color:#a6e22e">start</s
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>每个 Broker 上面可以绑定多个可写消息队列和多个可读消息队列，客户端根据返回的所有 Broker 地址列表和每个 Broker 的可写消息队列列表会在内存中构建一份所有的消息队列列表。之后客户端每次发送消息，都会在消息队列列表上轮循选择队列 (我们假设返回了两个 Broker，每个 Broker 均有 4 个可写消息队列):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TopicPublishInfo</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TopicPublishInfo</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> MessageQueue <span style="color:#a6e22e">selectOneMessageQueue</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">int</span> index <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">sendWhichQueue</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getAndIncrement</span><span style="color:#f92672">();</span>
@@ -654,7 +652,7 @@ producer<span style="color:#f92672">.</span><span style="color:#a6e22e">start</s
 <p>这里我们暂且先忽略消息体格式的具体编/解码过程，因为我们并不想一开始就卷入这些繁枝细节中，现在先从大体上了解一下整个消息的发送流程，后续会写专门的文章来说明。</p>
 <h2 id="八broker-检查话题信息">八、Broker 检查话题信息</h2>
 <p>刚才说到，如果话题信息在 Name 服务器不存在的话，那么会使用默认话题信息进行消息的发送。然而一旦这条消息到来之后，Broker 端还并没有这个话题。所以 Broker 需要检查话题的存在性:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AbstractSendMessageProcessor</span> <span style="color:#66d9ef">implements</span> NettyRequestProcessor <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AbstractSendMessageProcessor</span> <span style="color:#66d9ef">implements</span> NettyRequestProcessor <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">protected</span> RemotingCommand <span style="color:#a6e22e">msgCheck</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> ChannelHandlerContext ctx<span style="color:#f92672">,</span>
                                        <span style="color:#66d9ef">final</span> SendMessageRequestHeader requestHeader<span style="color:#f92672">,</span> <span style="color:#66d9ef">final</span> RemotingCommand response<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -679,7 +677,7 @@ producer<span style="color:#f92672">.</span><span style="color:#a6e22e">start</s
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>如果话题不存在的话，那么便会创建一个话题信息存储到本地，并将所有话题再进行一次同步给所有的 Name 服务器:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TopicConfigManager</span> <span style="color:#66d9ef">extends</span> ConfigManager <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TopicConfigManager</span> <span style="color:#66d9ef">extends</span> ConfigManager <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> TopicConfig <span style="color:#a6e22e">createTopicInSendMessageMethod</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> String topic<span style="color:#f92672">,</span> <span style="color:#75715e">/** params **/</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// ...

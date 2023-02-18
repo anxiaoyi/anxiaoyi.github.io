@@ -12,18 +12,16 @@
 为了能够将 Master 和 Slave 搭建在同一台计算机上，我们除了需要将 Broker 的角色设置为 SLAVE ，还需要为其指定单独的 brokerId、 storePathRootDir、 storePathCommitLog。
 // SLAVE 角色 messageStoreConfig.setBrokerRole(BrokerRole.SLAVE); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 store 根目录必须不同 messageStoreConfig.setStorePathRootDir(storePathRootDir); // 一个机器如果要启动多个 Broker，那么每个 Broker 的 storePathCommitLog 根目录必须不同 messageStoreConfig.setStorePathCommitLog(storePathCommitLog); // 设置 Slave 的 Master HA 地址 messageStoreConfig.setHaMasterAddress(&#34;localhost:10912&#34;); // SLAVE 角色的 brokerId 必须大于 0 brokerConfig." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-master-slave-sync/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/rocketmq/rocketmq-master-slave-sync/" />
 
 <title>RocketMQ 主备同步 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -457,7 +455,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -532,7 +530,7 @@ data-full-width-responsive="true"></ins>
 <p>我们在一台机器上搭建一个 Master 一个 Slave 的环境:</p>
 <p><img src="/images/docs/rocketmq/rocketmq-master-slave-sync/master_slave_sync_architecture.png" alt="主备架构"></p>
 <p>为了能够将 Master 和 Slave 搭建在同一台计算机上，我们除了需要将 Broker 的角色设置为 <code>SLAVE</code> ，还需要为其指定单独的 <code>brokerId</code>、 <code>storePathRootDir</code>、 <code>storePathCommitLog</code>。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// SLAVE 角色
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// SLAVE 角色
 </span><span style="color:#75715e"></span>messageStoreConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">setBrokerRole</span><span style="color:#f92672">(</span>BrokerRole<span style="color:#f92672">.</span><span style="color:#a6e22e">SLAVE</span><span style="color:#f92672">);</span>
 
 <span style="color:#75715e">// 一个机器如果要启动多个 Broker，那么每个 Broker 的 store 根目录必须不同
@@ -547,7 +545,7 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><p>注意 Slave 和 Master 的 <code>brokerName</code> 必须一致，即它们必须处于同一个 <code>BrokerData</code> 数据结构里面。实际上在做了如上的修改之后， Slave 和 Master 依旧不能同时运行在同一台机器上，因为 Slave 本身也可以称为 Master，接受来自其他 Slave 的请求，因此当运行 Slave 的时候，需要将 <code>HAService</code> 里面的启动 <code>AcceptSocketService</code> 运行的相关方法注释掉。</p>
 <h2 id="三建立连接">三、建立连接</h2>
 <p>当一个 Broker 在启动的时候，会调用 <code>HAService</code> 的 <code>start()</code> 方法:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HAService</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HAService</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">start</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> Exception <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">acceptSocketService</span><span style="color:#f92672">.</span><span style="color:#a6e22e">beginAccept</span><span style="color:#f92672">();</span>
@@ -571,7 +569,7 @@ data-full-width-responsive="true"></ins>
 <li>消息体的 <code>PROPERTY_WAIT_STORE_MSG_OK</code> 属性值为 <code>true</code>，即这条消息允许等待</li>
 <li>Slave 相比 Master 落下的同步进度不能超过 256MB</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CommitLog</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">handleHA</span><span style="color:#f92672">(</span>AppendMessageResult result<span style="color:#f92672">,</span> PutMessageResult putMessageResult<span style="color:#f92672">,</span> MessageExt messageExt<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>BrokerRole<span style="color:#f92672">.</span><span style="color:#a6e22e">SYNC_MASTER</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">defaultMessageStore</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getMessageStoreConfig</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getBrokerRole</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
@@ -598,7 +596,7 @@ data-full-width-responsive="true"></ins>
     
 <span style="color:#f92672">}</span>
 </code></pre></div><p>其中 <code>isSlaveOK</code> 方法就是用来检测 Slave 和 Master 落下的同步进度是否太大的:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HAService</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HAService</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isSlaveOK</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> <span style="color:#66d9ef">long</span> masterPutWhere<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#66d9ef">boolean</span> result <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">connectionCount</span><span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">;</span>
@@ -617,7 +615,7 @@ data-full-width-responsive="true"></ins>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>如果上面两个条件不满足的话，那么 Master 便不会再等待消息同步到 Slave 之后再返回，能尽早返回便尽早返回了。</p>
 <p>消息等待是否同步到 Slave 是借助 <code>CountDownLatch</code> 来实现的。当消息需要等待的时候，便会构建一个 <code>GroupCommitRequest</code> ，每个请求在其内部都维护了一个 <code>CountDownLatch</code> ，然后通过调用 <code>await(timeout)</code> 方法来等待消息同步到 Slave 之后，或者超时之后自动返回。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">GroupCommitRequest</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">GroupCommitRequest</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> CountDownLatch countDownLatch <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> CountDownLatch<span style="color:#f92672">(</span>1<span style="color:#f92672">);</span>
 
@@ -641,7 +639,7 @@ data-full-width-responsive="true"></ins>
 <ul>
 <li><code>GroupTransferService</code> 服务的<strong>是否处理请求</strong>的循环体和唤醒点:</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">GroupTransferService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">GroupTransferService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">synchronized</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">putRequest</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> CommitLog<span style="color:#f92672">.</span><span style="color:#a6e22e">GroupCommitRequest</span> request<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// ...
@@ -669,7 +667,7 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><ul>
 <li><code>HAConnection</code> 的<strong>是否进行消息传输</strong>的循环体和唤醒点：</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WriteSocketService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WriteSocketService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@Override</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
@@ -705,7 +703,7 @@ data-full-width-responsive="true"></ins>
 </code></pre></div><ul>
 <li>Slave 汇报进度唤醒 <code>GroupTransferService</code>， 等待同步完成唤醒 <code>GroupCommitRequest</code> 的 <code>CountDownLatch</code>:</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReadSocketService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReadSocketService</span> <span style="color:#66d9ef">extends</span> ServiceThread <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">processReadEvent</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
         <span style="color:#75715e">// 唤醒 GroupTransferService

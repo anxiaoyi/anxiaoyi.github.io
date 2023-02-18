@@ -6,23 +6,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Redis 事务"><meta property="og:title" content="Redis 事务" />
 <meta property="og:description" content="Redis 事务 事务的使用 Redis 在形式上分别是 multi/exec/discard。multi 指示事务的开始，exec 指示事务的执行，discard 指示事务的丢弃。
-&gt; multi OK &gt; incr books QUEUED &gt; incr books QUEUED &gt; exec (integer) 1 (integer) 2 所有的指令在 exec 之前不执行，而是缓存在服务器的一个事务队列中，服务器一旦收到 exec 指令，才开始执行整个事务队列，执行完毕后一次性返回所有指令的运行结果。因为 Redis 的单线程特性，它不用担心自己在执行队列的时候被其它指令打搅，可以保证他们能得到的「原子性」执行。
+&gt; multiOK&gt; incr booksQUEUED&gt; incr booksQUEUED&gt; exec(integer) 1(integer) 2所有的指令在 exec 之前不执行，而是缓存在服务器的一个事务队列中，服务器一旦收到 exec 指令，才开始执行整个事务队列，执行完毕后一次性返回所有指令的运行结果。因为 Redis 的单线程特性，它不用担心自己在执行队列的时候被其它指令打搅，可以保证他们能得到的「原子性」执行。
 Redis 为事务提供了一个 discard 指令，用于丢弃事务缓存队列中的所有指令，在 exec 执行之前。
-&gt; get books (nil) &gt; multi OK &gt; incr books QUEUED &gt; incr books QUEUED &gt; discard OK &gt; get books (nil) 我们可以看到 discard 之后，队列中的所有指令都没执行，就好像 multi 和 discard 中间的所有指令从未发生过一样。
+&gt; get books(nil)&gt; multiOK&gt; incr booksQUEUED&gt; incr booksQUEUED&gt; discardOK&gt; get books(nil)我们可以看到 discard 之后，队列中的所有指令都没执行，就好像 multi 和 discard 中间的所有指令从未发生过一样。
 不满足原子性 事务的原子性是指要么事务全部成功，要么全部失败，那么 Redis 事务执行是原子性的么？" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/redis-transaction/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/redis/redis-transaction/" />
 
 <title>Redis 事务 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1110,7 +1108,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -1228,7 +1226,7 @@ QUEUED
 <p>所以，<strong>不管Redis采用什么持久化模式，事务的持久性属性是得不到保证</strong>的。</p>
 <h2 id="使用管道优化">使用管道优化</h2>
 <p>上面的 Redis 事务在发送每个指令到事务缓存队列时都要经过一次网络读写，当一个事务内部的指令较多时，需要的网络 IO 时间也会线性增长。所以通常 Redis 的客户端在执行事务时都会结合 <code>pipeline</code> 一起使用，这样可以将多次 IO 操作压缩为单次 IO 操作。比如我们在使用 Python 的 Redis 客户端时执行事务时是要强制使用 <code>pipeline</code> 的。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">pipe <span style="color:#f92672">=</span> redis<span style="color:#f92672">.</span>pipeline(transaction<span style="color:#f92672">=</span>true)
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">pipe <span style="color:#f92672">=</span> redis<span style="color:#f92672">.</span>pipeline(transaction<span style="color:#f92672">=</span>true)
 pipe<span style="color:#f92672">.</span>multi()
 pipe<span style="color:#f92672">.</span>incr(<span style="color:#e6db74">&#34;books&#34;</span>)
 pipe<span style="color:#f92672">.</span>incr(<span style="color:#e6db74">&#34;books&#34;</span>)

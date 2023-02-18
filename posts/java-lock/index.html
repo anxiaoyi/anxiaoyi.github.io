@@ -7,18 +7,17 @@
 <meta name="description" content="Java 并发 - 锁"><meta property="og:title" content="Java 并发 - 锁" />
 <meta property="og:description" content="Java 世界中都有哪些锁？锁的分类？如何减少锁的竞争等问题。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/posts/java-lock/" /><meta property="article:section" content="posts" />
+<meta property="og:url" content="https://kunzhao.org/posts/java-lock/" />
 <meta property="article:published_time" content="2017-05-13T00:00:00+00:00" />
 <meta property="article:modified_time" content="2017-05-13T00:00:00+00:00" />
-
 <title>Java 并发 - 锁 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -346,7 +345,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -474,7 +473,7 @@ var _hmt = _hmt || [];
 <h3 id="缓存行失效">缓存行失效</h3>
 <p>当 CPU 更新某个变量的值，缓存行标记为脏。这个缓存行需要与其他 CPU 的这个缓存行进行同步，其他 CPU 的缓存行也需要更新。在缓存行被刷新之前，CPU 不允许访问缓存行。</p>
 <h3 id="伪共享代码示例">伪共享代码示例</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Counter</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Counter</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> count1 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> count2 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
@@ -512,7 +511,7 @@ var _hmt = _hmt || [];
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="修复伪代码共享一">修复伪代码共享一</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FalseSharingExample</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FalseSharingExample</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">main</span><span style="color:#f92672">(</span>String<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
 
@@ -543,7 +542,7 @@ var _hmt = _hmt || [];
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><h3 id="修复伪代码共享二">修复伪代码共享二</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Counter1</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Counter1</span> <span style="color:#f92672">{</span>
 
     <span style="color:#a6e22e">@jdk.internal.vm.annotation.Contended</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> count1 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
@@ -551,7 +550,7 @@ var _hmt = _hmt || [];
 
 <span style="color:#f92672">}</span>
 </code></pre></div><p><code>@Contended</code> 可以在类里面使用空的字节 pad fields ，所以这个字段肯定不会和其他字段位于同一个<strong>缓存行</strong>。这个也可以修饰在类上，这样所有字段都不在一个缓存行：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@jdk.internal.vm.annotation.Contended</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#a6e22e">@jdk.internal.vm.annotation.Contended</span>
 <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Counter1</span> <span style="color:#f92672">{</span>
     
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">volatile</span> <span style="color:#66d9ef">long</span> count1 <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span>
@@ -568,7 +567,7 @@ var _hmt = _hmt || [];
 <h2 id="内置锁-synchronized">内置锁 Synchronized</h2>
 <p>Java 提供了一种<strong>内置锁 (Intrinsic Lock)<strong>机制来支持原子性: <strong>同步代码块 (Synchronized Block)</strong>。每个 Java 对象都可以用做一个实现同步的锁，这些锁被称为</strong>内置锁 (Instrinsic Lock)</strong> 或<strong>监视器锁 (Monitor Lock)</strong>。Java 的内置锁相当于一种互斥体(或<strong>互斥锁</strong>)，这意味着最多只有一个线程能持有这种锁。但是，加锁的含义不仅仅局限于<strong>互斥行为</strong>，还包括<strong>内存可见性</strong>，为了确保所有线程都能看到共享变量的最新值，所有执行读操作或者写操作的线程都必须在同一个锁上同步。</p>
 <p><strong><code>Java synchronized</code> 语句</strong> 是基于 <strong>monitorenter/monitorexit</strong> 机制来实现的。当你写下面这段代码的时候:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Sort</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> <span style="color:#f92672">[]</span> array<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Sort</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> <span style="color:#f92672">[]</span> array<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#75715e">// synchronize this operation so that some other thread can&#39;t
 </span><span style="color:#75715e"></span>    <span style="color:#75715e">// manipulate the array while we are sorting it. This assumes that other
 </span><span style="color:#75715e"></span>    <span style="color:#75715e">// threads also synchronize their accesses to the array.
@@ -577,7 +576,7 @@ var _hmt = _hmt || [];
 </span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>实际上 <strong>JVM</strong> 可能会生成下面的代码:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">.method <span style="color:#66d9ef">static</span> Sort([I)V
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">.method <span style="color:#66d9ef">static</span> Sort([I)V
     aload_0
     monitorenter    ; lock object in local variable <span style="color:#ae81ff">0</span> 
 
@@ -600,7 +599,7 @@ var _hmt = _hmt || [];
 <li>循环等待</li>
 </ol>
 <p>如果所有的线程以固定的顺序来获得锁，那么在程序中就不会出现锁顺序死锁问题:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 不要这么做
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 不要这么做
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LeftRightDeadlock</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> Object left <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Object<span style="color:#f92672">();</span>
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> Object right <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Object<span style="color:#f92672">();</span>
@@ -622,7 +621,7 @@ var _hmt = _hmt || [];
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>有时候，你并不能清除地知道是否在锁顺序上有足够的控制权来避免死锁的发生:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 动态的锁顺序
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// 动态的锁顺序
 </span><span style="color:#75715e">// Warning: deadlock-prone!
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">transferMoney</span><span style="color:#f92672">(</span>Account fromAccount<span style="color:#f92672">,</span>
                           Account toAccount<span style="color:#f92672">,</span>
@@ -640,10 +639,10 @@ var _hmt = _hmt || [];
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>在这里锁的顺序取决于参数顺序，而这些参数顺序又取决于外部输入，考虑下面代码就有可能发生死锁:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">A: transferMoney<span style="color:#f92672">(</span>myAccount<span style="color:#f92672">,</span> yourAccount<span style="color:#f92672">,</span> 10<span style="color:#f92672">);</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">A: transferMoney<span style="color:#f92672">(</span>myAccount<span style="color:#f92672">,</span> yourAccount<span style="color:#f92672">,</span> 10<span style="color:#f92672">);</span>
 B: transferMoney<span style="color:#f92672">(</span>yourAccount<span style="color:#f92672">,</span> myAccount<span style="color:#f92672">,</span> 20<span style="color:#f92672">);</span> 
 </code></pre></div><p>使用 <code>System.identityHashCode</code> 来定义锁的顺序:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> Object tieLock <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Object<span style="color:#f92672">();</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> Object tieLock <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Object<span style="color:#f92672">();</span>
 <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">transferMoney</span><span style="color:#f92672">(</span><span style="color:#66d9ef">final</span> Account fromAcct<span style="color:#f92672">,</span>
                           <span style="color:#66d9ef">final</span> Account toAcct<span style="color:#f92672">,</span>
                           <span style="color:#66d9ef">final</span> DollarAmount amount<span style="color:#f92672">)</span>
@@ -692,7 +691,7 @@ B: transferMoney<span style="color:#f92672">(</span>yourAccount<span style="colo
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>某些获取多个锁的操作并不像 <code>LeftRightDeadLock</code> 或 <code>transferMoney</code> 中那么明显，这两个锁并不一定必须在同一个方法中被获取:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Taxi</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Taxi</span> <span style="color:#f92672">{</span>
     <span style="color:#a6e22e">@GuardedBy</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;this&#34;</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">private</span> Point location<span style="color:#f92672">,</span> destination<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> Dispatcher dispatcher<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">Taxi</span><span style="color:#f92672">(</span>Dispatcher dispatcher<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -732,7 +731,7 @@ B: transferMoney<span style="color:#f92672">(</span>yourAccount<span style="colo
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>通过将上述代码修改为<strong>开放调用 (调用某个方法时不需要使用锁)</strong>，从而消除发生死锁的风险:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a6e22e">@ThreadSafe</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#a6e22e">@ThreadSafe</span>
 <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Taxi</span> <span style="color:#f92672">{</span>
     <span style="color:#a6e22e">@GuardedBy</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;this&#34;</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">private</span> Point location<span style="color:#f92672">,</span> destination<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> Dispatcher dispatcher<span style="color:#f92672">;</span>
@@ -780,7 +779,7 @@ B: transferMoney<span style="color:#f92672">(</span>yourAccount<span style="colo
 </ul>
 <h2 id="重入锁-reentrantlock">重入锁 ReentrantLock</h2>
 <p><code>ReentrantLock</code> 的 <code>tryLock</code> 方法为你提供了<strong>轮询锁与定时锁</strong>的锁获取模式，与无条件的锁获取模式相比，它具有更完善的错误恢复机制。方法 <code>lockInterruptibly</code> 方法能够在获得锁的同时<strong>保持对中断的响应</strong>。<code>ReentrantLock</code> 的构造函数中提供了两种<strong>公平性</strong>选择: 创建一个非公平的锁 (默认) 或者一个公平的锁。在公平的锁上，线程将按照它们发出请求的顺序来获得锁，但在非公平的锁上，则允许“插队”。在大多数情况下，非公平锁的性能要高于公平锁的性能。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReentrantLock</span> <span style="color:#66d9ef">implements</span> Lock<span style="color:#f92672">,</span> java<span style="color:#f92672">.</span><span style="color:#a6e22e">io</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Serializable</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReentrantLock</span> <span style="color:#66d9ef">implements</span> Lock<span style="color:#f92672">,</span> java<span style="color:#f92672">.</span><span style="color:#a6e22e">io</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Serializable</span> <span style="color:#f92672">{</span>
     <span style="color:#75715e">/** Synchronizer providing all implementation mechanics */</span>
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> Sync sync<span style="color:#f92672">;</span>
 
@@ -800,7 +799,7 @@ B: transferMoney<span style="color:#f92672">(</span>yourAccount<span style="colo
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="读写锁-readwritelock">读写锁 ReadWriteLock</h2>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReentrantReadWriteLock</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReentrantReadWriteLock</span>
         <span style="color:#66d9ef">implements</span> ReadWriteLock<span style="color:#f92672">,</span> java<span style="color:#f92672">.</span><span style="color:#a6e22e">io</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Serializable</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">ReentrantReadWriteLock</span><span style="color:#f92672">(</span><span style="color:#66d9ef">boolean</span> fair<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -812,11 +811,11 @@ B: transferMoney<span style="color:#f92672">(</span>yourAccount<span style="colo
 <span style="color:#f92672">}</span>
 </code></pre></div><h2 id="记录锁-record-locking">记录锁 Record Locking</h2>
 <p><strong>Record Locking</strong> 更好的叫法应该被称为: <strong>byte-range locking</strong>，目的是为了防止两个进程同时修改一个文件的某块区域。函数原型如下:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;fcntl.h&gt;</span><span style="color:#75715e">
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;fcntl.h&gt;</span><span style="color:#75715e">
 </span><span style="color:#75715e"></span><span style="color:#75715e">// 出错返回 -1
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">fcntl</span>(<span style="color:#66d9ef">int</span> fd, <span style="color:#66d9ef">int</span> cmd, ... <span style="color:#75715e">/* struct flock *flockptr */</span> );
 </code></pre></div><p>其中 <code>flock</code> 结构体定义如下:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">struct</span> flock {
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">struct</span> flock {
     <span style="color:#66d9ef">short</span> l_type; <span style="color:#75715e">/* F_RDLCK, F_WRLCK, or F_UNLCK */</span>
     <span style="color:#66d9ef">short</span> l_whence; <span style="color:#75715e">/*SEEK_SET, SEEK_CUR, or SEEK_END */</span>
     off_t l_start; <span style="color:#75715e">/*offset in bytes, relative to l_whence */</span>
@@ -832,19 +831,19 @@ B: transferMoney<span style="color:#f92672">(</span>yourAccount<span style="colo
 <h3 id="自旋锁-spinlock">自旋锁 SpinLock</h3>
 <p><strong>互斥同步对性能最大的影响就是阻塞的实现，挂起线程和恢复线程的操作都需要转入内核态中完成</strong>，这些操作给系统的并发性能带来了很大的压力。同时，虚拟机的开发团队也注意到在许多应用上，<strong>共享数据的锁定状态只会持续很短的一段时间</strong>，为了这段时间去挂起和恢复线程并不值得。为了能让线程稍微等一会，我们只需让线程执行一个忙循环 (自旋)，这项技术就是所谓的自旋锁。</p>
 <p>现在我们假设<strong>硬件</strong>上有一种能够保证原子性的 <code>TestAndSet</code> 指令实现函数:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">TestAndSet</span>(<span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>x){
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">TestAndSet</span>(<span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>x){
     <span style="color:#66d9ef">register</span> <span style="color:#66d9ef">int</span> temp <span style="color:#f92672">=</span> <span style="color:#f92672">*</span>x;
     <span style="color:#f92672">*</span>x <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
     <span style="color:#66d9ef">return</span> temp;
 }
 </code></pre></div><p><code>TestAndSet</code> 是一种常用的用于支持并发的原子操作指令。另外一种经常使用的指令是原子 <code>Exchange</code> 操作:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Exchange</span>(<span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>a, <span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>b) {
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Exchange</span>(<span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>a, <span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>b) {
     <span style="color:#66d9ef">int</span> temp <span style="color:#f92672">=</span> <span style="color:#f92672">*</span>a;
     <span style="color:#f92672">*</span>a <span style="color:#f92672">=</span> <span style="color:#f92672">*</span>b;
     <span style="color:#f92672">*</span>b <span style="color:#f92672">=</span> temp;
 }
 </code></pre></div><p>这些所有的原子性操作中最重要的是 <code>CompareAndSwap (CAS)</code> 操作，它经常被用于 <a href="http://en.wikipedia.org/wiki/Lock-free_and_wait-free_algorithms">lock-free and wait-free algorithms</a> 算法中。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">boolean <span style="color:#a6e22e">CAS</span>(<span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>a, <span style="color:#66d9ef">int</span> old, <span style="color:#66d9ef">int</span> new) {
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">boolean <span style="color:#a6e22e">CAS</span>(<span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>a, <span style="color:#66d9ef">int</span> old, <span style="color:#66d9ef">int</span> new) {
     <span style="color:#66d9ef">int</span> temp <span style="color:#f92672">=</span> <span style="color:#f92672">*</span>a;
     <span style="color:#66d9ef">if</span> (temp <span style="color:#f92672">==</span> old) {
         <span style="color:#f92672">*</span>a <span style="color:#f92672">=</span> new;
@@ -853,12 +852,12 @@ B: transferMoney<span style="color:#f92672">(</span>yourAccount<span style="colo
         <span style="color:#66d9ef">return</span> false;
 }
 </code></pre></div><p>使用 <code>CAS</code> 来实现 <code>temp++</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">int</span> temp <span style="color:#f92672">=</span> x;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">int</span> temp <span style="color:#f92672">=</span> x;
 <span style="color:#66d9ef">while</span> (<span style="color:#f92672">!</span>CAS(<span style="color:#f92672">&amp;</span>x, temp, temp<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>)) {
     temp <span style="color:#f92672">=</span> x;
 }
 </code></pre></div><p>使用 <code>CAS</code> 来实现更链表头插法:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">while</span> (<span style="color:#ae81ff">1</span>) {
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">while</span> (<span style="color:#ae81ff">1</span>) {
     Node <span style="color:#f92672">*</span>q <span style="color:#f92672">=</span> <span style="color:#f92672">*</span>head;
     p<span style="color:#f92672">-&gt;</span>next <span style="color:#f92672">=</span> q;
     <span style="color:#66d9ef">if</span> (CAS(head, q, p))
@@ -870,11 +869,11 @@ B: transferMoney<span style="color:#f92672">(</span>yourAccount<span style="colo
 <li><code>Lock</code></li>
 <li><code>UnLock</code></li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">Lock(mutex);
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">Lock(mutex);
 Si;
 UnLock(mutex);
 </code></pre></div><p>实现 <code>SpinLock</code> 的伪代码如下:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">int</span> SpinLock;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">int</span> SpinLock;
 
 <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">InitLock</span>(SpinLock <span style="color:#f92672">*</span>L) {
     <span style="color:#f92672">*</span>L <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
@@ -889,7 +888,7 @@ UnLock(mutex);
     <span style="color:#f92672">*</span>L <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
 }
 </code></pre></div><p>一种使用 <code>Exchange</code> 操作的可能实现:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">int</span> SpinLock;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">int</span> SpinLock;
 <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">InitLock</span>(SpinLock <span style="color:#f92672">*</span>s) {
     <span style="color:#f92672">*</span>s <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
 }
@@ -903,7 +902,7 @@ UnLock(mutex);
     <span style="color:#f92672">*</span>s <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
 }
 </code></pre></div><p>另外一种使用 <code>CompareAndSwap</code> 指令的实现:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">int</span> SpinLock;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">int</span> SpinLock;
 <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">InitLock</span>(SpinLock <span style="color:#f92672">*</span>s) {
     <span style="color:#f92672">*</span>s <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
 }

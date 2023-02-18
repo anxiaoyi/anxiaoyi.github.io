@@ -17,18 +17,16 @@
 基本上可以理解为，每次 io 都是在树的一层查找符合的 id 范围的页数据，通过对比页里面的最大最小主键来确定下层的查找范围。
 MyISAM 的 B&#43; 树 MyISAM 索引文件和数据文件是分离的，索引文件仅保存数据记录的地址。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-index/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/mysql-index/" />
 
 <title>MySQL 索引 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1096,7 +1094,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -1252,13 +1250,13 @@ data-full-width-responsive="true"></ins>
 <p>但是 B 树也有优点，其优点在于，由于 B 树的每一个节点都包含 key 和 value，因此<strong>经常访问的元素可能离根节点更近，因此访问也更迅速</strong>。</p>
 <h2 id="回表">回表</h2>
 <p>回到主键索引树搜索的过程，我们称为回表。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> T <span style="color:#66d9ef">where</span> k <span style="color:#66d9ef">between</span> <span style="color:#ae81ff">3</span> <span style="color:#66d9ef">and</span> <span style="color:#ae81ff">5</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> T <span style="color:#66d9ef">where</span> k <span style="color:#66d9ef">between</span> <span style="color:#ae81ff">3</span> <span style="color:#66d9ef">and</span> <span style="color:#ae81ff">5</span>
 </code></pre></div><h2 id="覆盖索引">覆盖索引</h2>
 <p>ID 的值已经在 k 索引树上了，因此可以直接提供查询结果，不需要回表。也就是说，在这个查询里面，索引 k 已经“覆盖了”我们的查询需求，我们称为覆盖索引。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> ID <span style="color:#66d9ef">from</span> T <span style="color:#66d9ef">where</span> k <span style="color:#66d9ef">between</span> <span style="color:#ae81ff">3</span> <span style="color:#66d9ef">and</span> <span style="color:#ae81ff">5</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> ID <span style="color:#66d9ef">from</span> T <span style="color:#66d9ef">where</span> k <span style="color:#66d9ef">between</span> <span style="color:#ae81ff">3</span> <span style="color:#66d9ef">and</span> <span style="color:#ae81ff">5</span>
 </code></pre></div><p>由于覆盖索引可以减少树的搜索次数，显著提升查询性能，所以使用<strong>覆盖索引</strong>是一个<strong>常用的性能优化</strong>手段。</p>
 <p>假设某个表有如下主键和索引：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span> (<span style="color:#f92672">`</span>emp_no<span style="color:#f92672">`</span>),
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span> (<span style="color:#f92672">`</span>emp_no<span style="color:#f92672">`</span>),
 <span style="color:#66d9ef">KEY</span> <span style="color:#f92672">`</span>i_hire_date<span style="color:#f92672">`</span> (<span style="color:#f92672">`</span>hire_date<span style="color:#f92672">`</span>)
 </code></pre></div><p>那么语句 <code>explain select * from employees where hire_date &gt; '1990-01-14';</code> 的 <code>Extra</code> 是 <code>Using where</code>，表示没有用上索引；而语句 <code>explain select emp_no from employees where hire_date &gt; '1990-01-14';</code> 的 <code>Extra</code> 是 <code>Using where; Using index</code>，用上了索引，可见 <strong><code>SELECT</code> 的字段位于索引字段中对于性能是多么的重要</strong>。</p>
 <h2 id="最左前缀原则">最左前缀原则</h2>
@@ -1278,7 +1276,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/tutorial/database/mysql-index/mysql-create-index.png" alt=""></p>
 <h2 id="索引下推">索引下推</h2>
 <p>索引：<strong>联合索引（name, age）</strong>。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> tuser <span style="color:#66d9ef">where</span> name <span style="color:#66d9ef">like</span> <span style="color:#e6db74">&#39;张%&#39;</span> <span style="color:#66d9ef">and</span> age<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span> <span style="color:#66d9ef">and</span> ismale<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> tuser <span style="color:#66d9ef">where</span> name <span style="color:#66d9ef">like</span> <span style="color:#e6db74">&#39;张%&#39;</span> <span style="color:#66d9ef">and</span> age<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span> <span style="color:#66d9ef">and</span> ismale<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>;
 </code></pre></div><p>这个语句在搜索索引树的时候，只能用 “张”，找到第一个满足条件的记录 ID3。</p>
 <ul>
 <li>在 MySQL 5.6 之前，只能从 ID3 开始一个个回表。到主键索引上找出数据行，再对比字段值。</li>
@@ -1286,15 +1284,15 @@ data-full-width-responsive="true"></ins>
 </ul>
 <h2 id="前缀索引">前缀索引</h2>
 <p>直接创建完整索引，这样可能比较占用空间；使用前缀索引 (定义<strong>字符串的一部分作为索引</strong>)，定义好长度，就可以做到既节省空间，又不用额外增加太多的查询成本，但会<strong>增加查询扫描次数</strong>，并且不能使用覆盖索引。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">alter</span> <span style="color:#66d9ef">table</span> SUser <span style="color:#66d9ef">add</span> <span style="color:#66d9ef">index</span> index1(email);
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">alter</span> <span style="color:#66d9ef">table</span> SUser <span style="color:#66d9ef">add</span> <span style="color:#66d9ef">index</span> index1(email);
 </code></pre></div><p><img src="/images/docs/tutorial/database/mysql-index/Snipaste_2021-01-10_18-30-19.png" alt=""></p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">alter</span> <span style="color:#66d9ef">table</span> SUser <span style="color:#66d9ef">add</span> <span style="color:#66d9ef">index</span> index2(email(<span style="color:#ae81ff">6</span>));
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">alter</span> <span style="color:#66d9ef">table</span> SUser <span style="color:#66d9ef">add</span> <span style="color:#66d9ef">index</span> index2(email(<span style="color:#ae81ff">6</span>));
 </code></pre></div><p><img src="/images/docs/tutorial/database/mysql-index/Snipaste_2021-01-10_18-29-44.png" alt=""></p>
 <blockquote>
 <p>当要给字符串创建前缀索引时，有什么方法能够确定我应该使用多长的前缀呢？</p>
 </blockquote>
 <p>实际上，我们在建立索引时关注的是<strong>区分度</strong>，区分度越高越好。因为区分度越高，意味着重复的键值越少。因此，我们可以通过统计索引上有多少个不同的值来判断要使用多长的前缀。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> 
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">mysql<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">select</span> 
   <span style="color:#66d9ef">count</span>(<span style="color:#66d9ef">distinct</span> <span style="color:#66d9ef">left</span>(email,<span style="color:#ae81ff">4</span>)) <span style="color:#66d9ef">as</span> L4,
   <span style="color:#66d9ef">count</span>(<span style="color:#66d9ef">distinct</span> <span style="color:#66d9ef">left</span>(email,<span style="color:#ae81ff">5</span>)) <span style="color:#66d9ef">as</span> L5,
   <span style="color:#66d9ef">count</span>(<span style="color:#66d9ef">distinct</span> <span style="color:#66d9ef">left</span>(email,<span style="color:#ae81ff">6</span>)) <span style="color:#66d9ef">as</span> L6,
@@ -1358,7 +1356,7 @@ data-full-width-responsive="true"></ins>
 <h3 id="通过-show-profile-分析-sql-执行性能">通过 Show Profile 分析 SQL 执行性能</h3>
 <p>上述通过 EXPLAIN 分析执行计划，仅仅是停留在分析 SQL 的外部的执行情况，如果我们想要深入到 MySQL 内核中，从执行线程的状态和时间来分析的话，这个时候我们就可以选择 Profile。</p>
 <p>Profile 除了可以分析执行线程的状态和时间，还支持进一步选择 ALL、CPU、MEMORY、BLOCK IO、CONTEXT SWITCHES 等类型来查询 SQL 语句在不同系统资源上所消耗的时间。以下是相关命令的注释：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SHOW PROFILE <span style="color:#f92672">[</span>type <span style="color:#f92672">[</span>, type<span style="color:#f92672">]</span> ... <span style="color:#f92672">]</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SHOW PROFILE <span style="color:#f92672">[</span>type <span style="color:#f92672">[</span>, type<span style="color:#f92672">]</span> ... <span style="color:#f92672">]</span>
 <span style="color:#f92672">[</span>FOR QUERY n<span style="color:#f92672">]</span>
 <span style="color:#f92672">[</span>LIMIT row_count <span style="color:#f92672">[</span>OFFSET offset<span style="color:#f92672">]]</span>
 
@@ -1395,7 +1393,7 @@ Department 表：
 | Id | Name     |
 +----+----------+
 </code></pre><p>使用 <code>JOIN</code> 和 <code>IN</code>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span>
     Department.name <span style="color:#66d9ef">AS</span> <span style="color:#e6db74">&#39;Department&#39;</span>,
     Employee.name <span style="color:#66d9ef">AS</span> <span style="color:#e6db74">&#39;Employee&#39;</span>,
     Salary
@@ -1413,7 +1411,7 @@ Department 表：
 	)
 ;
 </code></pre></div><p>使用 <code>LEFT JOIN</code> 和 <code>IN</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">SELECT</span>
     Department.name <span style="color:#66d9ef">AS</span> <span style="color:#e6db74">&#39;Department&#39;</span>,
     Employee.name <span style="color:#66d9ef">AS</span> <span style="color:#e6db74">&#39;Employee&#39;</span>,
     Salary
@@ -1433,29 +1431,29 @@ Department 表：
 ;
 </code></pre></div><h2 id="语句优化改写示例">语句优化改写示例</h2>
 <h3 id="最左前缀匹配">最左前缀匹配</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">INDEX</span> idx_a_b <span style="color:#66d9ef">ON</span> t1(a, b, <span style="color:#66d9ef">c</span>);
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">INDEX</span> idx_a_b <span style="color:#66d9ef">ON</span> t1(a, b, <span style="color:#66d9ef">c</span>);
 
 <span style="color:#66d9ef">WHERE</span> a <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#75715e">-- √
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">WHERE</span> a <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> b <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#75715e">-- √
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">WHERE</span> a <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> <span style="color:#66d9ef">c</span> <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#75715e">-- 仅仅用上了 a 索引
 </span></code></pre></div><h3 id="范围查找">范围查找</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">WHERE</span> ... <span style="color:#66d9ef">BETWEEN</span> ... <span style="color:#66d9ef">AND</span> ...
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">WHERE</span> ... <span style="color:#66d9ef">BETWEEN</span> ... <span style="color:#66d9ef">AND</span> ...
 <span style="color:#f92672">&gt;</span> <span style="color:#75715e">-- √
 </span><span style="color:#75715e"></span><span style="color:#f92672">&lt;</span> <span style="color:#75715e">-- √
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">IN</span> (...) <span style="color:#75715e">-- IN 不属于范围查找的范畴
 </span></code></pre></div><h3 id="joinonusing-列">JOIN/ON/USING 列</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- ON、USING 确保存在索引
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- ON、USING 确保存在索引
 </span></code></pre></div><p>对于 JOIN 的优化，用<strong>数据量小的表去驱动数据量大的表</strong>，这样可以减少内循环个数，也就是被驱动表的扫描次数。用来进行 <strong>join 的字段要加索引</strong>，会触发 <code>INLJ</code> 算法，如果是主键的聚簇索引，性能最优。如果无法使用索引，那么注意调整 <strong>join buffer</strong> 大小，适当调大些；
 减少不必要的字段查询（<strong>字段越少，join buffer 所缓存的数据就越多</strong>）</p>
 <h3 id="where">WHERE</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">INDEX</span> idx_a_b_c <span style="color:#66d9ef">ON</span> t1(a, b, <span style="color:#66d9ef">c</span>);
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">INDEX</span> idx_a_b_c <span style="color:#66d9ef">ON</span> t1(a, b, <span style="color:#66d9ef">c</span>);
 
 <span style="color:#75715e">--              ↓ (索引只会用上 a, b 索引)
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">WHERE</span> a <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> b <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">5000</span> <span style="color:#66d9ef">AND</span> <span style="color:#66d9ef">c</span> <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">10000</span>;
 <span style="color:#75715e">--                        ↓ (索引用上 a,b,c 索引)
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">WHERE</span> a <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> b <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> <span style="color:#66d9ef">c</span> <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">10000</span>;
 </code></pre></div><h3 id="order-by">ORDER BY</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">INDEX</span> idx_a_b_c <span style="color:#66d9ef">ON</span> t1(a, b, <span style="color:#66d9ef">c</span>);
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">INDEX</span> idx_a_b_c <span style="color:#66d9ef">ON</span> t1(a, b, <span style="color:#66d9ef">c</span>);
 
 <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> a, b, <span style="color:#66d9ef">c</span>; <span style="color:#75715e">-- 确定值
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">WHERE</span> a <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">AND</span> b <span style="color:#f92672">=</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">c</span>; <span style="color:#75715e">-- 确定值
@@ -1463,10 +1461,10 @@ Department 表：
 <span style="color:#75715e">-- 确保使用索引排序，如果没有用上，那么 EXPLAIN 会出现 filesort
 </span><span style="color:#75715e">-- 增加 sort_buffer_size：每个排序线程缓冲区大小
 </span></code></pre></div><h3 id="group-by-避免排序">GROUP BY 避免排序</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- ORDER BY NULL 避免排序
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- ORDER BY NULL 避免排序
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">GROUP</span> <span style="color:#66d9ef">BY</span> cluster_id <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">LIMIT</span> <span style="color:#ae81ff">10</span>;
 </code></pre></div><h3 id="in">IN</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- MySQL 会排序 IN 列表、然后二分查找定位数据
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- MySQL 会排序 IN 列表、然后二分查找定位数据
 </span><span style="color:#75715e">-- IN 列表不易过长，200 个以内
 </span><span style="color:#75715e"></span>
 <span style="color:#75715e">-- IN 转化为多个 = 查询，例如
@@ -1476,14 +1474,14 @@ Department 表：
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> id <span style="color:#66d9ef">FROM</span> table_b;
 <span style="color:#66d9ef">SELECT</span> id <span style="color:#66d9ef">FROM</span> table_a <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#f92672">?</span>;
 </code></pre></div><h3 id="union">UNION</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- UNION 语句默认是移除重复记录的， 需要用到排序操作
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- UNION 语句默认是移除重复记录的， 需要用到排序操作
 </span><span style="color:#75715e">-- 尽量使用 UNION ALL
 </span></code></pre></div><h3 id="like">LIKE</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 《MySQL 管理之道》
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 《MySQL 管理之道》
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">LIKE</span> <span style="color:#e6db74">&#39;xxx%&#39;</span> <span style="color:#75715e">-- 可以用上索引
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">LIKE</span> <span style="color:#e6db74">&#39;%xxx%&#39;</span> <span style="color:#75715e">-- 不可以用上索引
 </span></code></pre></div><h3 id="or-语句">OR 语句</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 《MySQL 管理之道》
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- 《MySQL 管理之道》
 </span><span style="color:#75715e"></span>
 <span style="color:#75715e">-- OR 条件不会用上索引
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> <span style="color:#66d9ef">USER</span> <span style="color:#66d9ef">WHERE</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;d&#39;</span> <span style="color:#66d9ef">OR</span> age <span style="color:#f92672">=</span> <span style="color:#ae81ff">41</span>;
@@ -1500,7 +1498,7 @@ Department 表：
 <li>不使用组合索引的首个字段当条件</li>
 <li>范围查询量比较大的时候，超过 20%</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- （1）字段使用函数，索引失效
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- （1）字段使用函数，索引失效
 </span><span style="color:#75715e">--                                      ↓ (采用了函数)
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> create_time <span style="color:#66d9ef">FROM</span> t1 <span style="color:#66d9ef">WHERE</span> DATE(create_time) <span style="color:#f92672">=</span> curdate();
 
@@ -1517,7 +1515,7 @@ Department 表：
 </span><span style="color:#75715e">-- MYSQL 认为全表扫描更快
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> employees <span style="color:#66d9ef">WHERE</span> hire_date <span style="color:#f92672">&gt;</span> <span style="color:#e6db74">&#39;1989-06-02&#39;</span>;
 </code></pre></div><h3 id="in-和-exists-效率">In 和 Exists 效率</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">--                        ↓ (查出 B 表所有 ID 并放到内存)
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">--                        ↓ (查出 B 表所有 ID 并放到内存)
 </span><span style="color:#75715e">--             B 表数据量大，不适合用 in 语句
 </span><span style="color:#75715e">--             in 语句适合，B 表数据量比 A 表数据量小的情况
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> A <span style="color:#66d9ef">where</span> id <span style="color:#66d9ef">in</span> (<span style="color:#66d9ef">select</span> id <span style="color:#66d9ef">from</span> B);
@@ -1532,15 +1530,15 @@ Department 表：
 </code></pre></div><h3 id="子查询优化分页查询">子查询优化分页查询</h3>
 <p>通常我们是使用 + 合适的 <code>order by</code> 来实现分页查询，这种实现方式在没有任何索引条件支持的情况下，需要做大量的文件排序操作（file sort），性能将会非常得糟糕。如果有对应的索引，通常刚开始的分页查询效率会比较理想，但越往后，分页查询的性能就越差。</p>
 <p>这是因为我们在使用 <code>LIMIT</code> 的时候，偏移量 <code>M</code> 在分页越靠后的时候，值就越大，数据库检索的数据也就越多。例如 <code>LIMIT 10000,10</code> 这样的查询，数据库需要查询 10010 条记录，最后返回 10 条记录。也就是说将会有 10000 条记录被查询出来没有被使用到。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> <span style="color:#f92672">`</span>demo<span style="color:#f92672">`</span>.<span style="color:#f92672">`</span><span style="color:#66d9ef">order</span><span style="color:#f92672">`</span> <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> order_no <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">10000</span>, <span style="color:#ae81ff">20</span>;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> <span style="color:#f92672">`</span>demo<span style="color:#f92672">`</span>.<span style="color:#f92672">`</span><span style="color:#66d9ef">order</span><span style="color:#f92672">`</span> <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> order_no <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">10000</span>, <span style="color:#ae81ff">20</span>;
 </code></pre></div><p>通过 EXPLAIN 分析可知：该查询使用到了索引，扫描行数为 10020 行，但所用查询时间为 0.018s，相对来说时间偏长了。</p>
 <p><img src="/images/docs/tutorial/database/mysql-index/80efe0ba8feb86baa20834fd48c302fe.jpg" alt=""></p>
 <p>以上分页查询的问题在于，我们查询获取的 10020 行数据结果都返回给我们了，我们能否先查询出所需要的 20 行数据中的最小 ID 值，然后通过偏移量返回所需要的 20 行数据给我们呢？我们可以通过索引覆盖扫描，使用子查询的方式来实现分页查询：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> <span style="color:#f92672">`</span>demo<span style="color:#f92672">`</span>.<span style="color:#f92672">`</span><span style="color:#66d9ef">order</span><span style="color:#f92672">`</span> <span style="color:#66d9ef">where</span> id <span style="color:#f92672">&gt;</span> (<span style="color:#66d9ef">select</span> id <span style="color:#66d9ef">from</span> <span style="color:#f92672">`</span>demo<span style="color:#f92672">`</span>.<span style="color:#f92672">`</span><span style="color:#66d9ef">order</span><span style="color:#f92672">`</span> <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> order_no <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">10000</span>, <span style="color:#ae81ff">1</span>)  <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">20</span>;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> <span style="color:#f92672">`</span>demo<span style="color:#f92672">`</span>.<span style="color:#f92672">`</span><span style="color:#66d9ef">order</span><span style="color:#f92672">`</span> <span style="color:#66d9ef">where</span> id <span style="color:#f92672">&gt;</span> (<span style="color:#66d9ef">select</span> id <span style="color:#66d9ef">from</span> <span style="color:#f92672">`</span>demo<span style="color:#f92672">`</span>.<span style="color:#f92672">`</span><span style="color:#66d9ef">order</span><span style="color:#f92672">`</span> <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> order_no <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">10000</span>, <span style="color:#ae81ff">1</span>)  <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">20</span>;
 </code></pre></div><p>通过 EXPLAIN 分析可知：子查询遍历索引的范围跟上一个查询差不多，而主查询扫描了更多的行数，但执行时间却减少了，只有 0.004s。这就是因为返回行数只有 20 行了，执行效率得到了明显的提升。</p>
 <p><img src="/images/docs/tutorial/database/mysql-index/10e46817482166d205f319cd0512942e.jpg" alt=""></p>
 <h3 id="using-filesort">using filesort</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- （1）
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- （1）
 </span><span style="color:#75715e">-- 只有 pid 一个索引是不行的，会存在 filesort
 </span><span style="color:#75715e">-- 必须建立联合索引 (pid, change_date) 才可以
 </span><span style="color:#75715e"></span><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> t1 <span style="color:#66d9ef">WHERE</span> pid <span style="color:#f92672">=</span> <span style="color:#ae81ff">12345</span> <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> change_date;
@@ -1551,15 +1549,15 @@ Department 表：
 <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> change_date <span style="color:#66d9ef">DESC</span>, delta_rmb <span style="color:#66d9ef">ASC</span>;
 </code></pre></div><h2 id="表设计优化">表设计优化</h2>
 <h3 id="存储手机号">存储手机号</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">char(<span style="color:#ae81ff">11</span>); <span style="color:#75715e">-- 一般字符集是 utf8，utf8 占用 3 个字节，11 * 3 = 33 字节
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">char(<span style="color:#ae81ff">11</span>); <span style="color:#75715e">-- 一般字符集是 utf8，utf8 占用 3 个字节，11 * 3 = 33 字节
 </span><span style="color:#75715e"></span>bigint(<span style="color:#ae81ff">20</span>); <span style="color:#75715e">-- 宽度 20，只占用 8 字节，所以推荐 bigint
 </span></code></pre></div><h3 id="ip-地址">IP 地址</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">INET_ATON(); <span style="color:#75715e">-- IP 地址转为数字
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL">INET_ATON(); <span style="color:#75715e">-- IP 地址转为数字
 </span><span style="color:#75715e"></span>INET_NTOA(); <span style="color:#75715e">-- 数字转为 IP 地址
 </span><span style="color:#75715e"></span>
 INT(<span style="color:#ae81ff">11</span>) UNSIGNED; <span style="color:#75715e">-- 必须采用 UNSIGNED 否则会溢出
 </span></code></pre></div><h3 id="增加删除更新字段">增加/删除/更新字段</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- VARCHAR(5) -&gt; VARCHAR(10)
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-SQL" data-lang="SQL"><span style="color:#75715e">-- VARCHAR(5) -&gt; VARCHAR(10)
 </span><span style="color:#75715e">-- 参考自《MySQL 管理之道》
 </span><span style="color:#75715e">-- 注意此种方法对 DECIMAL 类型无效
 </span><span style="color:#75715e">-- (1) 创建临时表
@@ -1583,7 +1581,7 @@ cp <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span><s
 <h2 id="索引选择">索引选择</h2>
 <h3 id="a-b-和-b-a">(a, b) 和 (b, a)</h3>
 <p>table 建立了两个联合索引 (a, b) 和 (b, a)，下面语句走哪一个索引？</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> a, b <span style="color:#66d9ef">FROM</span> <span style="color:#66d9ef">table</span> <span style="color:#66d9ef">WHERE</span> a <span style="color:#f92672">=</span> x <span style="color:#66d9ef">AND</span> b <span style="color:#f92672">=</span> x;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> a, b <span style="color:#66d9ef">FROM</span> <span style="color:#66d9ef">table</span> <span style="color:#66d9ef">WHERE</span> a <span style="color:#f92672">=</span> x <span style="color:#66d9ef">AND</span> b <span style="color:#f92672">=</span> x;
 </code></pre></div><blockquote>
 <p>都有可能。以成本分析器统计结果为准，哪个<strong>区分度高</strong>就走哪一个。如果区分度差不多，那就走建表语句中靠前的索引。可以通过 <code>explain format = json</code> 查看详细的查询成本统计结果。</p>
 </blockquote>

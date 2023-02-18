@@ -9,18 +9,16 @@
  Raft 协议 nacos 对一致性协议进行抽象，将其关键的方法抽象到 ConsistencyProtocol 接口中，关键的方法有同步/异步读写数据等：
 public interface ConsistencyProtocol&lt;T extends Config, P extends RequestProcessor&gt; extends CommandOperations { // 初始化  void init(T config); Response getData(ReadRequest request) throws Exception; Response write(WriteRequest request) throws Exception; CompletableFuture&lt;Response&gt; aGetData(ReadRequest request); CompletableFuture&lt;Response&gt; writeAsync(WriteRequest request); // 新的成员节点列表，一致性协议自行处理相应的成员节点是加入还是离开  void memberChange(Set&lt;String&gt; addresses); } // CP 协议 public interface CPProtocol&lt;C extends Config, P extends RequestProcessor4CP&gt; extends ConsistencyProtocol&lt;C, P&gt; { boolean isLeader(String group); } // AP 协议 public interface APProtocol&lt;C extends Config, P extends RequestProcessor4AP&gt; extends ConsistencyProtocol&lt;C, P&gt; { } JRaft 参考  蚂蚁金服开源 SOFAJRaft：生产级 Java Raft 算法库 Raft 算法解读  " />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/raft/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/distributed/raft/" />
 
 <title>Raft | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -578,6 +576,16 @@ var _hmt = _hmt || [];
       
         <li>
 
+  <a href="/docs/tutorial/distributed/design-interview/" >
+      系统设计面试题
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
   <a href="/docs/tutorial/distributed/service-measurement/" >
       服务度量
   </a>
@@ -750,6 +758,16 @@ var _hmt = _hmt || [];
 
   <a href="/docs/tutorial/distributed/architecture-cases/" >
       架构案例参考
+  </a>
+
+</li>
+      
+    
+      
+        <li>
+
+  <a href="/docs/tutorial/distributed/differential_synchronization/" >
+      多文档同步算法
   </a>
 
 </li>
@@ -1168,7 +1186,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -1225,7 +1243,7 @@ data-full-width-responsive="true"></ins>
 </blockquote>
 <h2 id="raft-协议">Raft 协议</h2>
 <p>nacos 对一致性协议进行抽象，将其关键的方法抽象到 <code>ConsistencyProtocol</code> 接口中，关键的方法有同步/异步读写数据等：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">ConsistencyProtocol</span><span style="color:#f92672">&lt;</span>T <span style="color:#66d9ef">extends</span> Config<span style="color:#f92672">,</span> P <span style="color:#66d9ef">extends</span> RequestProcessor<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">extends</span> CommandOperations <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">ConsistencyProtocol</span><span style="color:#f92672">&lt;</span>T <span style="color:#66d9ef">extends</span> Config<span style="color:#f92672">,</span> P <span style="color:#66d9ef">extends</span> RequestProcessor<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">extends</span> CommandOperations <span style="color:#f92672">{</span>
     <span style="color:#75715e">// 初始化
 </span><span style="color:#75715e"></span>    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">init</span><span style="color:#f92672">(</span>T config<span style="color:#f92672">);</span>
 

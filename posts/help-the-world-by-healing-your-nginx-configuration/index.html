@@ -7,18 +7,17 @@
 <meta name="description" content="如何改进 NGINX 配置文件节省带宽？"><meta property="og:title" content="如何改进 NGINX 配置文件节省带宽？" />
 <meta property="og:description" content="2014年，Admiral William H. McRaven 在得克萨斯大学发表了著名的演讲，他说，如果你想改变世界，就从整理床铺开始。有时候小事情会有很大的影响——不管是在早上整理床铺，还是对网站的HTTP服务器配置做一些更改。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/posts/help-the-world-by-healing-your-nginx-configuration/" /><meta property="article:section" content="posts" />
+<meta property="og:url" content="https://kunzhao.org/posts/help-the-world-by-healing-your-nginx-configuration/" />
 <meta property="article:published_time" content="2020-05-24T00:00:00+00:00" />
 <meta property="article:modified_time" content="2020-05-24T00:00:00+00:00" />
-
 <title>如何改进 NGINX 配置文件节省带宽？ | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -346,7 +345,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -443,7 +442,7 @@ var _hmt = _hmt || [];
 <p><img src="/images/posts/help-the-world-by-healing-your-nginx-configuration/rogalove-devtools-no-gzip.png" alt=""></p>
 <p>正如您在左下角看到的，没有压缩：文本文件的大小为1.15 MB，并且传输了这么多数据。</p>
 <p>默认情况下，<a href="https://nginx.org/en/docs/http/ngx_http_gzip_module.html?&amp;_ga=2.122294152.2021468437.1590291424-1912910519.1590291424#gzip"><code>NGINX</code> 中禁用压缩</a>，但根据安装或Linux发行版的不同，可以在默认的 <code>nginx.conf</code> 文件中启用某些设置。在这里，我们在 <code>NGINX</code> 配置文件中启用 <code>gzip</code> 压缩：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">gzip on;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">gzip on;
 gzip_types application/xml application/json text/css text/javascript application/javascript;
 gzip_vary on;
 gzip_comp_level 6;
@@ -453,7 +452,7 @@ gzip_min_length 500;
 <h2 id="设置缓存头">设置缓存头</h2>
 <p>当浏览器检索网页的文件时，它会将副本保存在本地磁盘缓存中，这样当您再次访问该网页时，它就不必从服务器重新提取该文件。每个浏览器都使用自己的逻辑来决定何时使用文件的本地副本，以及在服务器上发生更改时何时再次获取该文件。但是作为网站所有者，您可以在发送的HTTP响应中设置缓存控制和过期头，以使浏览器的缓存行为更加高效。从长远来看，不必要的HTTP请求要少得多。</p>
 <p>一个好的开始，您可以为字体和图像设置一个<a href="https://nginx.org/en/docs/http/ngx_http_headers_module.html?&amp;_ga=2.219261850.2021468437.1590291424-1912910519.1590291424#expires">很长的缓存过期时间</a>，这些字体和图像可能不会经常更改（即使更改，它们通常也会得到一个新的文件名）。在下面的示例中，我们指示客户端浏览器将字体和图像保存在本地缓存中一个月：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location ~* <span style="color:#ae81ff">\.</span><span style="color:#f92672">(</span>?:jpg|jpeg|gif|png|ico|woff2<span style="color:#f92672">)</span>$ <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location ~* <span style="color:#ae81ff">\.</span><span style="color:#f92672">(</span>?:jpg|jpeg|gif|png|ico|woff2<span style="color:#f92672">)</span>$ <span style="color:#f92672">{</span>
     expires 1M;
     add_header Cache-Control <span style="color:#e6db74">&#34;public&#34;</span>;
 <span style="color:#f92672">}</span>
@@ -463,7 +462,7 @@ gzip_min_length 500;
 <p>由此产生的协议对网络更友好，因为与HTTP/1.x相比，使用的TCP连接更少。这意味着与其他流和存活时间更久的连接的竞争更少，进而导致可用网络容量的更好利用。</p>
 </blockquote>
 <p><code>NGINX 1.9.5</code> 及更高版本（以及 <code>NGINX Plus R7</code> 及更高版本）支持 <code>HTTP/2</code> 协议，您只需启用它😀. 为此，请在 <code>NGINX</code> 配置文件的 <code>listen</code> 指令中包含 <code>http2</code> 参数：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">listen <span style="color:#ae81ff">443</span> ssl http2;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">listen <span style="color:#ae81ff">443</span> ssl http2;
 </code></pre></div><p>注意，在大多数情况下，还需要启用 <code>TLS</code> 以使用HTTP/2。</p>
 <p>您可以使用 <a href="https://http2.pro/">HTTP2.Pro</a> 服务验证您的（或任何）站点是否支持HTTP/2：</p>
 <p><img src="/images/posts/help-the-world-by-healing-your-nginx-configuration/rogalove-http2-pro.png" alt=""></p>
@@ -473,16 +472,16 @@ gzip_min_length 500;
 <p>有几种不同的方法可以减少和优化日志记录。在这里我们强调三点。</p>
 <p>方法1:禁用页面资源请求的日志记录</p>
 <p>如果不需要记录检索普通页面资源（如图像、JavaScript文件和CSS文件）的请求，这是一个快速而简单的解决方案。您只需创建一个与这些文件类型匹配的新位置块，并禁用其中的日志记录。（您也可以将此访问日志指令添加到上面设置缓存控制头的位置块中。）</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location ~* <span style="color:#ae81ff">\.</span><span style="color:#f92672">(</span>?:jpg|jpeg|gif|png|ico|woff2|js|css<span style="color:#f92672">)</span>$ <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location ~* <span style="color:#ae81ff">\.</span><span style="color:#f92672">(</span>?:jpg|jpeg|gif|png|ico|woff2|js|css<span style="color:#f92672">)</span>$ <span style="color:#f92672">{</span>
     access_log off;
 <span style="color:#f92672">}</span>
 </code></pre></div><p>方法2:禁用成功请求的日志记录</p>
 <p>这是一个更强大的方法，因为它放弃了带有<strong>2xx</strong>或<strong>3xx</strong>响应代码的查询，只记录错误。它比方法1稍微复杂一些，因为它取决于<code>NGINX</code>日志的配置方式。在我们的例子中，我们使用包含在Ubuntu服务器发行版中的标准<code>nginx.conf</code>文件，因此不管虚拟主机是什么，所有请求都会记录到<code>/var/log/nginx/access.log</code>.</p>
 <p>使用<a href="https://nginx.org/en/docs/http/ngx_http_log_module.html?&amp;_ga=2.232009244.2021468437.1590291424-1912910519.1590291424#access_log">官方<code>NGINX</code>文档</a>中的一个示例，我们打开条件日志记录。创建一个变量<code>$loggable</code>，对于带有<code>2xx</code>和<code>3xx</code>响应代码的请求，将其设置为<code>0</code>，否则设置为<code>1</code>。然后在<code>access_log</code>指令中将此变量作为条件引用。</p>
 <p>下面是位于 <code>/etc/nginx/nginx.conf</code> 文件中的 <code>http</code> 上下文的的原始指令：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">access_log /var/log/nginx/access.log;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">access_log /var/log/nginx/access.log;
 </code></pre></div><p>添加一个映射块并从 <code>access_log</code> 指令中引用它：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">map $status $loggable <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">map $status $loggable <span style="color:#f92672">{</span>
     ~^<span style="color:#f92672">[</span>23<span style="color:#f92672">]</span> 0;
     default 1;
 <span style="color:#f92672">}</span>
@@ -491,15 +490,15 @@ access_log /var/log/nginx/access.log combined <span style="color:#66d9ef">if</sp
 </code></pre></div><p>注意，尽管 <code>combined</code> 是默认的日志格式，但是在包含 <code>if</code> 参数时需要显式地指定它。</p>
 <p>方法3：使用缓冲以减少I/O操作</p>
 <p>即使要记录所有请求，也可以通过打开访问日志缓冲来减少I/O操作。使用此指令，<code>NGINX</code> 将暂时不将日志数据写入磁盘，直到512KB缓冲区被填满或自上次刷新以来已过1分钟（以先发生者为准）。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">access_log /var/log/nginx/access.log combined buffer<span style="color:#f92672">=</span>512k flush<span style="color:#f92672">=</span>1m;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">access_log /var/log/nginx/access.log combined buffer<span style="color:#f92672">=</span>512k flush<span style="color:#f92672">=</span>1m;
 </code></pre></div><h2 id="限制特定url的带宽">限制特定URL的带宽</h2>
 <p>如果您的服务器提供了较大的文件（或较小但非常流行的文件，如表单或报表），则设置客户端下载这些文件的最大速度可能会很有用。如果您的站点已经处于高网络负载，限制下载速度会留下更多带宽，以保持应用程序的关键部分响应。这是硬件制造商使用的一个非常流行的解决方案-虽然有成千上万的其他人同时下载，您仍然可以获得您的下载，只是您可能需要等待更长的时间才能为打印机下载3GB驱动程序。😉</p>
 <p>使用 <code>limit_rate</code> 指令来限制特定URL的带宽。在这里，我们将每个文件在<code>/download</code> 下的传输速率限制为每秒50kb。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location /download/ <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location /download/ <span style="color:#f92672">{</span>
     limit_rate 50k;
 <span style="color:#f92672">}</span>
 </code></pre></div><p>您可能还希望只对较大的文件进行速率限制，可以使用 <code>limit-rate-after</code> 指令执行此操作。在本例中，每个文件（从任何目录）的前500kb传输没有速度限制，之后的所有文件都限制在50kb/s。这样可以加快网站关键部分的传输速度，同时减慢其他部分的传输速度。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location / <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">location / <span style="color:#f92672">{</span>
     limit_rate_after 500k;
     limit_rate 50k;
 <span style="color:#f92672">}</span>

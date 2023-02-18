@@ -7,18 +7,17 @@
 <meta name="description" content="如何维持缓存的一致性？"><meta property="og:title" content="如何维持缓存的一致性？" />
 <meta property="og:description" content="Phil Karlton 曾经说过，“计算机科学中只有两件困难的事情：缓存失效和命名问题。” 这句话还有其他很好的举例。我个人最喜欢 Jeff Atwood 的一句话：“计算机科学中有两件困难的事情：缓存失效、命名和一个错误就关闭。”显然，缓存是困难的。就像分布式系统中的几乎所有东西一样，它甚至可能一眼就看不清。我将介绍分布式系统中几种常见的缓存方法，这些方法应该涵盖您将使用的绝大多数缓存系统。具体来说，我将关注如何维护缓存一致性。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/posts/maintaining-cache-consistency/" /><meta property="article:section" content="posts" />
+<meta property="og:url" content="https://kunzhao.org/posts/maintaining-cache-consistency/" />
 <meta property="article:published_time" content="2020-05-31T00:00:00+00:00" />
 <meta property="article:modified_time" content="2020-05-31T00:00:00+00:00" />
-
 <title>如何维持缓存的一致性？ | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -346,7 +345,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -475,25 +474,25 @@ var _hmt = _hmt || [];
 <h2 id="数据不一致">数据不一致</h2>
 <h3 id="示例">示例</h3>
 <p>ID = 1 的用户的年龄从 19 更新为 20：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
 updateCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
 </code></pre></div><p>上面代码会造成<strong>数据不一致</strong>。</p>
 <h3 id="原因">原因</h3>
 <p>两个请求同时过来，数据库变成了 21，缓存依然是 20：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">requestA<span style="color:#f92672">.</span><span style="color:#a6e22e">updateDB</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">requestA<span style="color:#f92672">.</span><span style="color:#a6e22e">updateDB</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
 requestB<span style="color:#f92672">.</span><span style="color:#a6e22e">updateDB</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 21<span style="color:#f92672">)</span>
 requestB<span style="color:#f92672">.</span><span style="color:#a6e22e">updateCache</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 21<span style="color:#f92672">)</span>
 requestA<span style="color:#f92672">.</span><span style="color:#a6e22e">updateCache</span><span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
 </code></pre></div><p>原因就在于 <code>updateDB</code> 和 <code>updateCache</code> 是两个独立的操作。</p>
 <h3 id="解决">解决</h3>
 <p>不更新缓存，<strong>删除缓存</strong>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
 deleteCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
 </code></pre></div><p>读取的时候，发现缓存没有了数据，再从数据库读取数据，更新到缓存。这个策略就是 <strong><code>Cache-Aside</code> (旁路缓存)</strong> 策略。</p>
 <h3 id="特殊情况">特殊情况</h3>
 <p>新注册一个用户，写入数据库，清理缓存（么有数据可以清理）。注册完用户后，需要立马读出来，而数据库主从分离，<strong>主从延迟导致读取不到用户信息</strong>。</p>
 <p>此时，反而需要插入数据库后，插入缓存才可以：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">insertDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> <span style="color:#960050;background-color:#1e0010">&#39;</span>张三<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">)</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">insertDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> <span style="color:#960050;background-color:#1e0010">&#39;</span>张三<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">)</span>
 insertCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> <span style="color:#960050;background-color:#1e0010">&#39;</span>张三<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">)</span>
 </code></pre></div><p>而且新注册用户，也不存在并发更新用户信息的情况。</p>
 <h3 id="缺点">缺点</h3>
@@ -501,14 +500,14 @@ insertCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</s
 <ul>
 <li>(1) <strong>引入分布式锁</strong></li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
 redis<span style="color:#f92672">.</span><span style="color:#a6e22e">lock</span><span style="color:#f92672">()</span>
 updateCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
 redis<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">()</span>
 </code></pre></div><ul>
 <li>(2) <strong>引入 TTL 过期时间</strong></li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">updateDB<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">)</span>
 updateCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</span> 20<span style="color:#f92672">,</span> 5<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">SECONDS</span><span style="color:#f92672">)</span> <span style="color:#75715e">// 5 秒后过期
 </span></code></pre></div><p>即使出现不一致，也会很快过期，对业务影响有限。</p>
 <h2 id="携程如何保证缓存一致性">携程如何保证缓存一致性</h2>
@@ -523,7 +522,7 @@ updateCache<span style="color:#f92672">(</span>1<span style="color:#f92672">,</s
 </ul>
 <h3 id="通过消息机制异步更新缓存">通过消息机制异步更新缓存</h3>
 <p>业务允许异步更新缓存，只要<strong>最终一致</strong>即可，传统的同步更新缓存机制，在多线程下可能会<strong>导致缓存中存储的是旧的数据</strong>的问题：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">T1: value1 <span style="color:#f92672">=</span> readFromDB<span style="color:#f92672">()</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">T1: value1 <span style="color:#f92672">=</span> readFromDB<span style="color:#f92672">()</span>
     T2<span style="color:#f92672">:</span> writeToDB<span style="color:#f92672">(</span>value2<span style="color:#f92672">)</span>
         T3<span style="color:#f92672">:</span> value2 <span style="color:#f92672">=</span> readFromDB<span style="color:#f92672">()</span>
         T3<span style="color:#f92672">:</span> writeToCache<span style="color:#f92672">(</span>value2<span style="color:#f92672">)</span>
@@ -608,7 +607,7 @@ T1: writeToCache<span style="color:#f92672">(</span>value1<span style="color:#f9
 - client reads DB get value `A` (客户端从数据库读取值：A)
 - someone updates the DB to value `B` and invalidates the cache entry (某人刷新了数据库，值变为了 B)
 - client puts value `A` into cache (客户端将 A 放入了缓存)
-</code></pre><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 先从缓存中获取数据
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 先从缓存中获取数据
 </span><span style="color:#75715e"></span>value <span style="color:#f92672">=</span> myCache<span style="color:#f92672">.</span><span style="color:#a6e22e">getIfPresent</span><span style="color:#f92672">(</span>key<span style="color:#f92672">);</span>
 <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>value <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     <span style="color:#75715e">// 从 DB 获取数据
@@ -630,7 +629,7 @@ T1: writeToCache<span style="color:#f92672">(</span>value1<span style="color:#f9
 <p><img src="/images/posts/maintaining-cache-consistency/write-read-through.png" alt=""></p>
 <p>Write-through 缓存方式意味着变异，客户端直接写入缓存。<strong>缓存负责同步写入到数据库中 (而不是客户端负责)</strong>。它没有提到如何读取值的问题。客户端可以执行 look-aside 读或 read-through。</p>
 <p>Read-through 缓存意味着读取，客户端直接从缓存中读取。如果是未命中，cache 负责填充数据存储中的数据并回复客户端的查询。它没有提到写作。客户端可以 demand-fill 写入缓存或 write-through。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// Read-through 模式
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// Read-through 模式
 </span><span style="color:#75715e"></span>LoadingCache<span style="color:#f92672">&lt;</span>Integer<span style="color:#f92672">,</span> Result<span style="color:#f92672">&lt;</span>Category<span style="color:#f92672">&gt;&gt;</span> getCache <span style="color:#f92672">=</span> 
     CacheBuilder<span style="color:#f92672">.</span><span style="color:#a6e22e">newBuilder</span><span style="color:#f92672">()</span>
         <span style="color:#f92672">.</span><span style="color:#a6e22e">softValues</span><span style="color:#f92672">()</span>
@@ -656,7 +655,7 @@ T1: writeToCache<span style="color:#f92672">(</span>value1<span style="color:#f9
 <h3 id="eureka-server-端的多级缓存">Eureka Server 端的多级缓存</h3>
 <p><img src="/images/posts/maintaining-cache-consistency/v2-9b82d2148acbc68ec1cdcbf758305ddc_1440w.png" alt=""></p>
 <p>各个服务<strong>拉取、注册、下线、故障</strong>等都是直接处理的这个位于<strong>内存</strong>中的 <code>registry</code> 缓存：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AbstractInstanceRegistry</span> <span style="color:#66d9ef">implements</span> InstanceRegistry <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AbstractInstanceRegistry</span> <span style="color:#66d9ef">implements</span> InstanceRegistry <span style="color:#f92672">{</span>
 
     <span style="color:#75715e">// key: 服务名称
 </span><span style="color:#75715e"></span>    <span style="color:#75715e">// value: 一个服务的多个实例
@@ -667,18 +666,18 @@ T1: writeToCache<span style="color:#f92672">(</span>value1<span style="color:#f9
 
 <span style="color:#f92672">}</span>
 </code></pre></div><p>然后默认每隔 <code>60s</code> 剔除超过 <code>90s</code> 未续约的节点：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// evictionIntervalTimerInMs 默认值 60 秒
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// evictionIntervalTimerInMs 默认值 60 秒
 </span><span style="color:#75715e"></span>evictionTimer<span style="color:#f92672">.</span><span style="color:#a6e22e">schedule</span><span style="color:#f92672">(</span>evictionTaskRef<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(),</span>
     serverConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">getEvictionIntervalTimerInMs</span><span style="color:#f92672">(),</span>
     serverConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">getEvictionIntervalTimerInMs</span><span style="color:#f92672">());</span>
 </code></pre></div><p>默认 <code>expired</code> 时间：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Lease</span><span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Lease</span><span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> DEFAULT_DURATION_IN_SECS <span style="color:#f92672">=</span> 90<span style="color:#f92672">;</span>
 
 <span style="color:#f92672">}</span>
 </code></pre></div><p>为了避免<strong>同时读写内存数据结构造成的并发冲突 (尽可能避免出现频繁的并发读写问题，nacos 使用的是 <code>CopyOnWrite</code> 思想防止并发冲突)<strong>问题，还采用了</strong>多级缓存机制</strong>来进一步提升服务请求的响应速度：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ResponseCacheImpl</span> <span style="color:#66d9ef">implements</span> ResponseCache <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ResponseCacheImpl</span> <span style="color:#66d9ef">implements</span> ResponseCache <span style="color:#f92672">{</span>
 
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">final</span> ConcurrentMap<span style="color:#f92672">&lt;</span>Key<span style="color:#f92672">,</span> Value<span style="color:#f92672">&gt;</span> readOnlyCacheMap <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ConcurrentHashMap<span style="color:#f92672">&lt;</span>Key<span style="color:#f92672">,</span> Value<span style="color:#f92672">&gt;();</span>
 
@@ -687,12 +686,12 @@ T1: writeToCache<span style="color:#f92672">(</span>value1<span style="color:#f9
 
 <span style="color:#f92672">}</span>
 </code></pre></div><p>其中 <code>readWriteCacheMap</code> 写入之后默认过期时间是 <code>180</code> 秒：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">readWriteCacheMap</span> <span style="color:#f92672">=</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">readWriteCacheMap</span> <span style="color:#f92672">=</span>
     CacheBuilder<span style="color:#f92672">.</span><span style="color:#a6e22e">newBuilder</span><span style="color:#f92672">().</span><span style="color:#a6e22e">initialCapacity</span><span style="color:#f92672">(</span>serverConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">getInitialCapacityOfResponseCache</span><span style="color:#f92672">())</span>
             <span style="color:#75715e">// 180 秒
 </span><span style="color:#75715e"></span>            <span style="color:#f92672">.</span><span style="color:#a6e22e">expireAfterWrite</span><span style="color:#f92672">(</span>serverConfig<span style="color:#f92672">.</span><span style="color:#a6e22e">getResponseCacheAutoExpirationInSeconds</span><span style="color:#f92672">(),</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">SECONDS</span><span style="color:#f92672">);</span>
 </code></pre></div><p><code>readOnlyCacheMap</code> 默认每隔 <code>responseCacheUpdateIntervalMs = 30s</code> 从 <code>readWriteCacheMap</code> 同步一次数据：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>shouldUseReadOnlyResponseCache<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>shouldUseReadOnlyResponseCache<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
     timer<span style="color:#f92672">.</span><span style="color:#a6e22e">schedule</span><span style="color:#f92672">(</span>getCacheUpdateTask<span style="color:#f92672">(),</span>
             <span style="color:#66d9ef">new</span> Date<span style="color:#f92672">(((</span>System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">()</span> <span style="color:#f92672">/</span> responseCacheUpdateIntervalMs<span style="color:#f92672">)</span> <span style="color:#f92672">*</span> responseCacheUpdateIntervalMs<span style="color:#f92672">)</span>
                     <span style="color:#f92672">+</span> responseCacheUpdateIntervalMs<span style="color:#f92672">),</span>

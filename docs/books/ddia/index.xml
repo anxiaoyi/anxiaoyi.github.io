@@ -65,9 +65,8 @@ struct Person { 1: required string userName, 2: optional i64 favoriteNumber, 3: 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/books/ddia/ddia-chapter5/</guid>
-      <description>设计数据密集型应用程序 - Replication Replication 就是将相同数据的拷贝防止在多个通过网络连接在一起的机器上。
-为什么需要 Replication  让数据在地理位置上更靠近用户 部分数据坏掉的时候，系统依然能持续工作 可伸缩，增加机器即可增加吞吐量  如果你需要 replication 的数据不发生变化，那么 replication 的过程是及其简单的，你只需拷贝到其它各个机器上，然后你的任务就完成了。然而 replication 最难的地方也就在这个地方，如何处理变化的数据？接下来就介绍三种常见的处理 replication 中数据变化的算法: single-leader、multi-leader、leaderless。
-Leaders 和 Followers 每一个存储一份数据库拷贝的节点称之为: replica。每一个 replica 都需要处理写数据的操作，久而久之，每一个节点之间存储的数据也就不再一致了。解决这种问题最常见的办法就是: leader-based replication (active/passive 或 master-slave replication)，它的工作原理如下:
+      <description>设计数据密集型应用程序 - Replication  Replication 就是将相同数据的拷贝放置在多个通过网络连接在一起的机器上，这些机器大概率位于不同的地理位置。 Partitioning 将大的数据集拆分为小的数据集，每一份称之为 partitions  为什么需要 Replication  让数据在地理位置上更靠近用户 部分数据坏掉的时候，系统依然能持续工作 可伸缩，增加机器即可增加吞吐量  如果你需要 replication 的数据不发生变化，那么 replication 的过程是及其简单的，你只需拷贝到其它各个机器上，然后你的任务就完成了。然而 replication 最难的地方也就在这个地方，如何处理变化的数据？接下来就介绍三种常见的处理 replication 中数据变化的算法: single-leader、multi-leader、leaderless。
+Leaders 和 Followers 每一个存储了一份数据库拷贝的节点称之为: replica。每一个 replica 都需要处理写数据的操作，久而久之，每一个节点之间存储的数据也就不再一致了。解决这种问题最常见的办法就是: leader-based replication (active/passive 或 master-slave replication)，它的工作原理如下:
  其中某个 replica 被指定为 leader (master 或 primary)，客户端想要写数据，那么必须将它们的写数据的请求发送给 leader，然后 leader 随后写入到自己的本地磁盘中。 其余的 replica 称之为 follower (read replicas, slaves, secondaries, hot standbys)，当 leader 写入数据到本地磁盘的时候，同时将数据改变的部分作为 replication log 或者 change stream 发送给它的 followers。每一个 follower 根据收到的 log 按照和 leader 处理不同写操作之间的相同的顺序，来更新它自己本地的数据。 当一个客户端想要读取数据的时候，它可以发送读请求给 leader 或者任意一个 follower。但是写请求的话只能发送给 leader。  这种模式的 replication 内置在许多数据库中，例如: PostgreSQL、MySQL、Oracle Data Guard、SQL Server 的 AlwaysOn Availability Groups，甚至在许多非关系型数据库中也有它的身影，例如: MongoDB、RethinkDB、Espresso，这种模式也局限于数据库，像消息中间件 Kafka 和 RabbitMQ 高可用的队列都依赖它，一些网络文件系统和 replicated block devices 例如 DRBD 也是同样的道理。</description>
     </item>
     

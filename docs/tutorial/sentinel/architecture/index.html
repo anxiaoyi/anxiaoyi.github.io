@@ -16,18 +16,16 @@
 // redis 地址 RedisConnectionConfig redisConf = new RedisConnectionConfig(&#34;localhost&#34;, 6379, 1000); // 反序列化算法 Converter&lt;String, List&lt;FlowRule&gt;&gt; converter = r -&gt; JSON.parseArray(r, FlowRule.class); // 定义规则源，包含全量和增量部分 // 全量是一个字符串key，增量是 pubsub channel key ReadableDataSource&lt;String, List&lt;FlowRule&gt;&gt; redisDataSource = new RedisDataSource&lt;List&lt;FlowRule&gt;&gt;(redisConf, &#34;app_key&#34;, &#34;app_pubsub_key&#34;, converter); FlowRuleManager.register2Property(redisDataSource.getProperty());  健康状态上报与检查
  接入 Sentinel 的应用服务器需要将自己的限流状态上报到 Dashboard，这样就可以在后台实时呈现所有服务的限流状态。Sentinel 使用拉模型来上报状态，它在当前进程注册了一个 HTTP 服务，Dashboard 会定时来访问这个 HTTP 服务来获取每个服务进程的健康状况和限流信息。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/tutorial/sentinel/architecture/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/tutorial/sentinel/architecture/" />
 
 <title>架构 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -1025,7 +1023,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -1099,7 +1097,7 @@ data-full-width-responsive="true"></ins>
 <p>在实际的项目中，<strong>规则应该需要支持动态配置</strong>。这就需要有一个规则配置源，它可以是 Redis、Zookeeper 等数据库，还需要有一个规则变更通知机制和规则配置后台，允许管理人员可以在后台动态配置规则并实时下发到业务服务器进行控制。</p>
 <p><img src="/images/docs/tutorial/sentinel/architecture/20201221105647.png" alt=""></p>
 <p>有一些规则源存储不支持事件通知机制，比如关系数据库，Sentinel 也提供了<strong>定时刷新</strong>规则，比如每隔几秒来刷新内存里面的限流规则。下面是 redis 规则源定义</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// redis 地址
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// redis 地址
 </span><span style="color:#75715e"></span>RedisConnectionConfig redisConf <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> RedisConnectionConfig<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;localhost&#34;</span><span style="color:#f92672">,</span> 6379<span style="color:#f92672">,</span> 1000<span style="color:#f92672">);</span>
 <span style="color:#75715e">// 反序列化算法
 </span><span style="color:#75715e"></span>Converter<span style="color:#f92672">&lt;</span>String<span style="color:#f92672">,</span> List<span style="color:#f92672">&lt;</span>FlowRule<span style="color:#f92672">&gt;&gt;</span> converter <span style="color:#f92672">=</span> r <span style="color:#f92672">-&gt;</span> JSON<span style="color:#f92672">.</span><span style="color:#a6e22e">parseArray</span><span style="color:#f92672">(</span>r<span style="color:#f92672">,</span> FlowRule<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">);</span>
@@ -1127,7 +1125,7 @@ FlowRuleManager<span style="color:#f92672">.</span><span style="color:#a6e22e">r
 <p>还有一种特殊的动态限流规则，用于<strong>限制动态的热点资源</strong>。内部采用 LRU 算法计算出 top n 热点资源，然后对 top n 的资源进行限流，同时还提供特殊资源特殊对待的参数设置。</p>
 <p>比如在下面的例子中限定了同一个用户的访问频次，同时也限定了同一本书的访问频次，但是对于某个特殊用户和某个特殊的书进行了特殊的频次设置。</p>
 <p><img src="/images/docs/tutorial/sentinel/architecture/v2-4c8333562f1eac421197102aa1cf2a2c_r.jpg" alt=""></p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">ParamFlowRule ruleUser <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ParamFlowRule<span style="color:#f92672">();</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">ParamFlowRule ruleUser <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ParamFlowRule<span style="color:#f92672">();</span>
 <span style="color:#75715e">// 同样的 userId QPS 不得超过 10
 </span><span style="color:#75715e"></span>ruleUser<span style="color:#f92672">.</span><span style="color:#a6e22e">setParamIdx</span><span style="color:#f92672">(</span>0<span style="color:#f92672">).</span><span style="color:#a6e22e">setCount</span><span style="color:#f92672">(</span>10<span style="color:#f92672">);</span>
 <span style="color:#75715e">// qianwp用户特殊对待，QPS 上限是 100
@@ -1162,7 +1160,7 @@ ParamFlowRuleManager<span style="color:#f92672">.</span><span style="color:#a6e2
 <li>系统的负载水平线，超过这个值时触发过载保护功能</li>
 <li>当过载保护超标时，允许的最大线程数、最长响应时间和最大 QPS，可以不设置</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">List<span style="color:#f92672">&lt;</span>SystemRule<span style="color:#f92672">&gt;</span> rules <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ArrayList<span style="color:#f92672">&lt;</span>SystemRule<span style="color:#f92672">&gt;();</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">List<span style="color:#f92672">&lt;</span>SystemRule<span style="color:#f92672">&gt;</span> rules <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ArrayList<span style="color:#f92672">&lt;</span>SystemRule<span style="color:#f92672">&gt;();</span>
 SystemRule rule <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> SystemRule<span style="color:#f92672">();</span>
 rule<span style="color:#f92672">.</span><span style="color:#a6e22e">setHighestSystemLoad</span><span style="color:#f92672">(</span>3<span style="color:#f92672">.</span><span style="color:#a6e22e">0</span><span style="color:#f92672">);</span>
 rule<span style="color:#f92672">.</span><span style="color:#a6e22e">setAvgRt</span><span style="color:#f92672">(</span>10<span style="color:#f92672">);</span>

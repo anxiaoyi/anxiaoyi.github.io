@@ -7,18 +7,17 @@
 <meta name="description" content="JVM 性能调优"><meta property="og:title" content="JVM 性能调优" />
 <meta property="og:description" content="JVM 如何进行性能调优？" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/posts/jvm-optimization/" /><meta property="article:section" content="posts" />
+<meta property="og:url" content="https://kunzhao.org/posts/jvm-optimization/" />
 <meta property="article:published_time" content="2017-05-02T00:00:00+00:00" />
 <meta property="article:modified_time" content="2017-05-02T00:00:00+00:00" />
-
 <title>JVM 性能调优 | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -346,7 +345,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -493,12 +492,12 @@ var _hmt = _hmt || [];
 <p>错误的把 <code>Xmx</code> 参数设置为了 <code>Xmn</code> 参数以后:</p>
 <p><img src="/images/posts/jvm-optimization/TIM%E5%9B%BE%E7%89%8720170814035500.png" alt=""></p>
 <p>获取当前内存/最大可用内存/最大可用堆:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">().</span><span style="color:#a6e22e">freeMemory</span><span style="color:#f92672">()</span> <span style="color:#f92672">/</span> 1024 <span style="color:#f92672">/</span> 1024
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">().</span><span style="color:#a6e22e">freeMemory</span><span style="color:#f92672">()</span> <span style="color:#f92672">/</span> 1024 <span style="color:#f92672">/</span> 1024
 Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">().</span><span style="color:#a6e22e">totalMemory</span><span style="color:#f92672">()</span> <span style="color:#f92672">/</span> 1024 <span style="color:#f92672">/</span> 1024
 Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntime</span><span style="color:#f92672">().</span><span style="color:#a6e22e">maxMemory</span><span style="color:#f92672">()</span> <span style="color:#f92672">/</span> 1000 <span style="color:#f92672">/</span> 1000
 </code></pre></div><h4 id="逃逸分析">逃逸分析</h4>
 <p>Java 7 开始支持<strong>对象的栈分配和逃逸分析机制</strong>，这样的机制能够将<strong>堆分配对象变成栈分配对象</strong>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">myMethod</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">myMethod</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
     V v <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> V<span style="color:#f92672">();</span>
     <span style="color:#75715e">// use v
 </span><span style="color:#75715e"></span>    v <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
@@ -576,7 +575,7 @@ Runtime<span style="color:#f92672">.</span><span style="color:#a6e22e">getRuntim
 </ul>
 <p>发生 <code>OutOfMemoryError</code> 时，可以使用 <code>-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=C:\m.hprof</code> 来保存当前的堆快照到文件中。也可以加上参数 <code>-XX:OnOutOfMemoryError=c:\reset.bat</code> 来运行一段脚本。</p>
 <p>当发生 <code>OutOfMemoryError</code> (在一个 <code>Windows 32</code> 系统上就发生过) 的时候，<strong>应该尝试使用增大可用堆</strong>：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">java <span style="color:#f92672">-</span>Xmn1024M <span style="color:#f92672">-</span>jar xxx<span style="color:#f92672">.</span><span style="color:#a6e22e">jar</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">java <span style="color:#f92672">-</span>Xmn1024M <span style="color:#f92672">-</span>jar xxx<span style="color:#f92672">.</span><span style="color:#a6e22e">jar</span>
 </code></pre></div><p><strong>TODO: 思考: 如果知晓程序究竟需要多大内存？</strong></p>
 <ul>
 <li>获取 GC 信息</li>
@@ -642,7 +641,7 @@ CommandLine flags: -XX:InitialHeapSize=96840960 -XX:MaxHeapSize=1549455360 -XX:+
 <li><strong>-XX:+PrintCommandLineFlags</strong>: 打印虚拟机的<strong>显示和隐式</strong>参数</li>
 <li><strong>-XX:+PrintFlagsFinal</strong>: 打印所有的系统参数的值</li>
 </ul>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 打印出系统的堆大小</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 打印出系统的堆大小</span>
 java -XX:+PrintFlagsFinal -version | grep -iE <span style="color:#e6db74">&#39;HeapSize|PermSize|ThreadStackSize&#39;</span>
 </code></pre></div><h2 id="minor-gcmajor-gc-和-full-gc">Minor GC、Major GC 和 Full GC</h2>
 <p><img src="/images/posts/jvm-optimization/minor-gc-major-gc-full-gc.jpg" alt=""></p>
@@ -670,10 +669,10 @@ java -XX:+PrintFlagsFinal -version | grep -iE <span style="color:#e6db74">&#39;H
 <h2 id="java-monitoring-常用工具">Java Monitoring 常用工具</h2>
 <h3 id="jstack">jstack</h3>
 <p>Jstack: Dumps the stacks of a Java 进程</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstack $PID &gt; $DATE_DIR/jstack-$PID.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstack $PID &gt; $DATE_DIR/jstack-$PID.dump 2&gt;&amp;<span style="color:#ae81ff">1</span>
 </code></pre></div><h3 id="jinfo">jinfo</h3>
 <p>Jinfo: Provides visibility into the system properties of the JVM, and allows some system properties to be set dynamically.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jinfo <span style="color:#ae81ff">18772</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jinfo <span style="color:#ae81ff">18772</span>
 Attaching to process ID 18772, please wait...
 Debugger attached successfully.
 Server compiler detected.
@@ -691,26 +690,26 @@ Command line:  -Dcom.sun.management.jmxremote.port<span style="color:#f92672">=<
 </code></pre></div><h3 id="jstat">jstat</h3>
 <p>jstat: 提供有关 GC 和类加载活动的相关信息</p>
 <p>显示可用的九个 options:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -options
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -options
 </code></pre></div><p>One useful option is <code>-gcutil</code>, which displays the <strong>time spent in GC</strong> as well as the <strong>percentage of each GC area that is currently filled</strong>. Other options to <code>jstat</code> will display the <strong>GC sizes in terms of KB</strong>.</p>
 <p>Remember that <code>jstat</code> takes an optional argument—<strong>the number of milliseconds to repeat the command</strong>—so it can monitor over time the effect of GC in an application.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -gcutil process_id <span style="color:#ae81ff">1000</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -gcutil process_id <span style="color:#ae81ff">1000</span>
 </code></pre></div><p>打印出的是:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jstat -gcutil <span style="color:#ae81ff">18772</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jstat -gcutil <span style="color:#ae81ff">18772</span>
   S0     S1     E      O      M     CCS    YGC     YGCT    FGC    FGCT     GCT   
   0.00  71.53  97.93  34.02  96.70  93.37     <span style="color:#ae81ff">29</span>    0.133     <span style="color:#ae81ff">1</span>    0.040    0.172
 </code></pre></div><hr>
 <p><code>gccapacity</code> 可以显示 VM 内存中三代（young,old,perm）对象的使用和占用大小</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -gccapacity process_id
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -gccapacity process_id
 </code></pre></div><p>打印出的是:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jstat -gccapacity <span style="color:#ae81ff">18772</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jstat -gccapacity <span style="color:#ae81ff">18772</span>
  NGCMN    NGCMX     NGC     S0C   S1C       EC      OGCMN      OGCMX       OGC         OC       MCMN     MCMX      MC     CCSMN    CCSMX     CCSC    YGC    FGC 
  31744.0 504320.0  30720.0 4608.0 4608.0  21504.0    64512.0  1009152.0    44032.0    44032.0      0.0 1069056.0  22272.0      0.0 1048576.0   2560.0     <span style="color:#ae81ff">32</span>     <span style="color:#ae81ff">1</span>
 </code></pre></div><h3 id="jmap-memory-map">jmap (Memory Map)</h3>
 <p>jmap: Provides heap dumps and other information about JVM memory usage.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jmap $PID
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jmap $PID
 </code></pre></div><p>打印的是一堆这种东西:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jmap <span style="color:#ae81ff">18772</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jmap <span style="color:#ae81ff">18772</span>
 Attaching to process ID 18772, please wait...
 Debugger attached successfully.
 Server compiler detected.
@@ -724,9 +723,9 @@ JVM version is 25.144-b01
 ...<span style="color:#f92672">(</span>省略好多<span style="color:#f92672">)</span>
 </code></pre></div><hr>
 <p><strong>Print histogram(直方图；柱状图) of java object heap</strong>; if the &ldquo;live&rdquo; suboption is specified, only count live objects:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jmap -histo $PID
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jmap -histo $PID
 jmap -histo:live $PID
-</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jmap -F -histo <span style="color:#ae81ff">18772</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jmap -F -histo <span style="color:#ae81ff">18772</span>
 Object Histogram:
 
 num 	  <span style="color:#75715e">#instances	#bytes	Class description</span>
@@ -751,9 +750,9 @@ num 	  <span style="color:#75715e">#instances	#bytes	Class description</span>
 ...<span style="color:#f92672">(</span>省略好多<span style="color:#f92672">)</span>
 </code></pre></div><hr>
 <p><strong>Print java heap summary</strong>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jmap -heap $PID
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jmap -heap $PID
 </code></pre></div><p>打印出的是一堆这种东西:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jmap -heap <span style="color:#ae81ff">18772</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@zk-pc:~# jmap -heap <span style="color:#ae81ff">18772</span>
 Attaching to process ID 18772, please wait...
 Debugger attached successfully.
 Server compiler detected.
@@ -803,7 +802,7 @@ PS Old Generation
 </code></pre></div><h2 id="堆内存使用最佳实践">堆内存使用最佳实践</h2>
 <h3 id="堆分析">堆分析</h3>
 <p>(1) 查看直方图</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">// jcmd 命令默认就会进行 full GC
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">// jcmd 命令默认就会进行 full GC
 jcmd <span style="color:#ae81ff">6808</span> GC.class_histogram
 jmap -histo <span style="color:#ae81ff">6808</span>
 // 如果指明 live: 选项，将会强制进行一个 full GC
@@ -879,14 +878,14 @@ jmap -F -dump:file=filename.hprof 20961
 </ul>
 <p>For the sake of compatibility, the argument specifying which compiler to use is not rigorously followed. If you have a 64-bit JVM and specify <code>-client</code>, the application will use the 64-bit server compiler anyway. If you have a 32 bit JVM and you specify <code>-d64</code>, you will get an error that the given instance does not support a 64-bit JVM.</p>
 <p><strong>The client compiler begins compiling sooner than the server compiler does. code produced by the server compiler will be faster than that produced by the client compiler.</strong> couldn’t the JVM start with the client compiler, and then use the server compiler as code gets hotter? That technique is known as <strong>tiered compilation</strong>. With tiered compilation, code is first compiled by the client compiler; as it becomes hot, it is recompiled by the server compiler.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># Java 7 需要打开, Java 8 默认开启</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># Java 7 需要打开, Java 8 默认开启</span>
 -server -XX:+TieredCompilation
 </code></pre></div><ul>
 <li>For <strong>GUI programs</strong>, uses the client compiler by default. Performance is often all about perception: <strong>if the initial startup seems faster, and everything else seems fine, users will tend to view the program that has started faster as being faster overall</strong>.</li>
 <li>For <strong>long-running applications</strong>, always choose the server compiler, preferably in conjunction with tiered compilation.</li>
 </ul>
 <p>查看默认编译器:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">java -version
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">java -version
 </code></pre></div><h3 id="5-更多考虑因素">(5) 更多考虑因素</h3>
 <p><strong>Code Cache</strong>: When the JVM compiles code, it holds the set of assembly-language instructions in the code cache. <strong>Code Cache 有固定大小</strong>, and once it has filled up, the JVM is not able to compile any additional code.</p>
 <p><img src="/images/posts/jvm-optimization/17-08-01-11-39-30_662_364.png" alt=""></p>
@@ -899,31 +898,31 @@ jmap -F -dump:file=filename.hprof 20961
 <hr>
 <p><strong>查看编译过程</strong>: <code>-XX:+PrintCompilation</code>.</p>
 <p><code>jstat</code> has two options to provide information about the compiler. The <code>-compiler</code> option supplies summary information about <strong>多少方法被编译了</strong> (here 5003 is the process ID of the program to be inspected):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -compiler <span style="color:#ae81ff">5003</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -compiler <span style="color:#ae81ff">5003</span>
 </code></pre></div><p>lternately, you can use the <code>-printcompilation</code> option to get information about the <strong>最后一个方法</strong> that is compiled. In this example, <code>jstat</code> repeats the information for process ID 5003 every second (1,000 ms):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -printcompilation <span style="color:#ae81ff">5003</span> <span style="color:#ae81ff">1000</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstat -printcompilation <span style="color:#ae81ff">5003</span> <span style="color:#ae81ff">1000</span>
 </code></pre></div><hr>
 <p><strong>编译线程个数</strong>:</p>
 <p><img src="/images/posts/jvm-optimization/17-08-01-14-38-57_660_434.png" alt=""></p>
 <hr>
 <p><strong>内联</strong>:</p>
 <p>One of the most important optimizations the compiler makes is to <strong>inline methods</strong>.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Point</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Point</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> x<span style="color:#f92672">,</span> y<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">getX</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span> <span style="color:#66d9ef">return</span> x<span style="color:#f92672">;</span> <span style="color:#f92672">}</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setX</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i<span style="color:#f92672">)</span> <span style="color:#f92672">{</span> x <span style="color:#f92672">=</span> i<span style="color:#f92672">;</span> <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>当你写这样代码的时候:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Point p <span style="color:#f92672">=</span> getPoint<span style="color:#f92672">();</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Point p <span style="color:#f92672">=</span> getPoint<span style="color:#f92672">();</span>
 p<span style="color:#f92672">.</span><span style="color:#a6e22e">setX</span><span style="color:#f92672">(</span>p<span style="color:#f92672">.</span><span style="color:#a6e22e">getX</span><span style="color:#f92672">()</span> <span style="color:#f92672">*</span> 2<span style="color:#f92672">);</span>
 </code></pre></div><p>编译后的代码执行的将会是:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Point p <span style="color:#f92672">=</span> getPoint<span style="color:#f92672">();</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Point p <span style="color:#f92672">=</span> getPoint<span style="color:#f92672">();</span>
 p<span style="color:#f92672">.</span><span style="color:#a6e22e">x</span> <span style="color:#f92672">=</span> p<span style="color:#f92672">.</span><span style="color:#a6e22e">x</span> <span style="color:#f92672">*</span> 2<span style="color:#f92672">;</span>
 </code></pre></div><p>The basic decision about whether to inline a method depends on <strong>多频繁</strong> and <strong>大小</strong>. The JVM determines if a method is hot (i.e., called frequently) based on an internal calculation; it is not directly subject to any tunable parameters. If a method is eligible for inlining because it is called frequently, then it will be inlined only if its <strong>字节码大小小于 325 字节</strong> (or whatever is specified as the <code>-XX:MaxFreqInlineSize=N</code> flag). Otherwise, it is eligible for inlining only if it is small: <strong>小于 35 字节</strong> (or whatever is specified as the <code>-XX:MaxInlineSize=N</code> flag)</p>
 <hr>
 <p><strong>逃逸分析</strong>:</p>
 <p>The server compiler performs some very <strong>aggressive optimizations</strong> if escape analysis is enabled (<code>-XX:+DoEscapeAnalysis</code>, <strong>默认开启</strong>).</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Factorial</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Factorial</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">private</span> BigInteger factorial<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> n<span style="color:#f92672">;</span>
     <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">Factorial</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> n<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
@@ -947,7 +946,7 @@ p<span style="color:#f92672">.</span><span style="color:#a6e22e">x</span> <span 
 <hr>
 <p><strong>Not Entrant Code</strong>:</p>
 <p>There are two things that cause code to be made not entrant. One is due to <strong>the way classes and interfaces work</strong>, and one is <strong>an implementation detail of tiered compilation</strong></p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">StockPriceHistory sph<span style="color:#f92672">;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">StockPriceHistory sph<span style="color:#f92672">;</span>
 String log <span style="color:#f92672">=</span> request<span style="color:#f92672">.</span><span style="color:#a6e22e">getParameter</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;log&#34;</span><span style="color:#f92672">);</span>
 <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>log <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span> <span style="color:#f92672">&amp;&amp;</span> log<span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;true&#34;</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
     sph <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StockPriceHistoryLogger<span style="color:#f92672">(...);</span>
@@ -978,20 +977,20 @@ java.security.AccessControlException: access denied (&quot;java.util.PropertyPer
 </code></pre><p>你需要创建一个安全策略文件: <code>jstatd.all.policy</code>，里面写上这句话:</p>
 <pre><code>grant codebase &quot;file:/opt/java/jdk1.7.0_21/lib/tools.jar&quot; { permission java.security.AllPermission; };
 </code></pre><p>然后使用如下命令重新启动:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstatd -J -Djava.security.policy<span style="color:#f92672">=</span>/home/user/jstatd.all.policy
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstatd -J -Djava.security.policy<span style="color:#f92672">=</span>/home/user/jstatd.all.policy
 </code></pre></div><p>在本机测试，是否能够 <code>telnet</code> 到 <code>jstatd</code> 服务:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">telnet 10.108.112.218 <span style="color:#ae81ff">1099</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">telnet 10.108.112.218 <span style="color:#ae81ff">1099</span>
 </code></pre></div><p>有些时候，<code>jstatd</code> 可能绑定的并不是正确的网卡:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-J-Djava.rmi.server.hostname<span style="color:#f92672">=</span>10.1.1.123
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-J-Djava.rmi.server.hostname<span style="color:#f92672">=</span>10.1.1.123
 </code></pre></div><p>强制使用 <code>IPV4</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-J-Djava.net.preferIPv4Stack<span style="color:#f92672">=</span>true
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-J-Djava.net.preferIPv4Stack<span style="color:#f92672">=</span>true
 </code></pre></div><p>查看一些日志输出:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-J-Djava.rmi.server.logCalls<span style="color:#f92672">=</span>true
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-J-Djava.rmi.server.logCalls<span style="color:#f92672">=</span>true
 </code></pre></div><p>最后的命令:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstatd -J-Djava.security.policy<span style="color:#f92672">=</span>./jstatd.all.policy -J-Djava.rmi.server.hostname<span style="color:#f92672">=</span>10.108.112.218 -J-Djava.rmi.server.logCalls<span style="color:#f92672">=</span>true
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">jstatd -J-Djava.security.policy<span style="color:#f92672">=</span>./jstatd.all.policy -J-Djava.rmi.server.hostname<span style="color:#f92672">=</span>10.108.112.218 -J-Djava.rmi.server.logCalls<span style="color:#f92672">=</span>true
 </code></pre></div><h2 id="dump-什么">DUMP 什么</h2>
 <p>以下是 <a href="https://github.com/alibaba/dubbo/blob/master/dubbo-container/dubbo-container-api/src/main/resources/META-INF/assembly/bin/dump.sh">dubbo - dump.sh</a> 备份的内容:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">DUMP_DATE<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>date +%Y%m%d%H%M%S<span style="color:#e6db74">`</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">DUMP_DATE<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>date +%Y%m%d%H%M%S<span style="color:#e6db74">`</span>
 DATE_DIR<span style="color:#f92672">=</span>$DUMP_DIR/$DUMP_DATE
 
 echo -e <span style="color:#e6db74">&#34;Dumping the </span>$SERVER_NAME<span style="color:#e6db74"> ...\c&#34;</span>
@@ -1075,7 +1074,7 @@ echo -e <span style="color:#e6db74">&#34;.\c&#34;</span>
 <h3 id="cpu-高">CPU 高</h3>
 <p>问: 线上CPU很高、内存占用很少，有能快速查找到原因的方法吗？</p>
 <p>答: 给一个代码，在 <code>Linux</code> 下保存成 <code>.sh</code> 文件直接执行即可。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/sh
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/sh
 </span><span style="color:#75715e"></span>ts<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>date +<span style="color:#e6db74">&#34;%s&#34;</span><span style="color:#66d9ef">)</span>
 jvmPid<span style="color:#f92672">=</span>$1
 defaultLines<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>
@@ -1158,7 +1157,7 @@ echo <span style="color:#e6db74">&#34;\n&#34;</span>
 <li>&hellip;</li>
 </ul>
 <p>假设服务器端运行的是如下代码:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BtraceCase</span> <span style="color:#f92672">{</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BtraceCase</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> Random random <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Random<span style="color:#f92672">();</span>
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> size<span style="color:#f92672">;</span>
  
@@ -1180,12 +1179,12 @@ echo <span style="color:#e6db74">&#34;\n&#34;</span>
 </code></pre></div><p>我们想要对 <code>add</code> 方法的<strong>传入参数、返回值和执行耗时</strong>进行分析:</p>
 <p><img src="/images/posts/jvm-optimization/2184951-03afa420cfaa077d.png" alt=""></p>
 <p>通过 <code>jps</code> 获取服务器端的进程ID: 8454，执行命令</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">btrace <span style="color:#ae81ff">8454</span> Debug.java
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">btrace <span style="color:#ae81ff">8454</span> Debug.java
 </code></pre></div><p>实现对运行代码的监控:</p>
 <p><img src="/images/posts/jvm-optimization/2184951-9264da5116fd16eb.png" alt=""></p>
 <p>可以发现，<code>Btrace</code> 可以获取每次执行 <code>add</code> 方法时的数据，当然 <code>Btrace</code> 能做的远远不止这些，比如获取当前 <code>jvm</code> 堆使用情况、当前线程的执行栈等等。</p>
 <h3 id="参数说明">参数说明</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// clazz: 需要监控的类
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#75715e">// clazz: 需要监控的类
 </span><span style="color:#75715e">// method: 需要监控的方法
 </span><span style="color:#75715e">//       clazz 和 method 可以使用正则、接口、注解等来指定
 </span><span style="color:#75715e">// location: 拦截位置

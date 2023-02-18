@@ -5,23 +5,20 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="设计数据密集型应用程序 - Replication"><meta property="og:title" content="设计数据密集型应用程序 - Replication" />
-<meta property="og:description" content="设计数据密集型应用程序 - Replication Replication 就是将相同数据的拷贝防止在多个通过网络连接在一起的机器上。
-为什么需要 Replication  让数据在地理位置上更靠近用户 部分数据坏掉的时候，系统依然能持续工作 可伸缩，增加机器即可增加吞吐量  如果你需要 replication 的数据不发生变化，那么 replication 的过程是及其简单的，你只需拷贝到其它各个机器上，然后你的任务就完成了。然而 replication 最难的地方也就在这个地方，如何处理变化的数据？接下来就介绍三种常见的处理 replication 中数据变化的算法: single-leader、multi-leader、leaderless。
-Leaders 和 Followers 每一个存储一份数据库拷贝的节点称之为: replica。每一个 replica 都需要处理写数据的操作，久而久之，每一个节点之间存储的数据也就不再一致了。解决这种问题最常见的办法就是: leader-based replication (active/passive 或 master-slave replication)，它的工作原理如下:
+<meta property="og:description" content="设计数据密集型应用程序 - Replication  Replication 就是将相同数据的拷贝放置在多个通过网络连接在一起的机器上，这些机器大概率位于不同的地理位置。 Partitioning 将大的数据集拆分为小的数据集，每一份称之为 partitions  为什么需要 Replication  让数据在地理位置上更靠近用户 部分数据坏掉的时候，系统依然能持续工作 可伸缩，增加机器即可增加吞吐量  如果你需要 replication 的数据不发生变化，那么 replication 的过程是及其简单的，你只需拷贝到其它各个机器上，然后你的任务就完成了。然而 replication 最难的地方也就在这个地方，如何处理变化的数据？接下来就介绍三种常见的处理 replication 中数据变化的算法: single-leader、multi-leader、leaderless。
+Leaders 和 Followers 每一个存储了一份数据库拷贝的节点称之为: replica。每一个 replica 都需要处理写数据的操作，久而久之，每一个节点之间存储的数据也就不再一致了。解决这种问题最常见的办法就是: leader-based replication (active/passive 或 master-slave replication)，它的工作原理如下:
  其中某个 replica 被指定为 leader (master 或 primary)，客户端想要写数据，那么必须将它们的写数据的请求发送给 leader，然后 leader 随后写入到自己的本地磁盘中。 其余的 replica 称之为 follower (read replicas, slaves, secondaries, hot standbys)，当 leader 写入数据到本地磁盘的时候，同时将数据改变的部分作为 replication log 或者 change stream 发送给它的 followers。每一个 follower 根据收到的 log 按照和 leader 处理不同写操作之间的相同的顺序，来更新它自己本地的数据。 当一个客户端想要读取数据的时候，它可以发送读请求给 leader 或者任意一个 follower。但是写请求的话只能发送给 leader。  这种模式的 replication 内置在许多数据库中，例如: PostgreSQL、MySQL、Oracle Data Guard、SQL Server 的 AlwaysOn Availability Groups，甚至在许多非关系型数据库中也有它的身影，例如: MongoDB、RethinkDB、Espresso，这种模式也局限于数据库，像消息中间件 Kafka 和 RabbitMQ 高可用的队列都依赖它，一些网络文件系统和 replicated block devices 例如 DRBD 也是同样的道理。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://kunzhao.org/docs/books/ddia/ddia-chapter5/" /><meta property="article:section" content="docs" />
-
-
+<meta property="og:url" content="https://kunzhao.org/docs/books/ddia/ddia-chapter5/" />
 
 <title>设计数据密集型应用程序 - Replication | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
-<link rel="stylesheet" href="/book.min.827556f4a4b428e6ff4e68c72777003c28afbb68322bd35664dd0889a941daa0.css" integrity="sha256-gnVW9KS0KOb/TmjHJ3cAPCivu2gyK9NWZN0IialB2qA=">
+<link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.c41e2d56fb8780ede7944020c03cc31855b9adc615b14e19966073539bd6e2c4.js" integrity="sha256-xB4tVvuHgO3nlEAgwDzDGFW5rcYVsU4ZlmBzU5vW4sQ="></script>
+<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -577,7 +574,7 @@ var _hmt = _hmt || [];
 
 
 
-  <script>(function(){var a=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(b){localStorage.setItem("menu.scrollTop",a.scrollTop)}),a.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
 
 
  
@@ -611,7 +608,7 @@ var _hmt = _hmt || [];
     <li><a href="#配备新的-follower">配备新的 follower</a></li>
     <li><a href="#处理节点中断">处理节点中断</a>
       <ul>
-        <li><a href="#follower-失败-赶快恢复">follower 失败: 赶快恢复</a></li>
+        <li><a href="#follower-失败-追赶恢复">follower 失败: 追赶恢复</a></li>
         <li><a href="#leader-失败-故障转移">leader 失败: 故障转移</a></li>
       </ul>
     </li>
@@ -650,7 +647,7 @@ var _hmt = _hmt || [];
     </li>
     <li><a href="#检测并发写">检测并发写</a>
       <ul>
-        <li><a href="#最后一次写入赢-丢弃并发写">最后一次写入赢 (丢弃并发写)</a></li>
+        <li><a href="#最后一次写入为准-丢弃并发写">最后一次写入为准 (丢弃并发写)</a></li>
         <li><a href="#happens-before-关系和并发"><strong>happens-before</strong> 关系和并发</a></li>
         <li><a href="#捕获-happens-before-关系">捕获 <strong>happens-before</strong> 关系</a></li>
         <li><a href="#合并并发写入的值">合并并发写入的值</a></li>
@@ -679,7 +676,10 @@ data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
 </script><h1 id="设计数据密集型应用程序---replication">设计数据密集型应用程序 - Replication</h1>
-<p><strong>Replication</strong> 就是将相同数据的拷贝防止在多个通过网络连接在一起的机器上。</p>
+<ul>
+<li><strong>Replication</strong> 就是将相同数据的拷贝放置在多个通过网络连接在一起的机器上，这些机器大概率位于不同的地理位置。</li>
+<li><strong>Partitioning</strong> 将大的数据集拆分为小的数据集，每一份称之为 <strong>partitions</strong></li>
+</ul>
 <h2 id="为什么需要-replication">为什么需要 Replication</h2>
 <ul>
 <li>让数据在地理位置上更靠近用户</li>
@@ -688,7 +688,7 @@ data-full-width-responsive="true"></ins>
 </ul>
 <p>如果你需要 replication 的数据不发生变化，那么 replication 的过程是及其简单的，你只需拷贝到其它各个机器上，然后你的任务就完成了。然而 replication 最难的地方也就在这个地方，如何处理变化的数据？接下来就介绍三种常见的处理 replication 中数据变化的算法: single-leader、multi-leader、leaderless。</p>
 <h2 id="leaders-和-followers">Leaders 和 Followers</h2>
-<p>每一个存储一份数据库拷贝的节点称之为: <strong>replica</strong>。每一个 replica 都需要处理<strong>写数据</strong>的操作，久而久之，每一个节点之间存储的数据也就不再一致了。解决这种问题最常见的办法就是: leader-based replication (active/passive 或 master-slave replication)，它的工作原理如下:</p>
+<p>每一个存储了一份数据库拷贝的节点称之为: <strong>replica</strong>。每一个 replica 都需要处理<strong>写数据</strong>的操作，久而久之，每一个节点之间存储的数据也就不再一致了。解决这种问题最常见的办法就是: leader-based replication (active/passive 或 master-slave replication)，它的工作原理如下:</p>
 <ul>
 <li>其中某个 replica 被指定为 leader (master 或 primary)，客户端想要<strong>写数据</strong>，那么必须将它们的写数据的请求发送给 leader，然后 leader 随后写入到自己的本地磁盘中。</li>
 <li>其余的 replica 称之为 follower (read replicas, slaves, secondaries, hot standbys)，当 leader 写入数据到本地磁盘的时候，同时将数据改变的部分作为 replication log 或者 change stream 发送给它的 followers。每一个 follower 根据收到的 log 按照和 leader 处理<strong>不同写操作</strong>之间的<strong>相同的顺序</strong>，来更新它自己本地的数据。</li>
@@ -697,14 +697,14 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/books/ddia/leader-based-replication.png" alt=""></p>
 <p>这种模式的 replication 内置在许多数据库中，例如: PostgreSQL、MySQL、Oracle Data Guard、SQL Server 的 AlwaysOn Availability Groups，甚至在许多非关系型数据库中也有它的身影，例如: MongoDB、RethinkDB、Espresso，这种模式也局限于数据库，像消息中间件 Kafka 和 RabbitMQ 高可用的队列都依赖它，一些网络文件系统和 replicated block devices 例如 DRBD 也是同样的道理。</p>
 <h2 id="同步和异步-replication">同步和异步 Replication</h2>
-<p>replication 数据的过程可以分为同步或者异步。如下图所示，follower 1 配置为<strong>同步</strong>的，leader 等待 follower 1 确认它收到了 log 之后，才向 client 反馈更新成功；而被配置为异步的 follower 2 则无须这一步，leader 可以直接反馈更新成功。</p>
+<p>replication 数据的过程可以分为<strong>同步</strong>或者<strong>异步</strong>。如下图所示，follower 1 配置为<strong>同步</strong>的，leader 等待 follower 1 确认它收到了 log 之后，才向 client 反馈更新成功；而被配置为异步的 follower 2 则无须这一步，leader 可以直接反馈更新成功。</p>
 <p><img src="/images/docs/books/ddia/leader-based-sync-async.png" alt=""></p>
 <p>显然在 leader 响应 OK 与 follower 2 接受并处理完毕 write 请求之间是存在延迟的，尽管多数数据库系统的 replication 的过程是非常快的，然而这个时间的上限谁也并没有保证。follower 可能刚刚重启、follower 系统满负载了、leader 到 follower 之间的网络出现故障了等等，都有可能导致 follower 的数据落后 leader 1分钟或者多分钟。</p>
 <p>同步 replication 的优势在于 follower 总能保持和 leader 实时的一致性的数据，如果 leader 突然不可用了，我们可以确保数据在 follower 上仍然是可用的。缺点在于如果 follower 出现了问题，比如 crash 了，网络故障了，写这个操作就没办法进行下去了，leader 此刻必须阻塞等待 replica 变为可用状态才能继续处理其他 write 操作。</p>
-<p>所以，维持整个系统的所有 replica 一致性状态是不切实际的。实际上，如果你在数据库中启用了同步 replication，它通常是指指定一个 follower 变为同步的，其它的 follower 依然是异步的，如果同步的 follower 变得不可用或者速度变慢，那么某一个异步的 follower 将会晋升为同步的 follower，这保证了总是有两个节点 leader 和一个 follower 始终维持最新的数据。这种配置有时候也称之为 <strong>semi-synchronous</strong>。</p>
+<p>所以，维持整个系统的所有 replica 一致性状态是不切实际的。实际上，如果你在数据库中启用了同步 replication，它通常意味着指定其中一个 follower 变为同步的，其它的 follower 依然是异步的，如果同步的 follower 变得不可用或者速度变慢，那么某一个异步的 follower 将会晋升为同步的 follower，这保证了总是有两个节点 leader 和一个 follower 始终维持最新的数据。这种配置有时候也称之为 <strong>semi-synchronous</strong>。</p>
 <p>通常，leader-based replication 被配置为全部是异步的，如果 leader 一旦失败不可恢复，那么所有的还未同步给 follower 节点的写数据将会丢失，这也就意味着写不保证一定写成功。它的优势在于即使所有的 follower 都不可用，leader 依然可以处理写请求。</p>
 <blockquote>
-<p>对于异步 replication 来说，leader 失败后的数据丢失是很严重的，所以当前也有针对其不丢失数据同时提供良好性能和可用性的方法。例如链 replication ，其是同步复制的一个变种，它已经成功应用在 Microsoft Azure Storage 系统中。</p>
+<p>对于异步 replication 来说，leader 失败后的数据丢失是很严重的，所以当前也有针对其不丢失数据同时提供良好性能和可用性的方法。例如<strong>链 replication</strong> ，其是同步复制的一个变种，它已经成功应用在 Microsoft Azure Storage 系统中。</p>
 </blockquote>
 <h2 id="配备新的-follower">配备新的 follower</h2>
 <ul>
@@ -715,7 +715,7 @@ data-full-width-responsive="true"></ins>
 </ul>
 <h2 id="处理节点中断">处理节点中断</h2>
 <p>我们的目标是在单个节点发生故障的情况下，保持系统作为一个整体运行，并使节点中断的影响尽可能小。</p>
-<h3 id="follower-失败-赶快恢复">follower 失败: 赶快恢复</h3>
+<h3 id="follower-失败-追赶恢复">follower 失败: 追赶恢复</h3>
 <p>follower 每次收到 log 之后，都会先记录在本地磁盘中，所以当它恢复之后也能很快知道它发生故障时正在处理的最后一个事务，它可以继续连接上 leader，然后请求在这之间发生的数据变更的 log ，当它应用这些 log 后，也就追上了 leader，意味着可以继续像之前一样继续接受数据流了。</p>
 <h3 id="leader-失败-故障转移">leader 失败: 故障转移</h3>
 <p>leader 失败后: 某一个 follower 被提拔为 leader，客户端需要将 write 请求发送至新的 leader，其它 follower 需要从新的 leader 消费数据，这个过程称之为 failover (故障转移)。</p>
@@ -729,7 +729,7 @@ data-full-width-responsive="true"></ins>
 <ul>
 <li>如果采用的是异步 replication，那么新推选出来的 leader 可能还没有接收完所有的 old leader 在失败前发送的写请求。如果前一个 leader 又回来了，那么应该如何协调？新的 leader 同样可能收到写请求。最常见的做法是，直接丢弃 old leader 未被 replicated 的写请求，但这可能和客户端的高可用性原则相违背。</li>
 <li>如果数据库之外的其他存储系统需要和数据库内容进行协调，丢弃写请求则是非常危险的行为。</li>
-<li>某些情况下，可能出现两个节点都认为自己是 leader 的情况，这称之为 split brain。这是及其危险的，如果二者均接受到了写的请求，而又没有其他进程去协调，那么数据有可能出现混乱或者丢失。作为一种安全保护，部分系统在检测到出现了两个 leader 的时候，会强制性关闭某个 leader，但是如果设计的不好的话，也可能会出现两个 leader 都被关闭的尴尬状态。</li>
+<li>某些情况下，可能出现两个节点都认为自己是 leader 的情况，这称之为 <strong>split brain (脑裂)</strong>。这是及其危险的，如果二者均接受到了写的请求，而又没有其他进程去协调，那么数据有可能出现混乱或者丢失。作为一种安全保护，部分系统在检测到出现了两个 leader 的时候，会强制性关闭某个 leader，但是如果设计的不好的话，也可能会出现两个 leader 都被关闭的尴尬状态。</li>
 <li>宣告 leader 死亡的合适的超时时间是多久？时间久一点的意味着久一点才能恢复，时间短一点的，会造成不必要的故障切换，占用不必要的网络带宽和系统资源。</li>
 </ul>
 <p>这些问题并没有简单的方法来去解决。鉴于此，部分系统默认需要手动进行故障切换，即使它本身能够支持自动鼓掌切换。</p>
@@ -774,8 +774,8 @@ data-full-width-responsive="true"></ins>
 <p>在这种情况下，我们需要 read-after-write 一致性，也称为 read-your-writes 一致性。这是一个保证，如果用户重新加载页面，他们将始终看到自己提交的任何更新。它对其他用户不做任何承诺：其他用户的更新可能要等到以后才能看到。但是，它保证用户自己的输入已经正确保存。</p>
 <p>如何在 leader-based 系统中实现 read-after-write 一致性:</p>
 <ul>
-<li>读取用户可能已修改的内容时，请从 leader 那读取；否则，从 follower 那里读。这需要您有某种方法来知道某些内容是否已被修改，而无需实际查询它。例如，社交网络上的用户配置文件信息通常只能由个人资料的所有者编辑，而不能由其他任何人编辑。因此，一个简单的规则是：始终从 leader 处读取用户自己的配置文件，从 follower 读取任何其他用户的配置文件。</li>
-<li>如果应用程序中的大多数内容都有可能被用户编辑，那么这种方法就不会有效，因为大多数内容都必须从 leader 那里读取（否定了读伸缩的好处）。在这种情况下，可以使用其他标准来决定是否向 leader 读取。例如，您可以跟踪最后一次更新的时间，并在最后一次更新后的一分钟内，从 leader 读取所有数据。您还可以监视 followers 上的复制延迟，并防止对任何落后于 leader 一分钟以上的 follower 进行查询。</li>
+<li>读取用户可能已修改的内容时，请从 leader 那读取；否则，从 follower 那里读。这需要您有某种方法来知道某些内容是否已被修改，而无需实际查询它。例如，社交网络上的用户配置文件信息通常只能由个人资料的所有者编辑，而不能由其他任何人编辑。因此，一个简单的规则是：<strong>始终从 leader 处读取用户自己的配置文件，从 follower 读取任何其他用户的配置文件</strong>。</li>
+<li>如果应用程序中的大多数内容都有可能被用户编辑，那么这种方法就不会有效，因为大多数内容都必须从 leader 那里读取（否定了读伸缩的好处）。在这种情况下，可以使用其他标准来决定是否向 leader 读取。例如，<strong>您可以跟踪最后一次更新的时间，并在最后一次更新后的一分钟内，从 leader 读取所有数据。您还可以监视 followers 上的复制延迟，并防止对任何落后于 leader 一分钟以上的 follower 进行查询。</strong></li>
 <li>客户端可以记住其最近写入的时间戳，然后系统可以确保服务于该用户的任何读取的副本，至少要能够反映出那个时间点之前的更新都是最新的。如果副本不够及时，则可以由另一个副本处理读取，或者查询可以等到复制副本追上那个时间点为止。时间戳可以是逻辑时间戳（指示写入顺序的东西，例如日志序列号）或实际系统时钟（在这种情况下时钟同步变得至关重要）。</li>
 <li>如果您的副本分布在多个数据中心（地理位置上更接近用户或更可用），还有额外的复杂性。任何需要由 leader 提供服务的请求都必须路由到包含该 leader 的数据中心。</li>
 </ul>
@@ -954,7 +954,7 @@ data-full-width-responsive="true"></ins>
 <p><img src="/images/docs/books/ddia/Snipaste_2020-11-27_20-46-38.png" alt=""></p>
 <p>如果每个节点在接收到来自 Client 的写请求时简单地<strong>重写了一个键的值</strong>，那么这些节点就会变得永久不一致，如图中的最终 get 请求所示：节点 2 认为 X 的最终值是 <code>B</code>，而其他节点认为该值是 <code>A</code> 。</p>
 <p>为了最终保持一致，副本应该向相同的值收敛。他们怎么做到的？人们可能希望复制的数据库能够自动处理这一问题，但不幸的是，大多数实现都很差：如果您希望避免丢失数据，那么应用程序开发人员需要了解数据库冲突处理的内部结构。</p>
-<h3 id="最后一次写入赢-丢弃并发写">最后一次写入赢 (丢弃并发写)</h3>
+<h3 id="最后一次写入为准-丢弃并发写">最后一次写入为准 (丢弃并发写)</h3>
 <p>实现最终收敛的一种方法是声明每个副本只需存储最新的值，并允许覆盖和丢弃“旧”值。然后，只要我们有某种方法可以明确地确定<strong>哪个写操作更“最近”</strong>，并且每个写入操作最终都会复制到每个副本，那么这些副本最终将收敛到相同的值。</p>
 <p>正如 “最近” 这个词汇所指出的，这个想法实际上是相当误导人的。在上图中，两个 Client 在向数据库节点发送写请求时都不知道另一个 Client，所以不清楚哪个 Client 先发生了写操作。事实上，如果说这两种情况都是“先发生”的，这是没有意义的：我们说写入是并发的，所以它们的顺序是未定义的。</p>
 <p>即使写入没有自然顺序，我们也可以对它们强制执行任意顺序。例如，我们可以为每次写入附加一个时间戳，选择最大的时间戳作为最“最近”的时间戳，并丢弃任何具有较早时间戳的写入。这种冲突解决算法称为 <strong>last write wins（LWW）</strong>，是 Cassandra 中唯一支持的冲突解决方法，也是 Riak 中的一个可选特性。</p>
@@ -1061,7 +1061,7 @@ data-full-width-responsive="true"></ins>
     <li><a href="#配备新的-follower">配备新的 follower</a></li>
     <li><a href="#处理节点中断">处理节点中断</a>
       <ul>
-        <li><a href="#follower-失败-赶快恢复">follower 失败: 赶快恢复</a></li>
+        <li><a href="#follower-失败-追赶恢复">follower 失败: 追赶恢复</a></li>
         <li><a href="#leader-失败-故障转移">leader 失败: 故障转移</a></li>
       </ul>
     </li>
@@ -1100,7 +1100,7 @@ data-full-width-responsive="true"></ins>
     </li>
     <li><a href="#检测并发写">检测并发写</a>
       <ul>
-        <li><a href="#最后一次写入赢-丢弃并发写">最后一次写入赢 (丢弃并发写)</a></li>
+        <li><a href="#最后一次写入为准-丢弃并发写">最后一次写入为准 (丢弃并发写)</a></li>
         <li><a href="#happens-before-关系和并发"><strong>happens-before</strong> 关系和并发</a></li>
         <li><a href="#捕获-happens-before-关系">捕获 <strong>happens-before</strong> 关系</a></li>
         <li><a href="#合并并发写入的值">合并并发写入的值</a></li>
