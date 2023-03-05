@@ -4,21 +4,22 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Tomcat JDBC 连接池"><meta property="og:title" content="Tomcat JDBC 连接池" />
-<meta property="og:description" content="Tomcat JDBC 连接池 连接池的创建 (1) 创建池
-// ConnectionPool.java protected void init(PoolConfiguration properties) throws SQLException { busy = new LinkedBlockingQueue&lt;&gt;(); if (properties.isFairQueue()) { idle = new FairBlockingQueue&lt;&gt;(); //idle = new MultiLockFairBlockingQueue&lt;PooledConnection&gt;();  //idle = new LinkedTransferQueue&lt;PooledConnection&gt;();  //idle = new ArrayBlockingQueue&lt;PooledConnection&gt;(properties.getMaxActive(),false);  } else { idle = new LinkedBlockingQueue&lt;&gt;(); } } (2) 构建拦截链：
-// ConnectionPool.java protected Connection setupConnection(PooledConnection con) throws SQLException { JdbcInterceptor handler = new ProxyConnection(this,con,getPoolProperties().isUseEquals()); // 创建自定义的拦截链  // setup statement proxy  if (getPoolProperties()." />
+<meta name="description" content="深入理解 Tomcat JDBC Pool"><meta property="og:title" content="深入理解 Tomcat JDBC Pool" />
+<meta property="og:description" content="深入理解 Tomcat JDBC Pool  本文分析的源码版本基于 11.0.0-M3 。
+ 创建连接池 Tomcat JDBC Pool 连接池可以配置多种多样的属性，相关特性以接口的方式封装在了 PoolConfiguration 中。
+// 创建连接池的代码 // DataSourceProxy.java private synchronized ConnectionPool pCreatePool() throws SQLException { pool = new ConnectionPool(poolProperties); } 创建连接池的相关代码就位于 ConnectionPool 中，其在构造器中做了如下事情：
+ 检查相关配置。通常对一些 maxActive 、minIdle 之间的大小逻辑进行校验等：  public void checkPoolConfiguration(PoolConfiguration properties) { //make sure the pool is properly configured  if (properties.getMaxActive()&lt;1) { properties.setMaxActive(PoolProperties.DEFAULT_MAX_ACTIVE); } if (properties.getMaxActive()&lt;properties.getInitialSize()) { properties.setInitialSize(properties.getMaxActive()); } if (properties.getMinIdle()&gt;properties.getMaxActive()) { properties.setMinIdle(properties.getMaxActive()); } if (properties." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://kunzhao.org/docs/tutorial/database/tomcat-jdbc/" />
 
-<title>Tomcat JDBC 连接池 | 赵坤的个人网站</title>
+<title>深入理解 Tomcat JDBC Pool | 赵坤的个人网站</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
 
 
 <link rel="stylesheet" href="/book.min.7ebac727e739c3b4aee6328926e3b77ac1ddd5e9035221b7ec206fda1a413a4d.css" integrity="sha256-frrHJ&#43;c5w7Su5jKJJuO3esHd1ekDUiG37CBv2hpBOk0=">
 
 
-<script defer src="/en.search.min.b64381d91cbe281d9eb128bd4081af0e0b892adf420fce7a87f2b53a48a3a5b1.js" integrity="sha256-tkOB2Ry&#43;KB2esSi9QIGvDguJKt9CD856h/K1OkijpbE="></script>
+<script defer src="/en.search.min.6d6edddfbc8503541175d2f33fea9f8f170282b3138cc2d85813dc845293f964.js" integrity="sha256-bW7d37yFA1QRddLzP&#43;qfjxcCgrMTjMLYWBPchFKT&#43;WQ="></script>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -709,7 +710,7 @@ var _hmt = _hmt || [];
         <li>
 
   <a href="/docs/tutorial/database/tomcat-jdbc/"  class="active">
-      Tomcat JDBC 连接池
+      深入理解 Tomcat JDBC Pool
   </a>
 
 </li>
@@ -1100,7 +1101,7 @@ var _hmt = _hmt || [];
     <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
-  <strong>Tomcat JDBC 连接池</strong>
+  <strong>深入理解 Tomcat JDBC Pool</strong>
 
   <label for="toc-control">
     <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
@@ -1114,8 +1115,31 @@ var _hmt = _hmt || [];
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#连接池的创建">连接池的创建</a></li>
-    <li><a href="#连接的回收">连接的回收</a></li>
+    <li><a href="#创建连接池">创建连接池</a>
+      <ul>
+        <li><a href="#连接池默认属性">连接池默认属性</a></li>
+      </ul>
+    </li>
+    <li><a href="#获取连接">获取连接</a>
+      <ul>
+        <li><a href="#validate-逻辑"><code>validate</code> 逻辑</a></li>
+        <li><a href="#ismaxageexpired-逻辑"><code>isMaxAgeExpired</code> 逻辑</a></li>
+        <li><a href="#reconnect-逻辑"><code>reconnect</code> 逻辑</a></li>
+        <li><a href="#等待可用连接">等待可用连接</a></li>
+      </ul>
+    </li>
+    <li><a href="#归还连接">归还连接</a>
+      <ul>
+        <li><a href="#释放连接">释放连接</a></li>
+      </ul>
+    </li>
+    <li><a href="#连接池清理器">连接池清理器</a>
+      <ul>
+        <li><a href="#checkabandoned-逻辑"><code>checkAbandoned</code> 逻辑</a></li>
+        <li><a href="#checkidle-逻辑"><code>checkIdle</code> 逻辑</a></li>
+        <li><a href="#testallidle-逻辑"><code>testAllIdle</code> 逻辑</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 
@@ -1136,122 +1160,492 @@ data-ad-format="auto"
 data-full-width-responsive="true"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});
-</script><h1 id="tomcat-jdbc-连接池">Tomcat JDBC 连接池</h1>
-<h2 id="连接池的创建">连接池的创建</h2>
-<p>(1) 创建<strong>池</strong></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ConnectionPool.java
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">init</span><span style="color:#f92672">(</span>PoolConfiguration properties<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> SQLException <span style="color:#f92672">{</span>
-    busy <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> LinkedBlockingQueue<span style="color:#f92672">&lt;&gt;();</span>
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">isFairQueue</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-        idle <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> FairBlockingQueue<span style="color:#f92672">&lt;&gt;();</span>
-        <span style="color:#75715e">//idle = new MultiLockFairBlockingQueue&lt;PooledConnection&gt;();
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">//idle = new LinkedTransferQueue&lt;PooledConnection&gt;();
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">//idle = new ArrayBlockingQueue&lt;PooledConnection&gt;(properties.getMaxActive(),false);
-</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
-        idle <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> LinkedBlockingQueue<span style="color:#f92672">&lt;&gt;();</span>
+</script><h1 id="深入理解-tomcat-jdbc-pool">深入理解 Tomcat JDBC Pool</h1>
+<blockquote>
+<p>本文分析的源码版本基于 <code>11.0.0-M3</code> 。</p>
+</blockquote>
+<h2 id="创建连接池">创建连接池</h2>
+<p>Tomcat JDBC Pool 连接池可以配置多种多样的属性，相关特性以接口的方式封装在了 <code>PoolConfiguration</code> 中。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// 创建连接池的代码
+</span><span style="color:#75715e">// DataSourceProxy.java
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">synchronized</span> ConnectionPool <span style="color:#a6e22e">pCreatePool</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> SQLException <span style="color:#f92672">{</span>
+    pool <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ConnectionPool<span style="color:#f92672">(</span>poolProperties<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>创建连接池的相关代码就位于 <code>ConnectionPool</code> 中，其在构造器中做了如下事情：</p>
+<ul>
+<li><strong>检查相关配置</strong>。通常对一些 <code>maxActive</code> 、<code>minIdle</code> 之间的大小逻辑进行校验等：</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">checkPoolConfiguration</span><span style="color:#f92672">(</span>PoolConfiguration properties<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">//make sure the pool is properly configured
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxActive</span><span style="color:#f92672">()&lt;</span>1<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        properties<span style="color:#f92672">.</span><span style="color:#a6e22e">setMaxActive</span><span style="color:#f92672">(</span>PoolProperties<span style="color:#f92672">.</span><span style="color:#a6e22e">DEFAULT_MAX_ACTIVE</span><span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxActive</span><span style="color:#f92672">()&lt;</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getInitialSize</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        properties<span style="color:#f92672">.</span><span style="color:#a6e22e">setInitialSize</span><span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxActive</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMinIdle</span><span style="color:#f92672">()&gt;</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxActive</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        properties<span style="color:#f92672">.</span><span style="color:#a6e22e">setMinIdle</span><span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxActive</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxIdle</span><span style="color:#f92672">()&gt;</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxActive</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        properties<span style="color:#f92672">.</span><span style="color:#a6e22e">setMaxIdle</span><span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxActive</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxIdle</span><span style="color:#f92672">()&lt;</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMinIdle</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        properties<span style="color:#f92672">.</span><span style="color:#a6e22e">setMaxIdle</span><span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMinIdle</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxAge</span><span style="color:#f92672">()&gt;</span>0 <span style="color:#f92672">&amp;&amp;</span> properties<span style="color:#f92672">.</span><span style="color:#a6e22e">isPoolSweeperEnabled</span><span style="color:#f92672">()</span> <span style="color:#f92672">&amp;&amp;</span>
+            properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getTimeBetweenEvictionRunsMillis</span><span style="color:#f92672">()&gt;</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxAge</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        properties<span style="color:#f92672">.</span><span style="color:#a6e22e">setTimeBetweenEvictionRunsMillis</span><span style="color:#f92672">((</span><span style="color:#66d9ef">int</span><span style="color:#f92672">)</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxAge</span><span style="color:#f92672">());</span>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><p>(2) 构建<strong>拦截链</strong>：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ConnectionPool.java
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">protected</span> Connection <span style="color:#a6e22e">setupConnection</span><span style="color:#f92672">(</span>PooledConnection con<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> SQLException <span style="color:#f92672">{</span>
-    JdbcInterceptor handler <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> ProxyConnection<span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">,</span>con<span style="color:#f92672">,</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">isUseEquals</span><span style="color:#f92672">());</span>
-
-    <span style="color:#75715e">// 创建自定义的拦截链
-</span><span style="color:#75715e"></span>
-    <span style="color:#75715e">// setup statement proxy
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getUseStatementFacade</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-        handler <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> StatementFacade<span style="color:#f92672">(</span>handler<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
-
-    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getUseDisposableConnectionFacade</span><span style="color:#f92672">()</span> <span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        connection <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>Connection<span style="color:#f92672">)</span>proxyClassConstructor<span style="color:#f92672">.</span><span style="color:#a6e22e">newInstance</span><span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> Object<span style="color:#f92672">[]</span> <span style="color:#f92672">{</span> <span style="color:#66d9ef">new</span> DisposableConnectionFacade<span style="color:#f92672">(</span>handler<span style="color:#f92672">)</span> <span style="color:#f92672">});</span>
-    <span style="color:#f92672">}</span>
-
-    <span style="color:#66d9ef">return</span> connection<span style="color:#f92672">;</span>
+</code></pre></div><ul>
+<li><strong>创建资源池</strong>。资源池负责管理正在使用的连接、空闲的连接等：</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">//make space for 10 extra in case we flow over a bit
+</span><span style="color:#75715e"></span>busy <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> LinkedBlockingQueue<span style="color:#f92672">&lt;&gt;();</span>
+<span style="color:#75715e">//busy = new FairBlockingQueue&lt;PooledConnection&gt;();
+</span><span style="color:#75715e">//make space for 10 extra in case we flow over a bit
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">isFairQueue</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    idle <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> FairBlockingQueue<span style="color:#f92672">&lt;&gt;();</span>
+    <span style="color:#75715e">//idle = new MultiLockFairBlockingQueue&lt;PooledConnection&gt;();
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">//idle = new LinkedTransferQueue&lt;PooledConnection&gt;();
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">//idle = new ArrayBlockingQueue&lt;PooledConnection&gt;(properties.getMaxActive(),false);
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+    idle <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> LinkedBlockingQueue<span style="color:#f92672">&lt;&gt;();</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><p>上述构造出的拦截链的图如下所示：</p>
-<pre><code>代理类 -&gt; DisposableConnectionFacade -&gt; StatementFacade -&gt; ProxyConnection
-</code></pre><p>当应用主动调用 <code>connection.close()</code> 的时候，<code>DisposableConnectionFacade</code> 类会首先拦截该方法，并将内部的指向 <code>StatementFacade</code> 的 <code>next</code> 指针置为 <code>null</code>：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DisposableConnectionFacade.java
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> Object <span style="color:#a6e22e">invoke</span><span style="color:#f92672">(</span>Object proxy<span style="color:#f92672">,</span> Method method<span style="color:#f92672">,</span> Object<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> Throwable <span style="color:#f92672">{</span>
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>compare<span style="color:#f92672">(</span>CLOSE_VAL<span style="color:#f92672">,</span> method<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
-        setNext<span style="color:#f92672">(</span><span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span>
+</code></pre></div><ul>
+<li><strong>创建资源池清理器</strong>。资源池清理器会启动后台线程，来检测连接的有效性，并即时地释放不再使用的连接等：</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">//if the evictor thread is supposed to run, start it now
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">isPoolSweeperEnabled</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    poolCleaner <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> PoolCleaner<span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">,</span> properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getTimeBetweenEvictionRunsMillis</span><span style="color:#f92672">());</span>
+    poolCleaner<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><p>后续应用如果再错误地使用该条连接执行增删改查的时候，因为 <code>next</code> 指针为空，所以会抛出 <code>NullPointerException</code> 异常，该异常被 <code>DisposableConnectionFacade</code> 捕获，并会重新抛出异常 <strong>PooledConnection has already been closed.</strong>。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// DisposableConnectionFacade.java
-</span><span style="color:#75715e"></span><span style="color:#a6e22e">@Override</span>
-<span style="color:#66d9ef">public</span> Object <span style="color:#a6e22e">invoke</span><span style="color:#f92672">(</span>Object proxy<span style="color:#f92672">,</span> Method method<span style="color:#f92672">,</span> Object<span style="color:#f92672">[]</span> args<span style="color:#f92672">)</span>
-        <span style="color:#66d9ef">throws</span> Throwable <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">super</span><span style="color:#f92672">.</span><span style="color:#a6e22e">invoke</span><span style="color:#f92672">(</span>proxy<span style="color:#f92672">,</span> method<span style="color:#f92672">,</span> args<span style="color:#f92672">);</span>
-    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>NullPointerException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>getNext<span style="color:#f92672">()</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-            <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> SQLException<span style="color:#f92672">(</span>
-                    <span style="color:#e6db74">&#34;PooledConnection has already been closed.&#34;</span><span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span>
+</code></pre></div><ul>
+<li><strong>事件拦截器</strong>。Tomcat JDBC 连接池允许用户自定义拦截器，以便接受连接池发生的一系列的事件等通知。</li>
+<li><strong>初始化连接</strong>。连接池创建的时候，会根据用户配置的属性来默认创建 <code>initialSize = 10</code> 个连接放到池中：</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">PooledConnection<span style="color:#f92672">[]</span> initialPool <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> PooledConnection<span style="color:#f92672">[</span>poolProperties<span style="color:#f92672">.</span><span style="color:#a6e22e">getInitialSize</span><span style="color:#f92672">()];</span>
 
-        <span style="color:#66d9ef">throw</span> e<span style="color:#f92672">;</span>
-    <span style="color:#f92672">}</span> 
-<span style="color:#f92672">}</span>
-</code></pre></div><h2 id="连接的回收">连接的回收</h2>
-<p>通过 <code>PoolCleaner</code> 来主动回收资源：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// ConnectionPool.java
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">initializePoolCleaner</span><span style="color:#f92672">(</span>PoolConfiguration properties<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-    <span style="color:#75715e">//if the evictor thread is supposed to run, start it now
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>properties<span style="color:#f92672">.</span><span style="color:#a6e22e">isPoolSweeperEnabled</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-        poolCleaner <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> PoolCleaner<span style="color:#f92672">(</span><span style="color:#66d9ef">this</span><span style="color:#f92672">,</span> properties<span style="color:#f92672">.</span><span style="color:#a6e22e">getTimeBetweenEvictionRunsMillis</span><span style="color:#f92672">());</span>
-        poolCleaner<span style="color:#f92672">.</span><span style="color:#a6e22e">start</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> initialPool<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+    initialPool<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">borrowConnection</span><span style="color:#f92672">(</span>0<span style="color:#f92672">,</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">,</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">);</span> <span style="color:#75715e">//don&#39;t wait, should be no contention
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+
+<span style="color:#75715e">//return the members as idle to the pool
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> 0<span style="color:#f92672">;</span> i <span style="color:#f92672">&lt;</span> initialPool<span style="color:#f92672">.</span><span style="color:#a6e22e">length</span><span style="color:#f92672">;</span> i<span style="color:#f92672">++)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>initialPool<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span><span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">returnConnection</span><span style="color:#f92672">(</span>initialPool<span style="color:#f92672">[</span>i<span style="color:#f92672">]);}</span><span style="color:#66d9ef">catch</span><span style="color:#f92672">(</span>Exception x<span style="color:#f92672">){</span><span style="color:#75715e">/*NOOP*/</span><span style="color:#f92672">}</span>
     <span style="color:#f92672">}</span> <span style="color:#75715e">//end if
 </span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
-</code></pre></div><p>那么什么情况下会创建资源回收器呢：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PoolProperties.java
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isPoolSweeperEnabled</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
-    <span style="color:#66d9ef">boolean</span> timer <span style="color:#f92672">=</span> getTimeBetweenEvictionRunsMillis<span style="color:#f92672">()&gt;</span>0<span style="color:#f92672">;</span>
-    <span style="color:#66d9ef">boolean</span> result <span style="color:#f92672">=</span> timer <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">(</span>isRemoveAbandoned<span style="color:#f92672">()</span> <span style="color:#f92672">&amp;&amp;</span> getRemoveAbandonedTimeout<span style="color:#f92672">()&gt;</span>0<span style="color:#f92672">);</span>
-    result <span style="color:#f92672">=</span> result <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>timer <span style="color:#f92672">&amp;&amp;</span> getSuspectTimeout<span style="color:#f92672">()&gt;</span>0<span style="color:#f92672">);</span>
-    result <span style="color:#f92672">=</span> result <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>timer <span style="color:#f92672">&amp;&amp;</span> isTestWhileIdle<span style="color:#f92672">()</span> <span style="color:#f92672">&amp;&amp;</span> getValidationQuery<span style="color:#f92672">()!=</span><span style="color:#66d9ef">null</span><span style="color:#f92672">);</span>
-    result <span style="color:#f92672">=</span> result <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>timer <span style="color:#f92672">&amp;&amp;</span> getMinEvictableIdleTimeMillis<span style="color:#f92672">()&gt;</span>0<span style="color:#f92672">);</span>
-    <span style="color:#66d9ef">return</span> result<span style="color:#f92672">;</span>
+</code></pre></div><h3 id="连接池默认属性">连接池默认属性</h3>
+<p><code>PoolProperties</code> 定义了连接池的默认属性，相关属性的默认值如下：</p>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>含义</th>
+<th>默认值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>initialSize</code></td>
+<td>初始连接数</td>
+<td><code>10</code></td>
+</tr>
+<tr>
+<td><code>maxActive</code></td>
+<td>最大活跃连接数</td>
+<td><code>100</code></td>
+</tr>
+<tr>
+<td><code>maxIdle</code></td>
+<td>最大空闲连接数（空闲连接池最多允许保留多少个资源）</td>
+<td><code>100</code></td>
+</tr>
+<tr>
+<td><code>minIdle</code></td>
+<td>最小空闲连接数（空闲连接池最少保留多少个资源）</td>
+<td><code>10</code></td>
+</tr>
+<tr>
+<td><code>maxWait</code></td>
+<td>当没有可用连接以及达到 <code>maxActive</code> 时，应该等待多少毫秒之后才抛出异常</td>
+<td><code>30000</code></td>
+</tr>
+<tr>
+<td><code>validationQueryTimeout</code></td>
+<td>校验连接的超时时间，超过多少秒才认为这条连接不可用了（<code>-1</code> 意味着不进行这个校验）</td>
+<td><code>-1</code></td>
+</tr>
+<tr>
+<td><code>validationInterval</code></td>
+<td>多少毫秒执行一次检查</td>
+<td><code>3000</code></td>
+</tr>
+<tr>
+<td><code>testOnConnect</code></td>
+<td>建立连接的时候是否执行一次校验</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>testOnBorrow</code></td>
+<td>从池中获取连接的时候是否执行一次校验</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>testOnReturn</code></td>
+<td>连接还给连接池后是否执行一次校验</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>testWhileIdle</code></td>
+<td>连接未被使用的时候是否执行校验</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>timeBetweenEvictionRunsMillis</code></td>
+<td>多少毫秒运行一次空闲连接检查</td>
+<td><code>5000</code></td>
+</tr>
+<tr>
+<td><code>minEvictableIdleTimeMillis</code></td>
+<td>一条连接多少毫秒没有使用后才被认为是空闲连接</td>
+<td><code>60000</code></td>
+</tr>
+<tr>
+<td><code>removeAbandonedTimeout</code></td>
+<td>一条连接多少毫秒才被人为是需要 abandoned</td>
+<td><code>60</code></td>
+</tr>
+<tr>
+<td><code>removeAbandoned</code></td>
+<td>连接标记为 abandoned 之后是否移除</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>logAbandoned</code></td>
+<td></td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>fairQueue</code></td>
+<td><code>getConnection</code> 这个调用是否应该以 <code>FIFO</code> 的顺序进行响应</td>
+<td><code>true</code></td>
+</tr>
+<tr>
+<td><code>abandonWhenPercentageFull</code></td>
+<td></td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td><code>maxAge</code></td>
+<td>连接空闲之后，超过多少毫秒才自动连接一次</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td><code>commitOnReturn</code></td>
+<td>连接还到连接池后，是否应该自动 <code>commit</code> 一次</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>rollbackOnReturn</code></td>
+<td>连接还到连接池后，是否应该自动 <code>rollback</code> 一次</td>
+<td><code>false</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="获取连接">获取连接</h2>
+<p>先尝试从空闲队列获取一个连接：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">PooledConnection con <span style="color:#f92672">=</span> idle<span style="color:#f92672">.</span><span style="color:#a6e22e">poll</span><span style="color:#f92672">();</span>
+
+<span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>con<span style="color:#f92672">!=</span><span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">//configure the connection and return it
+</span><span style="color:#75715e"></span>        PooledConnection result <span style="color:#f92672">=</span> borrowConnection<span style="color:#f92672">(</span>now<span style="color:#f92672">,</span> con<span style="color:#f92672">,</span> username<span style="color:#f92672">,</span> password<span style="color:#f92672">);</span>
+        borrowedCount<span style="color:#f92672">.</span><span style="color:#a6e22e">incrementAndGet</span><span style="color:#f92672">();</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>result<span style="color:#f92672">!=</span><span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">return</span> result<span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#75715e">// 直接创建连接
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>size<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">&lt;</span> getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getMaxActive</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">//atomic duplicate check
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>size<span style="color:#f92672">.</span><span style="color:#a6e22e">addAndGet</span><span style="color:#f92672">(</span>1<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getMaxActive</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">//if we got here, two threads passed through the first if
+</span><span style="color:#75715e"></span>            size<span style="color:#f92672">.</span><span style="color:#a6e22e">decrementAndGet</span><span style="color:#f92672">();</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">//create a connection, we&#39;re below the limit
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">return</span> createConnection<span style="color:#f92672">(</span>now<span style="color:#f92672">,</span> con<span style="color:#f92672">,</span> username<span style="color:#f92672">,</span> password<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#75715e">// 等待可用连接
+</span><span style="color:#75715e"></span>
 <span style="color:#f92672">}</span>
-</code></pre></div><p>资源回收器做哪些事情：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">// PoolCleaner.java
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">isRemoveAbandoned</span><span style="color:#f92672">()</span>
-        <span style="color:#f92672">||</span> pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getSuspectTimeout</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span>
-    pool<span style="color:#f92672">.</span><span style="color:#a6e22e">checkAbandoned</span><span style="color:#f92672">();</span>
+</code></pre></div><p>获取到的这个空闲连接其实已经有可能处于不可用的状态了，所以还得根据配置对其进行一些<strong>有效性检查</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">con<span style="color:#f92672">.</span><span style="color:#a6e22e">lock</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>con<span style="color:#f92672">.</span><span style="color:#a6e22e">isReleased</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
 
-<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getMinIdle</span><span style="color:#f92672">()</span> <span style="color:#f92672">&lt;</span> pool<span style="color:#f92672">.</span><span style="color:#a6e22e">idle</span><span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">())</span>
-    pool<span style="color:#f92672">.</span><span style="color:#a6e22e">checkIdle</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">boolean</span> forceReconnect <span style="color:#f92672">=</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">shouldForceReconnect</span><span style="color:#f92672">(</span>username<span style="color:#f92672">,</span> password<span style="color:#f92672">)</span> <span style="color:#f92672">||</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">isMaxAgeExpired</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>con<span style="color:#f92672">.</span><span style="color:#a6e22e">isDiscarded</span><span style="color:#f92672">()</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">!</span>con<span style="color:#f92672">.</span><span style="color:#a6e22e">isInitialized</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">//here it states that the connection not discarded, but the connection is null
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">//don&#39;t attempt a connect here. It will be done during the reconnect.
+</span><span style="color:#75715e"></span>    forceReconnect <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
 
-<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">isTestWhileIdle</span><span style="color:#f92672">())</span>
-    pool<span style="color:#f92672">.</span><span style="color:#a6e22e">testAllIdle</span><span style="color:#f92672">();</span>
-</code></pre></div><p>(1) 检查 Abandoned 连接</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Iterator<span style="color:#f92672">&lt;</span>PooledConnection<span style="color:#f92672">&gt;</span> locked <span style="color:#f92672">=</span> busy<span style="color:#f92672">.</span><span style="color:#a6e22e">iterator</span><span style="color:#f92672">();</span>
-<span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>locked<span style="color:#f92672">.</span><span style="color:#a6e22e">hasNext</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-    PooledConnection con <span style="color:#f92672">=</span> locked<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">();</span>
-    <span style="color:#66d9ef">boolean</span> setToNull <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
-    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
-        con<span style="color:#f92672">.</span><span style="color:#a6e22e">lock</span><span style="color:#f92672">();</span>
-
-        <span style="color:#75715e">//the con has been returned to the pool or released
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">//ignore it
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>idle<span style="color:#f92672">.</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span>con<span style="color:#f92672">)</span> <span style="color:#f92672">||</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">isReleased</span><span style="color:#f92672">())</span>
-            <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
-
-        <span style="color:#66d9ef">long</span> time <span style="color:#f92672">=</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">getTimestamp</span><span style="color:#f92672">();</span>
-        <span style="color:#66d9ef">long</span> now <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>shouldAbandon<span style="color:#f92672">()</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">(</span>now <span style="color:#f92672">-</span> time<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">getAbandonTimeout</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
-            busy<span style="color:#f92672">.</span><span style="color:#a6e22e">remove</span><span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
-            abandon<span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
-        <span style="color:#f92672">}</span> <span style="color:#75715e">//end if
-</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
-        con<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>forceReconnect<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">((!</span>con<span style="color:#f92672">.</span><span style="color:#a6e22e">isDiscarded</span><span style="color:#f92672">())</span> <span style="color:#f92672">&amp;&amp;</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">validate</span><span style="color:#f92672">(</span>PooledConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">VALIDATE_BORROW</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">//set the timestamp
+</span><span style="color:#75715e"></span>        con<span style="color:#f92672">.</span><span style="color:#a6e22e">setTimestamp</span><span style="color:#f92672">(</span>now<span style="color:#f92672">);</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">isLogAbandoned</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">//set the stack trace for this pool
+</span><span style="color:#75715e"></span>            con<span style="color:#f92672">.</span><span style="color:#a6e22e">setStackTrace</span><span style="color:#f92672">(</span>getThreadDump<span style="color:#f92672">());</span>
+        <span style="color:#f92672">}</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>busy<span style="color:#f92672">.</span><span style="color:#a6e22e">offer</span><span style="color:#f92672">(</span>con<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+            log<span style="color:#f92672">.</span><span style="color:#a6e22e">debug</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Connection doesn&#39;t fit into busy array, connection will not be traceable.&#34;</span><span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+        <span style="color:#66d9ef">return</span> con<span style="color:#f92672">;</span>
     <span style="color:#f92672">}</span>
 <span style="color:#f92672">}</span>
-</code></pre></div><p><code>abandon(con)</code> 内部就是 <code>release(con)</code>。</p>
 
+<span style="color:#75715e">// 逻辑走到这里，那么再重新进行一次连接
+</span><span style="color:#75715e"></span>
+con<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">();</span>
+</code></pre></div><p>由上述代码可以看出，从 <code>idle</code> 队列中取出的连接，只要满足如下四个条件就该连接是有效的，可以返回给客户端使用：</p>
+<ul>
+<li>连接没有被释放</li>
+<li>连接没有被丢弃</li>
+<li>连接 <code>validate</code> 可以通过</li>
+<li>连接可以放入到 <code>busy</code> 队列里</li>
+</ul>
+<p>如果发现连接已经达到了最大的有效期或者发现还从未真正连接过，那么就需要重新连接：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">con<span style="color:#f92672">.</span><span style="color:#a6e22e">reconnect</span><span style="color:#f92672">();</span>
+con<span style="color:#f92672">.</span><span style="color:#a6e22e">validate</span><span style="color:#f92672">(</span>validationMode<span style="color:#f92672">);</span>
+busy<span style="color:#f92672">.</span><span style="color:#a6e22e">offer</span><span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+</code></pre></div><h3 id="validate-逻辑"><code>validate</code> 逻辑</h3>
+<p>当从 <code>idle</code> 取连接的时候，只有 <code>testOnBorrow</code> 属性设置为 <code>true</code> 才会执行校验，否则不会执行。校验逻辑如下：</p>
+<ul>
+<li>上次校验周期内不进行校验：</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">long</span> now <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>validateAction<span style="color:#f92672">!=</span>VALIDATE_INIT <span style="color:#f92672">&amp;&amp;</span>
+    poolProperties<span style="color:#f92672">.</span><span style="color:#a6e22e">getValidationInterval</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;</span> 0 <span style="color:#f92672">&amp;&amp;</span>
+    <span style="color:#f92672">(</span>now <span style="color:#f92672">-</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">lastValidated</span><span style="color:#f92672">)</span> <span style="color:#f92672">&lt;</span>
+    poolProperties<span style="color:#f92672">.</span><span style="color:#a6e22e">getValidationInterval</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><ul>
+<li>发送相关用于校验的 SQL 查询语句，能正常查询返回，没有报 <code>SQLException</code> 就认为校验通过：</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">query <span style="color:#f92672">=</span> poolProperties<span style="color:#f92672">.</span><span style="color:#a6e22e">getValidationQuery</span><span style="color:#f92672">();</span>
+stmt <span style="color:#f92672">=</span> connection<span style="color:#f92672">.</span><span style="color:#a6e22e">createStatement</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">int</span> validationQueryTimeout <span style="color:#f92672">=</span> poolProperties<span style="color:#f92672">.</span><span style="color:#a6e22e">getValidationQueryTimeout</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>validationQueryTimeout <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    stmt<span style="color:#f92672">.</span><span style="color:#a6e22e">setQueryTimeout</span><span style="color:#f92672">(</span>validationQueryTimeout<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+
+stmt<span style="color:#f92672">.</span><span style="color:#a6e22e">execute</span><span style="color:#f92672">(</span>query<span style="color:#f92672">);</span>
+stmt<span style="color:#f92672">.</span><span style="color:#a6e22e">close</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">lastValidated</span> <span style="color:#f92672">=</span> now<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+</code></pre></div><h3 id="ismaxageexpired-逻辑"><code>isMaxAgeExpired</code> 逻辑</h3>
+<p>连接是否已经过期的判断逻辑：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">isMaxAgeExpired</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getMaxAge</span><span style="color:#f92672">()&gt;</span>0 <span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#f92672">(</span>System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> getLastConnected<span style="color:#f92672">())</span> <span style="color:#f92672">&gt;</span> getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getMaxAge</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="reconnect-逻辑"><code>reconnect</code> 逻辑</h3>
+<p>重新连接逻辑首先将连接丢弃掉：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">reconnect</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> SQLException <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">disconnect</span><span style="color:#f92672">(</span><span style="color:#66d9ef">false</span><span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">connect</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">disconnect</span><span style="color:#f92672">(</span><span style="color:#66d9ef">boolean</span> finalize<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    setDiscarded<span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>connection <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        connection<span style="color:#f92672">.</span><span style="color:#a6e22e">close</span><span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+    connection <span style="color:#f92672">=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">;</span>
+    lastConnected <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>1<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>然后再通过数据库驱动执行一次真正的底层连接 <code>connect</code> ：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">driver <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>java<span style="color:#f92672">.</span><span style="color:#a6e22e">sql</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Driver</span><span style="color:#f92672">)</span>
+    ClassLoaderUtil<span style="color:#f92672">.</span><span style="color:#a6e22e">loadClass</span><span style="color:#f92672">(</span>
+        poolProperties<span style="color:#f92672">.</span><span style="color:#a6e22e">getDriverClassName</span><span style="color:#f92672">(),</span>
+        PooledConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">class</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getClassLoader</span><span style="color:#f92672">(),</span>
+        Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getContextClassLoader</span><span style="color:#f92672">()</span>
+    <span style="color:#f92672">).</span><span style="color:#a6e22e">getConstructor</span><span style="color:#f92672">().</span><span style="color:#a6e22e">newInstance</span><span style="color:#f92672">();</span>
+connection <span style="color:#f92672">=</span> driver<span style="color:#f92672">.</span><span style="color:#a6e22e">connect</span><span style="color:#f92672">(</span>driverURL<span style="color:#f92672">,</span> properties<span style="color:#f92672">);</span>
+<span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">discarded</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+<span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">lastConnected</span> <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+</code></pre></div><h3 id="等待可用连接">等待可用连接</h3>
+<p>尝试等待 <code>maxWait</code> 毫秒的时间，如果等待不到，那么抛出 <code>PoolExhaustedException</code> 异常：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#75715e">//calculate wait time for this iteration
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">long</span> maxWait <span style="color:#f92672">=</span> wait<span style="color:#f92672">;</span>
+<span style="color:#75715e">//if the passed in wait time is -1, means we should use the pool property value
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>wait<span style="color:#f92672">==-</span>1<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    maxWait <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getMaxWait</span><span style="color:#f92672">()&lt;=</span>0<span style="color:#f92672">)?</span>Long<span style="color:#f92672">.</span><span style="color:#a6e22e">MAX_VALUE</span><span style="color:#f92672">:</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getMaxWait</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">long</span> timetowait <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span><span style="color:#a6e22e">max</span><span style="color:#f92672">(</span>0<span style="color:#f92672">,</span> maxWait <span style="color:#f92672">-</span> <span style="color:#f92672">(</span>System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> now<span style="color:#f92672">));</span>
+con <span style="color:#f92672">=</span> idle<span style="color:#f92672">.</span><span style="color:#a6e22e">poll</span><span style="color:#f92672">(</span>timetowait<span style="color:#f92672">,</span> TimeUnit<span style="color:#f92672">.</span><span style="color:#a6e22e">MILLISECONDS</span><span style="color:#f92672">);</span>
+
+<span style="color:#75715e">//we didn&#39;t get a connection, lets see if we timed out
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>con <span style="color:#f92672">==</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">((</span>System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">()</span> <span style="color:#f92672">-</span> now<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;=</span> maxWait<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> PoolExhaustedException<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;[&#34;</span> <span style="color:#f92672">+</span> Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getName</span><span style="color:#f92672">()+</span><span style="color:#e6db74">&#34;] &#34;</span> <span style="color:#f92672">+</span>
+            <span style="color:#e6db74">&#34;Timeout: Pool empty. Unable to fetch a connection in &#34;</span> <span style="color:#f92672">+</span> <span style="color:#f92672">(</span>maxWait <span style="color:#f92672">/</span> 1000<span style="color:#f92672">)</span> <span style="color:#f92672">+</span>
+            <span style="color:#e6db74">&#34; seconds, none available[size:&#34;</span><span style="color:#f92672">+</span>size<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">()</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#34;; busy:&#34;</span><span style="color:#f92672">+</span>busy<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">()+</span><span style="color:#e6db74">&#34;; idle:&#34;</span><span style="color:#f92672">+</span>idle<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">()+</span><span style="color:#e6db74">&#34;; lastwait:&#34;</span><span style="color:#f92672">+</span>timetowait<span style="color:#f92672">+</span><span style="color:#e6db74">&#34;].&#34;</span><span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">//no timeout, lets try again
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="归还连接">归还连接</h2>
+<p>归还连接其实就是从 <code>busy</code> 队列中移除，当不需要关闭连接的时候，那么会重新放入到 <code>idle</code> 空闲队列中：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>busy<span style="color:#f92672">.</span><span style="color:#a6e22e">remove</span><span style="color:#f92672">(</span>con<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>shouldClose<span style="color:#f92672">(</span>con<span style="color:#f92672">,</span>PooledConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">VALIDATE_RETURN</span><span style="color:#f92672">)</span> <span style="color:#f92672">&amp;&amp;</span> reconnectIfExpired<span style="color:#f92672">(</span>con<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        con<span style="color:#f92672">.</span><span style="color:#a6e22e">setTimestamp</span><span style="color:#f92672">(</span>System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">());</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(((</span>idle<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">()&gt;=</span>poolProperties<span style="color:#f92672">.</span><span style="color:#a6e22e">getMaxIdle</span><span style="color:#f92672">())</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">!</span>poolProperties<span style="color:#f92672">.</span><span style="color:#a6e22e">isPoolSweeperEnabled</span><span style="color:#f92672">())</span> <span style="color:#f92672">||</span> <span style="color:#f92672">(!</span>idle<span style="color:#f92672">.</span><span style="color:#a6e22e">offer</span><span style="color:#f92672">(</span>con<span style="color:#f92672">)))</span> <span style="color:#f92672">{</span>
+            release<span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        release<span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span> <span style="color:#75715e">//end if
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+    release<span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>判断连接归还的时候需要需要关闭，其主要看的还是 <code>validate</code> 函数，当 <code>testOnReturn</code> 属性打开的时候才会在归还的时候执行校验，校验不通过的时候，会直接释放掉连接：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>action <span style="color:#f92672">==</span> PooledConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">VALIDATE_RETURN</span> <span style="color:#f92672">&amp;&amp;</span>
+    poolProperties<span style="color:#f92672">.</span><span style="color:#a6e22e">isTestOnReturn</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    <span style="color:#75715e">// validate 返回成功
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+</code></pre></div><h3 id="释放连接">释放连接</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">release</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    disconnect<span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h2 id="连接池清理器">连接池清理器</h2>
+<p>后台运行的连接池清理器主要是干了如下几件事情：</p>
+<ul>
+<li>淘汰 <code>abandoned</code> 连接</li>
+<li>缩容 <code>idle</code> 连接池</li>
+<li>探活 <code>idle</code> 连接</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PoolCleaner</span> <span style="color:#66d9ef">extends</span> TimerTask <span style="color:#f92672">{</span>
+
+    <span style="color:#75715e">// 默认 30 秒
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">long</span> sleepTime<span style="color:#f92672">;</span>
+
+    <span style="color:#a6e22e">@Override</span>
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">run</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">isRemoveAbandoned</span><span style="color:#f92672">()</span>
+                    <span style="color:#f92672">||</span> pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getSuspectTimeout</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                pool<span style="color:#f92672">.</span><span style="color:#a6e22e">checkAbandoned</span><span style="color:#f92672">();</span>
+            <span style="color:#f92672">}</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getMinIdle</span><span style="color:#f92672">()</span> <span style="color:#f92672">&lt;</span> pool<span style="color:#f92672">.</span><span style="color:#a6e22e">idle</span>
+                    <span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+                pool<span style="color:#f92672">.</span><span style="color:#a6e22e">checkIdle</span><span style="color:#f92672">();</span>
+            <span style="color:#f92672">}</span>
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">isTestWhileIdle</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+                pool<span style="color:#f92672">.</span><span style="color:#a6e22e">testAllIdle</span><span style="color:#f92672">(</span><span style="color:#66d9ef">false</span><span style="color:#f92672">);</span>
+            <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>pool<span style="color:#f92672">.</span><span style="color:#a6e22e">getPoolProperties</span><span style="color:#f92672">().</span><span style="color:#a6e22e">getMaxAge</span><span style="color:#f92672">()</span> <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                pool<span style="color:#f92672">.</span><span style="color:#a6e22e">testAllIdle</span><span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>Exception x<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            log<span style="color:#f92672">.</span><span style="color:#a6e22e">error</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">,</span> x<span style="color:#f92672">);</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="checkabandoned-逻辑"><code>checkAbandoned</code> 逻辑</h3>
+<p>主动丢弃运行时间大于 <code>abandonTimeout</code> 时间的连接：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Iterator<span style="color:#f92672">&lt;</span>PooledConnection<span style="color:#f92672">&gt;</span> locked <span style="color:#f92672">=</span> busy<span style="color:#f92672">.</span><span style="color:#a6e22e">iterator</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">int</span> sto <span style="color:#f92672">=</span> getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getSuspectTimeout</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>locked<span style="color:#f92672">.</span><span style="color:#a6e22e">hasNext</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    PooledConnection con <span style="color:#f92672">=</span> locked<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">();</span>
+    <span style="color:#75715e">//the con has been returned to the pool or released
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">//ignore it
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>idle<span style="color:#f92672">.</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span>con<span style="color:#f92672">)</span> <span style="color:#f92672">||</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">isReleased</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">long</span> time <span style="color:#f92672">=</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">getTimestamp</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">long</span> now <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>shouldAbandon<span style="color:#f92672">()</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">(</span>now <span style="color:#f92672">-</span> time<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">getAbandonTimeout</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        busy<span style="color:#f92672">.</span><span style="color:#a6e22e">remove</span><span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+        abandon<span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+        setToNull <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>sto <span style="color:#f92672">&gt;</span> 0 <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">(</span>now <span style="color:#f92672">-</span> time<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">(</span>sto <span style="color:#f92672">*</span> 1000L<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        suspect<span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="checkidle-逻辑"><code>checkIdle</code> 逻辑</h3>
+<p>只要当前 <code>idle</code> 连接池比最小 <code>idle</code> 数量大，那么就逐个释放/淘汰连接：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">long</span> now <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">currentTimeMillis</span><span style="color:#f92672">();</span>
+Iterator<span style="color:#f92672">&lt;</span>PooledConnection<span style="color:#f92672">&gt;</span> unlocked <span style="color:#f92672">=</span> idle<span style="color:#f92672">.</span><span style="color:#a6e22e">iterator</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span> <span style="color:#f92672">(</span>ignoreMinSize <span style="color:#f92672">||</span> <span style="color:#f92672">(</span>idle<span style="color:#f92672">.</span><span style="color:#a6e22e">size</span><span style="color:#f92672">()&gt;=</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getMinIdle</span><span style="color:#f92672">()))</span> <span style="color:#f92672">&amp;&amp;</span> unlocked<span style="color:#f92672">.</span><span style="color:#a6e22e">hasNext</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    PooledConnection con <span style="color:#f92672">=</span> unlocked<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">();</span>
+    con<span style="color:#f92672">.</span><span style="color:#a6e22e">lock</span><span style="color:#f92672">();</span>
+    <span style="color:#75715e">//the con been taken out, we can&#39;t clean it up
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>busy<span style="color:#f92672">.</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span>con<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">long</span> time <span style="color:#f92672">=</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">getTimestamp</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>shouldReleaseIdle<span style="color:#f92672">(</span>now<span style="color:#f92672">,</span> con<span style="color:#f92672">,</span> time<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        release<span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+        idle<span style="color:#f92672">.</span><span style="color:#a6e22e">remove</span><span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">//do nothing
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span> <span style="color:#75715e">//end if
+</span><span style="color:#75715e"></span>
+    con<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span> <span style="color:#75715e">//while
+</span></code></pre></div><p>其中 <code>releaseTime</code> 正是配置的 <code>minEvictableIdleTimeMillis</code> 属性：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">shouldReleaseIdle</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> now<span style="color:#f92672">,</span> PooledConnection con<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> time<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>con<span style="color:#f92672">.</span><span style="color:#a6e22e">getConnectionVersion</span><span style="color:#f92672">()</span> <span style="color:#f92672">&lt;</span> getPoolVersion<span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#f92672">(</span>con<span style="color:#f92672">.</span><span style="color:#a6e22e">getReleaseTime</span><span style="color:#f92672">()&gt;</span>0<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">((</span>now <span style="color:#f92672">-</span> time<span style="color:#f92672">)</span> <span style="color:#f92672">&gt;</span> con<span style="color:#f92672">.</span><span style="color:#a6e22e">getReleaseTime</span><span style="color:#f92672">())</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">(</span>getSize<span style="color:#f92672">()&gt;</span>getPoolProperties<span style="color:#f92672">().</span><span style="color:#a6e22e">getMinIdle</span><span style="color:#f92672">());</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">getReleaseTime</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">poolProperties</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getMinEvictableIdleTimeMillis</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h3 id="testallidle-逻辑"><code>testAllIdle</code> 逻辑</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Java" data-lang="Java">Iterator<span style="color:#f92672">&lt;</span>PooledConnection<span style="color:#f92672">&gt;</span> unlocked <span style="color:#f92672">=</span> idle<span style="color:#f92672">.</span><span style="color:#a6e22e">iterator</span><span style="color:#f92672">();</span>
+<span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>unlocked<span style="color:#f92672">.</span><span style="color:#a6e22e">hasNext</span><span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+    PooledConnection con <span style="color:#f92672">=</span> unlocked<span style="color:#f92672">.</span><span style="color:#a6e22e">next</span><span style="color:#f92672">();</span>
+    con<span style="color:#f92672">.</span><span style="color:#a6e22e">lock</span><span style="color:#f92672">();</span>
+    
+    <span style="color:#75715e">//the con been taken out, we can&#39;t clean it up
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>busy<span style="color:#f92672">.</span><span style="color:#a6e22e">contains</span><span style="color:#f92672">(</span>con<span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">continue</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">boolean</span> release<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>checkMaxAgeOnly<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        release <span style="color:#f92672">=</span> <span style="color:#f92672">!</span>reconnectIfExpired<span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+        release <span style="color:#f92672">=</span> <span style="color:#f92672">!</span>reconnectIfExpired<span style="color:#f92672">(</span>con<span style="color:#f92672">)</span> <span style="color:#f92672">||</span> <span style="color:#f92672">!</span>con<span style="color:#f92672">.</span><span style="color:#a6e22e">validate</span><span style="color:#f92672">(</span>PooledConnection<span style="color:#f92672">.</span><span style="color:#a6e22e">VALIDATE_IDLE</span><span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>release<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        idle<span style="color:#f92672">.</span><span style="color:#a6e22e">remove</span><span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+        release<span style="color:#f92672">(</span>con<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+
+    con<span style="color:#f92672">.</span><span style="color:#a6e22e">unlock</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div>
 <ins class="adsbygoogle"
 style="display:block"
 data-ad-client="ca-pub-8950855178079071"
@@ -1286,8 +1680,31 @@ data-full-width-responsive="true"></ins>
       
   <nav id="TableOfContents">
   <ul>
-    <li><a href="#连接池的创建">连接池的创建</a></li>
-    <li><a href="#连接的回收">连接的回收</a></li>
+    <li><a href="#创建连接池">创建连接池</a>
+      <ul>
+        <li><a href="#连接池默认属性">连接池默认属性</a></li>
+      </ul>
+    </li>
+    <li><a href="#获取连接">获取连接</a>
+      <ul>
+        <li><a href="#validate-逻辑"><code>validate</code> 逻辑</a></li>
+        <li><a href="#ismaxageexpired-逻辑"><code>isMaxAgeExpired</code> 逻辑</a></li>
+        <li><a href="#reconnect-逻辑"><code>reconnect</code> 逻辑</a></li>
+        <li><a href="#等待可用连接">等待可用连接</a></li>
+      </ul>
+    </li>
+    <li><a href="#归还连接">归还连接</a>
+      <ul>
+        <li><a href="#释放连接">释放连接</a></li>
+      </ul>
+    </li>
+    <li><a href="#连接池清理器">连接池清理器</a>
+      <ul>
+        <li><a href="#checkabandoned-逻辑"><code>checkAbandoned</code> 逻辑</a></li>
+        <li><a href="#checkidle-逻辑"><code>checkIdle</code> 逻辑</a></li>
+        <li><a href="#testallidle-逻辑"><code>testAllIdle</code> 逻辑</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 

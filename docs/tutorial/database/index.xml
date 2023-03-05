@@ -127,14 +127,15 @@ binlog 格式  statement：记录 SQL 语句，容易导致主备不一致 row�
     </item>
     
     <item>
-      <title>Tomcat JDBC 连接池</title>
+      <title>深入理解 Tomcat JDBC Pool</title>
       <link>https://kunzhao.org/docs/tutorial/database/tomcat-jdbc/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://kunzhao.org/docs/tutorial/database/tomcat-jdbc/</guid>
-      <description>Tomcat JDBC 连接池 连接池的创建 (1) 创建池
-// ConnectionPool.java protected void init(PoolConfiguration properties) throws SQLException { busy = new LinkedBlockingQueue&amp;lt;&amp;gt;(); if (properties.isFairQueue()) { idle = new FairBlockingQueue&amp;lt;&amp;gt;(); //idle = new MultiLockFairBlockingQueue&amp;lt;PooledConnection&amp;gt;();  //idle = new LinkedTransferQueue&amp;lt;PooledConnection&amp;gt;();  //idle = new ArrayBlockingQueue&amp;lt;PooledConnection&amp;gt;(properties.getMaxActive(),false);  } else { idle = new LinkedBlockingQueue&amp;lt;&amp;gt;(); } } (2) 构建拦截链：
-// ConnectionPool.java protected Connection setupConnection(PooledConnection con) throws SQLException { JdbcInterceptor handler = new ProxyConnection(this,con,getPoolProperties().isUseEquals()); // 创建自定义的拦截链  // setup statement proxy  if (getPoolProperties().</description>
+      <description>深入理解 Tomcat JDBC Pool  本文分析的源码版本基于 11.0.0-M3 。
+ 创建连接池 Tomcat JDBC Pool 连接池可以配置多种多样的属性，相关特性以接口的方式封装在了 PoolConfiguration 中。
+// 创建连接池的代码 // DataSourceProxy.java private synchronized ConnectionPool pCreatePool() throws SQLException { pool = new ConnectionPool(poolProperties); } 创建连接池的相关代码就位于 ConnectionPool 中，其在构造器中做了如下事情：
+ 检查相关配置。通常对一些 maxActive 、minIdle 之间的大小逻辑进行校验等：  public void checkPoolConfiguration(PoolConfiguration properties) { //make sure the pool is properly configured  if (properties.getMaxActive()&amp;lt;1) { properties.setMaxActive(PoolProperties.DEFAULT_MAX_ACTIVE); } if (properties.getMaxActive()&amp;lt;properties.getInitialSize()) { properties.setInitialSize(properties.getMaxActive()); } if (properties.getMinIdle()&amp;gt;properties.getMaxActive()) { properties.setMinIdle(properties.getMaxActive()); } if (properties.</description>
     </item>
     
     <item>
